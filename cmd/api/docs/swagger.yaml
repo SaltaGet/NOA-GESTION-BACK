@@ -1,0 +1,15 @@
+info:
+  contact: {}
+  description: This is a api to app noa gestion
+  termsOfService: http://swagger.io/terms/
+  title: APP NOA Gestion
+  version: "1.0"
+paths: {}
+securityDefinitions:
+  BearerAuth:
+    description: 'Type "Bearer" followed by a space and the JWT token. Example: "Bearer
+      eyJhbGciOiJIUz..."'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
