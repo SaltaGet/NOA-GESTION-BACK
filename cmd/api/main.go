@@ -5,10 +5,11 @@ import (
 	"os"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/jobs"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/swagger"
 	"github.com/joho/godotenv"
-	
+
 	_ "github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/docs"
 )
 
@@ -32,6 +33,20 @@ func main() {
 			log.Fatalf("Error ejecutando swag init: %v", err)
 		}
 	}
+
+	dbURI := os.Getenv("URI_DB")
+	if dbURI == "" {
+		log.Fatal("DATABASE_URI no está configurada en el archivo .env")
+	}
+
+	db, err := database.ConnectDB(dbURI)
+	if err != nil {
+		log.Fatalf("Error al conectar con la base de datos: %v", err)
+	}
+	defer func() {
+		database.CloseDB(db)
+		database.CloseAllTenantDBs()
+	}()
 
 	app := fiber.New()
 	

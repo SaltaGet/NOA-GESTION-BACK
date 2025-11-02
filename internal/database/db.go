@@ -11,7 +11,7 @@ import (
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
-	"github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
