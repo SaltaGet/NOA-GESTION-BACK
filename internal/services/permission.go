@@ -1,8 +1,10 @@
 package services
 
-import "github.com/DanielChachagua/GestionCar/pkg/models"
+import (
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+)
 
-func (p *PermissionService) PermissionByRoleID(roleID string) (*[]string, error) {
+func (p *PermissionService) PermissionByRoleID(roleID int64) (*[]string, error) {
 	permissions, err := p.PermissionRepository.PermissionByRoleID(roleID)
 	if err != nil {
 		return nil, err
@@ -10,7 +12,7 @@ func (p *PermissionService) PermissionByRoleID(roleID string) (*[]string, error)
 	return permissions, nil
 }
 
-func (p *PermissionService) PermissionGetAll() (*[]models.PermissionResponse, error) {
+func (p *PermissionService) PermissionGetAll() (*[]schemas.PermissionResponse, error) {
 	permissions, err := p.PermissionRepository.PermissionGetAll()
 	if err != nil {
 		return nil, err
@@ -18,7 +20,7 @@ func (p *PermissionService) PermissionGetAll() (*[]models.PermissionResponse, er
 	return permissions, nil
 }
 
-func (p *PermissionService) PermissionGetToMe(roleID string) (*[]models.PermissionResponse, error) {
+func (p *PermissionService) PermissionGetToMe(roleID int64) (*[]schemas.PermissionResponse, error) {
 	permissions, err := p.PermissionRepository.PermissionGetToMe(roleID)
 	if err != nil {
 		return nil, err

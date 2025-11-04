@@ -1,13 +1,14 @@
 package ports
 
-import "github.com/DanielChachagua/GestionCar/pkg/models"
+import "github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+
 
 type RoleService interface {
-	RoleGetAll() (roles *[]models.RoleResponse, err error)
-	RoleCreate(roleCrate *models.RoleCreate) (id string, err error)
+	RoleGetAll() (roles *[]schemas.RoleResponse, err error)
+	RoleCreate(roleCrate *schemas.RoleCreate) (id string, err error)
 }
 
 type RoleRepository interface {
-	RoleGetAll() (roles *[]models.RoleResponse, err error)
-	RoleCreate(roleCrate *models.RoleCreate) (id string, err error)
+	RoleGetAll() (roles *[]schemas.RoleResponse, err error)
+	RoleCreate(roleCrate *schemas.RoleCreate) (id string, err error)
 }

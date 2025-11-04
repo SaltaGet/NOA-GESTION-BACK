@@ -16,11 +16,11 @@ import (
 //	@Security		BearerAuth
 //	@Param			id	path		string									true	"ID of the product"
 //	@Success		200	{object}	schemas.Response{body=schemas.Product}	"Product obtained with success"
-//	@Failure		400	{object}	schemas.Response							"Bad Request"
-//	@Failure		401	{object}	schemas.Response							"Auth is required"
-//	@Failure		403	{object}	schemas.Response							"Not Authorized"
-//	@Failure		404	{object}	schemas.Response							"Expense not found"
-//	@Failure		500	{object}	schemas.Response							"Internal server error"
+//	@Failure		400	{object}	schemas.Response						"Bad Request"
+//	@Failure		401	{object}	schemas.Response						"Auth is required"
+//	@Failure		403	{object}	schemas.Response						"Not Authorized"
+//	@Failure		404	{object}	schemas.Response						"Expense not found"
+//	@Failure		500	{object}	schemas.Response						"Internal server error"
 //	@Router			/product/{id} [get]
 func (p *ProductController) ProductGetByID(c *fiber.Ctx) error {
 	logging.INFO("Obtener un producto por ID")
@@ -110,7 +110,7 @@ func (p *ProductController) ProductGetAll(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			name	query		string									true	"Name of the Product"
+//	@Param			name	query		string										true	"Name of the Product"
 //	@Success		200		{object}	schemas.Response{body=[]schemas.Product}	"List of products"
 //	@Failure		400		{object}	schemas.Response							"Bad Request"
 //	@Failure		401		{object}	schemas.Response							"Auth is required"
@@ -163,7 +163,7 @@ func (p *ProductController) ProductGetByName(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			identifier	query		string									true	"Identifier of product"
+//	@Param			identifier	query		string										true	"Identifier of product"
 //	@Success		200			{object}	schemas.Response{body=[]schemas.Product}	"Products obtained with success"
 //	@Failure		400			{object}	schemas.Response							"Bad Request"
 //	@Failure		401			{object}	schemas.Response							"Auth is required"
@@ -217,13 +217,13 @@ func (p *ProductController) ProductGetByIdentifier(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Param			stock	body		schemas.StockUpdate	true	"Stock update details"
-//	@Success		200		{object}	schemas.Response		"Product stock updated successfully"
-//	@Failure		400		{object}	schemas.Response		"Bad Request"
-//	@Failure		401		{object}	schemas.Response		"Auth is required"
-//	@Failure		403		{object}	schemas.Response		"Not Authorized"
-//	@Failure		404		{object}	schemas.Response		"Product not found"
-//	@Failure		422		{object}	schemas.Response		"Model invalid"
-//	@Failure		500		{object}	schemas.Response		"Internal server error"
+//	@Success		200		{object}	schemas.Response	"Product stock updated successfully"
+//	@Failure		400		{object}	schemas.Response	"Bad Request"
+//	@Failure		401		{object}	schemas.Response	"Auth is required"
+//	@Failure		403		{object}	schemas.Response	"Not Authorized"
+//	@Failure		404		{object}	schemas.Response	"Product not found"
+//	@Failure		422		{object}	schemas.Response	"Model invalid"
+//	@Failure		500		{object}	schemas.Response	"Internal server error"
 //	@Router			/product/update_stock [put]
 func (p *ProductController) ProductUpdateStock(c *fiber.Ctx) error {
 	logging.INFO("Actualizar stock de producto")
@@ -280,13 +280,13 @@ func (p *ProductController) ProductUpdateStock(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Param			product	body		schemas.ProductUpdate	true	"Product update details"
-//	@Success		200		{object}	schemas.Response			"Product updated successfully"
-//	@Failure		400		{object}	schemas.Response			"Bad Request"
-//	@Failure		401		{object}	schemas.Response			"Auth is required"
-//	@Failure		403		{object}	schemas.Response			"Not Authorized"
-//	@Failure		404		{object}	schemas.Response			"Product not found"
-//	@Failure		422		{object}	schemas.Response			"Model invalid"
-//	@Failure		500		{object}	schemas.Response			"Internal server error"
+//	@Success		200		{object}	schemas.Response		"Product updated successfully"
+//	@Failure		400		{object}	schemas.Response		"Bad Request"
+//	@Failure		401		{object}	schemas.Response		"Auth is required"
+//	@Failure		403		{object}	schemas.Response		"Not Authorized"
+//	@Failure		404		{object}	schemas.Response		"Product not found"
+//	@Failure		422		{object}	schemas.Response		"Model invalid"
+//	@Failure		500		{object}	schemas.Response		"Internal server error"
 //	@Router			/product/update [put]
 func (p *ProductController) ProductUpdate(c *fiber.Ctx) error {
 	logging.INFO("Actualizar producto")
@@ -342,7 +342,7 @@ func (p *ProductController) ProductUpdate(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			id	path		string			true	"ID of the product"
+//	@Param			id	path		string				true	"ID of the product"
 //	@Success		200	{object}	schemas.Response	"Product deleted with success"
 //	@Failure		400	{object}	schemas.Response	"Bad Request"
 //	@Failure		401	{object}	schemas.Response	"Auth is required"
@@ -397,12 +397,12 @@ func (p *ProductController) ProductDelete(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Param			product	body		schemas.ProductCreate	true	"Details of the product to create"
-//	@Success		200		{object}	schemas.Response			"Product created successfully"
-//	@Failure		400		{object}	schemas.Response			"Bad Request"
-//	@Failure		401		{object}	schemas.Response			"Auth is required"
-//	@Failure		403		{object}	schemas.Response			"Not Authorized"
-//	@Failure		422		{object}	schemas.Response			"Model invalid"
-//	@Failure		500		{object}	schemas.Response			"Internal server error"
+//	@Success		200		{object}	schemas.Response		"Product created successfully"
+//	@Failure		400		{object}	schemas.Response		"Bad Request"
+//	@Failure		401		{object}	schemas.Response		"Auth is required"
+//	@Failure		403		{object}	schemas.Response		"Not Authorized"
+//	@Failure		422		{object}	schemas.Response		"Model invalid"
+//	@Failure		500		{object}	schemas.Response		"Internal server error"
 //	@Router			/product/create [post]
 func (p *ProductController) ProductCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear producto")

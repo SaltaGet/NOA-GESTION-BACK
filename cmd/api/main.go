@@ -1,11 +1,85 @@
+// package main
+
+// import (
+// 	"log"
+// 	"os"
+
+// 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/jobs"
+// 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/middleware"
+// 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/routes"
+// 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
+// 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
+// 	"github.com/gofiber/fiber/v2"
+// 	"github.com/gofiber/swagger"
+// 	"github.com/joho/godotenv"
+
+// 	_ "github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/docs"
+// )
+
+// // @title						APP NOA Gestion
+// // @version					1.0
+// // @description				This is a api to app noa gestion
+// // @termsOfService				http://swagger.io/terms/
+// // @securityDefinitions.apikey	BearerAuth
+// //
+// //	@in							cookie
+// //	@name						access_token
+// //
+// // @description				Type "Bearer" followed by a space and the JWT token. Example: "Bearer eyJhbGciOiJIUz..."
+// func main() {
+// 	err := godotenv.Load()
+// 	if err != nil {
+// 		log.Fatalf("Error al cargar el archivo .env: %v", err)
+// 	}
+
+// 	local := os.Getenv("LOCAL")
+// 	if local == "true" {
+// 		if err := jobs.GenerateSwagger(); err != nil {
+// 			log.Fatalf("Error ejecutando swag init: %v", err)
+// 		}
+// 	}
+
+// 	db, err := database.ConnectDB()
+// 	if err != nil {
+// 		log.Fatalf("Error al conectar con la base de datos: %v", err)
+// 	}
+// 	defer func() {
+// 		database.CloseDB(db)
+// 		database.CloseAllTenantDBs()
+// 	}()
+
+// 	dep := dependencies.NewApplication(db)
+
+// 	app := fiber.New()
+
+// 	app.Use(middleware.BlockAccess())
+// 	app.Use(middleware.LoggingMiddleware)
+// 	app.Use(middleware.InjectionDepends(dep))
+
+// 	app.Get("/api/swagger/*", swagger.HandlerDefault)
+
+// 	routes.SetupRoutes(app, dep)
+
+// 	log.Fatal(app.Listen(":3000"))
+// }
+
+
 package main
 
 import (
+	"context"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/jobs"
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/middleware"
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/routes"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/swagger"
 	"github.com/joho/godotenv"
@@ -18,9 +92,9 @@ import (
 // @description				This is a api to app noa gestion
 // @termsOfService				http://swagger.io/terms/
 // @securityDefinitions.apikey	BearerAuth
-// @in							header
-// @name						Authorization
-// @description				Type "Bearer" followed by a space and the JWT token. Example: "Bearer eyJhbGciOiJIUz..."
+//	@in							cookie
+//	@name						access_token
+// @description				Type "Bearer" followed by a space and the JWT token.
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -34,23 +108,141 @@ func main() {
 		}
 	}
 
-	dbURI := os.Getenv("URI_DB")
-	if dbURI == "" {
-		log.Fatal("DATABASE_URI no está configurada en el archivo .env")
+	// 🔥 Inicializar Redis (opcional, falla gracefully)
+	if err := cache.InitRedis(); err != nil {
+		log.Printf("⚠️  Advertencia: Redis no disponible - %v", err)
 	}
 
-	db, err := database.ConnectDB(dbURI)
+	// Inicializar cache de tenant DBs
+	cacheSize := 100
+	if err := database.InitDBCache(cacheSize); err != nil {
+		log.Fatalf("Error al inicializar cache de DBs: %v", err)
+	}
+
+	db, err := database.ConnectDB()
 	if err != nil {
 		log.Fatalf("Error al conectar con la base de datos: %v", err)
 	}
-	defer func() {
-		database.CloseDB(db)
-		database.CloseAllTenantDBs()
+
+	// Context para shutdown graceful
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Iniciar janitor para limpiar conexiones inactivas
+	go database.StartDBJanitor(ctx)
+
+	dep := dependencies.NewApplication(db)
+
+	app := fiber.New(fiber.Config{
+		IdleTimeout:  30 * time.Second,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		ErrorHandler: customErrorHandler,
+	})
+
+	app.Use(middleware.BlockAccess())
+	app.Use(middleware.LoggingMiddleware)
+	app.Use(middleware.InjectionDepends(dep))
+
+	// Rate limiting global (100 req/min por IP)
+	app.Use(middleware.RateLimitMiddleware(100, time.Minute))
+
+	app.Get("/api/swagger/*", swagger.HandlerDefault)
+	app.Get("/health", healthCheck)
+	app.Get("/cache/stats", cacheStats)
+
+	routes.SetupRoutes(app, dep)
+
+	// Canal para señales del sistema
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	// Iniciar servidor en goroutine
+	go func() {
+		port := getEnv("PORT", "3000")
+		log.Printf("🚀 Servidor iniciado en http://localhost:%s", port)
+		if err := app.Listen(":" + port); err != nil {
+			log.Printf("Error al iniciar servidor: %v", err)
+		}
 	}()
 
-	app := fiber.New()
-	
-	app.Get("/api/swagger/*", swagger.HandlerDefault)
+	// Esperar señal de terminación
+	<-quit
+	log.Println("🛑 Apagando servidor...")
 
-	log.Fatal(app.Listen(":3000"))
+	// Cerrar contexto para detener janitor
+	cancel()
+
+	// Shutdown graceful con timeout
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+
+	if err := app.ShutdownWithContext(shutdownCtx); err != nil {
+		log.Printf("Error durante shutdown: %v", err)
+	}
+
+	// Cerrar todas las conexiones
+	log.Println("Cerrando conexiones...")
+	
+	if err := database.CloseDB(db); err != nil {
+		log.Printf("Error al cerrar DB principal: %v", err)
+	}
+	
+	if err := database.CloseAllTenantDBs(); err != nil {
+		log.Printf("Error al cerrar DBs de tenants: %v", err)
+	}
+	
+	if err := cache.CloseRedis(); err != nil {
+		log.Printf("Error al cerrar Redis: %v", err)
+	}
+
+	log.Println("✅ Servidor apagado correctamente")
+}
+
+// healthCheck endpoint de health check
+func healthCheck(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"status": "ok",
+		"redis":  cache.IsAvailable(),
+		"time":   time.Now(),
+	})
+}
+
+// cacheStats endpoint para estadísticas de cache
+func cacheStats(c *fiber.Ctx) error {
+	if !cache.IsAvailable() {
+		return c.Status(503).JSON(fiber.Map{
+			"error": "Redis no disponible",
+		})
+	}
+
+	stats, err := cache.GetCacheStats()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(stats)
+}
+
+// customErrorHandler maneja errores de forma centralizada
+func customErrorHandler(c *fiber.Ctx, err error) error {
+	code := fiber.StatusInternalServerError
+
+	if e, ok := err.(*fiber.Error); ok {
+		code = e.Code
+	}
+
+	return c.Status(code).JSON(fiber.Map{
+		"error": err.Error(),
+		"code":  code,
+	})
+}
+
+func getEnv(key, defaultVal string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+	return defaultVal
 }

@@ -1,11 +1,11 @@
 package services
 
 import (
-	"github.com/DanielChachagua/GestionCar/pkg/models"
-	"github.com/DanielChachagua/GestionCar/pkg/utils"
+"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 )
 
-func (u *UserService) UserGetByListID(ids []string) (*[]models.UserDTO, error) {
+func (u *UserService) UserGetByListID(ids []string) (*[]schemas.UserDTO, error) {
 	users, err := u.UserRepository.UserGetByListID(ids)
 	if err != nil {
 		return nil, err
@@ -14,7 +14,7 @@ func (u *UserService) UserGetByListID(ids []string) (*[]models.UserDTO, error) {
 	return users, nil
 }
 
-func (u *UserService) UserCreate(userCreate *models.UserCreate) (string, error) {
+func (u *UserService) UserCreate(userCreate *schemas.UserCreate) (string, error) {
 	existingUser, err := u.UserRepository.UserGetExistByUsernameEmail(userCreate.Username, userCreate.Email)
 	if err != nil {
 		return "",err

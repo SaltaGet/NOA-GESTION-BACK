@@ -3,12 +3,12 @@ package jobs
 import (
 	"os"
 
-	"github.com/DanielChachagua/GestionCar/pkg/database"
-	"github.com/DanielChachagua/GestionCar/pkg/dependencies"
-	"github.com/DanielChachagua/GestionCar/pkg/migrations"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/migrations"
 )
 
-func Migrations(deps *dependencies.Application) error {
+func Migrations(deps *dependencies.MainContainer) error {
 	connections, err := deps.TenantController.TenantService.TenantGetConections()
 	if err != nil {
 		return err

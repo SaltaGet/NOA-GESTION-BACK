@@ -15,7 +15,7 @@ import (
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			id	path		string										true	"ID of the income"
+//	@Param			id	path		string											true	"ID of the income"
 //	@Success		200	{object}	schemas.Response{body=schemas.IncomeResponse}	"Income details fetched successfully"
 //	@Failure		400	{object}	schemas.Response								"Bad Request"
 //	@Failure		401	{object}	schemas.Response								"Auth is required"
@@ -71,11 +71,11 @@ func (i *IncomeController) GetIncomeByID(c *fiber.Ctx) error {
 //	@Param			page	query		int											false	"Page number"				default(1)
 //	@Param			limit	query		int											false	"Number of items per page"	default(20)
 //	@Success		200		{object}	schemas.Response{body=[]schemas.IncomeDTO}	"List of incomes"
-//	@Failure		400		{object}	schemas.Response								"Bad Request"
-//	@Failure		401		{object}	schemas.Response								"Auth is required"
-//	@Failure		403		{object}	schemas.Response								"Not Authorized"
-//	@Failure		404		{object}	schemas.Response								"Expense not found"
-//	@Failure		500		{object}	schemas.Response								"Internal server error"
+//	@Failure		400		{object}	schemas.Response							"Bad Request"
+//	@Failure		401		{object}	schemas.Response							"Auth is required"
+//	@Failure		403		{object}	schemas.Response							"Not Authorized"
+//	@Failure		404		{object}	schemas.Response							"Expense not found"
+//	@Failure		500		{object}	schemas.Response							"Internal server error"
 //	@Router			/income/get_all [get]
 func (i *IncomeController) GetAllIncomes(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los ingresos")
@@ -123,11 +123,11 @@ func (i *IncomeController) GetAllIncomes(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.IncomeDTO}	"List of all incomes"
-//	@Failure		400	{object}	schemas.Response								"Bad Request"
-//	@Failure		401	{object}	schemas.Response								"Auth is required"
-//	@Failure		403	{object}	schemas.Response								"Not Authorized"
-//	@Failure		404	{object}	schemas.Response								"Expense not found"
-//	@Failure		500	{object}	schemas.Response								"Internal server error"
+//	@Failure		400	{object}	schemas.Response							"Bad Request"
+//	@Failure		401	{object}	schemas.Response							"Auth is required"
+//	@Failure		403	{object}	schemas.Response							"Not Authorized"
+//	@Failure		404	{object}	schemas.Response							"Expense not found"
+//	@Failure		500	{object}	schemas.Response							"Internal server error"
 //	@Router			/income/get_today [get]
 func (i *IncomeController) GetIncomeToday(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los ingresos de hoy")
@@ -176,14 +176,14 @@ func (i *IncomeController) GetIncomeToday(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			incomeCreate	body		schemas.IncomeCreate				true	"Income information"
+//	@Param			incomeCreate	body		schemas.IncomeCreate			true	"Income information"
 //	@Success		200				{object}	schemas.Response{body=string}	"Income created successfully"
-//	@Failure		400				{object}	schemas.Response					"Bad Request"
-//	@Failure		401				{object}	schemas.Response					"Auth is required"
-//	@Failure		403				{object}	schemas.Response					"Not Authorized"
-//	@Failure		404				{object}	schemas.Response					"Expense not found"
-//	@Failure		422				{object}	schemas.Response					"Model Invalid"
-//	@Failure		500				{object}	schemas.Response					"Internal server error"
+//	@Failure		400				{object}	schemas.Response				"Bad Request"
+//	@Failure		401				{object}	schemas.Response				"Auth is required"
+//	@Failure		403				{object}	schemas.Response				"Not Authorized"
+//	@Failure		404				{object}	schemas.Response				"Expense not found"
+//	@Failure		422				{object}	schemas.Response				"Model Invalid"
+//	@Failure		500				{object}	schemas.Response				"Internal server error"
 //	@Router			/income/create [post]
 func (i *IncomeController) CreateIncome(c *fiber.Ctx) error {
 	logging.INFO("Crear ingreso")
@@ -300,7 +300,7 @@ func (i *IncomeController) UpdateIncome(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			id	path		string			true	"ID of the income"
+//	@Param			id	path		string				true	"ID of the income"
 //	@Success		200	{object}	schemas.Response	"Income deleted successfully"
 //	@Failure		400	{object}	schemas.Response	"Bad Request"
 //	@Failure		401	{object}	schemas.Response	"Auth is required"

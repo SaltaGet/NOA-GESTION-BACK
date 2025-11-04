@@ -4,13 +4,13 @@ import (
 	"errors"
 	"time"
 
-	"github.com/DanielChachagua/GestionCar/pkg/models"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func (r *IncomeRepository) IncomeGetByID(id string) (*models.IncomeResponse, error) {
-	var income models.Income
+func (r *IncomeRepository) IncomeGetByID(id string) (*schemas.IncomeResponse, error) {
+	var income schemas.Income
 
 	err := r.DB.
 		Preload("Client").
@@ -22,18 +22,18 @@ func (r *IncomeRepository) IncomeGetByID(id string) (*models.IncomeResponse, err
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, models.ErrorResponse(404, "Ingreso no encontrado", err)
+			return nil, schemas.ErrorResponse(404, "Ingreso no encontrado", err)
 		}
-		return nil, models.ErrorResponse(500, "Error interno al buscar ingreso", err)
+		return nil, schemas.ErrorResponse(500, "Error interno al buscar ingreso", err)
 	}
 
-	response := models.IncomeResponse{
+	response := schemas.IncomeResponse{
 		ID:      income.ID,
 		Ticket:  income.Ticket,
 		Details: income.Details,
 		Amount:  income.Amount,
 		CreatedAt: income.CreatedAt,
-		Client: models.ClientResponse{
+		Client: schemas.ClientResponse{
 			ID:        income.Client.ID,
 			FirstName: income.Client.FirstName,
 			LastName:  income.Client.LastName,
@@ -41,37 +41,17 @@ func (r *IncomeRepository) IncomeGetByID(id string) (*models.IncomeResponse, err
 			Dni:       income.Client.Dni,
 			Email:     income.Client.Email,
 		},
-		Vehicle: models.VehicleResponse{
-			ID:     income.Vehicle.ID,
-			Brand:  income.Vehicle.Brand,
-			Model:  income.Vehicle.Model,
-			Color:  income.Vehicle.Color,
-			Year:   income.Vehicle.Year,
-			Domain: income.Vehicle.Domain,
-		},
-		Employee: models.EmployeeResponse{
-			ID:    income.Employee.ID,
-			Name:  income.Employee.Name,
-			Phone: income.Employee.Phone,
-			Email: income.Employee.Email,
-		},
-		MovementType: models.MovementTypeDTO{
+		MovementType: schemas.MovementTypeDTO{
 			ID:       income.MovementType.ID,
 			Name:     income.MovementType.Name,
 			IsIncome: income.MovementType.IsIncome,
 		},
 	}
 
-	for _, s := range income.Services {
-		response.Services = append(response.Services, models.ServiceDTO{
-			ID:   s.ID,
-			Name: s.Name,
-		})
-	}
 	return &response, nil
 }
 
-func (r *IncomeRepository) IncomeGetAll(page, limit int) (*[]models.IncomeDTO, error) {
+func (r *IncomeRepository) IncomeGetAll(page, limit int) (*[]schemas.IncomeDTO, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -80,7 +60,7 @@ func (r *IncomeRepository) IncomeGetAll(page, limit int) (*[]models.IncomeDTO, e
 	}
 
 	offset := (page - 1) * limit
-	var incomes []models.Income
+	var incomes []schemas.Income
 
 	err := r.DB.Preload("Client").
 		Preload("Vehicle").
@@ -93,42 +73,27 @@ func (r *IncomeRepository) IncomeGetAll(page, limit int) (*[]models.IncomeDTO, e
 		Find(&incomes).Error
 
 	if err != nil {
-		return nil, models.ErrorResponse(500, "Error interno al buscar ingresos", err)
+		return nil, schemas.ErrorResponse(500, "Error interno al buscar ingresos", err)
 	}
 
-	var incomeDTOs []models.IncomeDTO
+	var incomeDTOs []schemas.IncomeDTO
 
 	for _, income := range incomes {
-		incomeDTO := models.IncomeDTO{
+		incomeDTO := schemas.IncomeDTO{
 			ID:     income.ID,
 			Ticket: income.Ticket,
 			Amount: income.Amount,
 			CreatedAt: income.CreatedAt,
-			Client: models.ClientDTO{
+			Client: schemas.ClientDTO{
 				ID:        income.Client.ID,
 				FirstName: income.Client.FirstName,
 				LastName:  income.Client.LastName,
 			},
-			Vehicle: models.VehicleDTO{
-				ID:     income.Vehicle.ID,
-				Domain: income.Vehicle.Domain,
-			},
-			Employee: models.EmployeeDTO{
-				ID:   income.Employee.ID,
-				Name: income.Employee.Name,
-			},
-			MovementType: models.MovementTypeDTO{
+			MovementType: schemas.MovementTypeDTO{
 				ID:       income.MovementType.ID,
 				Name:     income.MovementType.Name,
 				IsIncome: income.MovementType.IsIncome,
 			},
-		}
-
-		for _, s := range income.Services {
-			incomeDTO.Services = append(incomeDTO.Services, models.ServiceDTO{
-				ID:   s.ID,
-				Name: s.Name,
-			})
 		}
 
 		incomeDTOs = append(incomeDTOs, incomeDTO)
@@ -137,15 +102,15 @@ func (r *IncomeRepository) IncomeGetAll(page, limit int) (*[]models.IncomeDTO, e
 	return &incomeDTOs, nil
 }
 
-// func (r *IncomeRepository) IncomeGetAll() (*[]models.Income, error) {
-// 	var incomes []models.Income
+// func (r *IncomeRepository) IncomeGetAll() (*[]schemas.Income, error) {
+// 	var incomes []schemas.Income
 // 	if err := r.DB.Limit(100).Order("created_at desc").Find(&incomes).Error; err != nil {
-// 		return nil, models.ErrorResponse(500, "Error interno al buscar movimientos", err)
+// 		return nil, schemas.ErrorResponse(500, "Error interno al buscar movimientos", err)
 // 	}
 // 	return &incomes, nil
 // }
 
-func (r *IncomeRepository) IncomeGetToday(page, limit int) (*[]models.IncomeDTO, error) {
+func (r *IncomeRepository) IncomeGetToday(page, limit int) (*[]schemas.IncomeDTO, error) {
 	start := time.Now().Truncate(24 * time.Hour)
 	end := start.Add(24 * time.Hour)
 	if page < 1 {
@@ -156,7 +121,7 @@ func (r *IncomeRepository) IncomeGetToday(page, limit int) (*[]models.IncomeDTO,
 	}
 
 	offset := (page - 1) * limit
-	var incomes []models.Income
+	var incomes []schemas.Income
 
 	err := r.DB.Preload("Client").
 		Preload("Vehicle").
@@ -170,42 +135,27 @@ func (r *IncomeRepository) IncomeGetToday(page, limit int) (*[]models.IncomeDTO,
 		Find(&incomes).Error
 
 	if err != nil {
-		return nil, models.ErrorResponse(500, "Error interno al buscar ingresos", err)
+		return nil, schemas.ErrorResponse(500, "Error interno al buscar ingresos", err)
 	}
 
-	var incomeDTOs []models.IncomeDTO
+	var incomeDTOs []schemas.IncomeDTO
 
 	for _, income := range incomes {
-		incomeDTO := models.IncomeDTO{
+		incomeDTO := schemas.IncomeDTO{
 			ID:     income.ID,
 			Ticket: income.Ticket,
 			Amount: income.Amount,
 			CreatedAt: income.CreatedAt,
-			Client: models.ClientDTO{
+			Client: schemas.ClientDTO{
 				ID:        income.Client.ID,
 				FirstName: income.Client.FirstName,
 				LastName:  income.Client.LastName,
 			},
-			Vehicle: models.VehicleDTO{
-				ID:     income.Vehicle.ID,
-				Domain: income.Vehicle.Domain,
-			},
-			Employee: models.EmployeeDTO{
-				ID:   income.Employee.ID,
-				Name: income.Employee.Name,
-			},
-			MovementType: models.MovementTypeDTO{
+			MovementType: schemas.MovementTypeDTO{
 				ID:       income.MovementType.ID,
 				Name:     income.MovementType.Name,
 				IsIncome: income.MovementType.IsIncome,
 			},
-		}
-
-		for _, s := range income.Services {
-			incomeDTO.Services = append(incomeDTO.Services, models.ServiceDTO{
-				ID:   s.ID,
-				Name: s.Name,
-			})
 		}
 
 		incomeDTOs = append(incomeDTOs, incomeDTO)
@@ -214,26 +164,21 @@ func (r *IncomeRepository) IncomeGetToday(page, limit int) (*[]models.IncomeDTO,
 	return &incomeDTOs, nil
 }
 
-// func (r *IncomeRepository) IncomeGetToday() (*[]models.Income, error) {
+// func (r *IncomeRepository) IncomeGetToday() (*[]schemas.Income, error) {
 // 	today := time.Now().Format("2006-01-02")
-// 	var incomes []models.Income
+// 	var incomes []schemas.Income
 // 	if err := r.DB.Where("DATE(created_at) = ?", today).Order("created_at desc").Find(&incomes).Error; err != nil {
-// 		return nil, models.ErrorResponse(500, "Error interno al buscar movimientos", err)
+// 		return nil, schemas.ErrorResponse(500, "Error interno al buscar movimientos", err)
 // 	}
 // 	return &incomes, nil
 // }
 
-func (r *IncomeRepository) IncomeCreate(income *models.IncomeCreate) (string, error) {
+func (r *IncomeRepository) IncomeCreate(income *schemas.IncomeCreate) (string, error) {
 	newID := uuid.NewString()
 
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		var services []models.Service
 
-		if err := tx.Where("id IN ?", income.ServicesID).Find(&services).Error; err != nil {
-			return models.ErrorResponse(500, "Error interno al buscar servicios", err)
-		}
-
-		if err := tx.Create(&models.Income{
+		if err := tx.Create(&schemas.Income{
 			ID:             newID,
 			Ticket:         income.Ticket,
 			Details:        income.Details,
@@ -242,30 +187,29 @@ func (r *IncomeRepository) IncomeCreate(income *models.IncomeCreate) (string, er
 			EmployeeID:     income.EmployeeID,
 			Amount:         income.Amount,
 			MovementTypeID: income.MovementTypeID,
-			Services:       services,
 		}).Error; err != nil {
-			return models.ErrorResponse(500, "Error interno al crear movimiento", err)
+			return schemas.ErrorResponse(500, "Error interno al crear movimiento", err)
 		}
 
 		return nil
 	})
 
 	if err != nil {
-		return "", models.ErrorResponse(500, "Error interno al crear movimiento", err)
+		return "", schemas.ErrorResponse(500, "Error interno al crear movimiento", err)
 	}
 
 	return newID, nil
 }
 
-func (r *IncomeRepository) IncomeUpdate(incomeUpdate *models.IncomeUpdate) error {
+func (r *IncomeRepository) IncomeUpdate(incomeUpdate *schemas.IncomeUpdate) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
-		var income models.Income
+		var income schemas.Income
 
 		if err := tx.Where("id = ?", incomeUpdate.ID).First(&income).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return models.ErrorResponse(404, "Movimiento no encontrado", err)
+				return schemas.ErrorResponse(404, "Movimiento no encontrado", err)
 			}
-			return models.ErrorResponse(500, "Error interno al actualizar movimiento", err)
+			return schemas.ErrorResponse(500, "Error interno al actualizar movimiento", err)
 		}
 
 		income.Ticket = incomeUpdate.Ticket
@@ -277,17 +221,8 @@ func (r *IncomeRepository) IncomeUpdate(incomeUpdate *models.IncomeUpdate) error
 		income.MovementTypeID = incomeUpdate.MovementTypeID
 		income.UpdatedAt = time.Now().UTC()
 
-		var services []models.Service
-		if err := tx.Where("id IN ?", incomeUpdate.ServicesID).Find(&services).Error; err != nil {
-			return models.ErrorResponse(500, "Error interno al buscar servicios", err)
-		}
-
-		if err := tx.Model(&income).Association("Services").Replace(services); err != nil {
-			return models.ErrorResponse(500, "Error interno al actualizar servicios", err)
-		}
-
 		if err := tx.Save(&income).Error; err != nil {
-			return models.ErrorResponse(500, "Error interno al actualizar movimiento", err)
+			return schemas.ErrorResponse(500, "Error interno al actualizar movimiento", err)
 		}
 
 		return nil
@@ -296,11 +231,11 @@ func (r *IncomeRepository) IncomeUpdate(incomeUpdate *models.IncomeUpdate) error
 
 func (r *IncomeRepository) IncomeDelete(id string) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", id).Delete(&models.Income{}).Error; err != nil {
+		if err := tx.Where("id = ?", id).Delete(&schemas.Income{}).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return models.ErrorResponse(404, "Movimiento no encontrado", err)
+				return schemas.ErrorResponse(404, "Movimiento no encontrado", err)
 			}
-			return models.ErrorResponse(500, "Error interno al eliminar movimiento", err)
+			return schemas.ErrorResponse(500, "Error interno al eliminar movimiento", err)
 		}
 		return nil
 	})

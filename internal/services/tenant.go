@@ -1,10 +1,11 @@
 package services
 
 import (
-	"github.com/DanielChachagua/GestionCar/pkg/models"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
-func (t *TenantService) TenantGetByID(id string) (*models.Tenant, error) {
+func (t *TenantService) TenantGetByID(id int64) (*models.Tenant, error) {
 	tenant, err := t.TenantRepository.TenantGetByID(id)
 	if err != nil {
 		return nil, err
@@ -20,7 +21,7 @@ func (t *TenantService) TenantGetByIdentifier(identifier string) (*models.Tenant
 	return tenant, nil
 }
 
-func (t *TenantService) TenantGetAll(userID string) (*[]models.TenantResponse, error) {
+func (t *TenantService) TenantGetAll(userID int64) (*[]schemas.TenantResponse, error) {
 	tenants, err := t.TenantRepository.TenantGetAll(userID)
 	if err != nil {
 		return nil, err
@@ -36,22 +37,22 @@ func (t *TenantService) TenantGetConections() (*[]string, error) {
 	return conections, nil
 }
 
-func (t *TenantService) TenantCreateByUserID(tenantCreate *models.TenantCreate, userID string) (string, error) {
+func (t *TenantService) TenantCreateByUserID(tenantCreate *schemas.TenantCreate, userID int64) (int64, error) {
 	id, err := t.TenantRepository.TenantCreateByUserID(tenantCreate, userID)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 	return id, nil
 }
 
-func (t *TenantService) TenantUserCreate(tenantUserCreate *models.TenantUserCreate) (string, error) {
+func (t *TenantService) TenantUserCreate(tenantUserCreate *schemas.TenantUserCreate) (int64, error) {
 	id, err := t.TenantRepository.TenantUserCreate(tenantUserCreate)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 	return id, nil
 }
 
-func (t *TenantService) TenantUpdate(userID string, tenant *models.TenantUpdate) error {
+func (t *TenantService) TenantUpdate(userID int64, tenant *schemas.TenantUpdate) error {
 	return t.TenantRepository.TenantUpdate(userID, tenant)
 }

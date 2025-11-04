@@ -1,13 +1,13 @@
 package routes
 
 import (
-	"github.com/DanielChachagua/GestionCar/cmd/api/controllers"
-	"github.com/DanielChachagua/GestionCar/cmd/api/middleware"
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/controllers"
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/middleware"
 	"github.com/gofiber/fiber/v2"
 )
 
 func MovementRoutes(app *fiber.App){
-	mov := app.Group("/movement", middleware.AuthMiddleware(), middleware.TenantMiddleware())
+	mov := app.Group("/movement", middleware.AuthMiddleware(), middleware.PointSaleMiddleware())
 
 	mov.Get("/get_all", GetController("MovementTypeController", func(c *fiber.Ctx, ctrl *controllers.MovementTypeController) error {
 		return ctrl.GetAllMovementTypes(c)

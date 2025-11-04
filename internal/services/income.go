@@ -1,10 +1,10 @@
 package services
 
 import (
-	"github.com/DanielChachagua/GestionCar/pkg/models"
+"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
-func (i *IncomeService) IncomeGetByID(id string) (*models.IncomeResponse, error) {
+func (i *IncomeService) IncomeGetByID(id string) (*schemas.IncomeResponse, error) {
 	income, err := i.IncomeRepository.IncomeGetByID(id)
 	if err != nil {
 		return nil, err
@@ -13,7 +13,7 @@ func (i *IncomeService) IncomeGetByID(id string) (*models.IncomeResponse, error)
 	return income, nil
 }
 
-func (i *IncomeService) IncomeGetAll(page, limit int) (*[]models.IncomeDTO, error) {
+func (i *IncomeService) IncomeGetAll(page, limit int) (*[]schemas.IncomeDTO, error) {
 	incomes, err := i.IncomeRepository.IncomeGetAll(page, limit)
 	
 	if err != nil {
@@ -23,7 +23,7 @@ func (i *IncomeService) IncomeGetAll(page, limit int) (*[]models.IncomeDTO, erro
 	return incomes, nil
 }
 
-func (i *IncomeService) IncomeGetToday(page, limit int) (*[]models.IncomeDTO, error) {
+func (i *IncomeService) IncomeGetToday(page, limit int) (*[]schemas.IncomeDTO, error) {
 	incomes, err := i.IncomeRepository.IncomeGetToday(page, limit)
 	
 	if err != nil {
@@ -33,7 +33,7 @@ func (i *IncomeService) IncomeGetToday(page, limit int) (*[]models.IncomeDTO, er
 	return incomes, nil
 }
 
-func (i *IncomeService) IncomeCreate(incomeCreate *models.IncomeCreate) (string, error) {
+func (i *IncomeService) IncomeCreate(incomeCreate *schemas.IncomeCreate) (string, error) {
 	id, err := i.IncomeRepository.IncomeCreate(incomeCreate)
 	if err != nil {
 		return "", err
@@ -41,7 +41,7 @@ func (i *IncomeService) IncomeCreate(incomeCreate *models.IncomeCreate) (string,
 	return id, nil
 }
 
-func (i *IncomeService) IncomeUpdate(incomeUpdate *models.IncomeUpdate) error {
+func (i *IncomeService) IncomeUpdate(incomeUpdate *schemas.IncomeUpdate) error {
 	err := i.IncomeRepository.IncomeUpdate(incomeUpdate)
 	if err != nil {
 		return err

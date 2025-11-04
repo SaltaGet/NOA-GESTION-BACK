@@ -16,7 +16,6 @@ type Client struct {
 	Email     string    `gorm:"not null;unique" json:"email" validate:"email"`
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
-	Vehicles  []Vehicle `gorm:"foreignKey:ClientID" json:"vehicles"`
 }
 
 type ClientCreate struct {

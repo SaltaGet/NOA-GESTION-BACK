@@ -15,9 +15,9 @@ import (
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.MemberDTO}	"Members obtenidos con éxito"
-//	@Failure		400	{object}	schemas.Response								"Bad Request"
-//	@Failure		401	{object}	schemas.Response								"Auth is required"
-//	@Failure		403	{object}	schemas.Response								"Not Authorized"
+//	@Failure		400	{object}	schemas.Response							"Bad Request"
+//	@Failure		401	{object}	schemas.Response							"Auth is required"
+//	@Failure		403	{object}	schemas.Response							"Not Authorized"
 //	@Failure		500	{object}	schemas.Response
 //	@Router			/member/get_all [get]
 func (m *MemberController) MemberGetAll(c *fiber.Ctx) error {
@@ -58,9 +58,9 @@ func (m *MemberController) MemberGetAll(c *fiber.Ctx) error {
 //	@Security		BearerAuth
 //	@Param			id	path		string											true	"Member ID"
 //	@Success		200	{object}	schemas.Response{body=[]schemas.MemberResponse}	"Members obtenidos con éxito"
-//	@Failure		400	{object}	schemas.Response									"Bad Request"
-//	@Failure		401	{object}	schemas.Response									"Auth is required"
-//	@Failure		403	{object}	schemas.Response									"Not Authorized"
+//	@Failure		400	{object}	schemas.Response								"Bad Request"
+//	@Failure		401	{object}	schemas.Response								"Auth is required"
+//	@Failure		403	{object}	schemas.Response								"Not Authorized"
 //	@Failure		500	{object}	schemas.Response
 //	@Router			/member/get/{id} [get]
 func (m *MemberController) MemberGetByID(c *fiber.Ctx) error {

@@ -1,11 +1,13 @@
 package routes
 
 import (
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/controllers"
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/middleware"
 	"github.com/gofiber/fiber/v2"
 )
 
 func ClientRoutes(app *fiber.App){
-	cli := app.Group("/client", middleware.AuthMiddleware(), middleware.TenantMiddleware())
+	cli := app.Group("/client", middleware.AuthMiddleware(), middleware.PointSaleMiddleware())
 
 	cli.Get("/get_all", GetController("ClientController", func(c *fiber.Ctx, ctrl *controllers.ClientController) error {
 		return ctrl.ClientGetAll(c)

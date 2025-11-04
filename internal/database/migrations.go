@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/golang-migrate/migrate/v4"
+	migrate "github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 )
 

@@ -19,10 +19,7 @@ type Income struct {
 	CreatedAt      time.Time    `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt      time.Time    `gorm:"autoUpdateTime" json:"updated_at"`
 	Client         Client       `gorm:"foreignKey:ClientID" json:"client"`
-	Vehicle        Vehicle      `gorm:"foreignKey:VehicleID" json:"vehicle"`
-	Employee       Employee     `gorm:"foreignKey:EmployeeID" json:"employee"`
 	MovementType   MovementType `gorm:"foreignKey:MovementTypeID;references:ID" json:"movement_type"`
-	Services       []Service    `gorm:"many2many:income_services;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"services"`
 }
 
 type IncomeCreate struct {
@@ -84,10 +81,7 @@ type IncomeDTO struct {
 	Amount         float32      `json:"amount"`
 	CreatedAt      time.Time    `json:"created_at"`
 	Client         ClientDTO       `json:"client"`
-	Vehicle        VehicleDTO      `json:"vehicle"`
-	Employee       EmployeeDTO     `json:"employee"`
 	MovementType   MovementTypeDTO `json:"movement_type"`
-	Services       []ServiceDTO    `json:"services"`
 }
 
 type IncomeResponse struct {
@@ -97,8 +91,5 @@ type IncomeResponse struct {
 	Amount         float32      `json:"amount"`
 	CreatedAt      time.Time    `json:"created_at"`
 	Client         ClientResponse       `json:"client"`
-	Vehicle        VehicleResponse      `json:"vehicle"`
-	Employee       EmployeeResponse     `json:"employee"`
 	MovementType   MovementTypeDTO `json:"movement_type"`
-	Services       []ServiceDTO    `json:"services"`
 }

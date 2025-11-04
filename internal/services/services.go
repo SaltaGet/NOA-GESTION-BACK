@@ -1,25 +1,15 @@
 package services
 
-import (
-	"github.com/DanielChachagua/GestionCar/pkg/ports"
-)
-
-type AttendanceService struct {
-	AttendanceRepository ports.AttendanceRespository
-}
+import "github.com/SaltaGet/NOA-GESTION-BACK/internal/ports"
 
 type AuthService struct {
 	AuthRepository ports.AuthRepository
 	UserRepository ports.UserRepository
-	TenantService ports.TenantService
+	TenantService  ports.TenantService
 }
 
 type ClientService struct {
 	ClientRepository ports.ClientRepository
-}
-
-type EmployeeService struct {
-	EmployeeRepository ports.EmployeeRepository
 }
 
 type ExpenseService struct {
@@ -47,25 +37,8 @@ type ProductService struct {
 	ProductRepository ports.ProductRepository
 }
 
-type PurchaseOrderService struct{
-	PurchaseOrderRepository ports.PurchaseOrderRepository
-}
-
-type PurchaseProductService struct{
-	PurchaseProductRepository ports.PurchaseProductRepository
-}
-
-type ResumeService struct {
-	ResumeExpenseRepository ports.ResumeExpenseRepository
-	ResumeIncomeRepository ports.ResumeIncomeRepository
-}
-
 type RoleService struct {
 	RoleRepository ports.RoleRepository
-}
-
-type ServiceService struct {
-	ServiceRepository ports.ServiceRepository
 }
 
 type SupplierService struct {
@@ -73,14 +46,10 @@ type SupplierService struct {
 }
 
 type TenantService struct {
-	UserRepository ports.UserRepository
+	UserRepository   ports.UserRepository
 	TenantRepository ports.TenantRepository
 }
 
 type UserService struct {
 	UserRepository ports.UserRepository
-}
-
-type VehicleService struct {
-	VehicleRepository ports.VehicleRepository
 }

@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"math/big"
 
-	"github.com/DanielChachagua/GestionCar/pkg/models"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!*"
@@ -14,7 +14,7 @@ func GenerateRandomString(length int) (string, error) {
 	for i := 0; i < length; i++ {
 		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
 		if err != nil {
-			return "", models.ErrorResponse(500, "Error al generar contraseña", err)
+			return "", schemas.ErrorResponse(500, "Error al generar contraseña", err)
 		}
 		result[i] = charset[num.Int64()]
 	}

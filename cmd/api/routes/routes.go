@@ -5,41 +5,19 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func SetupRoutes(app *fiber.App, appDependencies *dependencies.Application) {
+func SetupRoutes(app *fiber.App, appDependencies *dependencies.MainContainer) {
 	AuthRoutes(app, appDependencies.AuthController)
 	ClientRoutes(app)
-	EmployeeRoutes(app)
 	ExpenseRoutes(app)
 	IncomeRoutes(app)
 	MemberRoutes(app)
 	MovementRoutes(app)
 	PermissionRoutes(app)
 	ProductRoutes(app)
-	PurchaseOrderRoutes(app)
-	// PurchaseProductRoutes(app, tenantDependencies.PurchaseProductController)
 	RoleRoutes(app)
-	ServiceRoutes(app)
 	SupplierRoutes(app)
 	UserRoutes(app, appDependencies.UserController)
-	VehicleRoutes(app)
 	TenantRoutes(app, appDependencies.TenantController)
-	// AttendanceRoutes(app, tenantDependencies.AttendanceController)
-	// AuthRoutes(app, appDependencies.AuthController)
-	// ClientRoutes(app, tenantDependencies.ClientController)
-	// EmployeeRoutes(app, tenantDependencies.EmployeeController)
-	// ExpenseRoutes(app, tenantDependencies.ExpenseController)
-	// IncomeRoutes(app, tenantDependencies.IncomeController)
-	// MemberRoutes(app, tenantDependencies.MemberController)
-	// MovementRoutes(app, tenantDependencies.MovementTypeController)
-	// ProductRoutes(app, tenantDependencies.ProductController)
-	// PurchaseOrderRoutes(app, tenantDependencies.PurchaseOrderController)
-	// // PurchaseProductRoutes(app, tenantDependencies.PurchaseProductController)
-	// RoleRoutes(app, tenantDependencies.RoleController)
-	// ServiceRoutes(app, tenantDependencies.ServiceController)
-	// SupplierRoutes(app, tenantDependencies.SupplierController)
-	// UserRoutes(app, appDependencies.UserController)
-	// VehicleRoutes(app, tenantDependencies.VehicleController)
-	// TenantRoutes(app, appDependencies.TenantController)
 }
 
 func GetController[T any](key string, handler func(c *fiber.Ctx, ctrl *T) error) fiber.Handler {

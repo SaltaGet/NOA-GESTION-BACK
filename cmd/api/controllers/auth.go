@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
@@ -8,6 +9,20 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+//	 Login godoc
+//		@Summary		Login user
+//		@Description	Login user required identifier and password
+//		@Tags			Auth
+//		@Accept			json
+//		@Produce		json
+//		@Param			credentials	body		schemas.AuthLogin	true	"Credentials"
+//		@Success		200			{object}	schemas.Response
+//		@Failure		400			{object}	schemas.Response
+//		@Failure		401			{object}	schemas.Response
+//		@Failure		422			{object}	schemas.Response
+//		@Failure		404			{object}	schemas.Response
+//		@Failure		500			{object}	schemas.Response
+//		@Router			/api/v1/auth/login [post]
 func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
 	logging.INFO("Login")
 	var loginRequest schemas.AuthLogin
@@ -34,9 +49,9 @@ func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
 		Secure:   false,  // poner en true para prod
 		SameSite: "None", // para prod : "Strict",
 	}
-	
+
 	c.Cookie(cookie)
-	
+
 	logging.INFO("Login exitoso")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
@@ -45,7 +60,25 @@ func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
 	})
 }
 
-func (a *AuthController) AuthTenant(c *fiber.Ctx) error {
+//	 LoginTenant godoc
+//		@Summary		Login Tenant
+//		@Description	Login tenant required tenant_id
+//		@Tags			Auth
+//		@Accept			json
+//		@Produce		json
+//
+// @Security		CookieAuth
+//
+//	@Param			tenant_id	path		string	true	"tenant_id"
+//	@Success		200			{object}	schemas.Response
+//	@Failure		400			{object}	schemas.Response
+//	@Failure		401			{object}	schemas.Response
+//	@Failure		403			{object}	schemas.Response
+//	@Failure		404			{object}	schemas.Response
+//	@Failure		422			{object}	schemas.Response
+//	@Failure		500			{object}	schemas.Response
+//	@Router			/api/v1/auth/tenant_login/{tenant_id} [post]
+func (a *AuthController) AuthPointSale(c *fiber.Ctx) error {
 	logging.INFO("Login tenant")
 	id := c.Params("tenant_id")
 	if id == "" {
@@ -57,9 +90,15 @@ func (a *AuthController) AuthTenant(c *fiber.Ctx) error {
 		})
 	}
 
+	pointSaleID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		logging.ERROR("tenant_id must be a number")
+		return c.Status(400).SendString("tenant_id debe ser un número")
+	}
+
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
 
-	token, err := a.AuthService.AuthGetTenant(user, id)
+	token, err := a.AuthService.AuthPointSale(user, pointSaleID)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -83,14 +122,16 @@ func (a *AuthController) AuthTenant(c *fiber.Ctx) error {
 	})
 }
 
-func (a *AuthController) LogoutTenant(c *fiber.Ctx) error {
+func (a *AuthController) LogoutPointSale(c *fiber.Ctx) error {
 	logging.INFO("Logout tenant")
-	user := c.Locals("user").(*schemas.AuthenticatedUser)
+	// user := c.Locals("user").(*schemas.AuthenticatedUser)
 
-	token, err := a.AuthService.LogoutPointSale(user.ID)
-	if err != nil {
-		return schemas.HandleError(c, err)
-	}
+	// token, err := a.AuthService.LogoutPointSale(user.ID)
+	// if err != nil {
+	// 	return schemas.HandleError(c, err)
+	// }
+
+	token := ""
 
 	cookie := &fiber.Cookie{
 		Name:     "access_token",
@@ -125,5 +166,17 @@ func (a *AuthController) Logout(ctx *fiber.Ctx) error {
 		Status:  true,
 		Body:    nil,
 		Message: "Logout exitoso",
+	})
+}
+
+func (a *AuthController) CurrentUser(c *fiber.Ctx) error {
+	logging.INFO("Obtener usuario actual")
+	user := c.Locals("user").(*schemas.AuthenticatedUser)
+
+	logging.INFO("Usuario actual obtenido")
+	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    user,
+		Message: "Usuario actual obtenido",
 	})
 }

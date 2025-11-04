@@ -1,13 +1,13 @@
 package routes
 
 import (
-	"github.com/DanielChachagua/GestionCar/cmd/api/controllers"
-	"github.com/DanielChachagua/GestionCar/cmd/api/middleware"
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/controllers"
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/middleware"
 	"github.com/gofiber/fiber/v2"
 )
 
 func ProductRoutes(app *fiber.App){
-	prod := app.Group("/product", middleware.AuthMiddleware(), middleware.TenantMiddleware())
+	prod := app.Group("/product", middleware.AuthMiddleware(), middleware.PointSaleMiddleware())
 
 	prod.Get("/get_all", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
 		return ctrl.ProductGetAll(c)

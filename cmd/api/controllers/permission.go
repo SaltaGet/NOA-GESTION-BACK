@@ -14,9 +14,9 @@ import (
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.PermissionResponse}	"Members obtenidos con éxito"
-//	@Failure		400	{object}	schemas.Response										"Bad Request"
-//	@Failure		401	{object}	schemas.Response										"Auth is required"
-//	@Failure		403	{object}	schemas.Response										"Not Authorized"
+//	@Failure		400	{object}	schemas.Response									"Bad Request"
+//	@Failure		401	{object}	schemas.Response									"Auth is required"
+//	@Failure		403	{object}	schemas.Response									"Not Authorized"
 //	@Failure		500	{object}	schemas.Response
 //	@Router			/permission/get_all [get]
 func (p *PermissionController) PermissionGetAll(c *fiber.Ctx) error {
@@ -56,9 +56,9 @@ func (p *PermissionController) PermissionGetAll(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.PermissionResponse}	"Members obtenidos con éxito"
-//	@Failure		400	{object}	schemas.Response										"Bad Request"
-//	@Failure		401	{object}	schemas.Response										"Auth is required"
-//	@Failure		403	{object}	schemas.Response										"Not Authorized"
+//	@Failure		400	{object}	schemas.Response									"Bad Request"
+//	@Failure		401	{object}	schemas.Response									"Auth is required"
+//	@Failure		403	{object}	schemas.Response									"Not Authorized"
 //	@Failure		500	{object}	schemas.Response
 //	@Router			/permission/get_to_me [get]
 func (p *PermissionController) PermissionGetToMe(c *fiber.Ctx) error {

@@ -26,28 +26,19 @@ func (a *AuthLogin) Validate() error {
 	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
 }
 
-type AuthResult struct {
-	ID         string
-	FirstName  string
-	LastName   string
-	Username   string
-	IsAdmin    bool
-	Tenant     *Tenant
-	Role       *Role
-	Permissions *[]string
-}
-
 type AuthenticatedUser struct {
-	ID            string   `json:"id"`
-	FirstName     string   `json:"first_name"`
-	LastName      string   `json:"last_name"`
-	Username      string   `json:"username"`
-	IsAdmin       bool     `json:"is_admin"`
-	IsAdminTenant bool     `json:"is_admin_tenant"`
-	RoleID        *string  `json:"role_id"`
-	RoleName      *string  `json:"role_name"`
-	Permissions   []string `json:"permissions"`
-	TenantID      *string  `json:"tenant_id"`
-	TenantName    *string  `json:"tenant_name"`
-	Identifier    *string  `json:"identifier"`
+	ID               int64     `json:"id"`
+	FirstName        string    `json:"first_name"`
+	LastName         string    `json:"last_name"`
+	Username         string    `json:"username"`
+	Identifier       string    `json:"identifier"`
+	IsAdmin          bool      `json:"is_admin"`
+	IsAdminTenant    bool      `json:"is_admin_tenant"`
+	MemberID         *int64    `json:"member_id,omitempty"`
+	RoleID           *int64    `json:"role_id,omitempty"`
+	RoleName         *string   `json:"role_name,omitempty"`
+	Permissions      *[]string `json:"permissions,omitempty"`
+	TenantID         *int64    `json:"tenant_id,omitempty"`
+	TenantName       *string   `json:"tenant_name,omitempty"`
+	TenantIdentifier *string   `json:"tenant_identifier,omitempty"`
 }

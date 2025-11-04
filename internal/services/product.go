@@ -3,10 +3,10 @@ package services
 import (
 	"fmt"
 
-	"github.com/DanielChachagua/GestionCar/pkg/models"
+"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
-func (p *ProductService) ProductGetByID(id string) (*models.Product, error) {
+func (p *ProductService) ProductGetByID(id string) (*schemas.Product, error) {
 	product, err := p.ProductRepository.ProductGetByID(id)
 	if err != nil {
 		return nil, err
@@ -14,7 +14,7 @@ func (p *ProductService) ProductGetByID(id string) (*models.Product, error) {
 	return product, nil
 }
 
-func (p *ProductService) ProductGetByIdentifier(identifier string) (*[]models.Product, error) {
+func (p *ProductService) ProductGetByIdentifier(identifier string) (*[]schemas.Product, error) {
 	product, err := p.ProductRepository.ProductGetByIdentifier(identifier)
 	if err != nil {
 		return nil, err
@@ -22,7 +22,7 @@ func (p *ProductService) ProductGetByIdentifier(identifier string) (*[]models.Pr
 	return product, nil
 }
 
-func (p *ProductService) ProductGetAll() (*[]models.Product, error) {
+func (p *ProductService) ProductGetAll() (*[]schemas.Product, error) {
 	products, err := p.ProductRepository.ProductGetAll()
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (p *ProductService) ProductGetAll() (*[]models.Product, error) {
 	return products, nil
 }
 
-func (p *ProductService) ProductGetByName(name string) (*[]models.Product, error) {
+func (p *ProductService) ProductGetByName(name string) (*[]schemas.Product, error) {
 	products, err := p.ProductRepository.ProductGetByName(name)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func (p *ProductService) ProductGetByName(name string) (*[]models.Product, error
 	return products, nil
 }
 
-func (p *ProductService) ProductCreate(product *models.ProductCreate) (string, error) {
+func (p *ProductService) ProductCreate(product *schemas.ProductCreate) (string, error) {
 	id, err := p.ProductRepository.ProductCreate(product)
 	if err != nil {
 		return "", err
@@ -46,7 +46,7 @@ func (p *ProductService) ProductCreate(product *models.ProductCreate) (string, e
 	return id, nil
 }
 
-func (p *ProductService) ProductUpdate(product *models.ProductUpdate) error {
+func (p *ProductService) ProductUpdate(product *schemas.ProductUpdate) error {
 	err := p.ProductRepository.ProductUpdate(product)
 	if err != nil {
 		return err
@@ -54,7 +54,7 @@ func (p *ProductService) ProductUpdate(product *models.ProductUpdate) error {
 	return nil
 }
 
-func (p *ProductService) ProductUpdateStock(stock *models.StockUpdate) error {
+func (p *ProductService) ProductUpdateStock(stock *schemas.StockUpdate) error {
 	product, err := p.ProductRepository.ProductGetByID(stock.ID)
 	if err != nil {
 		return err
@@ -62,25 +62,25 @@ func (p *ProductService) ProductUpdateStock(stock *models.StockUpdate) error {
 	switch stock.Method {
 	case "update":
 		if stock.Stock < 0 {
-			return models.ErrorResponse(400, "El stock no puede ser negativo", fmt.Errorf("el stock no puede ser negativo"))
+			return schemas.ErrorResponse(400, "El stock no puede ser negativo", fmt.Errorf("el stock no puede ser negativo"))
 		}
 		return p.ProductRepository.UpdateStock(stock)
 	case "add":
 		if stock.Stock <= 0{
-			return models.ErrorResponse(400, "El stock debe ser mayor a 0", fmt.Errorf("el stock debe ser mayor a 0"))
+			return schemas.ErrorResponse(400, "El stock debe ser mayor a 0", fmt.Errorf("el stock debe ser mayor a 0"))
 		}
 		return p.ProductRepository.AddToStock(stock)
 	case "subtract":
 		if stock.Stock <= 0{
-			return models.ErrorResponse(400, "El stock debe ser mayor a 0", fmt.Errorf("el stock debe ser mayor a 0"))
+			return schemas.ErrorResponse(400, "El stock debe ser mayor a 0", fmt.Errorf("el stock debe ser mayor a 0"))
 		}
 		if product != nil && product.Stock < stock.Stock {
-			return models.ErrorResponse(400, "El stock no puede ser negativo", fmt.Errorf("el stock no puede ser negativo"))
+			return schemas.ErrorResponse(400, "El stock no puede ser negativo", fmt.Errorf("el stock no puede ser negativo"))
 		}
 		return p.ProductRepository.SubtractFromStockToStock(stock)
 	
 	default:
-		return models.ErrorResponse(500, "Método de actualización no soportado", err)
+		return schemas.ErrorResponse(500, "Método de actualización no soportado", err)
 	}
 }
 

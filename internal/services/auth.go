@@ -1,39 +1,49 @@
 package services
 
 import (
-	"github.com/DanielChachagua/GestionCar/pkg/models"
-	"github.com/DanielChachagua/GestionCar/pkg/utils"
+	"fmt"
+
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 )
 
 func (a *AuthService) AuthLogin(username, password string) (string, error) {
-	var authResult models.AuthResult
 	userName, identifier := utils.ParseUsername(username)
-	if identifier != "" {
-		tenant, err := a.TenantService.TenantGetByIdentifier(identifier)
-		if err != nil {
-			return "", err
-		}
 
-		connection, err := utils.Decrypt(tenant.Connection)
-		if err != nil {
-			return "", err
-		}
-
-		authResultPtr, err := a.AuthRepository.AuthLogin(username, password, connection)
-		if err != nil {
-			return "", err
-		}
-		authResult = *authResultPtr
-		authResult.Tenant = tenant
-	} else {
-			authResultPtr, err := a.AuthRepository.AuthLogin(userName, password, "")
-		if err != nil {
-			return "", err
-		}
-		authResult = *authResultPtr
+	user, err := a.AuthRepository.AuthUserGetByUsername(userName)
+	if err != nil {
+		return "", err
 	}
 
-	token, err := utils.GenerateToken(&authResult)
+	if !utils.CheckPasswordHash(password, user.Password) {
+		return "", schemas.ErrorResponse(401, "Credenciales incorrectas", fmt.Errorf("credenciales incorrectas"))
+	}
+
+	if user.IsAdmin {
+		token, err := utils.GenerateToken(user.ID, nil, nil, nil)
+		if err != nil {
+			return "", err
+		}
+		return token, nil
+	}
+
+	tenant, err := a.AuthRepository.AuthTenantGetByIdentifier(identifier)
+	if err != nil {
+		return "", err
+	}
+
+	connection, err := utils.Decrypt(tenant.Connection)
+	if err != nil {
+		return "", err
+	}
+
+	member, _, err := a.AuthRepository.AuthMemberGetByID(user.ID, connection, tenant.ID)
+	if err != nil {
+		return "", err
+	}
+
+	token, err := utils.GenerateToken(user.ID, &tenant.ID, &member.ID, nil)
 	if err != nil {
 		return "", err
 	}
@@ -41,22 +51,23 @@ func (a *AuthService) AuthLogin(username, password string) (string, error) {
 	return token, nil
 }
 
-func (a *AuthService) AuthGetTenant(user *models.AuthenticatedUser, tenantID string) (string, error) {
-	tenant, err := a.AuthRepository.AuthGetTenant(user.ID, tenantID)
+func (a *AuthService) AuthPointSale(user *schemas.AuthenticatedUser, pointSaleID int64) (string, error) {
+	tenant, err := a.AuthRepository.AuthTenantGetByIdentifier(*user.TenantIdentifier)
 	if err != nil {
 		return "", err
 	}
 
-	token, err := utils.GenerateToken(&models.AuthResult{
-		ID:         user.ID,
-		FirstName:  user.FirstName,
-		LastName:   user.LastName,
-		Username:   user.Username,
-		IsAdmin:    user.IsAdminTenant,
-		Tenant:     tenant,
-		Role:       nil,
-		Permissions: nil,
-	})
+	connection, err := utils.Decrypt(tenant.Connection)
+	if err != nil {
+		return "", err
+	}
+
+	pointSale, err := a.AuthRepository.AuthPointSale(user.ID, connection, tenant.ID)
+	if err != nil {
+		return "", err
+	}
+
+	token, err := utils.GenerateToken(user.ID, &tenant.ID, user.MemberID, &pointSale.ID)
 	if err != nil {
 		return "", err
 	}
@@ -64,65 +75,58 @@ func (a *AuthService) AuthGetTenant(user *models.AuthenticatedUser, tenantID str
 	return token, nil
 }
 
-func (a *AuthService) CurrentUser(userID string) (*models.User, error) {
-	user, err := a.AuthRepository.CurrentUser(userID)
+func (a *AuthService) AuthCurrentUser(userID, tenantID, memberID, pointSaleID int64) (*schemas.AuthenticatedUser, error) {
+	user, err := a.AuthRepository.AuthUserGetByID(userID)
 	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	authUser := schemas.AuthenticatedUser{
+		ID:            user.ID,
+		FirstName:     user.FirstName,
+		LastName:      user.LastName,
+		Username:      user.Username,
+		IsAdmin:       user.IsAdmin,
+		IsAdminTenant: user.IsAdminTenant,
+	}
+
+	if user.IsAdmin {
+		return &authUser, nil
+	}
+
+	// if tenantID == -1 || memberID == -1 || pointSaleID == -1 {
+	// 	return nil, schemas.ErrorResponse(401, "Credenciales incorrectas", fmt.Errorf("credenciales incorrectas"))
+	// }
+
+	var tenant *models.Tenant
+	var member *models.Member
+	var permissions *[]string
+
+	if tenantID != -1 {
+		tenant, err = a.AuthRepository.AuthTenantGetByID(tenantID)
+		if err != nil {
+			return nil, err
+		}
+		// connection, err := utils.Decrypt(tenant.Connection)
+		// if err != nil {
+		// 	return nil, err
+		// }
+
+		if memberID == -1 {
+			member, permissions, err = a.AuthRepository.AuthMemberGetByID(userID, tenant.Connection, tenantID)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	authUser.MemberID = &member.ID
+	authUser.RoleID = &member.Role.ID
+	authUser.RoleName = &member.Role.Name
+	authUser.Permissions = permissions
+	authUser.TenantID = &tenant.ID
+	authUser.TenantName = &tenant.Name
+	authUser.TenantIdentifier = &tenant.Identifier
+
+	return &authUser, nil
 }
-
-// func (a *AuthService) AuthWorkplace(id string) (string, error) {
-// 	workplace, err := repositories.Repo.GetWorkplaceByID(id)
-// 	if err != nil {
-// 		if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			return "", models.ErrorResponse(404, "Lugar de trabajo no encontrado", err)
-// 		}
-// 		return "", models.ErrorResponse(500, "Error al buscar lugar de trabajo", err)
-// 	}
-
-// 	token, err := utils.GenerateWorkplaceToken(workplace)
-
-// 	if err != nil {
-// 		return "", models.ErrorResponse(500, "Error al generar token", err)
-// 	}
-
-// 	return token, nil
-// }
-
-// func (a *AuthService) CurrentUser(userId string) (*models.User, error) {
-// 	user, err := a.UserRepository.UserGetByID(userId)
-// 	if err != nil {
-// 		if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			return nil, models.ErrorResponse(404, "Usuario no encontrado", err)
-// 		}
-// 		return nil, models.ErrorResponse(500, "Error al buscar usuario", err)
-// 	}
-
-// 	return user, nil
-// }
-
-// func (a *AuthService) CurrentWorkplace(workplaceId string) (*models.Workplace, error) {
-// 	workplace, err := repositories.Repo.GetWorkplaceByID(workplaceId)
-// 	if err != nil {
-// 		if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			return nil, models.ErrorResponse(404, "Usuario no encontrado", err)
-// 		}
-// 		return nil, models.ErrorResponse(500, "Error al buscar usuario", err)
-// 	}
-
-// 	return workplace, nil
-// }
-
-// func GetWorkplaceByRole(role string) (*models.Workplace, error) {
-// 	workplace, err := repositories.Repo.GetWorkplaceByRole(role)
-// 	if err != nil {
-// 		if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			return nil, models.ErrorResponse(404, "Rol no encontrado", err)
-// 		}
-// 		return nil, models.ErrorResponse(500, "Error al buscar rol", err)
-// 	}
-
-// 	return workplace, nil
-// }

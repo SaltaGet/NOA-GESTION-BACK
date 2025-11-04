@@ -18,11 +18,11 @@ import (
 //	@Security		BearerAuth
 //	@Param			id	path		string										true	"ID of the movement type"
 //	@Success		200	{object}	schemas.Response{body=schemas.MovementType}	"Movement type details"
-//	@Failure		400	{object}	schemas.Response								"Bad Request"
-//	@Failure		401	{object}	schemas.Response								"Auth is required"
-//	@Failure		403	{object}	schemas.Response								"Not Authorized"
-//	@Failure		404	{object}	schemas.Response								"Expense not found"
-//	@Failure		500	{object}	schemas.Response								"Internal server error"
+//	@Failure		400	{object}	schemas.Response							"Bad Request"
+//	@Failure		401	{object}	schemas.Response							"Auth is required"
+//	@Failure		403	{object}	schemas.Response							"Not Authorized"
+//	@Failure		404	{object}	schemas.Response							"Expense not found"
+//	@Failure		500	{object}	schemas.Response							"Internal server error"
 //	@Router			/movement/{id} [get]
 func (m *MovementTypeController) GetMovementTypeByID(c *fiber.Ctx) error {
 	logging.INFO("Obtener un movimiento por ID")
@@ -69,7 +69,7 @@ func (m *MovementTypeController) GetMovementTypeByID(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			isIncome	query		bool										true	"Is income movement type"
+//	@Param			isIncome	query		bool											true	"Is income movement type"
 //	@Success		200			{object}	schemas.Response{body=[]schemas.MovementType}	"List of movement types"
 //	@Failure		400			{object}	schemas.Response								"Bad Request"
 //	@Failure		401			{object}	schemas.Response								"Auth is required"
@@ -130,12 +130,12 @@ func (m *MovementTypeController) GetAllMovementTypes(c *fiber.Ctx) error {
 //	@Security		BearerAuth
 //	@Param			movementType	body		schemas.MovementTypeCreate		true	"Movement Type Details"
 //	@Success		200				{object}	schemas.Response{body=string}	"Movement created successfully"
-//	@Failure		400				{object}	schemas.Response					"Bad Request"
-//	@Failure		401				{object}	schemas.Response					"Auth is required"
-//	@Failure		403				{object}	schemas.Response					"Not Authorized"
-//	@Failure		404				{object}	schemas.Response					"Expense not found"
-//	@Failure		422				{object}	schemas.Response					"Model invalid"
-//	@Failure		500				{object}	schemas.Response					"Internal server error"
+//	@Failure		400				{object}	schemas.Response				"Bad Request"
+//	@Failure		401				{object}	schemas.Response				"Auth is required"
+//	@Failure		403				{object}	schemas.Response				"Not Authorized"
+//	@Failure		404				{object}	schemas.Response				"Expense not found"
+//	@Failure		422				{object}	schemas.Response				"Model invalid"
+//	@Failure		500				{object}	schemas.Response				"Internal server error"
 //	@Router			/movement/create [post]
 func (m *MovementTypeController) MovementTypeCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear un movimiento")
@@ -191,13 +191,13 @@ func (m *MovementTypeController) MovementTypeCreate(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Param			movementType	body		schemas.MovementTypeUpdate	true	"Movement Type Details"
-//	@Success		200				{object}	schemas.Response				"Movement updated successfully"
-//	@Failure		400				{object}	schemas.Response				"Bad Request"
-//	@Failure		401				{object}	schemas.Response				"Auth is required"
-//	@Failure		403				{object}	schemas.Response				"Not Authorized"
-//	@Failure		404				{object}	schemas.Response				"Expense not found"
-//	@Failure		422				{object}	schemas.Response				"Model invalid"
-//	@Failure		500				{object}	schemas.Response				"Internal server error"
+//	@Success		200				{object}	schemas.Response			"Movement updated successfully"
+//	@Failure		400				{object}	schemas.Response			"Bad Request"
+//	@Failure		401				{object}	schemas.Response			"Auth is required"
+//	@Failure		403				{object}	schemas.Response			"Not Authorized"
+//	@Failure		404				{object}	schemas.Response			"Expense not found"
+//	@Failure		422				{object}	schemas.Response			"Model invalid"
+//	@Failure		500				{object}	schemas.Response			"Internal server error"
 //	@Router			/movement/update [put]
 func (m *MovementTypeController) MovementTypeUpdate(c *fiber.Ctx) error {
 	logging.INFO("Actualizar un movimiento")
@@ -252,7 +252,7 @@ func (m *MovementTypeController) MovementTypeUpdate(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			id	path		string			true	"ID of the movement type"
+//	@Param			id	path		string				true	"ID of the movement type"
 //	@Success		200	{object}	schemas.Response	"Movement type deleted successfully"
 //	@Failure		400	{object}	schemas.Response	"Bad Request"
 //	@Failure		401	{object}	schemas.Response	"Auth is required"

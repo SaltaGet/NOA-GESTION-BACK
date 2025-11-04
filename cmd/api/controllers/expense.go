@@ -17,10 +17,10 @@ import (
 //	@Security		BearerAuth
 //	@Param			id	path		string											true	"ID of Expense"
 //	@Success		200	{object}	schemas.Response{body=schemas.ExpenseResponse}	"Expense obtained successfully"
-//	@Failure		400	{object}	schemas.Response									"Bad Request"
-//	@Failure		401	{object}	schemas.Response									"Auth is required"
-//	@Failure		403	{object}	schemas.Response									"Not Authorized"
-//	@Failure		404	{object}	schemas.Response									"Expense not found"
+//	@Failure		400	{object}	schemas.Response								"Bad Request"
+//	@Failure		401	{object}	schemas.Response								"Auth is required"
+//	@Failure		403	{object}	schemas.Response								"Not Authorized"
+//	@Failure		404	{object}	schemas.Response								"Expense not found"
 //	@Failure		500	{object}	schemas.Response
 //	@Router			/expense/{id} [get]
 func (e *ExpenseController) GetExpenseByID(c *fiber.Ctx) error {
@@ -71,10 +71,10 @@ func (e *ExpenseController) GetExpenseByID(c *fiber.Ctx) error {
 //	@Param			page	query		int											false	"Page number"				default(1)
 //	@Param			limit	query		int											false	"Number of items per page"	default(20)
 //	@Success		200		{object}	schemas.Response{body=[]schemas.ExpenseDTO}	"List of expenses"
-//	@Failure		400		{object}	schemas.Response								"Bad Request"
-//	@Failure		401		{object}	schemas.Response								"Auth is required"
-//	@Failure		403		{object}	schemas.Response								"Not Authorized"
-//	@Failure		500		{object}	schemas.Response								"Internal server error"
+//	@Failure		400		{object}	schemas.Response							"Bad Request"
+//	@Failure		401		{object}	schemas.Response							"Auth is required"
+//	@Failure		403		{object}	schemas.Response							"Not Authorized"
+//	@Failure		500		{object}	schemas.Response							"Internal server error"
 //	@Router			/expense/get_all [get]
 func (e *ExpenseController) GetAllExpenses(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los egresos")
@@ -126,10 +126,10 @@ func (e *ExpenseController) GetAllExpenses(c *fiber.Ctx) error {
 //	@Param			page	query		int											false	"Page number"				default(1)
 //	@Param			limit	query		int											false	"Number of items per page"	default(20)
 //	@Success		200		{object}	schemas.Response{body=[]schemas.ExpenseDTO}	"List of expenses"
-//	@Failure		400		{object}	schemas.Response								"Bad Request"
-//	@Failure		401		{object}	schemas.Response								"Auth is required"
-//	@Failure		403		{object}	schemas.Response								"Not Authorized"
-//	@Failure		500		{object}	schemas.Response								"Internal server error"
+//	@Failure		400		{object}	schemas.Response							"Bad Request"
+//	@Failure		401		{object}	schemas.Response							"Auth is required"
+//	@Failure		403		{object}	schemas.Response							"Not Authorized"
+//	@Failure		500		{object}	schemas.Response							"Internal server error"
 //	@Router			/expense/get_today [get]
 func (e *ExpenseController) GetExpenseToday(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los egresos de hoy")
@@ -180,11 +180,11 @@ func (e *ExpenseController) GetExpenseToday(c *fiber.Ctx) error {
 //	@Security		BearerAuth
 //	@Param			expenseCreate	body		schemas.ExpenseCreate			true	"Expense information"
 //	@Success		200				{object}	schemas.Response{body=string}	"Expense created successfully"
-//	@Failure		400				{object}	schemas.Response					"Bad Request"
-//	@Failure		401				{object}	schemas.Response					"Auth is required"
-//	@Failure		403				{object}	schemas.Response					"Not Authorized"
-//	@Failure		422				{object}	schemas.Response					"Model Invalid"
-//	@Failure		500				{object}	schemas.Response					"Internal server error"
+//	@Failure		400				{object}	schemas.Response				"Bad Request"
+//	@Failure		401				{object}	schemas.Response				"Auth is required"
+//	@Failure		403				{object}	schemas.Response				"Not Authorized"
+//	@Failure		422				{object}	schemas.Response				"Model Invalid"
+//	@Failure		500				{object}	schemas.Response				"Internal server error"
 //	@Router			/expense/create [post]
 func (e *ExpenseController) CreateExpense(c *fiber.Ctx) error {
 	logging.INFO("Crear un egreso")
@@ -240,12 +240,12 @@ func (e *ExpenseController) CreateExpense(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Param			expenseUpdate	body		schemas.ExpenseUpdate	true	"Expense data to update"
-//	@Success		200				{object}	schemas.Response			"Expense updated successfully"
-//	@Failure		400				{object}	schemas.Response			"Bad Request"
-//	@Failure		401				{object}	schemas.Response			"Auth is required"
-//	@Failure		403				{object}	schemas.Response			"Not Authorized"
-//	@Failure		422				{object}	schemas.Response			"Model Invalid"
-//	@Failure		500				{object}	schemas.Response			"Internal server error"
+//	@Success		200				{object}	schemas.Response		"Expense updated successfully"
+//	@Failure		400				{object}	schemas.Response		"Bad Request"
+//	@Failure		401				{object}	schemas.Response		"Auth is required"
+//	@Failure		403				{object}	schemas.Response		"Not Authorized"
+//	@Failure		422				{object}	schemas.Response		"Model Invalid"
+//	@Failure		500				{object}	schemas.Response		"Internal server error"
 //	@Router			/expense/update [put]
 func (e *ExpenseController) UpdateExpense(c *fiber.Ctx) error {
 	logging.INFO("Actualizar un egreso")
@@ -300,7 +300,7 @@ func (e *ExpenseController) UpdateExpense(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			id	path		string			true	"ID of the expense"
+//	@Param			id	path		string				true	"ID of the expense"
 //	@Success		200	{object}	schemas.Response	"Expense deleted successfully"
 //	@Failure		400	{object}	schemas.Response	"Bad Request"
 //	@Failure		401	{object}	schemas.Response	"Auth is required"

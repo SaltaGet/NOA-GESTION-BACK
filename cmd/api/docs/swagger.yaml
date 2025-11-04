@@ -1,15 +1,2866 @@
+definitions:
+  schemas.AuthLogin:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  schemas.Client:
+    properties:
+      created_at:
+        type: string
+      cuil:
+        type: string
+      dni:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  schemas.ClientCreate:
+    properties:
+      cuil:
+        type: string
+      dni:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+    required:
+    - cuil
+    - email
+    - first_name
+    - last_name
+    type: object
+  schemas.ClientDTO:
+    properties:
+      first_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+    type: object
+  schemas.ClientResponse:
+    properties:
+      cuil:
+        type: string
+      dni:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+    type: object
+  schemas.ClientUpdate:
+    properties:
+      cuil:
+        type: string
+      dni:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+    required:
+    - cuil
+    - email
+    - first_name
+    - id
+    - last_name
+    type: object
+  schemas.ExpenseCreate:
+    properties:
+      amount:
+        type: number
+      details:
+        type: string
+      movement_type_id:
+        type: string
+      purchase_order_id:
+        type: string
+    required:
+    - amount
+    - details
+    - movement_type_id
+    type: object
+  schemas.ExpenseDTO:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: string
+      movement_type:
+        $ref: '#/definitions/schemas.MovementTypeDTO'
+    type: object
+  schemas.ExpenseResponse:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      details:
+        type: string
+      id:
+        type: string
+      movement_type:
+        $ref: '#/definitions/schemas.MovementTypeDTO'
+    type: object
+  schemas.ExpenseUpdate:
+    properties:
+      amount:
+        type: number
+      details:
+        type: string
+      id:
+        type: string
+      movement_type_id:
+        type: string
+      purchase_order_id:
+        type: string
+    required:
+    - amount
+    - details
+    - movement_type_id
+    type: object
+  schemas.IncomeCreate:
+    properties:
+      amount:
+        type: number
+      client_id:
+        type: string
+      details:
+        type: string
+      employee_id:
+        type: string
+      movement_type_id:
+        type: string
+      services_id:
+        items:
+          type: string
+        type: array
+      ticket:
+        type: string
+      vehicle_id:
+        type: string
+    required:
+    - amount
+    - client_id
+    - movement_type_id
+    - services_id
+    - vehicle_id
+    type: object
+  schemas.IncomeDTO:
+    properties:
+      amount:
+        type: number
+      client:
+        $ref: '#/definitions/schemas.ClientDTO'
+      created_at:
+        type: string
+      id:
+        type: string
+      movement_type:
+        $ref: '#/definitions/schemas.MovementTypeDTO'
+      ticket:
+        type: string
+    type: object
+  schemas.IncomeResponse:
+    properties:
+      amount:
+        type: number
+      client:
+        $ref: '#/definitions/schemas.ClientResponse'
+      created_at:
+        type: string
+      details:
+        type: string
+      id:
+        type: string
+      movement_type:
+        $ref: '#/definitions/schemas.MovementTypeDTO'
+      ticket:
+        type: string
+    type: object
+  schemas.IncomeUpdate:
+    properties:
+      amount:
+        type: number
+      client_id:
+        type: string
+      details:
+        type: string
+      employee_id:
+        type: string
+      id:
+        type: string
+      movement_type_id:
+        type: string
+      services_id:
+        items:
+          type: string
+        type: array
+      ticket:
+        type: string
+      vehicle_id:
+        type: string
+    required:
+    - amount
+    - client_id
+    - movement_type_id
+    - services_id
+    - ticket
+    - vehicle_id
+    type: object
+  schemas.MemberCreate:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      role_id:
+        type: string
+      username:
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - role_id
+    - username
+    type: object
+  schemas.MemberDTO:
+    properties:
+      createdAt:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      last_name:
+        type: string
+      role_id:
+        $ref: '#/definitions/schemas.RoleDTO'
+      username:
+        type: string
+    type: object
+  schemas.MemberResponse:
+    properties:
+      createdAt:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      last_name:
+        type: string
+      role_id:
+        $ref: '#/definitions/schemas.Role'
+      username:
+        type: string
+    type: object
+  schemas.MovementType:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      is_income:
+        type: boolean
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  schemas.MovementTypeCreate:
+    properties:
+      is_income:
+        type: boolean
+      name:
+        type: string
+    type: object
+  schemas.MovementTypeDTO:
+    properties:
+      id:
+        type: string
+      is_income:
+        type: boolean
+      name:
+        type: string
+    type: object
+  schemas.MovementTypeUpdate:
+    properties:
+      id:
+        type: string
+      is_income:
+        type: boolean
+      name:
+        type: string
+    type: object
+  schemas.Permission:
+    properties:
+      code:
+        type: string
+      details:
+        type: string
+      group:
+        type: string
+      id:
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/schemas.Role'
+        type: array
+    type: object
+  schemas.PermissionResponse:
+    properties:
+      code:
+        type: string
+      details:
+        type: string
+      group:
+        type: string
+      id:
+        type: string
+    type: object
+  schemas.Product:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      identifier:
+        type: string
+      name:
+        type: string
+      stock:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  schemas.ProductCreate:
+    properties:
+      identifier:
+        type: string
+      name:
+        type: string
+    required:
+    - identifier
+    - name
+    type: object
+  schemas.ProductUpdate:
+    properties:
+      id:
+        type: string
+      identifier:
+        type: string
+      name:
+        type: string
+    required:
+    - id
+    - name
+    type: object
+  schemas.Response:
+    properties:
+      body: {}
+      message:
+        type: string
+      status:
+        type: boolean
+    type: object
+  schemas.Role:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      permissions:
+        items:
+          $ref: '#/definitions/schemas.Permission'
+        type: array
+    type: object
+  schemas.RoleCreate:
+    properties:
+      name:
+        type: string
+      permissions_id:
+        items:
+          type: string
+        type: array
+    required:
+    - name
+    - permissions_id
+    type: object
+  schemas.RoleDTO:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  schemas.RoleResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      permissions:
+        items:
+          $ref: '#/definitions/schemas.PermissionResponse'
+        type: array
+    type: object
+  schemas.StockUpdate:
+    properties:
+      id:
+        type: string
+      method:
+        enum:
+        - add
+        - subtract
+        - update
+        type: string
+      stock:
+        type: number
+    required:
+    - id
+    - method
+    - stock
+    type: object
+  schemas.Supplier:
+    properties:
+      address:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  schemas.SupplierCreate:
+    properties:
+      address:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+    required:
+    - name
+    type: object
+  schemas.SupplierUpdate:
+    properties:
+      address:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+    required:
+    - id
+    - name
+    type: object
+  schemas.TenantCreate:
+    properties:
+      address:
+        type: string
+      cuit_pdv:
+        type: string
+      email:
+        type: string
+      identifier:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+    required:
+    - address
+    - cuit_pdv
+    - email
+    - identifier
+    - name
+    - phone
+    type: object
+  schemas.TenantResponse:
+    properties:
+      address:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      phone:
+        type: string
+      updated_at:
+        type: string
+      user_is_active:
+        type: boolean
+    type: object
+  schemas.TenantUserCreate:
+    properties:
+      tenant_create:
+        $ref: '#/definitions/schemas.TenantCreate'
+      user_create:
+        $ref: '#/definitions/schemas.UserCreate'
+    required:
+    - tenant_create
+    - user_create
+    type: object
+  schemas.UserCreate:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    - username
+    type: object
 info:
   contact: {}
   description: This is a api to app noa gestion
   termsOfService: http://swagger.io/terms/
   title: APP NOA Gestion
   version: "1.0"
-paths: {}
+paths:
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login user required identifier and password
+      parameters:
+      - description: Credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.AuthLogin'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      summary: Login user
+      tags:
+      - Auth
+  /api/v1/auth/tenant_login/{tenant_id}:
+    post:
+      consumes:
+      - application/json
+      description: Login tenant required tenant_id
+      parameters:
+      - description: tenant_id
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: Login Tenant
+      tags:
+      - Auth
+  /client/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get client by id
+      parameters:
+      - description: Id del cliente
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.Client'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get client by id
+      tags:
+      - Client
+  /client/create:
+    post:
+      consumes:
+      - application/json
+      description: Create client
+      parameters:
+      - description: Información del cliente
+        in: body
+        name: clientCreate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.ClientCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Create client
+      tags:
+      - Client
+  /client/delete/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete client by ID
+      parameters:
+      - description: Id del cliente
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.Client'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete client by ID
+      tags:
+      - Client
+  /client/get_all:
+    get:
+      consumes:
+      - application/json
+      description: Get All Clients
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.Client'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get All Clients
+      tags:
+      - Client
+  /client/get_by_name:
+    get:
+      consumes:
+      - application/json
+      description: Get Client By Name
+      parameters:
+      - description: Name
+        in: query
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.Client'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get Client By Name
+      tags:
+      - Client
+  /client/update:
+    put:
+      consumes:
+      - application/json
+      description: Actualizar un cliente
+      parameters:
+      - description: Cliente a actualizar
+        in: body
+        name: ClientUpdate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.ClientUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Actualizar un cliente
+      tags:
+      - Client
+  /expense/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get Expense By ID
+      parameters:
+      - description: ID of Expense
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Expense obtained successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.ExpenseResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Expense not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get Expense By ID
+      tags:
+      - Expense
+  /expense/create:
+    post:
+      consumes:
+      - application/json
+      description: Parses the request body to create a new expense entry.
+      parameters:
+      - description: Expense information
+        in: body
+        name: expenseCreate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.ExpenseCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Expense created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Model Invalid
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Create Expense
+      tags:
+      - Expense
+  /expense/delete/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes an expense based on the provided ID and workplace context.
+      parameters:
+      - description: ID of the expense
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Expense deleted successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete Expense
+      tags:
+      - Expense
+  /expense/get_all:
+    get:
+      consumes:
+      - application/json
+      description: Fetches all expenses from the specified tenant.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of expenses
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.ExpenseDTO'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all expenses
+      tags:
+      - Expense
+  /expense/get_today:
+    get:
+      consumes:
+      - application/json
+      description: Fetches all expenses from the specified tenant, on the current
+        day.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of expenses
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.ExpenseDTO'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get expense today
+      tags:
+      - Expense
+  /expense/update:
+    put:
+      consumes:
+      - application/json
+      description: Updates the details of an expense based on the provided data.
+      parameters:
+      - description: Expense data to update
+        in: body
+        name: expenseUpdate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.ExpenseUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Expense updated successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Model Invalid
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Update Expense
+      tags:
+      - Expense
+  /income/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Fetches income details from based on the provided ID and tenant
+        context.
+      parameters:
+      - description: ID of the income
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Income details fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.IncomeResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Expense not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get Income By ID
+      tags:
+      - Income
+  /income/create:
+    post:
+      consumes:
+      - application/json
+      description: Parses the request body to create a new income entry for either
+        laundry or workshop.
+      parameters:
+      - description: Income information
+        in: body
+        name: incomeCreate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.IncomeCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Income created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Expense not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Model Invalid
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Create Income
+      tags:
+      - Income
+  /income/delete/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes an income entry based on the provided ID and workplace
+        context.
+      parameters:
+      - description: ID of the income
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Income deleted successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Expense not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Error interno
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete Income
+      tags:
+      - Income
+  /income/get_all:
+    get:
+      consumes:
+      - application/json
+      description: Fetches all incomes from the specified tenant.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of incomes
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.IncomeDTO'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Expense not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all incomes
+      tags:
+      - Income
+  /income/get_today:
+    get:
+      consumes:
+      - application/json
+      description: Fetches all incomes from the specified tenant, on the current day.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of all incomes
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.IncomeDTO'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Expense not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get Income Today
+      tags:
+      - Income
+  /income/update:
+    put:
+      consumes:
+      - application/json
+      description: Updates the details of an income based on the provided data.
+      parameters:
+      - description: Income data to update
+        in: body
+        name: incomeUpdate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.IncomeUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Income updated successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Expense not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Model Invalid
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Update Income
+      tags:
+      - Income
+  /member/create:
+    post:
+      consumes:
+      - application/json
+      description: Memeber Create required auth token
+      parameters:
+      - description: MemberCreate
+        in: body
+        name: member_create
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.MemberCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Members obtenidos con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Memeber Create
+      tags:
+      - Member
+  /member/get/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Memeber GetAll required auth token
+      parameters:
+      - description: Member ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Members obtenidos con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.MemberResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Memeber GetAll
+      tags:
+      - Member
+  /member/get_all:
+    get:
+      consumes:
+      - application/json
+      description: Memeber GetAll required auth token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Members obtenidos con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.MemberDTO'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Memeber GetAll
+      tags:
+      - Member
+  /movement/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get Movement Type By ID
+      parameters:
+      - description: ID of the movement type
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Movement type details
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.MovementType'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Expense not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get Movement Type By ID
+      tags:
+      - Movement
+  /movement/create:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates a new movement type based on the provided
+        JSON payload.
+      parameters:
+      - description: Movement Type Details
+        in: body
+        name: movementType
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.MovementTypeCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Movement created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Expense not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Model invalid
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Create Movement Type
+      tags:
+      - Movement
+  /movement/delete/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a movement type based on its ID.
+      parameters:
+      - description: ID of the movement type
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Movement type deleted successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Expense not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete Movement Type
+      tags:
+      - Movement
+  /movement/get_all:
+    get:
+      consumes:
+      - application/json
+      description: Get all movement types from either laundry or workshop based on
+        the provided isIncome query parameter.
+      parameters:
+      - description: Is income movement type
+        in: query
+        name: isIncome
+        required: true
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of movement types
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.MovementType'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Expense not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all movement types
+      tags:
+      - Movement
+  /movement/update:
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates a movement type based on the provided JSON
+        payload.
+      parameters:
+      - description: Movement Type Details
+        in: body
+        name: movementType
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.MovementTypeUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Movement updated successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Expense not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Model invalid
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Update Movement Type
+      tags:
+      - Movement
+  /permission/get_all:
+    get:
+      consumes:
+      - application/json
+      description: Permissions GetAll required auth token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Members obtenidos con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.PermissionResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Permissions GetAll
+      tags:
+      - Permission
+  /permission/get_to_me:
+    get:
+      consumes:
+      - application/json
+      description: Permissions GetAllToMe required auth token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Members obtenidos con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.PermissionResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Permissions GetAlltoME
+      tags:
+      - Permission
+  /product/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a product or part by its ID within a specified workplace.
+      parameters:
+      - description: ID of the product
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product obtained with success
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.Product'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Expense not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get Product By ID
+      tags:
+      - Product
+  /product/create:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new product in the specified workplace.
+      parameters:
+      - description: Details of the product to create
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.ProductCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product created successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Model invalid
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Create Product
+      tags:
+      - Product
+  /product/delete/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes the given product with the given id.
+      parameters:
+      - description: ID of the product
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product deleted with success
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Product not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete Product
+      tags:
+      - Product
+  /product/get_all:
+    get:
+      consumes:
+      - application/json
+      description: Get All Products
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Products obtained with success
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.Product'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get All Products
+      tags:
+      - Product
+  /product/get_by_identifier:
+    get:
+      consumes:
+      - application/json
+      description: Get Products by identifier
+      parameters:
+      - description: Identifier of product
+        in: query
+        name: identifier
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Products obtained with success
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.Product'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get Products by identifier
+      tags:
+      - Product
+  /product/get_by_name:
+    get:
+      consumes:
+      - application/json
+      description: Fetches products from either laundry or workshop based on the provided
+        name and workplace.
+      parameters:
+      - description: Name of the Product
+        in: query
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of products
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.Product'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get Product By Name
+      tags:
+      - Product
+  /product/update:
+    put:
+      consumes:
+      - application/json
+      description: Updates the given product and returns the updated product.
+      parameters:
+      - description: Product update details
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.ProductUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product updated successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Product not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Model invalid
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Update Product
+      tags:
+      - Product
+  /product/update_stock:
+    put:
+      consumes:
+      - application/json
+      description: Updates the stock of a product based on the given method (add,
+        subtract, update).
+      parameters:
+      - description: Stock update details
+        in: body
+        name: stock
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.StockUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product stock updated successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Product not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Model invalid
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Update Product Stock
+      tags:
+      - Product
+  /role/create:
+    post:
+      consumes:
+      - application/json
+      description: This function fetches roles based on the user's role and workplace
+        identifier
+      parameters:
+      - description: Role object
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.RoleCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Roles retrieved successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad request if user or workplace is missing
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error on failure
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Retrieve roles for a user in a specific workplace
+      tags:
+      - Role
+  /role/get_all:
+    get:
+      consumes:
+      - application/json
+      description: This function fetches roles based on the user's role and workplace
+        identifier
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Roles retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.RoleResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad request if user or workplace is missing
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error on failure
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Retrieve roles for a user in a specific workplace
+      tags:
+      - Role
+  /supplier/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a supplier by its ID within a specified workplace.
+      parameters:
+      - description: ID of the supplier
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Supplier obtained with success
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.Supplier'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Supplier not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get Supplier By ID
+      tags:
+      - Supplier
+  /supplier/create:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new supplier within the specified workplace.
+      parameters:
+      - description: Details of the supplier to create
+        in: body
+        name: supplier
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.SupplierCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Supplier created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Model is invalid
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Create Supplier
+      tags:
+      - Supplier
+  /supplier/delete/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a supplier based on the provided ID and workplace context.
+      parameters:
+      - description: ID of the supplier
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Supplier deleted with success
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Supplier not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete Supplier
+      tags:
+      - Supplier
+  /supplier/get_all:
+    get:
+      consumes:
+      - application/json
+      description: Get All Suppliers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Suppliers obtained with success
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.Supplier'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Get All Suppliers
+      tags:
+      - Supplier
+  /supplier/get_by_name:
+    get:
+      consumes:
+      - application/json
+      description: Fetches suppliers from either laundry or workshop based on the
+        provided name and workplace.
+      parameters:
+      - description: Name of the Supplier
+        in: query
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of suppliers
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.Supplier'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      summary: Get Supplier By Name
+      tags:
+      - Supplier
+  /supplier/update:
+    put:
+      consumes:
+      - application/json
+      description: Update a supplier's information from the specified workplace.
+      parameters:
+      - description: Supplier information
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.SupplierUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Supplier updated with success
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Supplier not found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Model is invalid
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Update Supplier
+      tags:
+      - Supplier
+  /tenant/create:
+    post:
+      consumes:
+      - application/json
+      description: Tenant Create required auth token
+      parameters:
+      - description: UserID
+        in: query
+        name: user_id
+        required: true
+        type: string
+      - description: TenantCreate
+        in: body
+        name: TenantCreate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.TenantCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tenant creado con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Tenant Create
+      tags:
+      - Tenant
+  /tenant/create_tenant_user:
+    post:
+      consumes:
+      - application/json
+      description: Tenant Create required auth token
+      parameters:
+      - description: TenantUserCreate
+        in: body
+        name: TenantUserCreate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.TenantUserCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tenant y Usuario creados con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Tenant Create
+      tags:
+      - Tenant
+  /tenant/get_all:
+    get:
+      consumes:
+      - application/json
+      description: Tenant GetAll required auth token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tenants obtenidos con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.TenantResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Tenant GetAll
+      tags:
+      - Tenant
+  /user/create:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user.
+      parameters:
+      - description: User information
+        in: body
+        name: userCreate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.UserCreate'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - BearerAuth: []
+      summary: Create User
+      tags:
+      - User
 securityDefinitions:
   BearerAuth:
     description: 'Type "Bearer" followed by a space and the JWT token. Example: "Bearer
       eyJhbGciOiJIUz..."'
-    in: header
-    name: Authorization
+    in: cookie
+    name: access_token
     type: apiKey
 swagger: "2.0"

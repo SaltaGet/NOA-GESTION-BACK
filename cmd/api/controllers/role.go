@@ -56,9 +56,9 @@ func (r *RoleController) RoleGetAll(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Param			role	body		schemas.RoleCreate	true	"Role object"
-//	@Success		200		{object}	schemas.Response		"Roles retrieved successfully"
-//	@Failure		400		{object}	schemas.Response		"Bad request if user or workplace is missing"
-//	@Failure		500		{object}	schemas.Response		"Internal server error on failure"
+//	@Success		200		{object}	schemas.Response	"Roles retrieved successfully"
+//	@Failure		400		{object}	schemas.Response	"Bad request if user or workplace is missing"
+//	@Failure		500		{object}	schemas.Response	"Internal server error on failure"
 //	@Router			/role/create [post]
 func (r *RoleController) RoleCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear rol")

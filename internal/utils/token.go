@@ -5,36 +5,58 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DanielChachagua/GestionCar/pkg/models"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func GenerateToken(result *models.AuthResult) (string, error) {
+func GenerateToken(userID int64,tenantID, memberID, pointSaleID *int64) (string, error) {
 	claims := jwt.MapClaims{
-		"id":         result.ID,
-		"first_name": result.FirstName,
-		"last_name":  result.LastName,
-		"username":   result.Username,
-		"is_admin_tenant":   result.IsAdmin,
+		"user_id":         userID,
 		"exp":        time.Now().Add(24 * time.Hour).Unix(),
 	}
 
-	if result.Tenant != nil {
-		claims["tenant_id"] = result.Tenant.ID
-		claims["tenant_name"] = result.Tenant.Name
-		claims["identifier"] = result.Tenant.Identifier
+	if tenantID != nil {
+		claims["tenant_id"] = tenantID
 	}
-	if result.Role != nil {
-		claims["role_id"] = result.Role.ID
-		claims["role_name"] = result.Role.Name
+	
+	if memberID != nil {
+		claims["member_id"] = memberID
 	}
-	if result.Permissions != nil {
-		claims["permissions"] = *result.Permissions
+
+	if pointSaleID != nil {
+		claims["point_sale_id"] = pointSaleID
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(os.Getenv("SECRET_KEY")))
 }
+
+// func GenerateToken(result *schemas.AuthResult) (string, error) {
+// 	claims := jwt.MapClaims{
+// 		"id":         result.ID,
+// 		"first_name": result.FirstName,
+// 		"last_name":  result.LastName,
+// 		"username":   result.Username,
+// 		"is_admin_tenant":   result.IsAdmin,
+// 		"exp":        time.Now().Add(24 * time.Hour).Unix(),
+// 	}
+
+// 	if result.Tenant != nil {
+// 		claims["tenant_id"] = result.Tenant.ID
+// 		claims["tenant_name"] = result.Tenant.Name
+// 		claims["identifier"] = result.Tenant.Identifier
+// 	}
+// 	if result.Role != nil {
+// 		claims["role_id"] = result.Role.ID
+// 		claims["role_name"] = result.Role.Name
+// 	}
+// 	if result.Permissions != nil {
+// 		claims["permissions"] = *result.Permissions
+// 	}
+
+// 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+// 	return token.SignedString([]byte(os.Getenv("SECRET_KEY")))
+// }
 
 
 // func GenerateToken(user *models.User, tenant *models.Tenant, member *models.Member, role *models.Role, permissions *[]string) (string, error) {
@@ -80,7 +102,7 @@ func VerifyToken(tokenString string) (jwt.Claims, error) {
 		return []byte(os.Getenv("SECRET_KEY")), nil
 	})
 	if err != nil {
-		return nil, models.ErrorResponse(401, "Token inválido", err)
+		return nil, schemas.ErrorResponse(401, "Token inválido", err)
 	}
 
 	return token.Claims, nil

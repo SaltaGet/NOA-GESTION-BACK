@@ -15,11 +15,11 @@ import (
 //	@Security		BearerAuth
 //	@Param			id	path		string									true	"ID of the supplier"
 //	@Success		200	{object}	schemas.Response{body=schemas.Supplier}	"Supplier obtained with success"
-//	@Failure		400	{object}	schemas.Response							"Bad Request"
-//	@Failure		401	{object}	schemas.Response							"Auth is required"
-//	@Failure		403	{object}	schemas.Response							"Not Authorized"
-//	@Failure		404	{object}	schemas.Response							"Supplier not found"
-//	@Failure		500	{object}	schemas.Response							"Internal server error"
+//	@Failure		400	{object}	schemas.Response						"Bad Request"
+//	@Failure		401	{object}	schemas.Response						"Auth is required"
+//	@Failure		403	{object}	schemas.Response						"Not Authorized"
+//	@Failure		404	{object}	schemas.Response						"Supplier not found"
+//	@Failure		500	{object}	schemas.Response						"Internal server error"
 //	@Router			/supplier/{id} [get]
 func (s *SupplierController) SupplierGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
@@ -104,7 +104,7 @@ func (s *SupplierController) SupplierGetAll(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			name	query		string									true	"Name of the Supplier"
+//	@Param			name	query		string										true	"Name of the Supplier"
 //	@Success		200		{object}	schemas.Response{body=[]schemas.Supplier}	"List of suppliers"
 //	@Failure		400		{object}	schemas.Response							"Bad Request"
 //	@Failure		401		{object}	schemas.Response							"Auth is required"
@@ -159,11 +159,11 @@ func (s *SupplierController) SupplierGetByName(c *fiber.Ctx) error {
 //	@Security		BearerAuth
 //	@Param			supplier	body		schemas.SupplierCreate			true	"Details of the supplier to create"
 //	@Success		200			{object}	schemas.Response{body=string}	"Supplier created successfully"
-//	@Failure		400			{object}	schemas.Response					"Bad Request"
-//	@Failure		401			{object}	schemas.Response					"Auth is required"
-//	@Failure		403			{object}	schemas.Response					"Not Authorized"
-//	@Failure		422			{object}	schemas.Response					"Model is invalid"
-//	@Failure		500			{object}	schemas.Response					"Internal server error"
+//	@Failure		400			{object}	schemas.Response				"Bad Request"
+//	@Failure		401			{object}	schemas.Response				"Auth is required"
+//	@Failure		403			{object}	schemas.Response				"Not Authorized"
+//	@Failure		422			{object}	schemas.Response				"Model is invalid"
+//	@Failure		500			{object}	schemas.Response				"Internal server error"
 //	@Router			/supplier/create [post]
 func (s *SupplierController) SupplierCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear proveedor")
@@ -219,13 +219,13 @@ func (s *SupplierController) SupplierCreate(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Param			body	body		schemas.SupplierUpdate	true	"Supplier information"
-//	@Success		200		{object}	schemas.Response			"Supplier updated with success"
-//	@Failure		400		{object}	schemas.Response			"Bad Request"
-//	@Failure		401		{object}	schemas.Response			"Auth is required"
-//	@Failure		403		{object}	schemas.Response			"Not Authorized"
-//	@Failure		404		{object}	schemas.Response			"Supplier not found"
-//	@Failure		422		{object}	schemas.Response			"Model is invalid"
-//	@Failure		500		{object}	schemas.Response			"Internal server error"
+//	@Success		200		{object}	schemas.Response		"Supplier updated with success"
+//	@Failure		400		{object}	schemas.Response		"Bad Request"
+//	@Failure		401		{object}	schemas.Response		"Auth is required"
+//	@Failure		403		{object}	schemas.Response		"Not Authorized"
+//	@Failure		404		{object}	schemas.Response		"Supplier not found"
+//	@Failure		422		{object}	schemas.Response		"Model is invalid"
+//	@Failure		500		{object}	schemas.Response		"Internal server error"
 //	@Router			/supplier/update [put]
 func (s *SupplierController) SupplierUpdate(c *fiber.Ctx) error {
 	logging.INFO("Actualizar proveedor")
@@ -280,7 +280,7 @@ func (s *SupplierController) SupplierUpdate(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			id	path		string			true	"ID of the supplier"
+//	@Param			id	path		string				true	"ID of the supplier"
 //	@Success		200	{object}	schemas.Response	"Supplier deleted with success"
 //	@Failure		400	{object}	schemas.Response	"Bad Request"
 //	@Failure		401	{object}	schemas.Response	"Auth is required"

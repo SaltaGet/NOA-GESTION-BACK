@@ -15,7 +15,6 @@ type Expense struct {
 	Amount          float32        `gorm:"not null" json:"amount"`
 	CreatedAt       time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt       time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
-	PurchaseOrder   *PurchaseOrder `gorm:"foreignKey:PurchaseOrderID" json:"purchase_order"`
 	MovementType    MovementType   `gorm:"foreignKey:MovementTypeID;references:ID" json:"movement_type"`
 }
 
@@ -69,7 +68,6 @@ type ExpenseResponse struct {
 	Details       string          `json:"details"`
 	Amount        float32         `json:"amount"`
 	CreatedAt     time.Time       `json:"created_at"`
-	PurchaseOrder *PurchaseOrderResponse  `json:"purchase_order"`
 	MovementType  MovementTypeDTO `json:"movement_type"`
 }
 
@@ -77,6 +75,5 @@ type ExpenseDTO struct {
 	ID            string            `json:"id"`
 	Amount        float32           `json:"amount"`
 	CreatedAt     time.Time         `json:"created_at"`
-	PurchaseOrder *PurchaseOrderDTO `json:"purchase_order"`
 	MovementType  MovementTypeDTO   `json:"movement_type"`
 }

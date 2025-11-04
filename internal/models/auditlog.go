@@ -1,8 +1,8 @@
 package models
 
 type AuditLog struct {
-	ID        string `gorm:"primaryKey" json:"id"`
-	UserID 	string `gorm:"not null;size:36" json:"user_id"`
+	ID        int64  `gorm:"primaryKey;autoIncrement" json:"id"`
+	UserID    int64  `gorm:"not null;size:36" json:"user_id"`
 	Method    string `gorm:"not null" json:"method"`
 	Path      string `gorm:"not null" json:"path"`
 	CreatedAt string `gorm:"autoCreateTime" json:"created_at"`

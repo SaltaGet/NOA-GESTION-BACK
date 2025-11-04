@@ -12,8 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/DanielChachagua/GestionCar/pkg/dependencies"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
 )
 
 type Config struct {
@@ -30,7 +29,7 @@ type Checkpoint struct {
 	Position   int    `json:"position"`
 }
 
-func LoadConfig(deps *dependencies.Application) (*Config, error) {
+func LoadConfig(deps *dependencies.MainContainer) (*Config, error) {
 	dsn := os.Getenv("URI_DB")
 	cfg, err := parseDSN(dsn)
 	if err != nil {

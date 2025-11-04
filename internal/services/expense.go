@@ -1,10 +1,10 @@
 package services
 
 import (
-	"github.com/DanielChachagua/GestionCar/pkg/models"
+"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
-func (e *ExpenseService) ExpenseGetByID(id string) (*models.ExpenseResponse, error) {
+func (e *ExpenseService) ExpenseGetByID(id string) (*schemas.ExpenseResponse, error) {
 	expense, err := e.ExpenseRepository.ExpenseGetByID(id)
 	if err != nil {
 		return nil, err
@@ -13,7 +13,7 @@ func (e *ExpenseService) ExpenseGetByID(id string) (*models.ExpenseResponse, err
 	return expense, nil
 }
 
-func (e *ExpenseService) ExpenseGetAll(page, limit int) (*[]models.ExpenseDTO, error) {
+func (e *ExpenseService) ExpenseGetAll(page, limit int) (*[]schemas.ExpenseDTO, error) {
 	expenses, err := e.ExpenseRepository.ExpenseGetAll(page, limit)
 	
 	if err != nil {
@@ -23,7 +23,7 @@ func (e *ExpenseService) ExpenseGetAll(page, limit int) (*[]models.ExpenseDTO, e
 	return expenses, nil
 }
 
-func (e *ExpenseService) ExpenseGetToday(page, limit int) (*[]models.ExpenseDTO, error) {
+func (e *ExpenseService) ExpenseGetToday(page, limit int) (*[]schemas.ExpenseDTO, error) {
 	expenses, err := e.ExpenseRepository.ExpenseGetToday(page, limit)
 	
 	if err != nil {
@@ -33,7 +33,7 @@ func (e *ExpenseService) ExpenseGetToday(page, limit int) (*[]models.ExpenseDTO,
 	return expenses, nil
 }
 
-func (e *ExpenseService) ExpenseCreate(expense *models.ExpenseCreate) (string, error) {
+func (e *ExpenseService) ExpenseCreate(expense *schemas.ExpenseCreate) (string, error) {
 	id, err := e.ExpenseRepository.ExpenseCreate(expense)
 	if err != nil {
 		return "", err
@@ -41,7 +41,7 @@ func (e *ExpenseService) ExpenseCreate(expense *models.ExpenseCreate) (string, e
 	return id, nil
 }
 
-func (e *ExpenseService) ExpenseUpdate(expense *models.ExpenseUpdate) error {
+func (e *ExpenseService) ExpenseUpdate(expense *schemas.ExpenseUpdate) error {
 	err := e.ExpenseRepository.ExpenseUpdate(expense)
 	if err != nil {
 		return err

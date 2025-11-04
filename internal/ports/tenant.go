@@ -1,23 +1,27 @@
 package ports
 
-import "github.com/DanielChachagua/GestionCar/pkg/models"
+import (
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+)
+
 
 type TenantRepository interface {
-	TenantGetByID(id string) (tenant *models.Tenant, err error) 
+	TenantGetByID(id int64) (tenant *models.Tenant, err error) 
 	TenantGetByIdentifier(identifier string) (tenant *models.Tenant, err error) 
-	TenantGetAll(userID string) (tenants *[]models.TenantResponse, err error)
+	TenantGetAll(userID int64) (tenants *[]schemas.TenantResponse, err error)
 	TenantGetConections() (conections *[]string, err error)
-	TenantCreateByUserID(tenantCreate *models.TenantCreate, userID string) (id string, err error)
-	TenantUserCreate(tenantUserCreate *models.TenantUserCreate) (id string, err error)
-	TenantUpdate(userID string, tenant *models.TenantUpdate) (err error)
+	TenantCreateByUserID(tenantCreate *schemas.TenantCreate, userID int64) (id int64, err error)
+	TenantUserCreate(tenantUserCreate *schemas.TenantUserCreate) (id int64, err error)
+	TenantUpdate(userID int64, tenant *schemas.TenantUpdate) (err error)
 }
 
 type TenantService interface {
-	TenantGetByID(tenantID string) (tenant *models.Tenant, err error) 
+	TenantGetByID(tenantID int64) (tenant *models.Tenant, err error) 
 	TenantGetByIdentifier(identifier string) (tenant *models.Tenant, err error) 
-	TenantGetAll(userID string) (tenants *[]models.TenantResponse, err error)
+	TenantGetAll(userID int64) (tenants *[]schemas.TenantResponse, err error)
 	TenantGetConections() (conections *[]string, err error)
-	TenantCreateByUserID(tenantCreate *models.TenantCreate, userID string) (id string, err error)
-	TenantUserCreate(tenantUserCreate *models.TenantUserCreate) (id string, err error)
-	TenantUpdate(userID string, tenant *models.TenantUpdate) (err error)
+	TenantCreateByUserID(tenantCreate *schemas.TenantCreate, userID int64) (id int64, err error)
+	TenantUserCreate(tenantUserCreate *schemas.TenantUserCreate) (id int64, err error)
+	TenantUpdate(userID int64, tenant *schemas.TenantUpdate) (err error)
 }

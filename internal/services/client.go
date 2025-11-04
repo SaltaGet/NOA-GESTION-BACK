@@ -1,10 +1,10 @@
 package services
 
 import (
-	"github.com/DanielChachagua/GestionCar/pkg/models"
+"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
-func (c *ClientService) ClientGetAll() (*[]models.Client, error) {
+func (c *ClientService) ClientGetAll() (*[]schemas.Client, error) {
 	clients, err := c.ClientRepository.ClientGetAll()
 	if err != nil {
 		return nil, err
@@ -13,7 +13,7 @@ func (c *ClientService) ClientGetAll() (*[]models.Client, error) {
 	return clients, nil
 }
 
-func (c *ClientService) ClientGetByID(id string) (*models.Client, error) {
+func (c *ClientService) ClientGetByID(id string) (*schemas.Client, error) {
 	client, err := c.ClientRepository.ClientGetByID(id)
 	if err != nil {
 		return nil, err
@@ -22,7 +22,7 @@ func (c *ClientService) ClientGetByID(id string) (*models.Client, error) {
 	return client, nil
 }
 
-func (c *ClientService) ClientGetByName(name string) (*[]models.Client, error) {
+func (c *ClientService) ClientGetByName(name string) (*[]schemas.Client, error) {
 	client, err := c.ClientRepository.ClientGetByName(name)
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func (c *ClientService) ClientGetByName(name string) (*[]models.Client, error) {
 	return client, nil
 }
 
-func (c *ClientService) ClientCreate(clientCreate *models.ClientCreate) (string, error) {
+func (c *ClientService) ClientCreate(clientCreate *schemas.ClientCreate) (string, error) {
 	client, err := c.ClientRepository.ClientCreate(clientCreate)
 	if err != nil {
 		return "", err
@@ -40,7 +40,7 @@ func (c *ClientService) ClientCreate(clientCreate *models.ClientCreate) (string,
 	return client, nil
 }
 
-func (c *ClientService) ClientUpdate(clientUpdate *models.ClientUpdate) (error) {
+func (c *ClientService) ClientUpdate(clientUpdate *schemas.ClientUpdate) (error) {
 	err := c.ClientRepository.ClientUpdate(clientUpdate)
 	if err != nil {
 		return err

@@ -1,15 +1,15 @@
 package middleware
 
 import (
-	"github.com/DanielChachagua/GestionCar/pkg/models"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/gofiber/fiber/v2"
 )
 
 func AdminTenantMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		user, ok := c.Locals("user").(*models.AuthenticatedUser)
+		user, ok := c.Locals("user").(*schemas.AuthenticatedUser)
 		if !ok {
-			return c.Status(fiber.StatusUnauthorized).JSON(models.Response{
+			return c.Status(fiber.StatusUnauthorized).JSON(schemas.Response{
 				Status:  false,
 				Body:    nil,
 				Message: "Teanant No autenticado",
@@ -20,7 +20,7 @@ func AdminTenantMiddleware() fiber.Handler {
 			return c.Next()
 		}
 
-		return c.Status(fiber.StatusForbidden).JSON(models.Response{
+		return c.Status(fiber.StatusForbidden).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
 			Message: "No autorizado",
