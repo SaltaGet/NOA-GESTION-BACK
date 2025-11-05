@@ -8,12 +8,13 @@ import (
 	"fmt"
 
 	"database/sql"
+
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 )
 
-func PrepareDB(uri string) error {
+func PrepareDB(uri string, memberAdmin models.Member) error {
 	env := os.Getenv("ENV")
 
 	var driver gorm.Dialector
@@ -38,25 +39,35 @@ func PrepareDB(uri string) error {
 	defer sqlDB.Close()
 
 	// Migraciones
-	// if err := db.AutoMigrate(
-	// 	&models.Client{},
-	// 	&models.Expense{},
-	// 	&models.Income{},
-	// 	&models.Member{},
-	// 	&models.MovementType{},
-	// 	&models.Permission{},
-	// 	&models.Product{},
-	// 	&models.Role{},
-	// 	&models.Supplier{},
-	// ); err != nil {
-	// 	handleDBCreationError(env, uri)
-	// 	return fmt.Errorf("error al migrar tablas: %w", err)
-	// }
+	if err := db.AutoMigrate(
+		&models.Client{},
+		&models.ExpenseBuy{},
+		&models.Income{},
+		&models.Member{},
+		&models.MovementType{},
+		&models.Permission{},
+		&models.Product{},
+		&models.Role{},
+		&models.Supplier{},
+	); err != nil {
+		handleDBCreationError(env, uri)
+		return fmt.Errorf("error al migrar tablas: %w", err)
+	}
 
-	// if err := db.Create(&permissions).Error; err != nil {
-	// 	handleDBCreationError(env, uri)
-	// 	return fmt.Errorf("error al migrar permisos: %w", err)
-	// }
+	if err := db.Create(&models.Role{ID: 1, Name: "admin"}).Error; err != nil {
+		handleDBCreationError(env, uri)
+		return fmt.Errorf("error al crear rol admin: %w", err)
+	}
+
+	if err := db.Create(&memberAdmin).Error; err != nil {
+		handleDBCreationError(env, uri)
+		return fmt.Errorf("error al crear member admin: %w", err)
+	}
+
+	if err := db.Create(&permissions).Error; err != nil {
+		handleDBCreationError(env, uri)
+		return fmt.Errorf("error al migrar permisos: %w", err)
+	}
 
 	return nil
 }
@@ -135,7 +146,7 @@ func UpdateModels(uri string) error {
 
 	if err := db.AutoMigrate(
 		&models.Client{},
-		&models.Expense{},
+		&models.ExpenseBuy{},
 		&models.Income{},
 		&models.Member{},
 		&models.MovementType{},
@@ -151,10 +162,10 @@ func UpdateModels(uri string) error {
 	return nil
 }
 
-// permissions := []schemas.Permission{
-// 	{Code: "create_client", Details: "Crear clientes", Group: "clients"},
-// 	{Code: "update_client", Details: "Actualizar clientes", Group: "clients"},
-// 	{Code: "delete_client", Details: "Eliminar clientes", Group: "clients"},
-// 	{Code: "create_expense", Details: "Crear gastos", Group: "expenses"},
-// 	{Code: "update_expense", Details: "Actualizar gastos", Group: "expenses"},
-// }
+var permissions []models.Permission = []models.Permission{
+	{Code: "create_client", Details: "Crear clientes", Group: "clients"},
+	{Code: "update_client", Details: "Actualizar clientes", Group: "clients"},
+	{Code: "delete_client", Details: "Eliminar clientes", Group: "clients"},
+	{Code: "create_expense", Details: "Crear gastos", Group: "expenses"},
+	{Code: "update_expense", Details: "Actualizar gastos", Group: "expenses"},
+}

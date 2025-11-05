@@ -91,7 +91,7 @@ import (
 // @version					1.0
 // @description				This is a api to app noa gestion
 // @termsOfService				http://swagger.io/terms/
-// @securityDefinitions.apikey	BearerAuth
+// @securityDefinitions.apikey	CookieAuth
 //	@in							cookie
 //	@name						access_token
 // @description				Type "Bearer" followed by a space and the JWT token.

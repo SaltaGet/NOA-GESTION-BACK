@@ -2,8 +2,6 @@ package repositories
 
 import (
 	"errors"
-	"fmt"
-
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/google/uuid"
@@ -83,7 +81,7 @@ func (t *MemberRepository) MemberCreate(memeberCreate *schemas.MemberCreate, use
 		ID:        newID,
 		FirstName: memeberCreate.FirstName,
 		LastName:  memeberCreate.LastName,
-		Username:  fmt.Sprintf("%s@%s", memeberCreate.Username, user.Identifier),
+		Username:  memeberCreate.Username,
 		Email:     memeberCreate.Email,
 		RoleID:    memeberCreate.RoleID,
 		Password:  hashPass,

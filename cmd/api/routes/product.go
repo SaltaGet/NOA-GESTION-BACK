@@ -7,7 +7,7 @@ import (
 )
 
 func ProductRoutes(app *fiber.App){
-	prod := app.Group("/product", middleware.AuthMiddleware(), middleware.PointSaleMiddleware())
+	prod := app.Group("/api/v1/product", middleware.AuthMiddleware(), middleware.PointSaleMiddleware())
 
 	prod.Get("/get_all", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
 		return ctrl.ProductGetAll(c)

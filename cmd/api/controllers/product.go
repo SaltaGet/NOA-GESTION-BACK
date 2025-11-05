@@ -13,7 +13,7 @@ import (
 //	@Tags			Product
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			id	path		string									true	"ID of the product"
 //	@Success		200	{object}	schemas.Response{body=schemas.Product}	"Product obtained with success"
 //	@Failure		400	{object}	schemas.Response						"Bad Request"
@@ -21,7 +21,7 @@ import (
 //	@Failure		403	{object}	schemas.Response						"Not Authorized"
 //	@Failure		404	{object}	schemas.Response						"Expense not found"
 //	@Failure		500	{object}	schemas.Response						"Internal server error"
-//	@Router			/product/{id} [get]
+//	@Router			/api/v1/product/{id} [get]
 func (p *ProductController) ProductGetByID(c *fiber.Ctx) error {
 	logging.INFO("Obtener un producto por ID")
 	id := c.Params("id")
@@ -67,13 +67,13 @@ func (p *ProductController) ProductGetByID(c *fiber.Ctx) error {
 //	@Tags			Product
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.Product}	"Products obtained with success"
 //	@Failure		400	{object}	schemas.Response							"Bad Request"
 //	@Failure		401	{object}	schemas.Response							"Auth is required"
 //	@Failure		403	{object}	schemas.Response							"Not Authorized"
 //	@Failure		500	{object}	schemas.Response							"Internal server error"
-//	@Router			/product/get_all [get]
+//	@Router			/api/v1/product/get_all [get]
 func (p *ProductController) ProductGetAll(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los productos")
 	products, err := p.ProductService.ProductGetAll()
@@ -109,14 +109,14 @@ func (p *ProductController) ProductGetAll(c *fiber.Ctx) error {
 //	@Tags			Product
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			name	query		string										true	"Name of the Product"
 //	@Success		200		{object}	schemas.Response{body=[]schemas.Product}	"List of products"
 //	@Failure		400		{object}	schemas.Response							"Bad Request"
 //	@Failure		401		{object}	schemas.Response							"Auth is required"
 //	@Failure		403		{object}	schemas.Response							"Not Authorized"
 //	@Failure		500		{object}	schemas.Response							"Internal server error"
-//	@Router			/product/get_by_name [get]
+//	@Router			/api/v1/product/get_by_name [get]
 func (p *ProductController) ProductGetByName(c *fiber.Ctx) error {
 	logging.INFO("Obtener productos por nombre")
 	name := c.Query("name")
@@ -162,14 +162,14 @@ func (p *ProductController) ProductGetByName(c *fiber.Ctx) error {
 //	@Tags			Product
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			identifier	query		string										true	"Identifier of product"
 //	@Success		200			{object}	schemas.Response{body=[]schemas.Product}	"Products obtained with success"
 //	@Failure		400			{object}	schemas.Response							"Bad Request"
 //	@Failure		401			{object}	schemas.Response							"Auth is required"
 //	@Failure		403			{object}	schemas.Response							"Not Authorized"
 //	@Failure		500			{object}	schemas.Response							"Internal server error"
-//	@Router			/product/get_by_identifier [get]
+//	@Router			/api/v1/product/get_by_identifier [get]
 func (p *ProductController) ProductGetByIdentifier(c *fiber.Ctx) error {
 	logging.INFO("Obtener productos por identificador")
 	identifire := c.Query("identifier")
@@ -215,7 +215,7 @@ func (p *ProductController) ProductGetByIdentifier(c *fiber.Ctx) error {
 //	@Tags			Product
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			stock	body		schemas.StockUpdate	true	"Stock update details"
 //	@Success		200		{object}	schemas.Response	"Product stock updated successfully"
 //	@Failure		400		{object}	schemas.Response	"Bad Request"
@@ -224,7 +224,7 @@ func (p *ProductController) ProductGetByIdentifier(c *fiber.Ctx) error {
 //	@Failure		404		{object}	schemas.Response	"Product not found"
 //	@Failure		422		{object}	schemas.Response	"Model invalid"
 //	@Failure		500		{object}	schemas.Response	"Internal server error"
-//	@Router			/product/update_stock [put]
+//	@Router			/api/v1/product/update_stock [put]
 func (p *ProductController) ProductUpdateStock(c *fiber.Ctx) error {
 	logging.INFO("Actualizar stock de producto")
 	var stockUpdate schemas.StockUpdate
@@ -278,7 +278,7 @@ func (p *ProductController) ProductUpdateStock(c *fiber.Ctx) error {
 //	@Tags			Product
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			product	body		schemas.ProductUpdate	true	"Product update details"
 //	@Success		200		{object}	schemas.Response		"Product updated successfully"
 //	@Failure		400		{object}	schemas.Response		"Bad Request"
@@ -287,7 +287,7 @@ func (p *ProductController) ProductUpdateStock(c *fiber.Ctx) error {
 //	@Failure		404		{object}	schemas.Response		"Product not found"
 //	@Failure		422		{object}	schemas.Response		"Model invalid"
 //	@Failure		500		{object}	schemas.Response		"Internal server error"
-//	@Router			/product/update [put]
+//	@Router			/api/v1/product/update [put]
 func (p *ProductController) ProductUpdate(c *fiber.Ctx) error {
 	logging.INFO("Actualizar producto")
 	var productUpdate schemas.ProductUpdate
@@ -341,7 +341,7 @@ func (p *ProductController) ProductUpdate(c *fiber.Ctx) error {
 //	@Tags			Product
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			id	path		string				true	"ID of the product"
 //	@Success		200	{object}	schemas.Response	"Product deleted with success"
 //	@Failure		400	{object}	schemas.Response	"Bad Request"
@@ -349,7 +349,7 @@ func (p *ProductController) ProductUpdate(c *fiber.Ctx) error {
 //	@Failure		403	{object}	schemas.Response	"Not Authorized"
 //	@Failure		404	{object}	schemas.Response	"Product not found"
 //	@Failure		500	{object}	schemas.Response	"Internal server error"
-//	@Router			/product/delete/{id} [delete]
+//	@Router			/api/v1/product/delete/{id} [delete]
 func (p *ProductController) ProductDelete(c *fiber.Ctx) error {
 	logging.INFO("Eliminar producto")
 	id := c.Params("id")
@@ -395,7 +395,7 @@ func (p *ProductController) ProductDelete(c *fiber.Ctx) error {
 //	@Tags			Product
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			product	body		schemas.ProductCreate	true	"Details of the product to create"
 //	@Success		200		{object}	schemas.Response		"Product created successfully"
 //	@Failure		400		{object}	schemas.Response		"Bad Request"
@@ -403,7 +403,7 @@ func (p *ProductController) ProductDelete(c *fiber.Ctx) error {
 //	@Failure		403		{object}	schemas.Response		"Not Authorized"
 //	@Failure		422		{object}	schemas.Response		"Model invalid"
 //	@Failure		500		{object}	schemas.Response		"Internal server error"
-//	@Router			/product/create [post]
+//	@Router			/api/v1/product/create [post]
 func (p *ProductController) ProductCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear producto")
 	var productCreate schemas.ProductCreate

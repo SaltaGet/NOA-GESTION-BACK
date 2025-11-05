@@ -7,10 +7,10 @@ import (
 )
 
 func UserRoutes(app *fiber.App, controllers *controllers.UserController) {
-	auth := app.Group("/user")
+	auth := app.Group("/api/v1/user")
 	auth.Post(
 		"/create", 
-		middleware.AuthMiddleware(), 
+		middleware.AdminAuthMiddleware(), 
 		// middleware.RoleAuthMiddleware([]string{"super_admin","admin"}), 
 		controllers.CreateUser,
 	)

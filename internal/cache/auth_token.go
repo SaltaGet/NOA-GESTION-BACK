@@ -24,12 +24,12 @@ const (
 // --- Cache de Usuario Autenticado ---
 
 // GetAuthUser obtiene usuario autenticado del cache
-func GetAuthUser(userID int64, version int64) (*schemas.AuthenticatedUser, error) {
+func GetAuthUser(userID int64, tenantID int64) (*schemas.AuthenticatedUser, error) {
 	if Client == nil {
 		return nil, fmt.Errorf("redis no disponible")
 	}
 
-	key := authUserKey(userID, version)
+	key := authUserKey(userID, tenantID)
 	var authUser schemas.AuthenticatedUser
 
 	if err := Get(key, &authUser); err != nil {
@@ -40,37 +40,37 @@ func GetAuthUser(userID int64, version int64) (*schemas.AuthenticatedUser, error
 }
 
 // SetAuthUser guarda usuario autenticado en cache
-func SetAuthUser(authUser *schemas.AuthenticatedUser, version int64) error {
+func SetAuthUser(authUser *schemas.AuthenticatedUser) error {
 	if Client == nil {
 		return nil // Fallar silenciosamente
 	}
 
-	key := authUserKey(authUser.ID, version)
+	key := authUserKey(authUser.ID, authUser.TenantID)
 	return Set(key, authUser, AuthUserTTL)
 }
 
 // InvalidateAuthUser invalida cache de un usuario específico
-func InvalidateAuthUser(userID int64, version int64) error {
+func InvalidateAuthUser(memberID, tenantID int64) error {
 	if Client == nil {
 		return nil
 	}
 
-	key := authUserKey(userID, version)
+	key := authUserKey(memberID, tenantID)
 	return Delete(key)
 }
 
 // InvalidateAllUserVersions invalida todas las versiones de un usuario
-func InvalidateAllUserVersions(userID int64) error {
+func InvalidateAllUserVersions(memberID int64) error {
 	if Client == nil {
 		return nil
 	}
 
-	pattern := fmt.Sprintf("%s%d:v*", authUserPrefix, userID)
+	pattern := fmt.Sprintf("%s%d:v*", authUserPrefix, memberID)
 	return DeletePattern(pattern)
 }
 
-func authUserKey(userID, version int64) string {
-	return fmt.Sprintf("%s%d:v%d", authUserPrefix, userID, version)
+func authUserKey(memberID, tenantID int64) string {
+	return fmt.Sprintf("%s%d:%d", authUserPrefix, memberID, tenantID)
 }
 
 // --- Cache de Tenant ---
@@ -280,4 +280,68 @@ func WarmupCache(data map[string]interface{}) error {
 
 	_, err := pipe.Exec(context.Background())
 	return err
+}
+
+
+
+// --- Blacklist para revocación inmediata ---
+
+// BlacklistUser agrega un usuario a la blacklist temporal
+func BlacklistUser(userID int64, duration time.Duration) error {
+	if Client == nil {
+		return nil
+	}
+
+	key := blacklistKey(userID)
+	return Set(key, true, duration)
+}
+
+// IsBlacklisted verifica si un usuario está en la blacklist
+func IsBlacklisted(userID int64) bool {
+	if Client == nil {
+		return false
+	}
+
+	key := blacklistKey(userID)
+	exists, err := Exists(key)
+	return err == nil && exists
+}
+
+// RemoveFromBlacklist elimina un usuario de la blacklist
+func RemoveFromBlacklist(userID int64) error {
+	if Client == nil {
+		return nil
+	}
+
+	key := blacklistKey(userID)
+	return Delete(key)
+}
+
+func blacklistKey(userID int64) string {
+	return fmt.Sprintf("blacklist:user:%d", userID)
+}
+
+// BlacklistTenant agrega todos los usuarios de un tenant a la blacklist
+func BlacklistTenant(tenantID int64, duration time.Duration) error {
+	if Client == nil {
+		return nil
+	}
+
+	key := blacklistTenantKey(tenantID)
+	return Set(key, true, duration)
+}
+
+// IsTenantBlacklisted verifica si un tenant está en la blacklist
+func IsTenantBlacklisted(tenantID int64) bool {
+	if Client == nil {
+		return false
+	}
+
+	key := blacklistTenantKey(tenantID)
+	exists, err := Exists(key)
+	return err == nil && exists
+}
+
+func blacklistTenantKey(tenantID int64) string {
+	return fmt.Sprintf("blacklist:tenant:%d", tenantID)
 }

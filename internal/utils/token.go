@@ -9,9 +9,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func GenerateToken(userID int64,tenantID, memberID, pointSaleID *int64) (string, error) {
+func GenerateToken(memberID int64, tenantID, pointSaleID *int64) (string, error) {
 	claims := jwt.MapClaims{
-		"user_id":         userID,
+		"member_id":         memberID,
 		"exp":        time.Now().Add(24 * time.Hour).Unix(),
 	}
 
@@ -19,12 +19,18 @@ func GenerateToken(userID int64,tenantID, memberID, pointSaleID *int64) (string,
 		claims["tenant_id"] = tenantID
 	}
 	
-	if memberID != nil {
-		claims["member_id"] = memberID
-	}
-
 	if pointSaleID != nil {
 		claims["point_sale_id"] = pointSaleID
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(os.Getenv("SECRET_KEY")))
+}
+
+func GenerateTokenAdmin(adminID int64) (string, error) {
+	claims := jwt.MapClaims{
+		"admin_id":         adminID,
+		"exp":        time.Now().Add(24 * time.Hour).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

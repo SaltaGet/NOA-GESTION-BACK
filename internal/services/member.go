@@ -150,15 +150,15 @@ func (s *TenantService) DeactivateTenant(tenantID int64) error {
 	}
 
 	// Obtener todos los usuarios del tenant
-	var userTenants []models.UserTenant
-	db.Where("tenant_id = ?", tenantID).Find(&userTenants)
+	// var userTenants []models.UserTenant
+	// db.Where("tenant_id = ?", tenantID).Find(&userTenants)
 
 	// 🔥 Invalidar cache de todos los usuarios
-	if cache.IsAvailable() {
-		for _, ut := range userTenants {
-			_ = cache.InvalidateAllUserVersions(ut.UserID)
-		}
-	}
+	// if cache.IsAvailable() {
+	// 	for _, ut := range userTenants {
+	// 		_ = cache.InvalidateAllUserVersions(ut.UserID)
+	// 	}
+	// }
 
 	// Invalidar connection del tenant
 	database.InvalidateTenantConnection(tenantID)

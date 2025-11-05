@@ -12,7 +12,7 @@ import (
 //	@Tags			Supplier
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			id	path		string									true	"ID of the supplier"
 //	@Success		200	{object}	schemas.Response{body=schemas.Supplier}	"Supplier obtained with success"
 //	@Failure		400	{object}	schemas.Response						"Bad Request"
@@ -20,7 +20,7 @@ import (
 //	@Failure		403	{object}	schemas.Response						"Not Authorized"
 //	@Failure		404	{object}	schemas.Response						"Supplier not found"
 //	@Failure		500	{object}	schemas.Response						"Internal server error"
-//	@Router			/supplier/{id} [get]
+//	@Router			/api/v1/supplier/{id} [get]
 func (s *SupplierController) SupplierGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if id == "" {
@@ -62,13 +62,13 @@ func (s *SupplierController) SupplierGetByID(c *fiber.Ctx) error {
 //	@Tags			Supplier
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.Supplier}	"Suppliers obtained with success"
 //	@Failure		400	{object}	schemas.Response							"Bad Request"
 //	@Failure		401	{object}	schemas.Response							"Auth is required"
 //	@Failure		403	{object}	schemas.Response							"Not Authorized"
 //	@Failure		500	{object}	schemas.Response							"Internal server error"
-//	@Router			/supplier/get_all [get]
+//	@Router			/api/v1/supplier/get_all [get]
 func (s *SupplierController) SupplierGetAll(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los proveedores")
 	suppliers, err := s.SupplierService.SupplierGetAll()
@@ -103,15 +103,14 @@ func (s *SupplierController) SupplierGetAll(c *fiber.Ctx) error {
 //	@Tags			Supplier
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			name	query		string										true	"Name of the Supplier"
 //	@Success		200		{object}	schemas.Response{body=[]schemas.Supplier}	"List of suppliers"
 //	@Failure		400		{object}	schemas.Response							"Bad Request"
 //	@Failure		401		{object}	schemas.Response							"Auth is required"
 //	@Failure		403		{object}	schemas.Response							"Not Authorized"
 //	@Failure		500		{object}	schemas.Response							"Internal server error"
-//	@Router			/supplier/get_by_name [get]
-//	@Security		BearerAuth
+//	@Router			/api/v1/supplier/get_by_name [get]
 func (s *SupplierController) SupplierGetByName(c *fiber.Ctx) error {
 	logging.INFO("Obtener proveedores por nombre")
 	name := c.Query("name")
@@ -156,7 +155,7 @@ func (s *SupplierController) SupplierGetByName(c *fiber.Ctx) error {
 //	@Tags			Supplier
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			supplier	body		schemas.SupplierCreate			true	"Details of the supplier to create"
 //	@Success		200			{object}	schemas.Response{body=string}	"Supplier created successfully"
 //	@Failure		400			{object}	schemas.Response				"Bad Request"
@@ -164,7 +163,7 @@ func (s *SupplierController) SupplierGetByName(c *fiber.Ctx) error {
 //	@Failure		403			{object}	schemas.Response				"Not Authorized"
 //	@Failure		422			{object}	schemas.Response				"Model is invalid"
 //	@Failure		500			{object}	schemas.Response				"Internal server error"
-//	@Router			/supplier/create [post]
+//	@Router			/api/v1/supplier/create [post]
 func (s *SupplierController) SupplierCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear proveedor")
 	var supplierCreate schemas.SupplierCreate
@@ -217,7 +216,7 @@ func (s *SupplierController) SupplierCreate(c *fiber.Ctx) error {
 //	@Tags			Supplier
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			body	body		schemas.SupplierUpdate	true	"Supplier information"
 //	@Success		200		{object}	schemas.Response		"Supplier updated with success"
 //	@Failure		400		{object}	schemas.Response		"Bad Request"
@@ -226,7 +225,7 @@ func (s *SupplierController) SupplierCreate(c *fiber.Ctx) error {
 //	@Failure		404		{object}	schemas.Response		"Supplier not found"
 //	@Failure		422		{object}	schemas.Response		"Model is invalid"
 //	@Failure		500		{object}	schemas.Response		"Internal server error"
-//	@Router			/supplier/update [put]
+//	@Router			/api/v1/supplier/update [put]
 func (s *SupplierController) SupplierUpdate(c *fiber.Ctx) error {
 	logging.INFO("Actualizar proveedor")
 	var supplierUpdate schemas.SupplierUpdate
@@ -279,7 +278,7 @@ func (s *SupplierController) SupplierUpdate(c *fiber.Ctx) error {
 //	@Tags			Supplier
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			id	path		string				true	"ID of the supplier"
 //	@Success		200	{object}	schemas.Response	"Supplier deleted with success"
 //	@Failure		400	{object}	schemas.Response	"Bad Request"
@@ -287,7 +286,7 @@ func (s *SupplierController) SupplierUpdate(c *fiber.Ctx) error {
 //	@Failure		403	{object}	schemas.Response	"Not Authorized"
 //	@Failure		404	{object}	schemas.Response	"Supplier not found"
 //	@Failure		500	{object}	schemas.Response	"Internal server error"
-//	@Router			/supplier/delete/{id} [delete]
+//	@Router			/api/v1/supplier/delete/{id} [delete]
 func (s *SupplierController) SupplierDeleteByID(c *fiber.Ctx) error {
 	logging.INFO("Eliminar proveedor")
 	id := c.Params("id")

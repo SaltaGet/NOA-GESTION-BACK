@@ -52,6 +52,10 @@ type PermissionRepository struct {
 	DB *gorm.DB
 }
 
+type PointSaleRepository struct {
+	DB *gorm.DB
+}
+
 type ProductRepository struct {
 	DB *gorm.DB
 }

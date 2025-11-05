@@ -1,8 +1,12 @@
 package schemas
 
 import (
+	"errors"
+	"strings"
+
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
 type Response struct {
@@ -49,4 +53,10 @@ func HandleError(ctx *fiber.Ctx, err error) error {
 		Body:    nil,
 		Message: "Error interno",
 	})
+}
+
+func IsDuplicateError(err error) bool {
+	return errors.Is(err, gorm.ErrDuplicatedKey) ||
+		strings.Contains(err.Error(), "Duplicate entry") ||
+		strings.Contains(err.Error(), "duplicate key value violates unique constraint")
 }

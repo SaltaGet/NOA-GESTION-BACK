@@ -21,8 +21,8 @@ func (t *TenantService) TenantGetByIdentifier(identifier string) (*models.Tenant
 	return tenant, nil
 }
 
-func (t *TenantService) TenantGetAll(userID int64) (*[]schemas.TenantResponse, error) {
-	tenants, err := t.TenantRepository.TenantGetAll(userID)
+func (t *TenantService) TenantGetAll() (*[]schemas.TenantResponse, error) {
+	tenants, err := t.TenantRepository.TenantGetAll()
 	if err != nil {
 		return nil, err
 	}

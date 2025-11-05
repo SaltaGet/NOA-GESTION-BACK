@@ -7,7 +7,7 @@ import (
 )
 
 func IncomeRoutes(app *fiber.App){
-	inc := app.Group("/income", middleware.AuthMiddleware(), middleware.PointSaleMiddleware())
+	inc := app.Group("/api/v1/income", middleware.AuthMiddleware(), middleware.PointSaleMiddleware())
 
 	inc.Get("/get_all", GetController("IncomeController", func(c *fiber.Ctx, ctrl *controllers.IncomeController) error {
 		return ctrl.GetAllIncomes(c)

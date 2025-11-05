@@ -7,8 +7,8 @@ import (
 )
 
 func TenantRoutes(app *fiber.App, controllers *controllers.TenantController){
-	tenant := app.Group("/tenant")
-	tenant.Get("/get_all", middleware.AuthMiddleware(), controllers.GetTenants)
-	tenant.Post("/create", middleware.AuthMiddleware(), controllers.TenantCreateByUserID)
-	tenant.Post("/create_tenant_user", middleware.AuthMiddleware(), controllers.TenantUserCreate)
+	tenant := app.Group("/api/v1/tenant")
+	tenant.Get("/get_all", middleware.AdminAuthMiddleware(), controllers.GetTenants)
+	tenant.Post("/create", middleware.AdminAuthMiddleware(), controllers.TenantCreateByUserID)
+	tenant.Post("/create_tenant_user", middleware.AdminAuthMiddleware(), controllers.TenantUserCreate)
 }

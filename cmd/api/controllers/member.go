@@ -13,13 +13,13 @@ import (
 //	@Tags			Member
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.MemberDTO}	"Members obtenidos con éxito"
 //	@Failure		400	{object}	schemas.Response							"Bad Request"
 //	@Failure		401	{object}	schemas.Response							"Auth is required"
 //	@Failure		403	{object}	schemas.Response							"Not Authorized"
 //	@Failure		500	{object}	schemas.Response
-//	@Router			/member/get_all [get]
+//	@Router			/api/v1/member/get_all [get]
 func (m *MemberController) MemberGetAll(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los miembros")
 	memebers, err := m.MemberService.MemberGetAll()
@@ -55,14 +55,14 @@ func (m *MemberController) MemberGetAll(c *fiber.Ctx) error {
 //	@Tags			Member
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			id	path		string											true	"Member ID"
 //	@Success		200	{object}	schemas.Response{body=[]schemas.MemberResponse}	"Members obtenidos con éxito"
 //	@Failure		400	{object}	schemas.Response								"Bad Request"
 //	@Failure		401	{object}	schemas.Response								"Auth is required"
 //	@Failure		403	{object}	schemas.Response								"Not Authorized"
 //	@Failure		500	{object}	schemas.Response
-//	@Router			/member/get/{id} [get]
+//	@Router			/api/v1/member/get/{id} [get]
 func (m *MemberController) MemberGetByID(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los miembros")
 	id := c.Params("id")
@@ -108,14 +108,14 @@ func (m *MemberController) MemberGetByID(c *fiber.Ctx) error {
 //	@Tags			Member
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			member_create	body		schemas.MemberCreate	true	"MemberCreate"
 //	@Success		200				{object}	schemas.Response		"Members obtenidos con éxito"
 //	@Failure		400				{object}	schemas.Response		"Bad Request"
 //	@Failure		401				{object}	schemas.Response		"Auth is required"
 //	@Failure		403				{object}	schemas.Response		"Not Authorized"
 //	@Failure		500				{object}	schemas.Response
-//	@Router			/member/create [post]
+//	@Router			/api/v1/member/create [post]
 func (m *MemberController) MemberCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear miembro")
 	user := c.Locals("user").(*schemas.AuthenticatedUser)

@@ -7,7 +7,7 @@ import (
 )
 
 func MovementRoutes(app *fiber.App){
-	mov := app.Group("/movement", middleware.AuthMiddleware(), middleware.PointSaleMiddleware())
+	mov := app.Group("/api/v1/movement", middleware.AuthMiddleware(), middleware.PointSaleMiddleware())
 
 	mov.Get("/get_all", GetController("MovementTypeController", func(c *fiber.Ctx, ctrl *controllers.MovementTypeController) error {
 		return ctrl.GetAllMovementTypes(c)

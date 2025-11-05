@@ -8,6 +8,76 @@
         "version": "1.0"
     },
     "paths": {
+        "/api/v1/auth/current_user": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener usuario actual",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "CurrentUser user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.AuthenticatedUser"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/login": {
             "post": {
                 "description": "Login user required identifier and password",
@@ -72,14 +142,9 @@
                 }
             }
         },
-        "/api/v1/auth/tenant_login/{tenant_id}": {
+        "/api/v1/auth/login_admin": {
             "post": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "Login tenant required tenant_id",
+                "description": "Required identifier and password",
                 "consumes": [
                     "application/json"
                 ],
@@ -89,12 +154,81 @@
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Login Tenant",
+                "summary": "Login Admin user",
+                "parameters": [
+                    {
+                        "description": "Credentials",
+                        "name": "credentials",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.AuthLoginAdmin"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/login_point_sale/{point_sale_id}": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Login al punto de venta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "LoginPointSale",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "tenant_id",
-                        "name": "tenant_id",
+                        "description": "id del punto de venta",
+                        "name": "point_sale_id",
                         "in": "path",
                         "required": true
                     }
@@ -145,11 +279,191 @@
                 }
             }
         },
-        "/client/create": {
+        "/api/v1/auth/logout": {
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Logout user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/logout_admin": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "logout user admin",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout Admin user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/logout_point_sale": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Logout del punto de venta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "LogoutPointSale",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/client/create": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Create client",
@@ -214,11 +528,11 @@
                 }
             }
         },
-        "/client/delete/{id}": {
+        "/api/v1/client/delete/{id}": {
             "delete": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Delete client by ID",
@@ -293,11 +607,11 @@
                 }
             }
         },
-        "/client/get_all": {
+        "/api/v1/client/get_all": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Get All Clients",
@@ -366,11 +680,11 @@
                 }
             }
         },
-        "/client/get_by_name": {
+        "/api/v1/client/get_by_name": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Get Client By Name",
@@ -448,11 +762,11 @@
                 }
             }
         },
-        "/client/update": {
+        "/api/v1/client/update": {
             "put": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Actualizar un cliente",
@@ -523,11 +837,11 @@
                 }
             }
         },
-        "/client/{id}": {
+        "/api/v1/client/{id}": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Get client by id",
@@ -602,11 +916,11 @@
                 }
             }
         },
-        "/expense/create": {
+        "/api/v1/expense/create": {
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Parses the request body to create a new expense entry.",
@@ -683,11 +997,11 @@
                 }
             }
         },
-        "/expense/delete/{id}": {
+        "/api/v1/expense/delete/{id}": {
             "delete": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Deletes an expense based on the provided ID and workplace context.",
@@ -744,11 +1058,11 @@
                 }
             }
         },
-        "/expense/get_all": {
+        "/api/v1/expense/get_all": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Fetches all expenses from the specified tenant.",
@@ -827,11 +1141,11 @@
                 }
             }
         },
-        "/expense/get_today": {
+        "/api/v1/expense/get_today": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Fetches all expenses from the specified tenant, on the current day.",
@@ -910,11 +1224,11 @@
                 }
             }
         },
-        "/expense/update": {
+        "/api/v1/expense/update": {
             "put": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Updates the details of an expense based on the provided data.",
@@ -979,11 +1293,11 @@
                 }
             }
         },
-        "/expense/{id}": {
+        "/api/v1/expense/{id}": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Get Expense By ID",
@@ -1058,11 +1372,11 @@
                 }
             }
         },
-        "/income/create": {
+        "/api/v1/income/create": {
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Parses the request body to create a new income entry for either laundry or workshop.",
@@ -1145,11 +1459,11 @@
                 }
             }
         },
-        "/income/delete/{id}": {
+        "/api/v1/income/delete/{id}": {
             "delete": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Deletes an income entry based on the provided ID and workplace context.",
@@ -1212,11 +1526,11 @@
                 }
             }
         },
-        "/income/get_all": {
+        "/api/v1/income/get_all": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Fetches all incomes from the specified tenant.",
@@ -1301,11 +1615,11 @@
                 }
             }
         },
-        "/income/get_today": {
+        "/api/v1/income/get_today": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Fetches all incomes from the specified tenant, on the current day.",
@@ -1374,11 +1688,11 @@
                 }
             }
         },
-        "/income/update": {
+        "/api/v1/income/update": {
             "put": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Updates the details of an income based on the provided data.",
@@ -1449,11 +1763,11 @@
                 }
             }
         },
-        "/income/{id}": {
+        "/api/v1/income/{id}": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Fetches income details from based on the provided ID and tenant context.",
@@ -1528,11 +1842,11 @@
                 }
             }
         },
-        "/member/create": {
+        "/api/v1/member/create": {
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Memeber Create required auth token",
@@ -1591,11 +1905,11 @@
                 }
             }
         },
-        "/member/get/{id}": {
+        "/api/v1/member/get/{id}": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Memeber GetAll required auth token",
@@ -1667,11 +1981,11 @@
                 }
             }
         },
-        "/member/get_all": {
+        "/api/v1/member/get_all": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Memeber GetAll required auth token",
@@ -1734,11 +2048,11 @@
                 }
             }
         },
-        "/movement/create": {
+        "/api/v1/movement/create": {
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "This endpoint creates a new movement type based on the provided JSON payload.",
@@ -1821,11 +2135,11 @@
                 }
             }
         },
-        "/movement/delete/{id}": {
+        "/api/v1/movement/delete/{id}": {
             "delete": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Deletes a movement type based on its ID.",
@@ -1888,11 +2202,11 @@
                 }
             }
         },
-        "/movement/get_all": {
+        "/api/v1/movement/get_all": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Get all movement types from either laundry or workshop based on the provided isIncome query parameter.",
@@ -1970,11 +2284,11 @@
                 }
             }
         },
-        "/movement/update": {
+        "/api/v1/movement/update": {
             "put": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "This endpoint updates a movement type based on the provided JSON payload.",
@@ -2045,11 +2359,11 @@
                 }
             }
         },
-        "/movement/{id}": {
+        "/api/v1/movement/{id}": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Get Movement Type By ID",
@@ -2124,11 +2438,11 @@
                 }
             }
         },
-        "/permission/get_all": {
+        "/api/v1/permission/get_all": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Permissions GetAll required auth token",
@@ -2191,11 +2505,11 @@
                 }
             }
         },
-        "/permission/get_to_me": {
+        "/api/v1/permission/get_to_me": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Permissions GetAllToMe required auth token",
@@ -2258,11 +2572,208 @@
                 }
             }
         },
-        "/product/create": {
+        "/api/v1/point_sale/create": {
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Crear punto de venta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PointSale"
+                ],
+                "summary": "PointSaleCreate",
+                "parameters": [
+                    {
+                        "description": "Crear punto de venta",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.PointSaleCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "puntos de ventas creado con éxito",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Auth is required",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Not Authorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/point_sale/get_all": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "PointSale GetAll required auth token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PointSale"
+                ],
+                "summary": "PointSale GetAll",
+                "responses": {
+                    "200": {
+                        "description": "puntos de ventas obtenidos con éxito",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schemas.PointSaleResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Auth is required",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Not Authorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/point_sale/get_all_by_member": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener puntos de ventas asociados a miembro",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PointSale"
+                ],
+                "summary": "GetAllByMember GetAll",
+                "responses": {
+                    "200": {
+                        "description": "puntos de ventas obtenidos con éxito",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schemas.PointSaleResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Auth is required",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Not Authorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/product/create": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Creates a new product in the specified workplace.",
@@ -2327,11 +2838,11 @@
                 }
             }
         },
-        "/product/delete/{id}": {
+        "/api/v1/product/delete/{id}": {
             "delete": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Deletes the given product with the given id.",
@@ -2394,11 +2905,11 @@
                 }
             }
         },
-        "/product/get_all": {
+        "/api/v1/product/get_all": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Get All Products",
@@ -2461,11 +2972,11 @@
                 }
             }
         },
-        "/product/get_by_identifier": {
+        "/api/v1/product/get_by_identifier": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Get Products by identifier",
@@ -2537,11 +3048,11 @@
                 }
             }
         },
-        "/product/get_by_name": {
+        "/api/v1/product/get_by_name": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Fetches products from either laundry or workshop based on the provided name and workplace.",
@@ -2613,11 +3124,11 @@
                 }
             }
         },
-        "/product/update": {
+        "/api/v1/product/update": {
             "put": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Updates the given product and returns the updated product.",
@@ -2688,11 +3199,11 @@
                 }
             }
         },
-        "/product/update_stock": {
+        "/api/v1/product/update_stock": {
             "put": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Updates the stock of a product based on the given method (add, subtract, update).",
@@ -2763,11 +3274,11 @@
                 }
             }
         },
-        "/product/{id}": {
+        "/api/v1/product/{id}": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Get a product or part by its ID within a specified workplace.",
@@ -2842,11 +3353,11 @@
                 }
             }
         },
-        "/role/create": {
+        "/api/v1/role/create": {
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "This function fetches roles based on the user's role and workplace identifier",
@@ -2893,11 +3404,11 @@
                 }
             }
         },
-        "/role/get_all": {
+        "/api/v1/role/get_all": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "This function fetches roles based on the user's role and workplace identifier",
@@ -2948,11 +3459,11 @@
                 }
             }
         },
-        "/supplier/create": {
+        "/api/v1/supplier/create": {
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Creates a new supplier within the specified workplace.",
@@ -3029,11 +3540,11 @@
                 }
             }
         },
-        "/supplier/delete/{id}": {
+        "/api/v1/supplier/delete/{id}": {
             "delete": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Deletes a supplier based on the provided ID and workplace context.",
@@ -3096,11 +3607,11 @@
                 }
             }
         },
-        "/supplier/get_all": {
+        "/api/v1/supplier/get_all": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Get All Suppliers",
@@ -3163,14 +3674,11 @@
                 }
             }
         },
-        "/supplier/get_by_name": {
+        "/api/v1/supplier/get_by_name": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
-                    },
-                    {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Fetches suppliers from either laundry or workshop based on the provided name and workplace.",
@@ -3242,11 +3750,11 @@
                 }
             }
         },
-        "/supplier/update": {
+        "/api/v1/supplier/update": {
             "put": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Update a supplier's information from the specified workplace.",
@@ -3317,11 +3825,11 @@
                 }
             }
         },
-        "/supplier/{id}": {
+        "/api/v1/supplier/{id}": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Get a supplier by its ID within a specified workplace.",
@@ -3396,11 +3904,11 @@
                 }
             }
         },
-        "/tenant/create": {
+        "/api/v1/tenant/create": {
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Tenant Create required auth token",
@@ -3416,7 +3924,7 @@
                 "summary": "Tenant Create",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "UserID",
                         "name": "user_id",
                         "in": "query",
@@ -3466,11 +3974,11 @@
                 }
             }
         },
-        "/tenant/create_tenant_user": {
+        "/api/v1/tenant/create_tenant_user": {
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Tenant Create required auth token",
@@ -3529,11 +4037,11 @@
                 }
             }
         },
-        "/tenant/get_all": {
+        "/api/v1/tenant/get_all": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Tenant GetAll required auth token",
@@ -3600,7 +4108,7 @@
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "CookieAuth": []
                     }
                 ],
                 "description": "Creates a new user.",
@@ -3669,6 +4177,62 @@
             ],
             "properties": {
                 "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.AuthLoginAdmin": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.AuthenticatedUser": {
+            "type": "object",
+            "properties": {
+                "first_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_admin": {
+                    "type": "boolean"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "role_id": {
+                    "type": "integer"
+                },
+                "role_name": {
+                    "type": "string"
+                },
+                "tenant_id": {
+                    "type": "integer"
+                },
+                "tenant_identifier": {
+                    "type": "string"
+                },
+                "tenant_name": {
                     "type": "string"
                 },
                 "username": {
@@ -4197,6 +4761,37 @@
                 }
             }
         },
+        "schemas.PointSaleCreate": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "is_deposit": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.PointSaleResponse": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_deposit": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "schemas.Product": {
             "type": "object",
             "properties": {
@@ -4430,7 +5025,8 @@
                 "email",
                 "identifier",
                 "name",
-                "phone"
+                "phone",
+                "plan_id"
             ],
             "properties": {
                 "address": {
@@ -4450,6 +5046,9 @@
                 },
                 "phone": {
                     "type": "string"
+                },
+                "plan_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -4479,9 +5078,6 @@
                 },
                 "updated_at": {
                     "type": "string"
-                },
-                "user_is_active": {
-                    "type": "boolean"
                 }
             }
         },
@@ -4529,8 +5125,8 @@
         }
     },
     "securityDefinitions": {
-        "BearerAuth": {
-            "description": "Type \"Bearer\" followed by a space and the JWT token. Example: \"Bearer eyJhbGciOiJIUz...\"",
+        "CookieAuth": {
+            "description": "Type \"Bearer\" followed by a space and the JWT token.",
             "type": "apiKey",
             "name": "access_token",
             "in": "cookie"

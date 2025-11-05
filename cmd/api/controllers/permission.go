@@ -12,13 +12,13 @@ import (
 //	@Tags			Permission
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.PermissionResponse}	"Members obtenidos con éxito"
 //	@Failure		400	{object}	schemas.Response									"Bad Request"
 //	@Failure		401	{object}	schemas.Response									"Auth is required"
 //	@Failure		403	{object}	schemas.Response									"Not Authorized"
 //	@Failure		500	{object}	schemas.Response
-//	@Router			/permission/get_all [get]
+//	@Router			/api/v1/permission/get_all [get]
 func (p *PermissionController) PermissionGetAll(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los permisos")
 	permissions, err := p.PermissionService.PermissionGetAll()
@@ -54,18 +54,18 @@ func (p *PermissionController) PermissionGetAll(c *fiber.Ctx) error {
 //	@Tags			Permission
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.PermissionResponse}	"Members obtenidos con éxito"
 //	@Failure		400	{object}	schemas.Response									"Bad Request"
 //	@Failure		401	{object}	schemas.Response									"Auth is required"
 //	@Failure		403	{object}	schemas.Response									"Not Authorized"
 //	@Failure		500	{object}	schemas.Response
-//	@Router			/permission/get_to_me [get]
+//	@Router			/api/v1/permission/get_to_me [get]
 func (p *PermissionController) PermissionGetToMe(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos mis permisos")
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
 
-	if user.IsAdminTenant {
+	if user.IsAdmin {
 		permissions, err := p.PermissionService.PermissionGetAll()
 		if err != nil {
 			if errResp, ok := err.(*schemas.ErrorStruc); ok {
@@ -92,7 +92,7 @@ func (p *PermissionController) PermissionGetToMe(c *fiber.Ctx) error {
 		})
 	}
 
-	permissions, err := p.PermissionService.PermissionGetToMe(*user.RoleID)
+	permissions, err := p.PermissionService.PermissionGetToMe(user.RoleID)
 	if err != nil {
 		if errResp, ok := err.(*schemas.ErrorStruc); ok {
 			logging.ERROR("Error: %s", errResp.Err.Error())

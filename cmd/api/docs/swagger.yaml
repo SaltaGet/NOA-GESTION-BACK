@@ -9,6 +9,43 @@ definitions:
     - password
     - username
     type: object
+  schemas.AuthLoginAdmin:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  schemas.AuthenticatedUser:
+    properties:
+      first_name:
+        type: string
+      id:
+        type: integer
+      is_admin:
+        type: boolean
+      last_name:
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
+      role_id:
+        type: integer
+      role_name:
+        type: string
+      tenant_id:
+        type: integer
+      tenant_identifier:
+        type: string
+      tenant_name:
+        type: string
+      username:
+        type: string
+    type: object
   schemas.Client:
     properties:
       created_at:
@@ -357,6 +394,26 @@ definitions:
       id:
         type: string
     type: object
+  schemas.PointSaleCreate:
+    properties:
+      description:
+        type: string
+      is_deposit:
+        type: boolean
+      name:
+        type: string
+    type: object
+  schemas.PointSaleResponse:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      is_deposit:
+        type: boolean
+      name:
+        type: string
+    type: object
   schemas.Product:
     properties:
       created_at:
@@ -520,6 +577,8 @@ definitions:
         type: string
       phone:
         type: string
+      plan_id:
+        type: integer
     required:
     - address
     - cuit_pdv
@@ -527,6 +586,7 @@ definitions:
     - identifier
     - name
     - phone
+    - plan_id
     type: object
   schemas.TenantResponse:
     properties:
@@ -546,8 +606,6 @@ definitions:
         type: string
       updated_at:
         type: string
-      user_is_active:
-        type: boolean
     type: object
   schemas.TenantUserCreate:
     properties:
@@ -585,6 +643,48 @@ info:
   title: APP NOA Gestion
   version: "1.0"
 paths:
+  /api/v1/auth/current_user:
+    get:
+      consumes:
+      - application/json
+      description: Obtener usuario actual
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.AuthenticatedUser'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: CurrentUser user
+      tags:
+      - Auth
   /api/v1/auth/login:
     post:
       consumes:
@@ -627,15 +727,57 @@ paths:
       summary: Login user
       tags:
       - Auth
-  /api/v1/auth/tenant_login/{tenant_id}:
+  /api/v1/auth/login_admin:
     post:
       consumes:
       - application/json
-      description: Login tenant required tenant_id
+      description: Required identifier and password
       parameters:
-      - description: tenant_id
+      - description: Credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.AuthLoginAdmin'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      summary: Login Admin user
+      tags:
+      - Auth
+  /api/v1/auth/login_point_sale/{point_sale_id}:
+    post:
+      consumes:
+      - application/json
+      description: Login al punto de venta
+      parameters:
+      - description: id del punto de venta
         in: path
-        name: tenant_id
+        name: point_sale_id
         required: true
         type: string
       produces:
@@ -671,10 +813,125 @@ paths:
             $ref: '#/definitions/schemas.Response'
       security:
       - CookieAuth: []
-      summary: Login Tenant
+      summary: LoginPointSale
       tags:
       - Auth
-  /client/{id}:
+  /api/v1/auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Logout user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: Logout user
+      tags:
+      - Auth
+  /api/v1/auth/logout_admin:
+    post:
+      consumes:
+      - application/json
+      description: logout user admin
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: Logout Admin user
+      tags:
+      - Auth
+  /api/v1/auth/logout_point_sale:
+    post:
+      consumes:
+      - application/json
+      description: Logout del punto de venta
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: LogoutPointSale
+      tags:
+      - Auth
+  /api/v1/client/{id}:
     get:
       consumes:
       - application/json
@@ -718,11 +975,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get client by id
       tags:
       - Client
-  /client/create:
+  /api/v1/client/create:
     post:
       consumes:
       - application/json
@@ -762,11 +1019,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Create client
       tags:
       - Client
-  /client/delete/{id}:
+  /api/v1/client/delete/{id}:
     delete:
       consumes:
       - application/json
@@ -810,11 +1067,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Delete client by ID
       tags:
       - Client
-  /client/get_all:
+  /api/v1/client/get_all:
     get:
       consumes:
       - application/json
@@ -854,11 +1111,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get All Clients
       tags:
       - Client
-  /client/get_by_name:
+  /api/v1/client/get_by_name:
     get:
       consumes:
       - application/json
@@ -904,11 +1161,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get Client By Name
       tags:
       - Client
-  /client/update:
+  /api/v1/client/update:
     put:
       consumes:
       - application/json
@@ -952,11 +1209,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Actualizar un cliente
       tags:
       - Client
-  /expense/{id}:
+  /api/v1/expense/{id}:
     get:
       consumes:
       - application/json
@@ -1000,11 +1257,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get Expense By ID
       tags:
       - Expense
-  /expense/create:
+  /api/v1/expense/create:
     post:
       consumes:
       - application/json
@@ -1049,11 +1306,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Create Expense
       tags:
       - Expense
-  /expense/delete/{id}:
+  /api/v1/expense/delete/{id}:
     delete:
       consumes:
       - application/json
@@ -1088,11 +1345,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Delete Expense
       tags:
       - Expense
-  /expense/get_all:
+  /api/v1/expense/get_all:
     get:
       consumes:
       - application/json
@@ -1139,11 +1396,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get all expenses
       tags:
       - Expense
-  /expense/get_today:
+  /api/v1/expense/get_today:
     get:
       consumes:
       - application/json
@@ -1191,11 +1448,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get expense today
       tags:
       - Expense
-  /expense/update:
+  /api/v1/expense/update:
     put:
       consumes:
       - application/json
@@ -1235,11 +1492,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Update Expense
       tags:
       - Expense
-  /income/{id}:
+  /api/v1/income/{id}:
     get:
       consumes:
       - application/json
@@ -1284,11 +1541,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get Income By ID
       tags:
       - Income
-  /income/create:
+  /api/v1/income/create:
     post:
       consumes:
       - application/json
@@ -1338,11 +1595,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Create Income
       tags:
       - Income
-  /income/delete/{id}:
+  /api/v1/income/delete/{id}:
     delete:
       consumes:
       - application/json
@@ -1382,11 +1639,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Delete Income
       tags:
       - Income
-  /income/get_all:
+  /api/v1/income/get_all:
     get:
       consumes:
       - application/json
@@ -1437,11 +1694,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get all incomes
       tags:
       - Income
-  /income/get_today:
+  /api/v1/income/get_today:
     get:
       consumes:
       - application/json
@@ -1481,11 +1738,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get Income Today
       tags:
       - Income
-  /income/update:
+  /api/v1/income/update:
     put:
       consumes:
       - application/json
@@ -1529,11 +1786,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Update Income
       tags:
       - Income
-  /member/create:
+  /api/v1/member/create:
     post:
       consumes:
       - application/json
@@ -1569,11 +1826,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Memeber Create
       tags:
       - Member
-  /member/get/{id}:
+  /api/v1/member/get/{id}:
     get:
       consumes:
       - application/json
@@ -1615,11 +1872,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Memeber GetAll
       tags:
       - Member
-  /member/get_all:
+  /api/v1/member/get_all:
     get:
       consumes:
       - application/json
@@ -1655,11 +1912,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Memeber GetAll
       tags:
       - Member
-  /movement/{id}:
+  /api/v1/movement/{id}:
     get:
       consumes:
       - application/json
@@ -1703,11 +1960,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get Movement Type By ID
       tags:
       - Movement
-  /movement/create:
+  /api/v1/movement/create:
     post:
       consumes:
       - application/json
@@ -1757,11 +2014,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Create Movement Type
       tags:
       - Movement
-  /movement/delete/{id}:
+  /api/v1/movement/delete/{id}:
     delete:
       consumes:
       - application/json
@@ -1800,11 +2057,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Delete Movement Type
       tags:
       - Movement
-  /movement/get_all:
+  /api/v1/movement/get_all:
     get:
       consumes:
       - application/json
@@ -1851,11 +2108,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get all movement types
       tags:
       - Movement
-  /movement/update:
+  /api/v1/movement/update:
     put:
       consumes:
       - application/json
@@ -1900,11 +2157,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Update Movement Type
       tags:
       - Movement
-  /permission/get_all:
+  /api/v1/permission/get_all:
     get:
       consumes:
       - application/json
@@ -1940,11 +2197,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Permissions GetAll
       tags:
       - Permission
-  /permission/get_to_me:
+  /api/v1/permission/get_to_me:
     get:
       consumes:
       - application/json
@@ -1980,11 +2237,131 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Permissions GetAlltoME
       tags:
       - Permission
-  /product/{id}:
+  /api/v1/point_sale/create:
+    post:
+      consumes:
+      - application/json
+      description: Crear punto de venta
+      parameters:
+      - description: Crear punto de venta
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.PointSaleCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: puntos de ventas creado con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: PointSaleCreate
+      tags:
+      - PointSale
+  /api/v1/point_sale/get_all:
+    get:
+      consumes:
+      - application/json
+      description: PointSale GetAll required auth token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: puntos de ventas obtenidos con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.PointSaleResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: PointSale GetAll
+      tags:
+      - PointSale
+  /api/v1/point_sale/get_all_by_member:
+    get:
+      consumes:
+      - application/json
+      description: Obtener puntos de ventas asociados a miembro
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: puntos de ventas obtenidos con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.PointSaleResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: GetAllByMember GetAll
+      tags:
+      - PointSale
+  /api/v1/product/{id}:
     get:
       consumes:
       - application/json
@@ -2028,11 +2405,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get Product By ID
       tags:
       - Product
-  /product/create:
+  /api/v1/product/create:
     post:
       consumes:
       - application/json
@@ -2072,11 +2449,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Create Product
       tags:
       - Product
-  /product/delete/{id}:
+  /api/v1/product/delete/{id}:
     delete:
       consumes:
       - application/json
@@ -2115,11 +2492,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Delete Product
       tags:
       - Product
-  /product/get_all:
+  /api/v1/product/get_all:
     get:
       consumes:
       - application/json
@@ -2155,11 +2532,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get All Products
       tags:
       - Product
-  /product/get_by_identifier:
+  /api/v1/product/get_by_identifier:
     get:
       consumes:
       - application/json
@@ -2201,11 +2578,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get Products by identifier
       tags:
       - Product
-  /product/get_by_name:
+  /api/v1/product/get_by_name:
     get:
       consumes:
       - application/json
@@ -2248,11 +2625,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get Product By Name
       tags:
       - Product
-  /product/update:
+  /api/v1/product/update:
     put:
       consumes:
       - application/json
@@ -2296,11 +2673,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Update Product
       tags:
       - Product
-  /product/update_stock:
+  /api/v1/product/update_stock:
     put:
       consumes:
       - application/json
@@ -2345,11 +2722,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Update Product Stock
       tags:
       - Product
-  /role/create:
+  /api/v1/role/create:
     post:
       consumes:
       - application/json
@@ -2378,11 +2755,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Retrieve roles for a user in a specific workplace
       tags:
       - Role
-  /role/get_all:
+  /api/v1/role/get_all:
     get:
       consumes:
       - application/json
@@ -2411,11 +2788,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Retrieve roles for a user in a specific workplace
       tags:
       - Role
-  /supplier/{id}:
+  /api/v1/supplier/{id}:
     get:
       consumes:
       - application/json
@@ -2459,11 +2836,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get Supplier By ID
       tags:
       - Supplier
-  /supplier/create:
+  /api/v1/supplier/create:
     post:
       consumes:
       - application/json
@@ -2508,11 +2885,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Create Supplier
       tags:
       - Supplier
-  /supplier/delete/{id}:
+  /api/v1/supplier/delete/{id}:
     delete:
       consumes:
       - application/json
@@ -2551,11 +2928,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Delete Supplier
       tags:
       - Supplier
-  /supplier/get_all:
+  /api/v1/supplier/get_all:
     get:
       consumes:
       - application/json
@@ -2591,11 +2968,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get All Suppliers
       tags:
       - Supplier
-  /supplier/get_by_name:
+  /api/v1/supplier/get_by_name:
     get:
       consumes:
       - application/json
@@ -2638,12 +3015,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Get Supplier By Name
       tags:
       - Supplier
-  /supplier/update:
+  /api/v1/supplier/update:
     put:
       consumes:
       - application/json
@@ -2687,11 +3063,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Update Supplier
       tags:
       - Supplier
-  /tenant/create:
+  /api/v1/tenant/create:
     post:
       consumes:
       - application/json
@@ -2701,7 +3077,7 @@ paths:
         in: query
         name: user_id
         required: true
-        type: string
+        type: integer
       - description: TenantCreate
         in: body
         name: TenantCreate
@@ -2732,11 +3108,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Tenant Create
       tags:
       - Tenant
-  /tenant/create_tenant_user:
+  /api/v1/tenant/create_tenant_user:
     post:
       consumes:
       - application/json
@@ -2772,11 +3148,11 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Tenant Create
       tags:
       - Tenant
-  /tenant/get_all:
+  /api/v1/tenant/get_all:
     get:
       consumes:
       - application/json
@@ -2812,7 +3188,7 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Tenant GetAll
       tags:
       - Tenant
@@ -2852,14 +3228,13 @@ paths:
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
-      - BearerAuth: []
+      - CookieAuth: []
       summary: Create User
       tags:
       - User
 securityDefinitions:
-  BearerAuth:
-    description: 'Type "Bearer" followed by a space and the JWT token. Example: "Bearer
-      eyJhbGciOiJIUz..."'
+  CookieAuth:
+    description: Type "Bearer" followed by a space and the JWT token.
     in: cookie
     name: access_token
     type: apiKey

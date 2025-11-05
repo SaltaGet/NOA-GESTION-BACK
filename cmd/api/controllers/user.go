@@ -12,7 +12,7 @@ import (
 //	@Tags			User
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			userCreate	body		schemas.UserCreate	true	"User information"
 //	@Success		201			{object}	schemas.Response
 //	@Failure		400			{object}	schemas.Response	"Bad Request"
@@ -37,28 +37,28 @@ func (u *UserController) CreateUser(c *fiber.Ctx) error {
 			Message: err.Error(),
 		})
 	}
-	userCreated, err := u.UserService.UserCreate(&userCreate)
-	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
-	}
+	// userCreated, err := u.UserService.UserCreate(&userCreate)
+	// if err != nil {
+	// 	if errResp, ok := err.(*schemas.ErrorStruc); ok {
+	// 		logging.ERROR("Error: %s", errResp.Err.Error())
+	// 		return c.Status(errResp.StatusCode).JSON(schemas.Response{
+	// 			Status:  false,
+	// 			Body:    nil,
+	// 			Message: errResp.Message,
+	// 		})
+	// 	}
+	// 	logging.ERROR("Error: %s", err.Error())
+	// 	return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
+	// 		Status:  false,
+	// 		Body:    nil,
+	// 		Message: "Error interno",
+	// 	})
+	// }
 	
 	logging.INFO("Usuario creado")
 	return c.Status(fiber.StatusCreated).JSON(schemas.Response{
 		Status:  true,
-		Body:    userCreated,
+		Body:    nil,
 		Message: "User created",
 	})
 }

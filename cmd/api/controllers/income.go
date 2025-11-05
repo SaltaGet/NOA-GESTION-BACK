@@ -14,7 +14,7 @@ import (
 //	@Tags			Income
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			id	path		string											true	"ID of the income"
 //	@Success		200	{object}	schemas.Response{body=schemas.IncomeResponse}	"Income details fetched successfully"
 //	@Failure		400	{object}	schemas.Response								"Bad Request"
@@ -22,7 +22,7 @@ import (
 //	@Failure		403	{object}	schemas.Response								"Not Authorized"
 //	@Failure		404	{object}	schemas.Response								"Expense not found"
 //	@Failure		500	{object}	schemas.Response								"Internal server error"
-//	@Router			/income/{id} [get]
+//	@Router			/api/v1/income/{id} [get]
 func (i *IncomeController) GetIncomeByID(c *fiber.Ctx) error {
 	logging.INFO("Obtener un ingreso por ID")
 	id := c.Params("id")
@@ -67,7 +67,7 @@ func (i *IncomeController) GetIncomeByID(c *fiber.Ctx) error {
 //	@Tags			Income
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			page	query		int											false	"Page number"				default(1)
 //	@Param			limit	query		int											false	"Number of items per page"	default(20)
 //	@Success		200		{object}	schemas.Response{body=[]schemas.IncomeDTO}	"List of incomes"
@@ -76,7 +76,7 @@ func (i *IncomeController) GetIncomeByID(c *fiber.Ctx) error {
 //	@Failure		403		{object}	schemas.Response							"Not Authorized"
 //	@Failure		404		{object}	schemas.Response							"Expense not found"
 //	@Failure		500		{object}	schemas.Response							"Internal server error"
-//	@Router			/income/get_all [get]
+//	@Router			/api/v1/income/get_all [get]
 func (i *IncomeController) GetAllIncomes(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los ingresos")
 	pageParam := c.Query("page", "1")
@@ -121,14 +121,14 @@ func (i *IncomeController) GetAllIncomes(c *fiber.Ctx) error {
 //	@Tags			Income
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.IncomeDTO}	"List of all incomes"
 //	@Failure		400	{object}	schemas.Response							"Bad Request"
 //	@Failure		401	{object}	schemas.Response							"Auth is required"
 //	@Failure		403	{object}	schemas.Response							"Not Authorized"
 //	@Failure		404	{object}	schemas.Response							"Expense not found"
 //	@Failure		500	{object}	schemas.Response							"Internal server error"
-//	@Router			/income/get_today [get]
+//	@Router			/api/v1/income/get_today [get]
 func (i *IncomeController) GetIncomeToday(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los ingresos de hoy")
 	pageParam := c.Query("page", "1")
@@ -175,7 +175,7 @@ func (i *IncomeController) GetIncomeToday(c *fiber.Ctx) error {
 //	@Tags			Income
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			incomeCreate	body		schemas.IncomeCreate			true	"Income information"
 //	@Success		200				{object}	schemas.Response{body=string}	"Income created successfully"
 //	@Failure		400				{object}	schemas.Response				"Bad Request"
@@ -184,7 +184,7 @@ func (i *IncomeController) GetIncomeToday(c *fiber.Ctx) error {
 //	@Failure		404				{object}	schemas.Response				"Expense not found"
 //	@Failure		422				{object}	schemas.Response				"Model Invalid"
 //	@Failure		500				{object}	schemas.Response				"Internal server error"
-//	@Router			/income/create [post]
+//	@Router			/api/v1/income/create [post]
 func (i *IncomeController) CreateIncome(c *fiber.Ctx) error {
 	logging.INFO("Crear ingreso")
 	var incomeCreate schemas.IncomeCreate
@@ -237,7 +237,7 @@ func (i *IncomeController) CreateIncome(c *fiber.Ctx) error {
 //	@Tags			Income
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			incomeUpdate	body		schemas.IncomeUpdate	true	"Income data to update"
 //	@Success		200				{object}	schemas.Response		"Income updated successfully"
 //	@Failure		400				{object}	schemas.Response		"Bad Request"
@@ -246,7 +246,7 @@ func (i *IncomeController) CreateIncome(c *fiber.Ctx) error {
 //	@Failure		404				{object}	schemas.Response		"Expense not found"
 //	@Failure		422				{object}	schemas.Response		"Model Invalid"
 //	@Failure		500				{object}	schemas.Response		"Internal server error"
-//	@Router			/income/update [put]
+//	@Router			/api/v1/income/update [put]
 func (i *IncomeController) UpdateIncome(c *fiber.Ctx) error {
 	logging.INFO("Actualizar ingreso")
 	var incomeUpdate schemas.IncomeUpdate
@@ -299,7 +299,7 @@ func (i *IncomeController) UpdateIncome(c *fiber.Ctx) error {
 //	@Tags			Income
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			id	path		string				true	"ID of the income"
 //	@Success		200	{object}	schemas.Response	"Income deleted successfully"
 //	@Failure		400	{object}	schemas.Response	"Bad Request"
@@ -307,7 +307,7 @@ func (i *IncomeController) UpdateIncome(c *fiber.Ctx) error {
 //	@Failure		403	{object}	schemas.Response	"Not Authorized"
 //	@Failure		404	{object}	schemas.Response	"Expense not found"
 //	@Failure		500	{object}	schemas.Response	"Error interno"
-//	@Router			/income/delete/{id} [delete]
+//	@Router			/api/v1/income/delete/{id} [delete]
 func (i *IncomeController) DeleteIncome(c *fiber.Ctx) error {
 	logging.INFO("Eliminar ingreso")
 	id := c.Params("id")

@@ -70,17 +70,15 @@ func (r *MainRepository) TenantGetByIdentifier(identifier string) (*models.Tenan
 	return &tenant, nil
 }
 
-func (r *MainRepository) TenantGetAll(userID int64) (*[]schemas.TenantResponse, error) {
+func (r *MainRepository) TenantGetAll() (*[]schemas.TenantResponse, error) {
 	var tenants []schemas.TenantResponse
 
 	err := r.DB.
 		Model(&models.Tenant{}).
 		Select(`tenants.id, tenants.name, tenants.address, tenants.phone,
                 tenants.email, tenants.is_active,
-                user_tenants.is_active AS user_is_active,
                 tenants.created_at, tenants.updated_at`).
 		Joins("JOIN user_tenants ON tenants.id = user_tenants.tenant_id").
-		Where("user_tenants.user_id = ?", userID).
 		Scan(&tenants).Error
 
 	if err != nil {
@@ -158,13 +156,27 @@ func (r *MainRepository) TenantCreateByUserID(tenantCreate *schemas.TenantCreate
 	if err := tx.Create(&models.UserTenant{
 		UserID:    user.ID,
 		TenantID:  tenant.ID,
-		IsAdmin:   true,
 	}).Error; err != nil {
 		tx.Rollback()
 		return 0, schemas.ErrorResponse(500, "Error interno al crear user-tenant", err)
 	}
 
-	err = database.PrepareDB(uri)
+	// generar pass generic ***
+
+	memberAdmin := &models.Member{
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Username: user.Username,
+		Email:    user.Email,
+		Password: "1",
+		IsAdmin:  true,
+		Address: user.Address,
+		RoleID: 1,
+	}
+
+	// enviar email ***
+
+	err = database.PrepareDB(uri, *memberAdmin)
 	if err != nil {
 		tx.Rollback()
 		return 0, schemas.ErrorResponse(500, "Error interno al crear la base de datos del tenant", err)
@@ -201,6 +213,7 @@ func (r *MainRepository) TenantUserCreate(tenantUserCreate *schemas.TenantUserCr
 		CuitPdv:    tenantUserCreate.TenantCreate.CuitPdv,
 		Connection: connection,
 		Identifier: identifier,
+		PlanID:     tenantUserCreate.TenantCreate.PlanID,
 	}
 
 	if err := tx.Create(tenant).Error; err != nil {
@@ -211,34 +224,42 @@ func (r *MainRepository) TenantUserCreate(tenantUserCreate *schemas.TenantUserCr
 		return 0, schemas.ErrorResponse(500, "Error interno creating tenant", err)
 	}
 
-	pass, err :=utils.HashPassword(tenantUserCreate.UserCreate.Password)
-	if err != nil {
-		return 0, schemas.ErrorResponse(500, "Error interno hashed password", err)
-	}
-
 	user := &models.User{
 		FirstName: tenantUserCreate.UserCreate.FirstName,
 		LastName:  tenantUserCreate.UserCreate.LastName,
-		Username: tenantUserCreate.UserCreate.Username,
 		Email:    tenantUserCreate.UserCreate.Email,
-		Password: pass,
+		Address: &tenantUserCreate.TenantCreate.Address,
+		Username: tenantUserCreate.UserCreate.Username,
 	}
 
 	if err := tx.Create(user).Error; err != nil {
 		tx.Rollback()
-		return 0, schemas.ErrorResponse(500, "Error interno al crear usuario", err)
+		if errors.Is(err, gorm.ErrInvalidData){
+			return 0, schemas.ErrorResponse(400, "Los campos email e identifier deben ser únicos, algun campo ya existe", err)
+		}
+		return 0, schemas.ErrorResponse(500, "Error interno creating tenant", err)
 	}
 
 	if err := tx.Create(&models.UserTenant{
 		UserID:    user.ID,
 		TenantID:  tenant.ID,
-		IsAdmin:   true,
 	}).Error; err != nil {
 		tx.Rollback()
 		return 0, schemas.ErrorResponse(500, "Error interno al crear tenant", err)
 	}
 
-	err = database.PrepareDB(uri)
+	memberAdmin := &models.Member{
+		FirstName: tenantUserCreate.UserCreate.FirstName,
+		LastName:  tenantUserCreate.UserCreate.LastName,
+		Username: tenantUserCreate.UserCreate.Username,
+		Email:    tenantUserCreate.UserCreate.Email,
+		Password: tenantUserCreate.UserCreate.Password,
+		IsAdmin:  true,
+		Address: &tenantUserCreate.TenantCreate.Address,
+		RoleID: 1,
+	}
+
+	err = database.PrepareDB(uri, *memberAdmin)
 	if err != nil {
 		tx.Rollback()
 		return 0, schemas.ErrorResponse(500, "Error interno al crear la base de datos del tenant", err)
@@ -252,23 +273,23 @@ func (r *MainRepository) TenantUserCreate(tenantUserCreate *schemas.TenantUserCr
 }
 
 func (r *MainRepository) TenantUpdate(userID int64, tenant *schemas.TenantUpdate) error {
-	var userTenant models.UserTenant
+	// var userTenant models.UserTenant
 
-	err := r.DB.First(&userTenant, "user_id = ? AND tenant_id = ?", userID, tenant.ID).Error
-	if err != nil {
-		return schemas.ErrorResponse(404, "User-tenant relationship not found", err)
-	}
+	// err := r.DB.First(&userTenant, "user_id = ? AND tenant_id = ?", userID, tenant.ID).Error
+	// if err != nil {
+	// 	return schemas.ErrorResponse(404, "User-tenant relationship not found", err)
+	// }
 
-	if !userTenant.IsAdmin {
-		return schemas.ErrorResponse(403, "No tienes permisos para actualizar el tenant", fmt.Errorf("no tienes permisos para actualizar el tenant"))
-	}
+	// // if !userTenant.IsAdmin {
+	// // 	return schemas.ErrorResponse(403, "No tienes permisos para actualizar el tenant", fmt.Errorf("no tienes permisos para actualizar el tenant"))
+	// // }
 
-	if err := r.DB.Model(&models.Tenant{}).Updates(tenant).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return schemas.ErrorResponse(404, "Tenant not found", err)
-		}
-		return schemas.ErrorResponse(500, "Error interno updating tenant", err)
-	}
+	// if err := r.DB.Model(&models.Tenant{}).Updates(tenant).Error; err != nil {
+	// 	if errors.Is(err, gorm.ErrRecordNotFound) {
+	// 		return schemas.ErrorResponse(404, "Tenant not found", err)
+	// 	}
+	// 	return schemas.ErrorResponse(500, "Error interno updating tenant", err)
+	// }
 
 	return nil
 }

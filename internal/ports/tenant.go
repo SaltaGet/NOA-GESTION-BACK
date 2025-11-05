@@ -9,7 +9,7 @@ import (
 type TenantRepository interface {
 	TenantGetByID(id int64) (tenant *models.Tenant, err error) 
 	TenantGetByIdentifier(identifier string) (tenant *models.Tenant, err error) 
-	TenantGetAll(userID int64) (tenants *[]schemas.TenantResponse, err error)
+	TenantGetAll() (tenants *[]schemas.TenantResponse, err error)
 	TenantGetConections() (conections *[]string, err error)
 	TenantCreateByUserID(tenantCreate *schemas.TenantCreate, userID int64) (id int64, err error)
 	TenantUserCreate(tenantUserCreate *schemas.TenantUserCreate) (id int64, err error)
@@ -19,7 +19,7 @@ type TenantRepository interface {
 type TenantService interface {
 	TenantGetByID(tenantID int64) (tenant *models.Tenant, err error) 
 	TenantGetByIdentifier(identifier string) (tenant *models.Tenant, err error) 
-	TenantGetAll(userID int64) (tenants *[]schemas.TenantResponse, err error)
+	TenantGetAll() (tenants *[]schemas.TenantResponse, err error)
 	TenantGetConections() (conections *[]string, err error)
 	TenantCreateByUserID(tenantCreate *schemas.TenantCreate, userID int64) (id int64, err error)
 	TenantUserCreate(tenantUserCreate *schemas.TenantUserCreate) (id int64, err error)

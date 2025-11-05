@@ -7,7 +7,7 @@ import (
 
 func RolePermissionMiddleware(code string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		user, ok := c.Locals("user").(*schemas.AuthenticatedUser)
+		member, ok := c.Locals("user").(*schemas.AuthenticatedUser)
 		if !ok {
 			return c.Status(fiber.StatusUnauthorized).JSON(schemas.Response{
 				Status:  false,
@@ -16,17 +16,17 @@ func RolePermissionMiddleware(code string) fiber.Handler {
 			})
 		}
 
-		if user.IsAdminTenant {
+		if member.IsAdmin {
 			return c.Next()
 		}
 
-		for _, permission := range *user.Permissions {
+		for _, permission := range member.Permissions {
 			if permission == code {
 				return c.Next()
 			}
 		} 
 
-		return c.Status(fiber.StatusForbidden).JSON(schemas.Response{
+		return c.Status(403).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
 			Message: "No autorizado",

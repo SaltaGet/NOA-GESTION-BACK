@@ -15,11 +15,11 @@ import (
 //	@Tags			Role
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.RoleResponse}	"Roles retrieved successfully"
 //	@Failure		400	{object}	schemas.Response								"Bad request if user or workplace is missing"
 //	@Failure		500	{object}	schemas.Response								"Internal server error on failure"
-//	@Router			/role/get_all [get]
+//	@Router			/api/v1/role/get_all [get]
 func (r *RoleController) RoleGetAll(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los roles")
 	roles, err := r.RoleService.RoleGetAll()
@@ -54,12 +54,12 @@ func (r *RoleController) RoleGetAll(c *fiber.Ctx) error {
 //	@Tags			Role
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			role	body		schemas.RoleCreate	true	"Role object"
 //	@Success		200		{object}	schemas.Response	"Roles retrieved successfully"
 //	@Failure		400		{object}	schemas.Response	"Bad request if user or workplace is missing"
 //	@Failure		500		{object}	schemas.Response	"Internal server error on failure"
-//	@Router			/role/create [post]
+//	@Router			/api/v1/role/create [post]
 func (r *RoleController) RoleCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear rol")
 	var roleCreate schemas.RoleCreate

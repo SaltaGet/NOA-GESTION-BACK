@@ -33,6 +33,10 @@ type PermissionService struct {
 	PermissionRepository ports.PermissionRepository
 }
 
+type PointSaleService struct {
+	PointSaleRepository ports.PointSaleRepository
+}
+
 type ProductService struct {
 	ProductRepository ports.ProductRepository
 }

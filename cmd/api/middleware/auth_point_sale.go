@@ -7,22 +7,23 @@ import (
 
 func PointSaleMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		user, ok := c.Locals("user").(*schemas.AuthenticatedUser)
+		pointSaleID, ok := c.Locals("point_sale_id").(int64)
 		if !ok {
 			return c.Status(fiber.StatusUnauthorized).JSON(schemas.Response{
 				Status:  false,
 				Body:    nil,
-				Message: "Teanant No autenticado",
+				Message: "Se requiere autenticacion en punto de venta",
 			})
 		}
 
-		if user.MemberID == nil {
+		if pointSaleID < 1 {
 			return c.Status(401).JSON(schemas.Response{
 				Status:  false,
 				Body:    nil,
-				Message: "login tenant is required",
+				Message: "Se requiere autenticacion en punto de venta",
 			})
-		}
+
+		} 
 
 		return c.Next()
 	}

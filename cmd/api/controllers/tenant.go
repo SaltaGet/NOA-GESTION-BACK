@@ -15,32 +15,18 @@ import (
 // @Tags			Tenant
 // @Accept			json
 // @Produce		json
-// @Security		BearerAuth
+// @Security		CookieAuth
 // @Success		200	{object}	schemas.Response{body=[]schemas.TenantResponse}	"Tenants obtenidos con éxito"
 // @Failure		400	{object}	schemas.Response								"Bad Request"
 // @Failure		401	{object}	schemas.Response								"Auth is required"
 // @Failure		403	{object}	schemas.Response								"Not Authorized"
 // @Failure		500	{object}	schemas.Response
-// @Router			/tenant/get_all [get]
+// @Router			/api/v1/tenant/get_all [get]
 func (t *TenantController) GetTenants(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los tenants")
-	user := c.Locals("user").(*schemas.AuthenticatedUser)
-	tenants, err := t.TenantService.TenantGetAll(user.ID)
+	tenants, err := t.TenantService.TenantGetAll()
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+		return schemas.HandleError(c, err)
 	}
 
 	if tenants == nil || len(*tenants) == 0 {
@@ -63,7 +49,7 @@ func (t *TenantController) GetTenants(c *fiber.Ctx) error {
 // @Tags			Tenant
 // @Accept			json
 // @Produce		json
-// @Security		BearerAuth
+// @Security		CookieAuth
 // @Param			user_id			query		int64					true	"UserID"
 // @Param			TenantCreate	body		schemas.TenantCreate	true	"TenantCreate"
 // @Success		200				{object}	schemas.Response		"Tenant creado con éxito"
@@ -71,7 +57,7 @@ func (t *TenantController) GetTenants(c *fiber.Ctx) error {
 // @Failure		401				{object}	schemas.Response		"Auth is required"
 // @Failure		403				{object}	schemas.Response		"Not Authorized"
 // @Failure		500				{object}	schemas.Response
-// @Router			/tenant/create [post]
+// @Router			/api/v1/tenant/create [post]
 func (t *TenantController) TenantCreateByUserID(c *fiber.Ctx) error {
 	logging.INFO("Crear tenant")
 	userIDStr := c.Query("user_id", "")
@@ -135,14 +121,14 @@ func (t *TenantController) TenantCreateByUserID(c *fiber.Ctx) error {
 // @Tags			Tenant
 // @Accept			json
 // @Produce		json
-// @Security		BearerAuth
+// @Security		CookieAuth
 // @Param			TenantUserCreate	body		schemas.TenantUserCreate	true	"TenantUserCreate"
 // @Success		200					{object}	schemas.Response			"Tenant y Usuario creados con éxito"
 // @Failure		400					{object}	schemas.Response			"Bad Request"
 // @Failure		401					{object}	schemas.Response			"Auth is required"
 // @Failure		403					{object}	schemas.Response			"Not Authorized"
 // @Failure		500					{object}	schemas.Response
-// @Router			/tenant/create_tenant_user [post]
+// @Router			/api/v1/tenant/create_tenant_user [post]
 func (t *TenantController) TenantUserCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear tenant y user")
 	var tenantUserCrate schemas.TenantUserCreate

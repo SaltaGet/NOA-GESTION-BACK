@@ -12,7 +12,7 @@ import (
 //	@Tags			Client
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			id	path		string	true	"Id del cliente"
 //	@Success		200	{object}	schemas.Response{body=schemas.Client}
 //	@Failure		400	{object}	schemas.Response
@@ -20,7 +20,7 @@ import (
 //	@Failure		403	{object}	schemas.Response
 //	@Failure		404	{object}	schemas.Response
 //	@Failure		500	{object}	schemas.Response
-//	@Router			/client/{id} [get]
+//	@Router			/api/v1/client/{id} [get]
 func (cl *ClientController) ClientGetByID(c *fiber.Ctx) error {
 	logging.INFO("Obtener un cliente por ID")
 	id := c.Params("id")
@@ -65,14 +65,14 @@ func (cl *ClientController) ClientGetByID(c *fiber.Ctx) error {
 //	@Tags			Client
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.Client}
 //	@Failure		400	{object}	schemas.Response
 //	@Failure		401	{object}	schemas.Response
 //	@Failure		403	{object}	schemas.Response
 //	@Failure		404	{object}	schemas.Response
 //	@Failure		500	{object}	schemas.Response
-//	@Router			/client/get_all [get]
+//	@Router			/api/v1/client/get_all [get]
 func (cl *ClientController) ClientGetAll(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los clientes")
 	clients, err := cl.ClientService.ClientGetAll()
@@ -107,7 +107,7 @@ func (cl *ClientController) ClientGetAll(c *fiber.Ctx) error {
 //	@Tags			Client
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			name	query		string	true	"Name"
 //	@Success		200		{object}	schemas.Response{body=[]schemas.Client}
 //	@Failure		400		{object}	schemas.Response
@@ -115,7 +115,7 @@ func (cl *ClientController) ClientGetAll(c *fiber.Ctx) error {
 //	@Failure		403		{object}	schemas.Response
 //	@Failure		404		{object}	schemas.Response
 //	@Failure		500		{object}	schemas.Response
-//	@Router			/client/get_by_name [get]
+//	@Router			/api/v1/client/get_by_name [get]
 func (cl *ClientController) ClientGetByName(c *fiber.Ctx) error {
 	logging.INFO("Obtener un cliente por nombre")
 	name := c.Query("name")
@@ -160,7 +160,7 @@ func (cl *ClientController) ClientGetByName(c *fiber.Ctx) error {
 //	@Tags			Client
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			ClientUpdate	body		schemas.ClientUpdate	true	"Cliente a actualizar"
 //	@Success		200				{object}	schemas.Response
 //	@Failure		400				{object}	schemas.Response
@@ -169,7 +169,7 @@ func (cl *ClientController) ClientGetByName(c *fiber.Ctx) error {
 //	@Failure		404				{object}	schemas.Response
 //	@Failure		422				{object}	schemas.Response
 //	@Failure		500				{object}	schemas.Response
-//	@Router			/client/update [put]
+//	@Router			/api/v1/client/update [put]
 func (cl *ClientController) ClientUpdate(c *fiber.Ctx) error {
 	logging.INFO("Actualizar un cliente")
 	var clientUpdate schemas.ClientUpdate
@@ -221,7 +221,7 @@ func (cl *ClientController) ClientUpdate(c *fiber.Ctx) error {
 //	@Tags			Client
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			id	path		string	true	"Id del cliente"
 //	@Success		200	{object}	schemas.Response{body=schemas.Client}
 //	@Failure		400	{object}	schemas.Response
@@ -229,7 +229,7 @@ func (cl *ClientController) ClientUpdate(c *fiber.Ctx) error {
 //	@Failure		403	{object}	schemas.Response
 //	@Failure		404	{object}	schemas.Response
 //	@Failure		500	{object}	schemas.Response
-//	@Router			/client/delete/{id} [delete]
+//	@Router			/api/v1/client/delete/{id} [delete]
 func (cl *ClientController) ClientDelete(c *fiber.Ctx) error {
 	logging.INFO("Eliminar un cliente")
 	id := c.Params("id")
@@ -274,7 +274,7 @@ func (cl *ClientController) ClientDelete(c *fiber.Ctx) error {
 //	@Tags			Client
 //	@Accept			json
 //	@Produce		json
-//	@Security		BearerAuth
+//	@Security		CookieAuth
 //	@Param			clientCreate	body		schemas.ClientCreate	true	"Información del cliente"
 //	@Success		200				{object}	schemas.Response
 //	@Failure		400				{object}	schemas.Response
@@ -282,7 +282,7 @@ func (cl *ClientController) ClientDelete(c *fiber.Ctx) error {
 //	@Failure		403				{object}	schemas.Response
 //	@Failure		422				{object}	schemas.Response
 //	@Failure		500				{object}	schemas.Response
-//	@Router			/client/create [post]
+//	@Router			/api/v1/client/create [post]
 func (cl *ClientController) CreateClient(c *fiber.Ctx) error {
 	logging.INFO("Crear un cliente")
 	var clientCreate schemas.ClientCreate

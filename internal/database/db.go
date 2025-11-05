@@ -81,16 +81,18 @@ func ConnectDB() (*gorm.DB, error) {
 
 	setupDBConnection(db, mainDBConfig)
 
-	if err := db.AutoMigrate(&models.Tenant{}, &models.User{}, &models.UserTenant{}, &models.Plan{}); err != nil {
+	if err := db.AutoMigrate(&models.Tenant{}, &models.User{}, &models.UserTenant{}, &models.Plan{}, &models.Admin{}); err != nil {
 		log.Fatalf("Error en migración: %v", err)
 	}
+
+	ensurePlans(db)
 
 	return ensureAdmin(db)
 }
 
 func ensureAdmin(db *gorm.DB) (*gorm.DB, error) {
 	var email string
-	db.Model(&models.User{}).Select("email").Where("email = ?", os.Getenv("ADMIN_EMAIL")).Scan(&email)
+	db.Model(&models.Admin{}).Select("email").Where("email = ?", os.Getenv("ADMIN_EMAIL")).Scan(&email)
 
 	if email != "" {
 		log.Println("El admin ya existe")
@@ -98,20 +100,31 @@ func ensureAdmin(db *gorm.DB) (*gorm.DB, error) {
 		return db, nil
 	}
 
-	if err := db.Create(&models.User{
+	if err := db.Create(&models.Admin{
 		FirstName:     os.Getenv("FIRSTNAME_ADMIN"),
 		LastName:      os.Getenv("LASTNAME_ADMIN"),
 		Username:      os.Getenv("ADMIN_USERNAME"),
 		Email:         os.Getenv("ADMIN_EMAIL"),
 		Password:      os.Getenv("ADMIN_PASSWORD"),
-		IsAdminTenant: true,
-		IsAdmin:       true,
+		IsSuperAdmin: true,
 	}).Error; err != nil {
 		return nil, err
 	}
 
 	mainDB = db
 	return db, nil
+}
+
+func ensurePlans(db *gorm.DB) error {
+	plans := []models.Plan{
+		{Name: "Free"}, {Name: "Basic"}, {Name: "Premium"},
+	}
+
+	err := db.Create(&plans)
+	if err != nil {
+		return err.Error
+	}
+	return nil
 }
 
 func setupDBConnection(db *gorm.DB, config DBConfig) {

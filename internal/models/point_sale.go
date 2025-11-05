@@ -14,7 +14,7 @@ type PointSale struct {
 	IsDeposit   bool      `gorm:"not null;default:false" json:"is_deposit"`
 	CreatedAt   time.Time  `gorm:"autoCreateTime:milli" json:"created_at"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime:milli" json:"updated_at"`
-	Memebers       []Member `gorm:"many2many:user_point_sales;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"users"`
+	Members       []Member `gorm:"many2many:member_point_sales;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"members"`
 }
 
 func (p *PointSale) BeforeCreate(tx *gorm.DB) (err error) {

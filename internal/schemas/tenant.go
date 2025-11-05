@@ -14,6 +14,7 @@ type TenantCreate struct {
 	Phone      string `json:"phone" validate:"required"`
 	Email      string `json:"email" validate:"required,email"`
 	CuitPdv    string `json:"cuit_pdv" validate:"required"`
+	PlanID     int64  `json:"plan_id" validate:"required"`
 }
 
 func (t *TenantCreate) Validate() error {
@@ -61,7 +62,6 @@ type TenantResponse struct {
 	Phone        string    `json:"phone"`
 	Email        string    `json:"email"`
 	IsActive     bool      `json:"is_active"`
-	UserIsActive bool      `json:"user_is_active"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
