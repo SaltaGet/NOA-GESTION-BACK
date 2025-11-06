@@ -17,6 +17,6 @@ type Tenant struct {
 	Connection  string       `gorm:"not null" json:"connection"`
 	CreatedAt   time.Time    `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time    `gorm:"autoUpdateTime" json:"updated_at"`
-	// UserTenants []UserTenant `gorm:"foreignKey:TenantID" json:"user_tenants"`
-	Plan        Plan        `gorm:"foreignKey:PlanID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"plan,omitempty"`
+	UserTenants []UserTenant `gorm:"foreignKey:TenantID" json:"user_tenants"`
+	Plan        Plan         `gorm:"foreignKey:PlanID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"plan"`
 }

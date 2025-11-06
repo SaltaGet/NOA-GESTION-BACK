@@ -63,7 +63,6 @@
 // 	log.Fatal(app.Listen(":3000"))
 // }
 
-
 package main
 
 import (
@@ -71,6 +70,8 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -81,8 +82,12 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/adaptor"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/swagger"
 	"github.com/joho/godotenv"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	_ "github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/docs"
 )
@@ -92,13 +97,20 @@ import (
 // @description				This is a api to app noa gestion
 // @termsOfService				http://swagger.io/terms/
 // @securityDefinitions.apikey	CookieAuth
+//
 //	@in							cookie
 //	@name						access_token
+//
 // @description				Type "Bearer" followed by a space and the JWT token.
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error al cargar el archivo .env: %v", err)
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	log.Fatalf("Error al cargar el archivo .env: %v", err)
+	// }
+	if _, err := os.Stat(".env"); err == nil {
+		if err := godotenv.Load(".env"); err != nil {
+			log.Fatalf("Error cargando .env local: %v", err)
+		}
 	}
 
 	local := os.Getenv("LOCAL")
@@ -147,9 +159,41 @@ func main() {
 	// Rate limiting global (100 req/min por IP)
 	app.Use(middleware.RateLimitMiddleware(100, time.Minute))
 
+	maxAge, err := strconv.Atoi(os.Getenv("MAXAGE"))
+	if err != nil {
+		maxAge = 300
+	}
+
+	credentials, err := strconv.ParseBool(os.Getenv("CREDENTIALS"))
+	if err != nil {
+		credentials = false
+	}
+
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     strings.ReplaceAll(os.Getenv("ORIGIN"), " ", ""),
+		AllowMethods:     os.Getenv("METHODS"),
+		AllowHeaders:     os.Getenv("HEADERS"),
+		AllowCredentials: credentials,
+		MaxAge:           maxAge,
+	}))
+
+	app.Use(limiter.New(limiter.Config{
+		Max:        120,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "Demasiadas peticiones. Intentá más tarde.",
+			})
+		},
+	}))
+
 	app.Get("/api/swagger/*", swagger.HandlerDefault)
 	app.Get("/health", healthCheck)
 	app.Get("/cache/stats", cacheStats)
+	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 
 	routes.SetupRoutes(app, dep)
 
@@ -183,15 +227,15 @@ func main() {
 
 	// Cerrar todas las conexiones
 	log.Println("Cerrando conexiones...")
-	
+
 	if err := database.CloseDB(db); err != nil {
 		log.Printf("Error al cerrar DB principal: %v", err)
 	}
-	
+
 	if err := database.CloseAllTenantDBs(); err != nil {
 		log.Printf("Error al cerrar DBs de tenants: %v", err)
 	}
-	
+
 	if err := cache.CloseRedis(); err != nil {
 		log.Printf("Error al cerrar Redis: %v", err)
 	}

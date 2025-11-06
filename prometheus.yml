@@ -1,0 +1,8 @@
+scrape_configs:
+  - job_name: 'noa-gestion-api'
+    static_configs:
+      - targets: ['api:3000'] # Apuntar al puerto correcto
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+

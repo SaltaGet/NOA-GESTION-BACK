@@ -22,6 +22,17 @@ func (p *PointSaleRepository) PointSaleCreate(pointSaleCreate *schemas.PointSale
 		return 0, schemas.ErrorResponse(500, "Error al crear punto de venta", err)
 	}
 
+	var membersAdmin []models.Member
+	if err := p.DB.Where("is_admin = ?", true).Find(&membersAdmin).Error; err != nil {
+		return 0, schemas.ErrorResponse(500, "Error al obtener los administradores", err)
+	}
+
+	if len(membersAdmin) > 0 {
+		if err := p.DB.Model(&pointSale).Association("Members").Append(&membersAdmin); err != nil {
+			return 0, schemas.ErrorResponse(500, "Error al asignar punto de venta a administradores", err)
+		}
+	}
+
 	return pointSale.ID, nil
 }
 
