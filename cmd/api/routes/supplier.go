@@ -7,7 +7,7 @@ import (
 )
 
 func SupplierRoutes(app *fiber.App){
-	supplier := app.Group("/api/v1/supplier", middleware.AuthMiddleware(), middleware.PointSaleMiddleware())
+	supplier := app.Group("/api/v1/supplier", middleware.AuthMiddleware(), middleware.AuthPointSaleMiddleware())
 
 	supplier.Get("/get_all", GetController("SupplierController", func(c *fiber.Ctx, ctrl *controllers.SupplierController) error {
 		return ctrl.SupplierGetAll(c)

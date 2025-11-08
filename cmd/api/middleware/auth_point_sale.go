@@ -5,7 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func PointSaleMiddleware() fiber.Handler {
+func AuthPointSaleMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		pointSaleID, ok := c.Locals("point_sale_id").(int64)
 		if !ok {

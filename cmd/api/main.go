@@ -75,7 +75,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/jobs"
+	// "github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/jobs"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/middleware"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/routes"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
@@ -103,22 +103,18 @@ import (
 //
 // @description				Type "Bearer" followed by a space and the JWT token.
 func main() {
-	// err := godotenv.Load()
-	// if err != nil {
-	// 	log.Fatalf("Error al cargar el archivo .env: %v", err)
-	// }
 	if _, err := os.Stat(".env"); err == nil {
 		if err := godotenv.Load(".env"); err != nil {
 			log.Fatalf("Error cargando .env local: %v", err)
 		}
 	}
 
-	local := os.Getenv("LOCAL")
-	if local == "true" {
-		if err := jobs.GenerateSwagger(); err != nil {
-			log.Fatalf("Error ejecutando swag init: %v", err)
-		}
-	}
+	// local := os.Getenv("LOCAL")
+	// if local == "true" {
+	// 	if err := jobs.GenerateSwagger(); err != nil {
+	// 		log.Fatalf("Error ejecutando swag init: %v", err)
+	// 	}
+	// }
 
 	// 🔥 Inicializar Redis (opcional, falla gracefully)
 	if err := cache.InitRedis(); err != nil {

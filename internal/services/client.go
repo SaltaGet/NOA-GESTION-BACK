@@ -4,7 +4,7 @@ import (
 "github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
-func (c *ClientService) ClientGetAll() (*[]schemas.Client, error) {
+func (c *ClientService) ClientGetAll() (*[]schemas.ClientResponseDTO, error) {
 	clients, err := c.ClientRepository.ClientGetAll()
 	if err != nil {
 		return nil, err
@@ -13,16 +13,11 @@ func (c *ClientService) ClientGetAll() (*[]schemas.Client, error) {
 	return clients, nil
 }
 
-func (c *ClientService) ClientGetByID(id string) (*schemas.Client, error) {
-	client, err := c.ClientRepository.ClientGetByID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	return client, nil
+func (c *ClientService) ClientGetByID(id string) (*schemas.ClientResponse, error) {
+	return c.ClientRepository.ClientGetByID(id)
 }
 
-func (c *ClientService) ClientGetByName(name string) (*[]schemas.Client, error) {
+func (c *ClientService) ClientGetByName(name string) (*[]schemas.ClientResponseDTO, error) {
 	client, err := c.ClientRepository.ClientGetByName(name)
 	if err != nil {
 		return nil, err

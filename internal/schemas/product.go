@@ -2,23 +2,71 @@ package schemas
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 )
 
-type Product struct {
-	ID         string    `gorm:"primaryKey;size:36" json:"id"`
-	Identifier string    `gorm:"not null;unique" json:"identifier"`
-	Name       string    `gorm:"not null" json:"name"`
-	Stock      float32   `gorm:"not null;min:0;default:0" json:"stock"`
-	CreatedAt  time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt  time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+type ProductFullResponse struct {
+	ID              int64                     `json:"id"`
+	Code            string                    `json:"code"`
+	Name            string                    `json:"name"`
+	Description     string                    `json:"description"`
+	Category        CategoryResponse          `json:"category"`
+	Price           float64                   `json:"price"`
+	StockPointSales []*PointSaleStockResponse `json:"stock_point_sales"`
+	Deposit         *DepositResponse          `json:"deposit"`
+	Notifier        bool                      `json:"notifier"`
+	MinAmount       float64                   `json:"min_amount"`
+}
+
+type ProductResponse struct {
+	ID          int64            `json:"id"`
+	Code        string           `json:"code"`
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	Category    CategoryResponse `json:"category"`
+	Price       float64          `json:"price"`
+	Stock       float64          `json:"stock"`
+	Notifier    bool             `json:"notifier"`
+	MinAmount   float64          `json:"min_amount"`
+}
+
+type ProductResponseDTO struct {
+	ID        int64             `json:"id"`
+	Code      string            `json:"code"`
+	Name      string            `json:"name"`
+	Category  *CategoryResponse `json:"category,omitempty"`
+	Price     float64           `json:"price"`
+	Stock     float64           `json:"stock"`
+	Notifier  bool              `json:"notifier"`
+	MinAmount float64           `json:"min_amount"`
+}
+
+type ProductSimpleResponse struct {
+	ID        int64   `json:"id"`
+	Code      string  `json:"code"`
+	Name      string  `json:"name"`
+	Price     float64 `json:"price"`
+	Stock     float64 `json:"stock"`
+	Notifier  bool    `json:"notifier"`
+	MinAmount float64 `json:"min_amount"`
+}
+
+type ProductSimpleResponseDTO struct {
+	ID    int64   `json:"id"`
+	Code  string  `json:"code"`
+	Name  string  `json:"name"`
+	Price float64 `json:"price"`
 }
 
 type ProductCreate struct {
-	Identifier string `json:"identifier" validate:"required"`
-	Name       string `json:"name" validate:"required"`
+	Code        string   `json:"code" validate:"required" example:"ABC123"`
+	Name        string   `json:"name" validate:"required" example:"Producto1"`
+	Description *string  `json:"description" example:"description|null"`
+	CategoryID  uint     `json:"category_id" validate:"required" example:"1"`
+	Price       *float64 `json:"price" example:"100.00"`
+	Notifier    bool     `json:"notifier" example:"false"`
+	MinAmount   float64  `json:"min_amount" example:"10.00"`
 }
 
 func (p *ProductCreate) Validate() error {
@@ -28,18 +76,24 @@ func (p *ProductCreate) Validate() error {
 		return nil
 	}
 
-	validationErr := err.(validator.ValidationErrors)[0]
-	field := validationErr.Field()
-	tag := validationErr.Tag()
-	param := validationErr.Param()
+	validatorErr := err.(validator.ValidationErrors)[0]
+	field := validatorErr.Field()
+	tag := validatorErr.Tag()
+	params := validatorErr.Param()
 
-	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+	errorMessage := field + " " + tag + " " + params
+	return ErrorResponse(422, fmt.Sprintf("error al validar campo(s): %s", errorMessage), err)
 }
 
 type ProductUpdate struct {
-	ID         string `json:"id" validate:"required"`
-	Identifier string `json:"identifier"`
-	Name       string `json:"name" validate:"required"`
+	ID          int64    `json:"id" validate:"required" example:"1"`
+	Code        string   `json:"code" validate:"required" example:"ABC123"`
+	Name        string   `json:"name" validate:"required" example:"Producto1"`
+	Description *string  `json:"description" example:"description|null"`
+	CategoryID  uint     `json:"category_id" validate:"required" example:"1"`
+	Price       *float64 `json:"price" example:"100.00"`
+	Notifier    bool     `json:"notifier" example:"false"`
+	MinAmount   float64  `json:"min_amount" example:"10.00"`
 }
 
 func (p *ProductUpdate) Validate() error {
@@ -49,38 +103,36 @@ func (p *ProductUpdate) Validate() error {
 		return nil
 	}
 
-	validationErr := err.(validator.ValidationErrors)[0]
-	field := validationErr.Field()
-	tag := validationErr.Tag()
-	param := validationErr.Param()
+	validatorErr := err.(validator.ValidationErrors)[0]
+	field := validatorErr.Field()
+	tag := validatorErr.Tag()
+	params := validatorErr.Param()
 
-	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+	errorMessage := field + " " + tag + " " + params
+	return ErrorResponse(422, fmt.Sprintf("error al validar campo(s): %s", errorMessage), err)
 }
 
-type StockUpdate struct {
-	ID     string  `json:"id" validate:"required"`
-	Stock  float32 `json:"stock" validate:"required"`
-	Method string  `json:"method" validate:"required,oneof=add subtract update"`
+type ProductPriceUpdate struct {
+	ID    int64   `json:"id" validate:"required" example:"1"`
+	Price float64 `json:"price" validate:"required,gte=0" example:"100.00"`
 }
 
-func (p *StockUpdate) Validate() error {
+type ListPriceUpdate struct {
+	ListProductPriceUpdate []ProductPriceUpdate `json:"list" validate:"required,min=1,dive"`
+}
+
+func (p *ListPriceUpdate) Validate() error {
 	validate := validator.New()
 	err := validate.Struct(p)
 	if err == nil {
 		return nil
 	}
 
-	validationErr := err.(validator.ValidationErrors)[0]
-	field := validationErr.Field()
-	tag := validationErr.Tag()
-	param := validationErr.Param()
+	validatorErr := err.(validator.ValidationErrors)[0]
+	field := validatorErr.Field()
+	tag := validatorErr.Tag()
+	params := validatorErr.Param()
 
-	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
-}
-
-type ProductDTO struct {
-	ID         string    `json:"id"`
-	Identifier string    `json:"identifier"`
-	Name       string    `json:"name"`
-	CreatedAt  time.Time `json:"created_at"`
+	errorMessage := field + " " + tag + " " + params
+	return ErrorResponse(422, fmt.Sprintf("error al validar campo(s): %s", errorMessage), err)
 }

@@ -16,14 +16,15 @@ type Member struct {
 	Email     string  `gorm:"unique;not null" json:"email" validate:"email"`
 	Password  string  `gorm:"not null" json:"password"`
 	Address   *string `gorm:"size:255;default:null" json:"address"`
+	Phone     *string `gorm:"size:20;default:null" json:"phone"`
 	IsAdmin   bool    `gorm:"not null;default:false" json:"is_admin"`
 	IsActive  bool    `gorm:"not null;default:true" json:"is_active"`
 	RoleID    int64   `gorm:"not null;size:36" json:"role_id"`
 
-	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
-	Role      Role           `gorm:"foreignKey:RoleID;references:ID" json:"role"`
+	CreatedAt  time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt  time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt  gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+	Role       Role           `gorm:"foreignKey:RoleID;references:ID" json:"role"`
 	PointSales []PointSale    `gorm:"many2many:member_point_sales;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"point_sales"`
 }
 

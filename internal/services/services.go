@@ -8,6 +8,10 @@ type AuthService struct {
 	TenantService  ports.TenantService
 }
 
+type CashRegisterService struct {
+	CashRegisterRepository ports.CashRegisterRepository
+}
+
 type ClientService struct {
 	ClientRepository ports.ClientRepository
 }

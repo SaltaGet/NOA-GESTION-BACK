@@ -24,6 +24,10 @@ type AttendanceRepository struct {
 	DB *gorm.DB
 }
 
+type CashRegisterRepository struct {
+	DB *gorm.DB
+}
+
 type ClientRepository struct {
 	DB *gorm.DB
 }

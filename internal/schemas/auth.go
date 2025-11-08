@@ -59,3 +59,8 @@ type AuthenticatedUser struct {
 	TenantName       string   `json:"tenant_name,omitempty"`
 	TenantIdentifier string   `json:"tenant_identifier,omitempty"`
 }
+
+type AuthPointSaleContext struct {
+	ID   int64   `json:"id"`
+	Name string `json:"name"`
+}

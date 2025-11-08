@@ -42,9 +42,7 @@ func PrepareDB(uri string, memberAdmin models.Member) error {
 	if err := db.AutoMigrate(
 		&models.Client{},
 		&models.ExpenseBuy{},
-		&models.Income{},
 		&models.Member{},
-		&models.MovementType{},
 		&models.Permission{},
 		&models.Product{},
 		&models.Role{},
@@ -147,9 +145,7 @@ func UpdateModels(uri string) error {
 	if err := db.AutoMigrate(
 		&models.Client{},
 		&models.ExpenseBuy{},
-		&models.Income{},
 		&models.Member{},
-		&models.MovementType{},
 		&models.Permission{},
 		&models.Product{},
 		&models.Role{},

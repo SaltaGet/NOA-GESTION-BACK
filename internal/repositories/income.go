@@ -4,13 +4,14 @@ import (
 	"errors"
 	"time"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 func (r *IncomeRepository) IncomeGetByID(id string) (*schemas.IncomeResponse, error) {
-	var income schemas.Income
+	var income schemas.IncomeResponse
 
 	err := r.DB.
 		Preload("Client").
@@ -37,8 +38,6 @@ func (r *IncomeRepository) IncomeGetByID(id string) (*schemas.IncomeResponse, er
 			ID:        income.Client.ID,
 			FirstName: income.Client.FirstName,
 			LastName:  income.Client.LastName,
-			Cuil:      income.Client.Cuil,
-			Dni:       income.Client.Dni,
 			Email:     income.Client.Email,
 		},
 		MovementType: schemas.MovementTypeDTO{
@@ -60,7 +59,7 @@ func (r *IncomeRepository) IncomeGetAll(page, limit int) (*[]schemas.IncomeDTO, 
 	}
 
 	offset := (page - 1) * limit
-	var incomes []schemas.Income
+	var incomes []schemas.IncomeResponse
 
 	err := r.DB.Preload("Client").
 		Preload("Vehicle").
@@ -84,7 +83,7 @@ func (r *IncomeRepository) IncomeGetAll(page, limit int) (*[]schemas.IncomeDTO, 
 			Ticket: income.Ticket,
 			Amount: income.Amount,
 			CreatedAt: income.CreatedAt,
-			Client: schemas.ClientDTO{
+			Client: schemas.ClientResponseDTO{
 				ID:        income.Client.ID,
 				FirstName: income.Client.FirstName,
 				LastName:  income.Client.LastName,
@@ -121,7 +120,7 @@ func (r *IncomeRepository) IncomeGetToday(page, limit int) (*[]schemas.IncomeDTO
 	}
 
 	offset := (page - 1) * limit
-	var incomes []schemas.Income
+	var incomes []schemas.IncomeResponse
 
 	err := r.DB.Preload("Client").
 		Preload("Vehicle").
@@ -146,7 +145,7 @@ func (r *IncomeRepository) IncomeGetToday(page, limit int) (*[]schemas.IncomeDTO
 			Ticket: income.Ticket,
 			Amount: income.Amount,
 			CreatedAt: income.CreatedAt,
-			Client: schemas.ClientDTO{
+			Client: schemas.ClientResponseDTO{
 				ID:        income.Client.ID,
 				FirstName: income.Client.FirstName,
 				LastName:  income.Client.LastName,
@@ -178,15 +177,11 @@ func (r *IncomeRepository) IncomeCreate(income *schemas.IncomeCreate) (string, e
 
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
 
-		if err := tx.Create(&schemas.Income{
+		if err := tx.Create(&schemas.IncomeResponse{
 			ID:             newID,
 			Ticket:         income.Ticket,
 			Details:        income.Details,
-			ClientID:       income.ClientID,
-			VehicleID:      income.VehicleID,
-			EmployeeID:     income.EmployeeID,
 			Amount:         income.Amount,
-			MovementTypeID: income.MovementTypeID,
 		}).Error; err != nil {
 			return schemas.ErrorResponse(500, "Error interno al crear movimiento", err)
 		}
@@ -203,7 +198,7 @@ func (r *IncomeRepository) IncomeCreate(income *schemas.IncomeCreate) (string, e
 
 func (r *IncomeRepository) IncomeUpdate(incomeUpdate *schemas.IncomeUpdate) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
-		var income schemas.Income
+		var income schemas.IncomeResponse
 
 		if err := tx.Where("id = ?", incomeUpdate.ID).First(&income).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -214,12 +209,7 @@ func (r *IncomeRepository) IncomeUpdate(incomeUpdate *schemas.IncomeUpdate) erro
 
 		income.Ticket = incomeUpdate.Ticket
 		income.Details = incomeUpdate.Details
-		income.ClientID = incomeUpdate.ClientID
-		income.VehicleID = incomeUpdate.VehicleID
-		income.EmployeeID = incomeUpdate.EmployeeID
 		income.Amount = incomeUpdate.Amount
-		income.MovementTypeID = incomeUpdate.MovementTypeID
-		income.UpdatedAt = time.Now().UTC()
 
 		if err := tx.Save(&income).Error; err != nil {
 			return schemas.ErrorResponse(500, "Error interno al actualizar movimiento", err)
@@ -231,7 +221,7 @@ func (r *IncomeRepository) IncomeUpdate(incomeUpdate *schemas.IncomeUpdate) erro
 
 func (r *IncomeRepository) IncomeDelete(id string) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", id).Delete(&schemas.Income{}).Error; err != nil {
+		if err := tx.Where("id = ?", id).Delete(&models.SaleIncome{}).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return schemas.ErrorResponse(404, "Movimiento no encontrado", err)
 			}

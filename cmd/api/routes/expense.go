@@ -7,7 +7,7 @@ import (
 )
 
 func ExpenseRoutes(app *fiber.App){
-	exp := app.Group("/api/v1/expense", middleware.AuthMiddleware(), middleware.PointSaleMiddleware())
+	exp := app.Group("/api/v1/expense", middleware.AuthMiddleware(), middleware.AuthPointSaleMiddleware())
 
 	exp.Get("/get_all", GetController("ExpenseController", func(c *fiber.Ctx, ctrl *controllers.ExpenseController) error {
 		return ctrl.GetAllExpenses(c)

@@ -2,28 +2,18 @@ package schemas
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 )
 
-type Client struct {
-	ID        string    `gorm:"primaryKey;size:36" json:"id"`
-	FirstName string    `gorm:"not null;size:30" json:"first_name"`
-	LastName  string    `gorm:"not null;size:30" json:"last_name"`
-	Cuil      string    `gorm:"not null;unique;size:30" json:"cuil"`
-	Dni       string    `gorm:"not null;unique;size:30" json:"dni"`
-	Email     string    `gorm:"not null;unique" json:"email" validate:"email"`
-	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
-}
-
 type ClientCreate struct {
-	FirstName string `json:"first_name" validate:"required"`
-	LastName  string `json:"last_name" validate:"required"`
-	Cuil      string `json:"cuil" validate:"required"`
-	Dni       string `json:"dni" validate:""`
-	Email     string `json:"email" validate:"required,email"`
+	FirstName   string  `json:"first_name" validate:"required" example:"Jorge"`
+	LastName    string  `json:"last_name" validate:"required" example:"Lopez"`
+	CompanyName *string `json:"company_name" example:"John Company | null"`
+	Identifier  *string `json:"identifier" example:"30000000 | null"`
+	Email       *string `json:"email" validate:"email" example:"john@example.com | null"`
+	Phone       *string `json:"phone" example:"1111111111 | null"`
+	Address     *string `json:"address" example:" Calle 123 | null"`
 }
 
 func (c *ClientCreate) Validate() error {
@@ -42,12 +32,14 @@ func (c *ClientCreate) Validate() error {
 }
 
 type ClientUpdate struct {
-	ID        string `json:"id" validate:"required"`
-	FirstName string `json:"first_name" validate:"required"`
-	LastName  string `json:"last_name" validate:"required"`
-	Cuil      string `json:"cuil" validate:"required"`
-	Dni       string `json:"dni" validate:""`
-	Email     string `json:"email" validate:"required,email"`
+	ID          string  `json:"id" validate:"required"`
+	FirstName   string  `json:"first_name" validate:"required" example:"Jorge"`
+	LastName    string  `json:"last_name" validate:"required" example:"Lopez"`
+	CompanyName *string `json:"company_name" example:"John Company | null"`
+	Identifier  *string `json:"identifier" example:"30000000 | null"`
+	Email       *string `json:"email" validate:"email" example:"john@example.com | null"`
+	Phone       *string `json:"phone" example:"1111111111 | null"`
+	Address     *string `json:"address" example:" Calle 123 | null"`
 }
 
 func (c *ClientUpdate) Validate() error {
@@ -65,17 +57,33 @@ func (c *ClientUpdate) Validate() error {
 	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
 }
 
-type ClientDTO struct {
-	ID        string `json:"id"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
+type ClientResponseDTO struct {
+	ID          string  `json:"id"`
+	FirstName   string  `json:"first_name"`
+	LastName    string  `json:"last_name"`
+	CompanyName *string `json:"company_name,omitempty"`
+	Identifier  *string `json:"identifier,omitempty"`
+	Email       *string `json:"email,omitempty"`
+	Phone       *string `json:"phone,omitempty"`
 }
 
 type ClientResponse struct {
-	ID        string `json:"id"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Cuil      string `json:"cuil"`
-	Dni       string `json:"dni"`
-	Email     string `json:"email"`
+	ID           string    `json:"id"`
+	FirstName    string    `json:"first_name"`
+	LastName     string    `json:"last_name"`
+	CompanyName  *string   `json:"company_name,omitempty"`
+	Identifier   *string   `json:"identifier,omitempty"`
+	Email        *string   `json:"email,omitempty"`
+	Phone        *string   `json:"phone,omitempty"`
+	Address      *string   `json:"address,omitempty"`
+	MemberCreate MemberResponseDTO `json:"member_create"`
 }
+
+type ClientSimpleDTO struct {
+	ID           string    `json:"id"`
+	FirstName    string    `json:"first_name"`
+	LastName     string    `json:"last_name"`
+	CompanyName  *string   `json:"company_name,omitempty"`
+}
+
+

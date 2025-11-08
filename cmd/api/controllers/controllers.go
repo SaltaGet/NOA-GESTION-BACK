@@ -7,6 +7,10 @@ type AuthController struct {
 	AuthService ports.AuhtService
 }
 
+type CashRegisterController struct {
+	CashRegisterService ports.CashRegisterService
+}
+
 type ClientController struct {
 	ClientService ports.ClientService
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func MemberRoutes(app *fiber.App){
-	member := app.Group("/api/v1/member", middleware.AuthMiddleware(), middleware.PointSaleMiddleware())
+	member := app.Group("/api/v1/member", middleware.AuthMiddleware(), middleware.AuthPointSaleMiddleware())
 
 	member.Get("/get_all", GetController("MemberController", func(c *fiber.Ctx, ctrl *controllers.MemberController) error {
 		return ctrl.MemberGetAll(c)
