@@ -40,12 +40,34 @@ func PrepareDB(uri string, memberAdmin models.Member) error {
 
 	// Migraciones
 	if err := db.AutoMigrate(
+		&models.Admin{},
+		&models.AuditLogAdmin{},
+		&models.AuditLog{},
+		&models.CashRegister{},
+		&models.Category{},
 		&models.Client{},
+		&models.Deposit{},
+	
 		&models.ExpenseBuy{},
+		&models.ExpenseBuyItem{},
+		&models.ExpenseOther{},
+		&models.PayExpenseBuy{},
+		&models.PayExpenseOther{},
+		&models.TypeExpense{},
+
+		&models.IncomeSale{},
+		&models.IncomeSaleItem{},
+		&models.PayIncome{},
+		&models.IncomeOther{},
+		&models.TypeIncome{},
+
 		&models.Member{},
+		&models.MovementStock{},
 		&models.Permission{},
+		&models.PointSale{},
 		&models.Product{},
 		&models.Role{},
+		&models.StockPointSale{},
 		&models.Supplier{},
 	); err != nil {
 		handleDBCreationError(env, uri)
@@ -143,12 +165,34 @@ func UpdateModels(uri string) error {
 	defer sqlDB.Close()
 
 	if err := db.AutoMigrate(
+		&models.Admin{},
+		&models.AuditLogAdmin{},
+		&models.AuditLog{},
+		&models.CashRegister{},
+		&models.Category{},
 		&models.Client{},
+		&models.Deposit{},
+	
 		&models.ExpenseBuy{},
+		&models.ExpenseBuyItem{},
+		&models.ExpenseOther{},
+		&models.PayExpenseBuy{},
+		&models.PayExpenseOther{},
+		&models.TypeExpense{},
+
+		&models.IncomeSale{},
+		&models.IncomeSaleItem{},
+		&models.PayIncome{},
+		&models.IncomeOther{},
+		&models.TypeIncome{},
+
 		&models.Member{},
+		&models.MovementStock{},
 		&models.Permission{},
+		&models.PointSale{},
 		&models.Product{},
 		&models.Role{},
+		&models.StockPointSale{},
 		&models.Supplier{},
 	); err != nil {
 		handleDBCreationError(env, uri)

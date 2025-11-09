@@ -221,7 +221,7 @@ func (r *IncomeRepository) IncomeUpdate(incomeUpdate *schemas.IncomeUpdate) erro
 
 func (r *IncomeRepository) IncomeDelete(id string) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", id).Delete(&models.SaleIncome{}).Error; err != nil {
+		if err := tx.Where("id = ?", id).Delete(&models.IncomeSale{}).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return schemas.ErrorResponse(404, "Movimiento no encontrado", err)
 			}

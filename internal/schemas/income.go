@@ -7,28 +7,28 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type SaleIncomeCreate struct {
-	Items    []ItemSaleIncomeCreate `json:"items" validate:"required,dive"`
+type IncomeSaleCreate struct {
+	Items    []ItemIncomeSaleCreate `json:"items" validate:"required,dive"`
 	Pay      []PayCreate            `json:"pay" validate:"required,dive,max=3"`
-	Discount float32                `json:"discount"`
+	Discount float64                `json:"discount"`
 	Type     string                 `json:"type_discount" validate:"oneof=amount percent"`
-	Total    float32                `json:"total"`
+	Total    float64                `json:"total"`
 	IsBudget bool                   `json:"is_budget"`
 }
 
-type ItemSaleIncomeCreate struct {
+type ItemIncomeSaleCreate struct {
 	ProductID    int64   `json:"product_id" validate:"required"`
-	Amount       float32 `json:"amount" validate:"required"`
-	Discount     float32 `json:"discount"`
+	Amount       float64 `json:"amount" validate:"required"`
+	Discount     float64 `json:"discount"`
 	TypeDiscount string  `json:"type_discount" validate:"oneof=amount percent"`
 }
 
 type PayCreate struct {
-	Amount    float32 `json:"amount" validate:"required"`
+	Amount    float64 `json:"amount" validate:"required"`
 	MethodPay string  `json:"method_pay" validate:"oneof=cash credit card transfer"`
 }
 
-func (i *SaleIncomeCreate) Validate() error {
+func (i *IncomeSaleCreate) Validate() error {
 	validate := validator.New()
 
 	if err := validate.Struct(i); err != nil {
@@ -39,7 +39,7 @@ func (i *SaleIncomeCreate) Validate() error {
 		return ErrorResponse(422, fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param), err)
 	}
 
-	var sumPay float32
+	var sumPay float64
 	for _, p := range i.Pay {
 		sumPay += p.Amount
 	}
@@ -52,29 +52,29 @@ func (i *SaleIncomeCreate) Validate() error {
 	return nil
 }
 
-type SaleIncomeUpdate struct {
+type IncomeSaleUpdate struct {
 	ID       int64                  `json:"id" validate:"required"`
-	Items    []ItemSaleIncomeUpdate `json:"items" validate:"required,dive"`
+	Items    []ItemIncomeSaleUpdate `json:"items" validate:"required,dive"`
 	Pay      []PayUpdate            `json:"pay" validate:"required,dive,max=3"`
-	Discount float32                `json:"discount"`
+	Discount float64                `json:"discount"`
 	Type     string                 `json:"type_discount" validate:"oneof=amount percent"`
-	Total    float32                `json:"total"`
+	Total    float64                `json:"total"`
 	IsBudget bool                   `json:"is_budget"`
 }
 
-type ItemSaleIncomeUpdate struct {
+type ItemIncomeSaleUpdate struct {
 	ProductID    int64   `json:"product_id" validate:"required"`
-	Amount       float32 `json:"amount" validate:"required"`
-	Discount     float32 `json:"discount"`
+	Amount       float64 `json:"amount" validate:"required"`
+	Discount     float64 `json:"discount"`
 	TypeDiscount string  `json:"type_discount" validate:"oneof=amount percent"`
 }
 
 type PayUpdate struct {
-	Amount    float32 `json:"amount" validate:"required"`
+	Amount    float64 `json:"amount" validate:"required"`
 	MethodPay string  `json:"method_pay" validate:"oneof=cash credit card transfer"`
 }
 
-func (i *SaleIncomeUpdate) Validate() error {
+func (i *IncomeSaleUpdate) Validate() error {
 	validate := validator.New()
 
 	if err := validate.Struct(i); err != nil {
@@ -85,7 +85,7 @@ func (i *SaleIncomeUpdate) Validate() error {
 		return ErrorResponse(422, fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param), err)
 	}
 
-	var sumPay float32
+	var sumPay float64
 	for _, p := range i.Pay {
 		sumPay += p.Amount
 	}
@@ -98,18 +98,21 @@ func (i *SaleIncomeUpdate) Validate() error {
 	return nil
 }
 
-type SaleIncomeResponse struct {
+type IncomeSaleResponse struct {
 	ID        int64                    `json:"id"`
 	Member    MemberSimpleDTO          `json:"member"`
 	Client    ClientResponseDTO        `json:"client"`
-	Items     []SaleIncomeItemResponse `json:"items"`
+	Items     []IncomeSaleItemResponse `json:"items"`
 	Pay       []PayResponse            `json:"pay"`
+	SubTotal  float64                  `json:"subtotal"`
+	Discount  float64                  `json:"discount"`
+	Type      string                   `json:"type_discount"`
 	Total     float64                  `json:"total"`
 	IsBudget  bool                     `json:"is_budget"`
 	CreatedAt time.Time                `json:"created_at"`
 }
 
-type SaleIncomeItemResponse struct {
+type IncomeSaleItemResponse struct {
 	ID        int64                    `json:"id"`
 	Product   ProductSimpleResponseDTO `json:"product"`
 	Amount    float64                  `json:"quantity"`
@@ -127,30 +130,42 @@ type PayResponse struct {
 	MethodPay string  `json:"method_pay"`
 }
 
-
-type SaleIncomeResponseDTO struct {
+type IncomeSaleResponseDTO struct {
 	ID            int64           `json:"id"`
 	Member        MemberSimpleDTO `json:"member"`
 	Client        ClientSimpleDTO `json:"client"`
 	Pay           []PayResponse   `json:"pay"`
 	Total         float64         `json:"total"`
-	PaymentMethod string          `json:"payment_method"`
 	CreatedAt     time.Time       `json:"created_at"`
 }
 
-type SaleIncomeSimpleResponse struct {
-	ID        int64                    `json:"id"`
+type IncomeSaleSimpleResponse struct {
+	ID        int64                      `json:"id"`
 	Items     []ProductSimpleResponseDTO `json:"items"`
-	Pay       []PayResponse            `json:"pay"`
-	Total     float64                  `json:"total"`
-	IsBudget  bool                     `json:"is_budget"`
-	CreatedAt time.Time                `json:"created_at"`
+	Pay       []PayResponse              `json:"pay"`
+	Total     float64                    `json:"total"`
+	IsBudget  bool                       `json:"is_budget"`
+	CreatedAt time.Time                  `json:"created_at"`
 }
 
-type SaleIncomeItemResponseDTO struct {
+type IncomeSaleItemResponseDTO struct {
 	ID        int64                    `json:"id"`
 	Product   ProductSimpleResponseDTO `json:"product"`
 	Amount    float64                  `json:"quantity"`
 	Total     float64                  `json:"total"`
 	CreatedAt time.Time                `json:"created_at"`
+}
+
+type IncomeOtherResponse struct {
+	ID           int64              `json:"id"`
+	Member       *MemberSimpleDTO    `json:"member,omitempty"`
+	Total        float64            `json:"total"`
+	TypeIncome   TypeIncomeResponse `json:"type_income"`
+	Details      *string            `json:"details,omitempty"`
+	MethodIncome string             `json:"method_income"`
+	CreatedAt    time.Time          `json:"created_at"`
+}
+
+type TypeIncomeResponse struct {
+	Name string `gorm:"not null;unique" json:"name"`
 }

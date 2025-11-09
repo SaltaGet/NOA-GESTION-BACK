@@ -78,6 +78,8 @@ type CashRegisterFullResponse struct {
 	IsClose   bool      `json:"is_close"`
 	CreatedAt time.Time `json:"created_at"`
 
-	SaleIncome *[]SaleIncomeSimpleResponse `json:"sale_income"`
-	Expense    *[]ExpenseSimpleResponseDTO `json:"expenses"`
+	IncomeSale *[]IncomeSaleSimpleResponse `json:"sale_income"`
+	IncomeOther *[]IncomeOtherResponse `json:"income_other"`
+	ExpenseBuy    *[]ExpenseBuyResponseSimple `json:"expense_buy"`
+	ExpenseOther    *[]ExpenseOtherResponse `json:"expenses"`
 }

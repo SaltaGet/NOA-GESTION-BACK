@@ -75,7 +75,7 @@ func (r *CashRegisterController) CashRegisterGetByID(ctx *fiber.Ctx) error {
 
 	pointaSale := ctx.Locals("point_sale").(*schemas.AuthPointSaleContext)
 	
-	register, err := r.CashRegisterService.CashRegisterGetByID(pointaSale.ID, uint(idUint))
+	register, err := r.CashRegisterService.CashRegisterGetByID(pointaSale.ID, idint)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
