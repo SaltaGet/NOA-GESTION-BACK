@@ -2,101 +2,298 @@ package repositories
 
 import (
 	"errors"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
+	"fmt"
+	"strings"
+
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/google/uuid"
+	"github.com/jinzhu/copier"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
-func (t *MemberRepository) MemberGetAll() (*[]schemas.MemberDTO, error) {
-	var members []schemas.Member
-	if err := t.DB.Preload("Role").Find(&members).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "Error interno al buscar miembros", err)
-	}
+// MemberGetByID obtiene un miembro por ID
+func (r *MemberRepository) MemberGetByID(id int64) (*schemas.MemberResponse, error) {
+	var member models.Member
 
-	var memberDtos []schemas.MemberDTO
-	for _, member := range members {
-		memberDtos = append(memberDtos, schemas.MemberDTO{
-			ID:        member.ID,
-			FirstName: member.FirstName,
-			LastName:  member.LastName,
-			Username:  member.Username,
-			Email:     member.Email,
-			IsActive:  member.IsActive,
-			CreatedAt: member.CreatedAt,
-			Role:      schemas.RoleDTO{ID: member.Role.ID, Name: member.Role.Name},			
-		})
-	}
-
-	return &memberDtos, nil
-}
-
-func (t *MemberRepository) MemberGetPermissionByUserID(userID string) (*schemas.Member, error) {
-	var member schemas.Member
-	if err := t.DB.Preload("Role").Preload("Role.Permissions").Where("user_id = ?", userID).First(&member).Error; err != nil {
+	if err := r.DB.
+		Preload("Role").
+		Preload("PointSales").
+		First(&member, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, schemas.ErrorResponse(404, "Miembro no encontrado", err)
 		}
-		return nil, schemas.ErrorResponse(500, "Error  internoal buscar miembro", err)
+		return nil, schemas.ErrorResponse(500, "Error al obtener el miembro", err)
 	}
-	return &member, nil
+
+	var memberSchema schemas.MemberResponse
+	copier.Copy(&memberSchema, &member)
+
+	return &memberSchema, nil
 }
 
-func (t *MemberRepository) MemberGetByID(id string) (*schemas.MemberResponse, error) {
-	var member schemas.Member
-	if err := t.DB.Preload("Role").Preload("Role.Permissions").Where("id = ?", id).First(&member).Error; err != nil {
+// MemberGetPermissionByUserID obtiene un miembro con sus permisos por ID
+func (r *MemberRepository) MemberGetPermissionByUserID(userID int64) (*schemas.MemberResponse, error) {
+	var member models.Member
+
+	if err := r.DB.
+		Preload("Role.Permissions").
+		Preload("PointSales").
+		First(&member, userID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, schemas.ErrorResponse(404, "Miembro no encontrado", err)
 		}
-		return nil, schemas.ErrorResponse(500, "Error interno al buscar miembro", err)
+		return nil, schemas.ErrorResponse(500, "Error al obtener el miembro", err)
 	}
 
-	response := schemas.MemberResponse{
-		ID:        member.ID,
-		FirstName: member.FirstName,
-		LastName:  member.LastName,
-		Username:  member.Username,
-		Email:     member.Email,
-		IsActive:  member.IsActive,
-		CreatedAt: member.CreatedAt,
-		Role:      member.Role,
-	}
+	var memberSchema schemas.MemberResponse
+	copier.Copy(&memberSchema, &member)
 
-	return &response, nil
+	return &memberSchema, nil
 }
 
-func (t *MemberRepository) MemberCreate(memeberCreate *schemas.MemberCreate, user *schemas.AuthenticatedUser) (id string, err error) {
-	newID := uuid.NewString()
+// MemberGetAll obtiene todos los miembros con paginación y búsqueda
+func (r *MemberRepository) MemberGetAll(limit, page int, search *map[string]string) ([]*schemas.MemberResponseDTO, int64, error) {
+	var members []*models.Member
+	var total int64
 
-	// pass, err := utils.GenerateRandomString(10)
-	// if err != nil {
-	// 	return "", err
-	// }
-	hashPass, err := utils.HashPassword("1234")
+	offset := (page - 1) * limit
+
+	query := r.DB.Model(&models.Member{})
+
+	// Aplicar filtros de búsqueda si existen
+	if search != nil {
+		for key, value := range *search {
+			switch key {
+			case "first_name":
+				query = query.Where("first_name ILIKE ?", "%"+value+"%")
+			case "last_name":
+				query = query.Where("last_name ILIKE ?", "%"+value+"%")
+			case "username":
+				query = query.Where("username ILIKE ?", "%"+value+"%")
+			case "email":
+				query = query.Where("email ILIKE ?", "%"+value+"%")
+			case "is_active":
+				query = query.Where("is_active = ?", value)
+			}
+		}
+	}
+
+	// Contar total de registros
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, schemas.ErrorResponse(500, "Error al contar los miembros", err)
+	}
+
+	// Obtener registros con paginación
+	if err := query.
+		Preload("Role").
+		Order("created_at DESC").
+		Offset(int(offset)).
+		Limit(int(limit)).
+		Find(&members).Error; err != nil {
+		return nil, 0, schemas.ErrorResponse(500, "Error al obtener los miembros", err)
+	}
+
+	var membersSchema []*schemas.MemberResponseDTO
+	copier.Copy(&membersSchema, &members)
+
+	return membersSchema, total, nil
+}
+
+// MemberCreate crea un nuevo miembro
+func (r *MemberRepository) MemberCreate(memberCreate *schemas.MemberCreate) (int64, error) {
+	var memberID int64
+
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		// Verificar que el rol existe
+		var role models.Role
+		if err := tx.First(&role, memberCreate.RoleID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return schemas.ErrorResponse(400, fmt.Sprintf("El rol %d no existe", memberCreate.RoleID), err)
+			}
+			return schemas.ErrorResponse(500, "Error al obtener el rol", err)
+		}
+
+		// Verificar que los puntos de venta existen
+		var pointSales []models.PointSale
+		if err := tx.Where("id IN ?", memberCreate.PointSaleIDs).Find(&pointSales).Error; err != nil {
+			return schemas.ErrorResponse(500, "Error al obtener los puntos de venta", err)
+		}
+
+		if len(pointSales) != len(memberCreate.PointSaleIDs) {
+			return schemas.ErrorResponse(400, "Uno o más puntos de venta no existen", nil)
+		}
+
+		// Hashear contraseña
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(memberCreate.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return schemas.ErrorResponse(500, "Error al hashear la contraseña", err)
+		}
+
+		// Crear miembro
+		member := models.Member{
+			FirstName: memberCreate.FirstName,
+			LastName:  memberCreate.LastName,
+			Username:  memberCreate.Username,
+			Email:     memberCreate.Email,
+			Password:  string(hashedPassword),
+			Address:   memberCreate.Address,
+			Phone:     memberCreate.Phone,
+			RoleID:    memberCreate.RoleID,
+			IsActive:  true,
+			IsAdmin:   false,
+		}
+
+		if err := tx.Create(&member).Error; err != nil {
+			if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
+				if strings.Contains(err.Error(), "username") {
+					return schemas.ErrorResponse(400, "El nombre de usuario ya existe", err)
+				}
+				if strings.Contains(err.Error(), "email") {
+					return schemas.ErrorResponse(400, "El email ya existe", err)
+				}
+				return schemas.ErrorResponse(400, "El miembro ya existe", err)
+			}
+			return schemas.ErrorResponse(500, "Error al crear el miembro", err)
+		}
+
+		memberID = member.ID
+
+		// Asociar puntos de venta
+		if err := tx.Model(&member).Association("PointSales").Append(&pointSales); err != nil {
+			return schemas.ErrorResponse(500, "Error al asociar puntos de venta", err)
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		return "", schemas.ErrorResponse(500, "Error al hashear la contraseña", err)
+		return 0, err
 	}
 
-	if err := t.DB.Create(&schemas.Member{
-		ID:        newID,
-		FirstName: memeberCreate.FirstName,
-		LastName:  memeberCreate.LastName,
-		Username:  memeberCreate.Username,
-		Email:     memeberCreate.Email,
-		RoleID:    memeberCreate.RoleID,
-		Password:  hashPass,
-	}).Error; err != nil {
-		return "", schemas.ErrorResponse(500, "Error interno al crear miembro", err)
-	}
-	return newID, nil
+	return memberID, nil
 }
 
-func (t *MemberRepository) MemberDelete(id string) error {
-	if err := t.DB.Delete(&schemas.Member{}, "id = ?", id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return schemas.ErrorResponse(404, "Miembro no encontrado", err)
+// MemberUpdate actualiza un miembro existente
+func (r *MemberRepository) MemberUpdate(memberUpdate *schemas.MemberUpdate) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		// Verificar que el miembro existe
+		var existingMember models.Member
+		if err := tx.First(&existingMember, memberUpdate.ID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return schemas.ErrorResponse(404, "Miembro no encontrado", err)
+			}
+			return schemas.ErrorResponse(500, "Error al obtener el miembro", err)
 		}
-		return schemas.ErrorResponse(500, "Error interno al eliminar miembro", err)
-	}
-	return nil
+
+		// Verificar que el rol existe
+		var role models.Role
+		if err := tx.First(&role, memberUpdate.RoleID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return schemas.ErrorResponse(400, fmt.Sprintf("El rol %d no existe", memberUpdate.RoleID), err)
+			}
+			return schemas.ErrorResponse(500, "Error al obtener el rol", err)
+		}
+
+		// Verificar que los puntos de venta existen
+		var pointSales []models.PointSale
+		if err := tx.Where("id IN ?", memberUpdate.PointSaleIDs).Find(&pointSales).Error; err != nil {
+			return schemas.ErrorResponse(500, "Error al obtener los puntos de venta", err)
+		}
+
+		if len(pointSales) != len(memberUpdate.PointSaleIDs) {
+			return schemas.ErrorResponse(400, "Uno o más puntos de venta no existen", nil)
+		}
+
+		// Actualizar campos
+		existingMember.FirstName = memberUpdate.FirstName
+		existingMember.LastName = memberUpdate.LastName
+		existingMember.Username = memberUpdate.Username
+		existingMember.Email = memberUpdate.Email
+		existingMember.Address = memberUpdate.Address
+		existingMember.Phone = memberUpdate.Phone
+		existingMember.RoleID = memberUpdate.RoleID
+		if memberUpdate.IsActive != nil {
+			existingMember.IsActive = *memberUpdate.IsActive
+		}
+
+		if err := tx.Save(&existingMember).Error; err != nil {
+			if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
+				if strings.Contains(err.Error(), "username") {
+					return schemas.ErrorResponse(400, "El nombre de usuario ya existe", err)
+				}
+				if strings.Contains(err.Error(), "email") {
+					return schemas.ErrorResponse(400, "El email ya existe", err)
+				}
+				return schemas.ErrorResponse(400, "Error de duplicación", err)
+			}
+			return schemas.ErrorResponse(500, "Error al actualizar el miembro", err)
+		}
+
+		// Actualizar puntos de venta (reemplazar asociaciones existentes)
+		if err := tx.Model(&existingMember).Association("PointSales").Replace(&pointSales); err != nil {
+			return schemas.ErrorResponse(500, "Error al actualizar puntos de venta", err)
+		}
+
+		return nil
+	})
+}
+
+// MemberUpdatePassword actualiza la contraseña de un miembro
+func (r *MemberRepository) MemberUpdatePassword(memberID int64, passwordUpdate *schemas.MemberUpdatePassword) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		// Verificar que el miembro existe
+		var member models.Member
+		if err := tx.First(&member, memberID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return schemas.ErrorResponse(404, "Miembro no encontrado", err)
+			}
+			return schemas.ErrorResponse(500, "Error al obtener el miembro", err)
+		}
+
+		// Verificar contraseña actual
+		if err := bcrypt.CompareHashAndPassword([]byte(member.Password), []byte(passwordUpdate.OldPassword)); err != nil {
+			return schemas.ErrorResponse(400, "La contraseña actual es incorrecta", err)
+		}
+
+		// Hashear nueva contraseña
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(passwordUpdate.NewPassword), bcrypt.DefaultCost)
+		if err != nil {
+			return schemas.ErrorResponse(500, "Error al hashear la contraseña", err)
+		}
+
+		// Actualizar contraseña
+		member.Password = string(hashedPassword)
+		if err := tx.Save(&member).Error; err != nil {
+			return schemas.ErrorResponse(500, "Error al actualizar la contraseña", err)
+		}
+
+		return nil
+	})
+}
+
+// MemberDelete elimina un miembro (soft delete)
+func (r *MemberRepository) MemberDelete(id int64) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		// Verificar que el miembro existe
+		var member models.Member
+		if err := tx.First(&member, id).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return schemas.ErrorResponse(404, "Miembro no encontrado", err)
+			}
+			return schemas.ErrorResponse(500, "Error al obtener el miembro", err)
+		}
+
+		// No permitir eliminar admin principal (opcional)
+		if member.IsAdmin {
+			return schemas.ErrorResponse(400, "No se puede eliminar un administrador", nil)
+		}
+
+		// Soft delete
+		if err := tx.Delete(&member).Error; err != nil {
+			return schemas.ErrorResponse(500, "Error al eliminar el miembro", err)
+		}
+
+		return nil
+	})
 }

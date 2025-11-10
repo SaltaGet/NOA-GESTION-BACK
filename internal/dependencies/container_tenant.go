@@ -10,31 +10,34 @@ import (
 type TenantContainer struct {
 	DB       *gorm.DB
 	Services struct {
-		CashResgiter    *services.CashRegisterService
-		Client          *services.ClientService
-		Expense         *services.ExpenseService
-		Income          *services.IncomeService
-		Member          *services.MemberService
-		Movement        *services.MovementTypeService
-		Permission      *services.PermissionService
-		PointSale       *services.PointSaleService
-		Product         *services.ProductService
-		Role            *services.RoleService
-		Supplier        *services.SupplierService
+		CashResgiter *services.CashRegisterService
+		Client       *services.ClientService
+		ExpenseBuy   *services.ExpenseBuyService
+		ExpenseOther *services.ExpenseOtherService
+		IncomeSale   *services.IncomeSaleService
+		IncomeOther  *services.IncomeOtherService
+		Member       *services.MemberService
+		Permission   *services.PermissionService
+		PointSale    *services.PointSaleService
+		Product      *services.ProductService
+		Role         *services.RoleService
+		Supplier     *services.SupplierService
 	}
 	Repositories struct {
-		CashRegister    *repositories.CashRegisterRepository 
-		Client          *repositories.ClientRepository
-		Employee        *repositories.EmployeeRepository
-		Expense         *repositories.ExpenseRepository
-		Income          *repositories.IncomeRepository
-		Member          *repositories.MemberRepository
-		Movement        *repositories.MovementTypeRepository
-		Permission      *repositories.PermissionRepository
-		PointSale       *repositories.PointSaleRepository
-		Product         *repositories.ProductRepository
-		Role            *repositories.RoleRepository
-		Supplier        *repositories.SupplierRepository
+		CashRegister *repositories.CashRegisterRepository
+		Client       *repositories.ClientRepository
+		Employee     *repositories.EmployeeRepository
+		ExpenseBuy      *repositories.ExpenseBuyRepository
+		ExpenseOther      *repositories.ExpenseOtherRepository
+		IncomeSale       *repositories.IncomeSaleRepository
+		IncomeOther      *repositories.IncomeOtherRepository
+		Member       *repositories.MemberRepository
+		Movement     *repositories.MovementTypeRepository
+		Permission   *repositories.PermissionRepository
+		PointSale    *repositories.PointSaleRepository
+		Product      *repositories.ProductRepository
+		Role         *repositories.RoleRepository
+		Supplier     *repositories.SupplierRepository
 	}
 }
 
@@ -45,8 +48,10 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 	c.Repositories.CashRegister = &repositories.CashRegisterRepository{DB: db}
 	c.Repositories.Client = &repositories.ClientRepository{DB: db}
 	c.Repositories.Employee = &repositories.EmployeeRepository{DB: db}
-	c.Repositories.Expense = &repositories.ExpenseRepository{DB: db}
-	c.Repositories.Income = &repositories.IncomeRepository{DB: db}
+	c.Repositories.ExpenseBuy = &repositories.ExpenseBuyRepository{DB: db}
+	c.Repositories.ExpenseOther = &repositories.ExpenseOtherRepository{DB: db}
+	c.Repositories.IncomeSale = &repositories.IncomeSaleRepository{DB: db}
+	c.Repositories.IncomeOther = &repositories.IncomeOtherRepository{DB: db}
 	c.Repositories.Member = &repositories.MemberRepository{DB: db}
 	c.Repositories.Movement = &repositories.MovementTypeRepository{DB: db}
 	c.Repositories.Permission = &repositories.PermissionRepository{DB: db}
@@ -62,17 +67,20 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 	c.Services.Client = &services.ClientService{
 		ClientRepository: c.Repositories.Client,
 	}
-	c.Services.Expense = &services.ExpenseService{
-		ExpenseRepository: c.Repositories.Expense,
+	c.Services.ExpenseBuy = &services.ExpenseBuyService{
+		ExpenseBuyRepository: c.Repositories.ExpenseBuy,
 	}
-	c.Services.Income = &services.IncomeService{
-		IncomeRepository: c.Repositories.Income,
+	c.Services.ExpenseOther = &services.ExpenseOtherService{
+		ExpenseOtherRepository: c.Repositories.ExpenseOther,
+	}
+	c.Services.IncomeSale = &services.IncomeSaleService{
+		IncomeSaleRepository: c.Repositories.IncomeSale,
+	}
+	c.Services.IncomeOther = &services.IncomeOtherService{
+		IncomeOtherRepository: c.Repositories.IncomeOther,
 	}
 	c.Services.Member = &services.MemberService{
 		MemberRepository: c.Repositories.Member,
-	}
-	c.Services.Movement = &services.MovementTypeService{
-		MovementTypeRepository: c.Repositories.Movement,
 	}
 	c.Services.Permission = &services.PermissionService{
 		PermissionRepository: c.Repositories.Permission,

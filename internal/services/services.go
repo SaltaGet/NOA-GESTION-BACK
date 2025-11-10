@@ -16,21 +16,25 @@ type ClientService struct {
 	ClientRepository ports.ClientRepository
 }
 
-type ExpenseService struct {
-	ExpenseRepository ports.ExpenseRepository
+type ExpenseBuyService struct {
+	ExpenseBuyRepository ports.ExpenseBuyRepository
 }
 
-type IncomeService struct {
-	IncomeRepository ports.IncomeRepository
+type ExpenseOtherService struct {
+	ExpenseOtherRepository ports.ExpenseOtherRepository
+}
+
+type IncomeSaleService struct {
+	IncomeSaleRepository ports.IncomeSaleRepository
+}
+
+type IncomeOtherService struct {
+	IncomeOtherRepository ports.IncomeOtherRepository
 }
 
 type MemberService struct {
 	MemberRepository ports.MemberRepository
 	// UserRepository ports.UserRepository
-}
-
-type MovementTypeService struct {
-	MovementTypeRepository ports.MovementTypeRepository
 }
 
 type PermissionService struct {

@@ -68,22 +68,21 @@ type ClientResponseDTO struct {
 }
 
 type ClientResponse struct {
-	ID           string    `json:"id"`
-	FirstName    string    `json:"first_name"`
-	LastName     string    `json:"last_name"`
-	CompanyName  *string   `json:"company_name,omitempty"`
-	Identifier   *string   `json:"identifier,omitempty"`
-	Email        *string   `json:"email,omitempty"`
-	Phone        *string   `json:"phone,omitempty"`
-	Address      *string   `json:"address,omitempty"`
+	ID           string            `json:"id"`
+	FirstName    string            `json:"first_name"`
+	LastName     string            `json:"last_name"`
+	CompanyName  *string           `json:"company_name,omitempty"`
+	Identifier   *string           `json:"identifier,omitempty"`
+	Email        *string           `json:"email,omitempty"`
+	Phone        *string           `json:"phone,omitempty"`
+	Address      *string           `json:"address,omitempty"`
 	MemberCreate MemberResponseDTO `json:"member_create"`
+	Pay          []PayDebtResponse     `json:"pay"`
 }
 
 type ClientSimpleDTO struct {
-	ID           string    `json:"id"`
-	FirstName    string    `json:"first_name"`
-	LastName     string    `json:"last_name"`
-	CompanyName  *string   `json:"company_name,omitempty"`
+	ID          string  `json:"id"`
+	FirstName   string  `json:"first_name"`
+	LastName    string  `json:"last_name"`
+	CompanyName *string `json:"company_name,omitempty"`
 }
-
-

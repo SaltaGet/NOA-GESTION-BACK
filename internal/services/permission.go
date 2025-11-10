@@ -5,25 +5,13 @@ import (
 )
 
 func (p *PermissionService) PermissionByRoleID(roleID int64) (*[]string, error) {
-	permissions, err := p.PermissionRepository.PermissionByRoleID(roleID)
-	if err != nil {
-		return nil, err
-	}
-	return permissions, nil
+	return p.PermissionRepository.PermissionByRoleID(roleID)
 }
 
 func (p *PermissionService) PermissionGetAll() (*[]schemas.PermissionResponse, error) {
-	permissions, err := p.PermissionRepository.PermissionGetAll()
-	if err != nil {
-		return nil, err
-	}
-	return permissions, nil
+	return p.PermissionRepository.PermissionGetAll()
 }
 
 func (p *PermissionService) PermissionGetToMe(roleID int64) (*[]schemas.PermissionResponse, error) {
-	permissions, err := p.PermissionRepository.PermissionGetToMe(roleID)
-	if err != nil {
-		return nil, err
-	}
-	return permissions, nil
+	return p.PermissionRepository.PermissionGetToMe(roleID)
 }

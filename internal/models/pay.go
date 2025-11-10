@@ -8,6 +8,8 @@ type PayIncome struct {
 	IncomeSale     IncomeSale    `gorm:"foreignKey:IncomeSaleID" json:"income_sale"`
 	CashRegisterID *int64        `gorm:"index" json:"cash_register_id"`
 	CashRegister   *CashRegister `gorm:"foreignKey:CashRegisterID" json:"cash_register"`
+	ClientID       *int64        `gorm:"index" json:"client_id"`
+	Client         *Client       `gorm:"foreignKey:ClientID" json:"client"`
 	Amount         float64       `gorm:"not null" json:"amount"`
 	MethodPay      string        `gorm:"not null;default:cash" json:"method_pay" validate:"oneof=cash credit card transfer"`
 	CreatedAt      time.Time     `gorm:"autoCreateTime" json:"created_at"`

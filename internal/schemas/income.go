@@ -10,7 +10,8 @@ import (
 type IncomeSaleCreate struct {
 	Items    []ItemIncomeSaleCreate `json:"items" validate:"required,dive"`
 	Pay      []PayCreate            `json:"pay" validate:"required,dive,max=3"`
-	Discount float64                `json:"discount"`
+	ClientID int64                  `json:"client_id" validate:"required"`
+	Discount float64                `json:"discount" validate:"required,min=0"`
 	Type     string                 `json:"type_discount" validate:"oneof=amount percent"`
 	Total    float64                `json:"total"`
 	IsBudget bool                   `json:"is_budget"`
@@ -44,9 +45,9 @@ func (i *IncomeSaleCreate) Validate() error {
 		sumPay += p.Amount
 	}
 
-	if sumPay > i.Total {
-		message := fmt.Sprintf("la suma de los pagos (%.2f) no puede superar el total de la venta (%.2f)", sumPay, i.Total)
-		return ErrorResponse(422, message, fmt.Errorf(message))
+	if sumPay != i.Total {
+		message := fmt.Sprintf("la suma de los pagos (%.2f) no puede ser diferente a el total de la venta (%.2f)", sumPay, i.Total)
+		return ErrorResponse(422, message, fmt.Errorf("%s", message))
 	}
 
 	return nil
@@ -56,6 +57,7 @@ type IncomeSaleUpdate struct {
 	ID       int64                  `json:"id" validate:"required"`
 	Items    []ItemIncomeSaleUpdate `json:"items" validate:"required,dive"`
 	Pay      []PayUpdate            `json:"pay" validate:"required,dive,max=3"`
+	ClientID int64                  `json:"client_id" validate:"required"`
 	Discount float64                `json:"discount"`
 	Type     string                 `json:"type_discount" validate:"oneof=amount percent"`
 	Total    float64                `json:"total"`
@@ -90,9 +92,52 @@ func (i *IncomeSaleUpdate) Validate() error {
 		sumPay += p.Amount
 	}
 
-	if sumPay > i.Total {
+	if sumPay != i.Total {
 		message := fmt.Sprintf("la suma de los pagos (%.2f) no puede superar el total de la venta (%.2f)", sumPay, i.Total)
 		return ErrorResponse(422, message, fmt.Errorf(message))
+	}
+
+	return nil
+}
+
+type IncomeOtherCreate struct {
+	Total        float64 `json:"total" validate:"required"`
+	TypeIncomeID int64   `json:"type_income_id" validate:"required"`
+	Details      *string `json:"details"`
+	MethodIncome string  `json:"method_income" validate:"oneof=cash credit card transfer"`
+}
+
+func (i *IncomeOtherCreate) Validate() error {
+	validate := validator.New()
+
+	if err := validate.Struct(i); err != nil {
+		validationErr := err.(validator.ValidationErrors)[0]
+		field := validationErr.Field()
+		tag := validationErr.Tag()
+		param := validationErr.Param()
+		return ErrorResponse(422, fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param), err)
+	}
+
+	return nil
+}
+
+type IncomeOtherUpdate struct {
+	ID           int64   `json:"id" validate:"required"`
+	Total        float64 `json:"total" validate:"required"`
+	TypeIncomeID int64   `json:"type_income_id" validate:"required"`
+	Details      *string `json:"details"`
+	MethodIncome string  `json:"method_income" validate:"oneof=cash credit card transfer"`
+}
+
+func (i *IncomeOtherUpdate) Validate() error {
+	validate := validator.New()
+
+	if err := validate.Struct(i); err != nil {
+		validationErr := err.(validator.ValidationErrors)[0]
+		field := validationErr.Field()
+		tag := validationErr.Tag()
+		param := validationErr.Param()
+		return ErrorResponse(422, fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param), err)
 	}
 
 	return nil
@@ -124,19 +169,13 @@ type IncomeSaleItemResponse struct {
 	CreatedAt time.Time                `json:"created_at"`
 }
 
-type PayResponse struct {
-	ID        int64   `json:"id"`
-	Amount    float64 `json:"amount"`
-	MethodPay string  `json:"method_pay"`
-}
-
 type IncomeSaleResponseDTO struct {
-	ID            int64           `json:"id"`
-	Member        MemberSimpleDTO `json:"member"`
-	Client        ClientSimpleDTO `json:"client"`
-	Pay           []PayResponse   `json:"pay"`
-	Total         float64         `json:"total"`
-	CreatedAt     time.Time       `json:"created_at"`
+	ID        int64           `json:"id"`
+	Member    MemberSimpleDTO `json:"member"`
+	Client    ClientSimpleDTO `json:"client"`
+	Pay       []PayResponse   `json:"pay"`
+	Total     float64         `json:"total"`
+	CreatedAt time.Time       `json:"created_at"`
 }
 
 type IncomeSaleSimpleResponse struct {
@@ -158,7 +197,7 @@ type IncomeSaleItemResponseDTO struct {
 
 type IncomeOtherResponse struct {
 	ID           int64              `json:"id"`
-	Member       *MemberSimpleDTO    `json:"member,omitempty"`
+	Member       *MemberSimpleDTO   `json:"member,omitempty"`
 	Total        float64            `json:"total"`
 	TypeIncome   TypeIncomeResponse `json:"type_income"`
 	Details      *string            `json:"details,omitempty"`

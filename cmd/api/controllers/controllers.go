@@ -15,20 +15,24 @@ type ClientController struct {
 	ClientService ports.ClientService
 }
 
-type ExpenseController struct {
-	ExpenseService ports.ExpenseService
+type ExpenseBuyController struct {
+	ExpenseBuyService ports.ExpenseBuyService
 }
 
-type IncomeController struct {
-	IncomeService ports.IncomeService
+type ExpenseOtherController struct {
+	ExpenseOtherService ports.ExpenseOtherService
+}
+
+type IncomeOtherController struct {
+	IncomeOtherService ports.IncomeOtherService
+}
+
+type IncomeSaleController struct {
+	IncomeSaleService ports.IncomeSaleService
 }
 
 type MemberController struct {
 	MemberService ports.MemberService
-}
-
-type MovementTypeController struct {
-	MovementTypeService ports.MovementTypeService
 }
 
 type PermissionController struct {

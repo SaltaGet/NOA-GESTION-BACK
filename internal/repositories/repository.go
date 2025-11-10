@@ -36,11 +36,19 @@ type EmployeeRepository struct {
 	DB *gorm.DB
 }
 
-type ExpenseRepository struct {
+type ExpenseBuyRepository struct {
 	DB *gorm.DB
 }
 
-type IncomeRepository struct {
+type ExpenseOtherRepository struct {
+	DB *gorm.DB
+}
+
+type IncomeSaleRepository struct {
+	DB *gorm.DB
+}
+
+type IncomeOtherRepository struct {
 	DB *gorm.DB
 }
 

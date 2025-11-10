@@ -1,0 +1,14 @@
+package schemas
+
+type PayResponse struct {
+	ID        int64   `json:"id"`
+	Amount    float64 `json:"amount"`
+	MethodPay string  `json:"method_pay"`
+}
+
+type PayDebtResponse struct {
+	ID           int64   `json:"id"`
+	IncomeSaleID int64   `json:"income_sale_id"`
+	Amount       float64 `json:"amount"`
+	MethodPay    string  `json:"method_pay"`
+}

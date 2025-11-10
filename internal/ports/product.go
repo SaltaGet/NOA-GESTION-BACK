@@ -1,28 +1,29 @@
 package ports
 
-import "github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-
+import (
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+)
 
 type ProductRepository interface {
-	ProductGetByID(id string) (product *schemas.Product, err error)
-	ProductGetByName(name string) (clients *[]schemas.Product, err error)
-	ProductGetByIdentifier(name string) (clients *[]schemas.Product, err error)
-	ProductGetAll() (products *[]schemas.Product, err error)
-	ProductCreate(productCreate *schemas.ProductCreate) (id string, err error)
-	ProductUpdate(productUpdate *schemas.ProductUpdate) (err error)
-	AddToStock(stockUpdate *schemas.StockUpdate) (err error)
-	SubtractFromStockToStock(stockUpdate *schemas.StockUpdate) (err error)
-	UpdateStock(stockUpdate *schemas.StockUpdate) (err error)
-	ProductDelete(id string) (err error)
+	ProductGetByID(id int64) (*schemas.ProductFullResponse, error)
+	ProductGetByCode(code string) (*schemas.ProductFullResponse, error)
+	ProductGetByCategoryID(categoryID int64) ([]*schemas.ProductFullResponse, error)
+	ProductGetByName(name string) ([]*schemas.ProductFullResponse, error)
+	ProductGetAll(page, limit int) ([]*schemas.ProductFullResponse, int64, error)
+	ProductCreate(productCreate *schemas.ProductCreate) (int64, error)
+	ProductUpdate(productUpdate *schemas.ProductUpdate) error
+	ProductPriceUpdate(productUpdate *schemas.ListPriceUpdate) error
+	ProductDelete(id int64) error
 }
 
 type ProductService interface {
-	ProductGetByID(id string) (product *schemas.Product, err error)
-	ProductGetByName(name string) (clients *[]schemas.Product, err error)
-	ProductGetByIdentifier(name string) (clients *[]schemas.Product, err error)
-	ProductGetAll() (products *[]schemas.Product, err error)
-	ProductCreate(productCreate *schemas.ProductCreate) (id string, err error)
-	ProductUpdate(productUpdate *schemas.ProductUpdate) (err error)
-	ProductUpdateStock(productUpdate *schemas.StockUpdate) (err error)
-	ProductDelete(id string) (err error)
+	ProductGetByID(id int64) (*schemas.ProductFullResponse, error)
+	ProductGetByCode(code string) (*schemas.ProductFullResponse, error)
+	ProductGetByName(name string) ([]*schemas.ProductFullResponse, error)
+	ProductGetByCategoryID(categoryID int64) ([]*schemas.ProductFullResponse, error)
+	ProductGetAll(page, limit int) ([]*schemas.ProductFullResponse, int64, error)
+	ProductCreate(productCreate *schemas.ProductCreate) (int64, error)
+	ProductUpdate(productUpdate *schemas.ProductUpdate) error
+	ProductPriceUpdate(productUpdate *schemas.ListPriceUpdate) error
+	ProductDelete(id int64) error
 }

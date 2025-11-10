@@ -13,7 +13,7 @@ type IncomeSale struct {
 	CashRegisterID int64            `gorm:"not null" json:"register_id"`
 	CashRegister   CashRegister     `gorm:"foreignKey:CashRegisterID;references:ID" json:"cash_register"`
 	Items          []IncomeSaleItem `gorm:"foreignKey:IncomeSaleID" json:"items"`
-	SubTotal       float64          `gorm:"not null" json:"subtotal"`
+	Subtotal       float64          `gorm:"not null" json:"subtotal"`
 	Discount       float64          `gorm:"not null;default:0" json:"discount"`
 	Type           string           `gorm:"not null;default:percent" json:"type_discount" validate:"oneof=amount percent"`
 	Total          float64          `gorm:"not null" json:"total"`
@@ -34,7 +34,7 @@ type IncomeSaleItem struct {
 	Price        float64    `gorm:"not null" json:"price"`
 	Discount     float64    `gorm:"not null;default:0" json:"discount"`
 	TypeDiscount string     `gorm:"not null;default:percent" json:"type_discount" validate:"oneof=amount percent"`
-	SubTotal     float64    `gorm:"not null" json:"subtotal"`
+	Subtotal     float64    `gorm:"not null" json:"subtotal"`
 	Total        float64    `gorm:"not null" json:"total"`
 }
 

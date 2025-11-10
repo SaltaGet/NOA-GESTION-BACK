@@ -2,21 +2,18 @@ package ports
 
 import "github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 
-
 type SupplierService interface {
-	SupplierGetByID(id string) (suplier *schemas.Supplier, err error)
-	SupplierGetByName(name string) (suplier *[]schemas.Supplier, err error)
-	SupplierGetAll() (suppliers *[]schemas.Supplier, err error)
-	SupplierCreate(supplier *schemas.SupplierCreate) (id string, err error)
-	SupplierUpdate(supplierUpdate *schemas.SupplierUpdate) (err error)
-	SupplierDelete(id string) (err error)
+	SupplierGetByID(id int64) (suplier *schemas.SupplierResponse, err error)
+	SupplierGetAll(limit, page int, search *map[string]string) ([]*schemas.SupplierResponseDTO, int64, error)
+	SupplierCreate(supplierCreate *schemas.SupplierCreate) (int64, error)
+	SupplierUpdate(supplierUpdate *schemas.SupplierUpdate) error
+	SupplierDelete(id int64) error
 }
 
 type SupplierRepository interface {
-	SupplierGetByID(id string) (suplier *schemas.Supplier, err error)
-	SupplierGetByName(name string) (suplier *[]schemas.Supplier, err error)
-	SupplierGetAll() (suppliers *[]schemas.Supplier, err error)
-	SupplierCreate(supplier *schemas.SupplierCreate) (id string, err error)
-	SupplierUpdate(supplierUpdate *schemas.SupplierUpdate) (err error)
-	SupplierDelete(id string) (err error)
+	SupplierGetByID(id int64) (suplier *schemas.SupplierResponse, err error)
+	SupplierGetAll(limit, page int, search *map[string]string) ([]*schemas.SupplierResponseDTO, int64, error)
+	SupplierCreate(supplierCreate *schemas.SupplierCreate) (int64, error)
+	SupplierUpdate(supplierUpdate *schemas.SupplierUpdate) error
+	SupplierDelete(id int64) error
 }

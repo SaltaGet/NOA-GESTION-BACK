@@ -3,14 +3,14 @@ package repositories
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func (r *ClientRepository) ClientGetByID(id string) (*schemas.ClientResponse, error) {
+func (r *ClientRepository) ClientGetByID(id int64) (*schemas.ClientResponse, error) {
 	var client schemas.ClientResponse
 	if err := r.DB.Where("id = ?", id).First(&client).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -21,57 +21,82 @@ func (r *ClientRepository) ClientGetByID(id string) (*schemas.ClientResponse, er
 	return &client, nil
 }
 
-func (r *ClientRepository) ClientGetByName(name string) (*[]schemas.ClientResponseDTO, error) {
+func (r *ClientRepository) ClientGetByFilter(search string) (*[]schemas.ClientResponseDTO, error) {
 	var client []schemas.ClientResponseDTO
-	if err := r.DB.Where("last_name LIKE ? OR first_name LIKE ?", "%"+name+"%", "%"+name+"%").Find(&client).Error; err != nil {
-    return nil, schemas.ErrorResponse(500, "Error al buscar el cliente", err)
+	if err := r.DB.Limit(10).Where("last_name LIKE ? OR first_name LIKE ? OR identifier LIKE ?", "%"+search+"%", "%"+search+"%", "%"+search+"%").Find(&client).Error; err != nil {
+		return nil, schemas.ErrorResponse(500, "Error al buscar el cliente", err)
 	}
 	return &client, nil
 }
 
-func (r *ClientRepository) ClientExist(email, dni, cuil string) (error) {
-	var field string
-	err := r.DB.Raw(`
-		SELECT 
-			CASE
-				WHEN email = ? THEN 'email'
-				WHEN dni = ? THEN 'dni'
-				WHEN cuil = ? THEN 'cuil'
-			END as field
-		FROM clients
-		WHERE email = ? OR dni = ? OR cuil = ?
-		LIMIT 1
-	`, email, dni, cuil, email, dni, cuil).Scan(&field).Error
-
-	if err != nil {
-		return schemas.ErrorResponse(500, "Error al corroborar el cliente", err)
-	}
-
-	if field == "" {
-		return schemas.ErrorResponse(400, fmt.Sprintf("El campo %s ya existe, debe de ser único", field), err)
-	}
-
-	return nil
-}
-
-func (r *ClientRepository) ClientGetAll() (*[]schemas.ClientResponseDTO, error) {
+func (r *ClientRepository) ClientGetAll(limit, page int64, search *map[string]string) (*[]schemas.ClientResponseDTO, int64, error) {
 	var clients []schemas.ClientResponseDTO
-	if err := r.DB.Find(&clients).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "Error al buscar los clientes", err)
+
+	query := r.DB.Model(&models.Client{})
+
+	// Aplicar filtros dinámicos
+	if search != nil {
+		for key, value := range *search {
+			if value == "" {
+				continue
+			}
+
+			switch strings.ToLower(key) {
+			case "identifier":
+				query = query.Where("identifier LIKE ?", "%"+value+"%")
+			case "first_name":
+				query = query.Where("first_name LIKE ?", "%"+value+"%")
+			case "last_name":
+				query = query.Where("last_name LIKE ?", "%"+value+"%")
+			case "email":
+				query = query.Where("email LIKE ?", "%"+value+"%")
+			}
+		}
 	}
-	return &clients, nil
+
+	if limit > 0 {
+		offset := (page - 1) * limit
+		query = query.Limit(int(limit)).Offset(int(offset))
+	}
+
+	if err := query.Find(&clients).Error; err != nil {
+		return nil, 0, schemas.ErrorResponse(500, "Error al buscar los clientes", err)
+	}
+
+	// Contar total de registros
+	var total int64
+	if err := r.DB.Model(&models.Client{}).Count(&total).Error; err != nil {
+		return nil, 0, schemas.ErrorResponse(500, "Error al contar los clientes", err)
+	}
+
+	return &clients, total, nil
 }
 
-func (r *ClientRepository) ClientCreate(client *schemas.ClientCreate) (string, error) {
-	newClient := schemas.ClientResponseDTO{
-		ID: uuid.NewString(),
-		FirstName: client.FirstName,
-		LastName:  client.LastName,
-		Identifier: client.Identifier,
-		Email:     client.Email,
+
+func (r *ClientRepository) ClientCreate(memberID int64, client *schemas.ClientCreate) (int64, error) {
+	newClient := models.Client{
+		FirstName:      client.FirstName,
+		LastName:       client.LastName,
+		CompanyName:    client.CompanyName,
+		Identifier:     client.Identifier,
+		Email:          client.Email,
+		Phone:          client.Phone,
+		Address:        client.Address,
+		MemberCreateID: memberID,
 	}
 	if err := r.DB.Create(&newClient).Error; err != nil {
-		return "", schemas.ErrorResponse(500, "Error al crear el cliente", err)
+		if schemas.IsDuplicateError(err) {
+			msg := err.Error()
+			switch {
+			case strings.Contains(msg, "email"):
+				return 0, schemas.ErrorResponse(409, fmt.Sprintf("Ya existe un cliente con el email %s", *client.Email), err)
+			case strings.Contains(msg, "identifier"):
+				return 0, schemas.ErrorResponse(409, fmt.Sprintf("Ya existe un cliente con el identificador %s", *client.Identifier), err)
+			default:
+				return 0, schemas.ErrorResponse(409, "El cliente ya existe", err)
+			}
+		}
+		return 0, schemas.ErrorResponse(500, "Error al crear el cliente", err)
 	}
 	return newClient.ID, nil
 }
@@ -84,20 +109,31 @@ func (r *ClientRepository) ClientUpdate(client *schemas.ClientUpdate) error {
 	}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return schemas.ErrorResponse(404, "Cliente no encontrado", err)
-		}	
-		return schemas.ErrorResponse(500, "Error al obtener el cliente", err) 
+		}
+		if schemas.IsDuplicateError(err) {
+			msg := err.Error()
+			switch {
+			case strings.Contains(msg, "email"):
+				return schemas.ErrorResponse(409, fmt.Sprintf("Ya existe un cliente con el email %s", *client.Email), err)
+			case strings.Contains(msg, "identifier"):
+				return schemas.ErrorResponse(409, fmt.Sprintf("Ya existe un cliente con el identificador %s", *client.Identifier), err)
+			default:
+				return schemas.ErrorResponse(409, "El cliente ya existe", err)
+			}
+		}
+		return schemas.ErrorResponse(500, "Error al obtener el cliente", err)
 	}
-	
+
 	return nil
 }
 
-func (r *ClientRepository) ClientDelete(id string) error {
+func (r *ClientRepository) ClientDelete(id int64) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("id = ?", id).Delete(&models.Client{}).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return schemas.ErrorResponse(404, "Cliente no encontrado", err)
 			}
-			return schemas.ErrorResponse(500, "Error al eliminar el cliente", err)  
+			return schemas.ErrorResponse(500, "Error al eliminar el cliente", err)
 		}
 
 		return nil

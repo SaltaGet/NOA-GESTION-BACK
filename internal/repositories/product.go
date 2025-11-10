@@ -2,123 +2,249 @@ package repositories
 
 import (
 	"errors"
+	"fmt"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/google/uuid"
+	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
 )
 
-func (r *ProductRepository) ProductGetByID(id string) (*schemas.Product, error) {
-	var product schemas.Product
-	if err := r.DB.Where("id = ?", id).First(&product).Error; err != nil {
+func (r *ProductRepository) ProductGetByID(id int64) (*schemas.ProductFullResponse, error) {
+	var product models.Product
+	if err := r.DB.
+		Preload("Category", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name")
+		}).
+		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
+			return db.Select("stock")
+		}).
+		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name")
+		}).
+		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "stock")
+		}).
+		First(&product, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "Producto no encontrado", err)
+			return nil, schemas.ErrorResponse(404, "producto no encontrado", err)
 		}
-		return nil, schemas.ErrorResponse(500, "Error interno al buscar producto", err)
+		return nil, schemas.ErrorResponse(500, "error al obtener el producto", err)
 	}
-	return &product, nil
 
+	var productSchema schemas.ProductFullResponse
+	_ = copier.Copy(&productSchema, &product)
+
+	return &productSchema, nil
 }
 
-func (r *ProductRepository) ProductGetByIdentifier(identifier string) (*[]schemas.Product, error) {
-	var product []schemas.Product
-	if err := r.DB.Where("identifier LIKE ?", "%"+identifier+"%").Find(&product).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "Error interno al buscar producto", err)
-	}
-	return &product, nil
-}
+func (r *ProductRepository) ProductGetByCode(code string) (*schemas.ProductFullResponse, error) {
+	var product *models.Product
 
-func (r *ProductRepository) ProductGetByName(name string) (*[]schemas.Product, error) {
-	var products []schemas.Product
-	if err := r.DB.Where("name LIKE ?", "%"+name+"%").Find(&products).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "Error interno al buscar productos", err)
-	}
-	return &products, nil
-}
-
-func (r *ProductRepository) ProductGetAll() (*[]schemas.Product, error) {
-	var products []schemas.Product
-	if err := r.DB.Find(&products).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "Error interno al buscar productos", err)
-	}
-	return &products, nil
-
-}
-
-func (r *ProductRepository) ProductCreate(element *schemas.ProductCreate) (string, error) {
-	newID := uuid.NewString()
-	if err := r.DB.Create(&schemas.Product{
-		ID:         newID,
-		Identifier: element.Identifier,
-		Name:       element.Name,
-		Stock:      0,
-	}).Error; err != nil {
-		return "", schemas.ErrorResponse(500, "Error interno al crear producto", err)
-	}
-	return newID, nil
-
-}
-
-func (r *ProductRepository) ProductUpdate(element *schemas.ProductUpdate) error {
-	if err := r.DB.Model(&schemas.Product{}).Where("id = ?", element.ID).Updates(&schemas.Product{
-		Identifier: element.Identifier,
-		Name:       element.Name,
-	}).Error; err != nil {
+	if err := r.DB.
+		Preload("Category", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name")
+		}).
+		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
+			return db.Select("stock")
+		}).
+		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name")
+		}).
+		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "stock")
+		}).
+		Where("code = ?", code).First(&product).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return schemas.ErrorResponse(404, "Producto no encontrado", err)
+			return nil, schemas.ErrorResponse(404, "producto no encontrado", err)
 		}
-		return schemas.ErrorResponse(500, "Error interno al actualizar producto", err)
+		return nil, schemas.ErrorResponse(500, "error al obtener el producto", err)
 	}
+
+	var productSchema schemas.ProductFullResponse
+	_ = copier.Copy(&productSchema, &product)
+
+	return &productSchema, nil
+}
+
+func (r *ProductRepository) ProductGetByCategoryID(categoryID int64) ([]*schemas.ProductFullResponse, error) {
+	var products []*models.Product
+
+	if err := r.DB.
+		Preload("Category", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name")
+		}).
+		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
+			return db.Select("stock")
+		}).
+		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name")
+		}).
+		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "stock")
+		}).
+		Where("category_id = ?", categoryID).Find(&products).Error; err != nil {
+		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
+	}
+
+	var productSchema []*schemas.ProductFullResponse
+	_ = copier.Copy(&productSchema, &products)
+
+	return productSchema, nil
+}
+
+func (r *ProductRepository) ProductGetByName(name string) ([]*schemas.ProductFullResponse, error) {
+	var products []*models.Product
+
+	if err := r.DB.
+		Preload("Category", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name")
+		}).
+		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
+			return db.Select("stock")
+		}).
+		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name")
+		}).
+		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "stock")
+		}).
+		Where("name LIKE ?", "%"+name+"%").Find(&products).Error; err != nil {
+		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
+	}
+
+	var productSchema []*schemas.ProductFullResponse
+	_ = copier.Copy(&productSchema, &products)
+
+	return productSchema, nil
+}
+
+func (r *ProductRepository) ProductGetAll(page, limit int) ([]*schemas.ProductFullResponse, int64, error) {
+	var products []*models.Product
+	var total int64
+	offset := (page - 1) * limit
+
+	if err := r.DB.
+		Model(&models.Product{}).
+		Count(&total).Error; err != nil {
+		return nil, 0, schemas.ErrorResponse(500, "error al contar productos", err)
+	}
+
+	if err := r.DB.
+		Preload("Category", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name")
+		}).
+		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
+			return db.Select("stock")
+		}).
+		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name")
+		}).
+		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "stock")
+		}).
+		Offset(offset).
+		Limit(limit).
+		Find(&products).Error; err != nil {
+		return nil, 0, schemas.ErrorResponse(500, "error al obtener productos", err)
+	}
+
+	var productSchema []*schemas.ProductFullResponse
+	_ = copier.Copy(&productSchema, &products)
+
+	return productSchema, total, nil
+}
+
+func (r *ProductRepository) ProductCreate(productCreate *schemas.ProductCreate) (int64, error) {
+	var product models.Product
+
+	product.Name = productCreate.Name
+	product.Code = productCreate.Code
+	product.Description = productCreate.Description
+	if productCreate.Price != nil {
+		product.Price = *productCreate.Price
+	}
+	product.CategoryID = productCreate.CategoryID
+	product.Notifier = productCreate.Notifier
+	product.MinAmount = productCreate.MinAmount
+
+	if err := r.DB.Create(&product).Error; err != nil {
+		if schemas.IsDuplicateError(err) {
+			return 0, schemas.ErrorResponse(400, "el producto de codigo "+product.Code+" ya existe", err)
+		}
+		return 0, schemas.ErrorResponse(500, "error al crear el producto", err)
+	}
+
+	return product.ID, nil
+}
+
+func (r *ProductRepository) ProductUpdate(product *schemas.ProductUpdate) error {
+	var p models.Product
+	if err := r.DB.First(&p, product.ID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return schemas.ErrorResponse(404, "producto no encontrado", err)
+		}
+		return schemas.ErrorResponse(500, "error al obtener el producto", err)
+	}
+
+	if product.Price != nil {
+		p.Price = *product.Price
+	}
+
+	updates := map[string]any{
+		"code":        product.Code,
+		"name":        product.Name,
+		"description": &product.Description,
+		"category_id": product.CategoryID,
+		"price":       p.Price,
+		"notifier":    product.Notifier,
+		"min_amount":  product.MinAmount,
+	}
+
+	if err := r.DB.Model(&p).Updates(updates).Error; err != nil {
+		if schemas.IsDuplicateError(err) {
+			return schemas.ErrorResponse(400, "el producto de código "+product.Code+" ya existe", err)
+		}
+		return schemas.ErrorResponse(500, "error al actualizar el producto", err)
+	}
+
 	return nil
-
 }
 
-func (r *ProductRepository) UpdateStock(stockUpdate *schemas.StockUpdate) error {
-	if err := r.DB.Model(&schemas.Product{}).
-		Where("id = ?", stockUpdate.ID).
-		Update("stock", stockUpdate.Stock).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return schemas.ErrorResponse(404, "Producto no encontrado", err)
-		}
-		return schemas.ErrorResponse(500, "Error interno al actualizar stock", err)
-	}
-	return nil
+func (r *ProductRepository) ProductPriceUpdate(product *schemas.ListPriceUpdate) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		for _, p := range product.ListProductPriceUpdate {
+			res := tx.Model(&models.Product{}).
+				Where("id = ?", p.ID).
+				Update("price", p.Price)
 
-}
-
-func (r *ProductRepository) AddToStock(stockUpdate *schemas.StockUpdate) error {
-	if err := r.DB.Model(&schemas.Product{}).
-		Where("id = ?", stockUpdate.ID).
-		UpdateColumn("stock", gorm.Expr("stock + ?", stockUpdate.Stock)).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Producto no encontrado", err)
+			if res.Error != nil {
+				return schemas.ErrorResponse(500, "error al actualizar el producto", res.Error)
 			}
-			return schemas.ErrorResponse(500, "Error interno al actualizar stock", err)
-		}
 
-	return nil
-}
-
-func (r *ProductRepository) SubtractFromStockToStock(stockUpdate *schemas.StockUpdate) error {
-	if err := r.DB.Model(&schemas.Product{}).
-		Where("id = ?", stockUpdate.ID).
-		UpdateColumn("stock", gorm.Expr("stock - ?", stockUpdate.Stock)).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Producto no encontrado", err)
+			if res.RowsAffected == 0 {
+				return schemas.ErrorResponse(404, fmt.Sprintf("producto %d no encontrado", p.ID), fmt.Errorf("producto %d no encontrado", p.ID))
 			}
-			return schemas.ErrorResponse(500, "Error interno al actualizar stock", err)
 		}
-
-	return nil
+		return nil
+	})
 }
 
-func (r *ProductRepository) ProductDelete(id string) error {
-	if err := r.DB.Where("id = ?", id).Delete(&schemas.Product{}).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return schemas.ErrorResponse(404, "Producto no encontrado", err)
-			
+func (r *ProductRepository) ProductDelete(id int64) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("product_id = ?", id).Delete(&models.StockPointSale{}).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return schemas.ErrorResponse(404, "producto no encontrado", err)
+			}
+			return schemas.ErrorResponse(500, "error al eliminar el producto", err)
 		}
-		return schemas.ErrorResponse(500, "Error interno al eliminar producto", err)
-	}
-	return nil
+
+		if err := tx.Where("id = ?", id).Delete(&models.Product{}).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return schemas.ErrorResponse(404, "producto no encontrado", err)
+			}
+			return schemas.ErrorResponse(500, "error al eliminar el producto", err)
+		}
+		return nil
+	})
 }

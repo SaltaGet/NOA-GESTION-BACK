@@ -27,10 +27,11 @@ func InjectionDependsTenant() fiber.Handler {
 func setupTenantControllers(c *fiber.Ctx, container *dependencies.TenantContainer) {
 	controllersMap := map[string]any{
 		"ClientController":       &controllers.ClientController{ClientService: container.Services.Client},
-		"ExpenseController":      &controllers.ExpenseController{ExpenseService: container.Services.Expense},
-		"IncomeController":       &controllers.IncomeController{IncomeService: container.Services.Income},
+		"ExpenseBuyController":      &controllers.ExpenseBuyController{ExpenseBuyService: container.Services.ExpenseBuy},
+		"ExpenseOtherController":      &controllers.ExpenseOtherController{ExpenseOtherService: container.Services.ExpenseOther},
+		"IncomeOtherController":       &controllers.IncomeOtherController{IncomeOtherService: container.Services.IncomeOther},
+		"IncomeSaleController":       &controllers.IncomeSaleController{IncomeSaleService: container.Services.IncomeSale},
 		"MemberController":       &controllers.MemberController{MemberService: container.Services.Member},
-		"MovementTypeController": &controllers.MovementTypeController{MovementTypeService: container.Services.Movement},
 		"PermissionController":   &controllers.PermissionController{PermissionService: container.Services.Permission},
 		"PointSaleController":   &controllers.PointSaleController{PointSaleService: container.Services.PointSale},
 		"ProductController":      &controllers.ProductController{ProductService: container.Services.Product},

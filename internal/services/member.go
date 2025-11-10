@@ -1,71 +1,43 @@
 package services
 
 import (
-	"log"
-	"runtime/debug"
-
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
-func (m *MemberService) MemberGetAll() (*[]schemas.MemberDTO, error) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("Panic atrapado en MemberGetAll: %v", r)
-			debug.PrintStack()
-		}
-	}()
-	members, err := m.MemberRepository.MemberGetAll()
-	if err != nil {
-		return nil, err
-	}
-
-	return members, nil
+func (m *MemberService) MemberGetByID(id int64) (*schemas.MemberResponse, error) {
+	return m.MemberRepository.MemberGetByID(id)
 }
 
-
-func (m *MemberService) MemberGetPermissionByUserID(userID string) (*schemas.Member, error) {
-	member, err := m.MemberRepository.MemberGetPermissionByUserID(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	return member, nil
+func (m *MemberService) MemberGetPermissionByUserID(userID int64) (*schemas.MemberResponse, error) {
+	return m.MemberRepository.MemberGetPermissionByUserID(userID)
 }
 
-func (m *MemberService) MemberGetByID(id string) (*schemas.MemberResponse, error) {
-	member, err := m.MemberRepository.MemberGetByID(id)
-	if err != nil {
-		return nil, err
-	}
-	
-	return member, nil
+func (m *MemberService) MemberGetAll(limit, page int, search *map[string]string) ([]*schemas.MemberResponseDTO, int64, error) {
+	return m.MemberRepository.MemberGetAll(limit, page, search)
 }
 
-func (m *MemberService) MemberCreate(memberCreate *schemas.MemberCreate, user *schemas.AuthenticatedUser) (string, error) {
-	id, err := m.MemberRepository.MemberCreate(memberCreate, user)
-	if err != nil {
-		return "", err
-	}
-	return id, nil
+func (m *MemberService) MemberCreate(memeberCreate *schemas.MemberCreate) (int64, error) {
+	return m.MemberRepository.MemberCreate(memeberCreate)
 }
 
-func (m *MemberService) MemberDelete(memberID string) error {
-	if err := m.MemberRepository.MemberDelete(memberID); err != nil {
-		return err
-	}
-	return nil
+func (m *MemberService) MemberUpdate(memeberUpdate *schemas.MemberUpdate) error {
+	return m.MemberRepository.MemberUpdate(memeberUpdate)
 }
 
+func (m *MemberService) MemberUpdatePassword(memberID int64, memeberCreate *schemas.MemberUpdatePassword) error {
+	return m.MemberRepository.MemberUpdatePassword(memberID, memeberCreate)
+}
 
-
+func (m *MemberService) MemberDelete(id int64) (error) {
+	return m.MemberRepository.MemberDelete(id)
+}
 
 // ********************************************************************************************************************************
 
 // EXAMPLE USE CACHE
-
 
 // UpdateMemberRole actualiza el rol de un miembro e invalida el cache
 func (s *MemberService) UpdateMemberRole(memberID, roleID int64, tenantID int64, connection string) error {
@@ -120,7 +92,6 @@ func (s *MemberService) DeactivateMember(memberID int64, tenantID int64, connect
 
 // --- Ejemplo de TenantService ---
 
-
 // UpdateTenantConnection actualiza la connection string de un tenant
 func (s *TenantService) UpdateTenantConnection(tenantID int64, newConnection string) error {
 	db := database.GetMainDB()
@@ -168,7 +139,6 @@ func (s *TenantService) DeactivateTenant(tenantID int64) error {
 
 // --- Ejemplo de RoleService ---
 
-
 // UpdateRolePermissions actualiza permisos de un rol
 func (s *RoleService) UpdateRolePermissions(roleID int64, permissionIDs []int64, tenantID int64, connection string) error {
 	db, err := database.GetTenantDB(connection, tenantID)
@@ -184,7 +154,7 @@ func (s *RoleService) UpdateRolePermissions(roleID int64, permissionIDs []int64,
 	// Actualizar permisos
 	var permissions []models.Permission
 	db.Where("id IN ?", permissionIDs).Find(&permissions)
-	
+
 	if err := db.Model(&role).Association("Permissions").Replace(permissions); err != nil {
 		return err
 	}
@@ -197,7 +167,7 @@ func (s *RoleService) UpdateRolePermissions(roleID int64, permissionIDs []int64,
 	// Invalidar cache de todos los miembros con este rol
 	var members []models.Member
 	db.Where("role_id = ?", roleID).Find(&members)
-	
+
 	// if cache.IsAvailable() {
 	// 	for _, member := range members {
 	// 		_ = cache.InvalidateAllUserVersions(member.UserID)
@@ -208,7 +178,6 @@ func (s *RoleService) UpdateRolePermissions(roleID int64, permissionIDs []int64,
 }
 
 // --- Ejemplo de AuthService ---
-
 
 // Login genera token con versión para cache
 func (s *AuthService) Login(username, password string, tenantIdentifier *string) (string, error) {

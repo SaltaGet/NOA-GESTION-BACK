@@ -32,7 +32,7 @@ type MemberResponseDTO struct {
 	Phone     *string      `json:"phone"`
 	IsActive  bool         `json:"is_active"`
 	IsAdmin   bool         `json:"is_admin"`
-	Role      RoleResponse `json:"role"`
+	Role      RoleResponseDTO `json:"role"`
 }
 
 type MemberSimpleDTO struct {

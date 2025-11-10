@@ -4,17 +4,20 @@ import "github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 
 
 type MemberRepository interface {
-	MemberGetByID(id string) (member *schemas.MemberResponse, err error)
-	MemberGetPermissionByUserID(userID string) (member *schemas.Member, err error)
-	MemberGetAll() (members *[]schemas.MemberDTO, err error)
-	MemberCreate(memeberCreate *schemas.MemberCreate, user *schemas.AuthenticatedUser) (id string, err error)
-	MemberDelete(id string) (err error)
+	MemberGetByID(id int64) (*schemas.MemberResponse, error)
+	MemberGetPermissionByUserID(userID int64) (*schemas.MemberResponse, error)
+	MemberGetAll(limit, page int, search *map[string]string) ([]*schemas.MemberResponseDTO, int64, error)
+	MemberCreate(memeberCreate *schemas.MemberCreate) (int64, error)
+	MemberUpdate(memeberUpdate *schemas.MemberUpdate) (error)
+	MemberUpdatePassword(memberID int64, memeberCreate *schemas.MemberUpdatePassword) (error)
+	MemberDelete(id int64) (err error)
 }
 
 type MemberService interface {
-	MemberGetByID(id string) (member *schemas.MemberResponse, err error)
-	MemberGetPermissionByUserID(userID string) (permission *schemas.Member, err error)
-	MemberGetAll() (members *[]schemas.MemberDTO, err error)
-	MemberCreate(memeberCreate *schemas.MemberCreate, user *schemas.AuthenticatedUser) (id string, err error)
-	MemberDelete(id string) (err error)
+	MemberGetByID(id int64) (*schemas.MemberResponse, error)
+	MemberGetPermissionByUserID(userID int64) (*schemas.MemberResponse, error)
+	MemberGetAll(limit, page int, search *map[string]string) ([]*schemas.MemberResponseDTO, int64, error)
+	MemberCreate(memeberCreate *schemas.MemberCreate) (int64, error)
+	MemberUpdate(memeberUpdate *schemas.MemberUpdate) (error)
+	MemberDelete(id int64) (err error)
 }
