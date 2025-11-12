@@ -1,8 +1,11 @@
 package controllers
 
 import (
+	"strconv"
+
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -14,41 +17,65 @@ import (
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Success		200	{object}	schemas.Response{body=[]schemas.MemberDTO}	"Members obtenidos con éxito"
-//	@Failure		400	{object}	schemas.Response							"Bad Request"
-//	@Failure		401	{object}	schemas.Response							"Auth is required"
-//	@Failure		403	{object}	schemas.Response							"Not Authorized"
-//	@Failure		500	{object}	schemas.Response
+//
+//	@Param			limit		query		int													false	"Limite por pagina, default 10"
+//	@Param			page		query		int													false	"Numero de pagina, default 1"
+//	@Param			first_name	query		string												false	"Nombre del miembro"
+//	@Param			last_name	query		string												false	"Apellido del miembro"
+//	@Param			username	query		string												false	"Username"
+//	@Param			email		query		string												false	"Correo del miembro"
+//
+//	@Success		200			{object}	schemas.Response{body=[]schemas.MemberResponseDTO}	"Members obtenidos con éxito"
 //	@Router			/api/v1/member/get_all [get]
 func (m *MemberController) MemberGetAll(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los miembros")
-	memebers, err := m.MemberService.MemberGetAll()
+	limit, err := strconv.ParseInt(c.Query("limit"), 10, 64)
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+		limit = 10
 	}
+	page, err := strconv.ParseInt(c.Query("page"), 10, 64)
+	if err != nil {
+		page = 1
+	}
+
+	search := &map[string]string{}
+	username := c.Query("identifier")
+	if username != "" {
+		(*search)["identifier"] = username
+	}
+	firstName := c.Query("first_name")
+	if firstName != "" {
+		(*search)["first_name"] = firstName
+	}
+	lastName := c.Query("last_name")
+	if lastName != "" {
+		(*search)["last_name"] = lastName
+	}
+	email := c.Query("email")
+	if email != "" {
+		(*search)["email"] = email
+	}
+	isActive := c.Query("is_active")
+	if isActive != "" {
+		(*search)["is_active"] = isActive
+	}
+
+	members, total, err := m.MemberService.MemberGetAll(int(limit), int(page), search)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
 	logging.INFO("Miembros obtenidos con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
-		Body:    memebers,
+		Body:    map[string]any{"members": members, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
 		Message: "Miembros obtenidos con éxito",
 	})
 }
 
-//	Member godoc
+// Member godoc
 //
 //	@Summary		Memeber GetAll
 //	@Description	Memeber GetAll required auth token
@@ -58,24 +85,16 @@ func (m *MemberController) MemberGetAll(c *fiber.Ctx) error {
 //	@Security		CookieAuth
 //	@Param			id	path		string											true	"Member ID"
 //	@Success		200	{object}	schemas.Response{body=[]schemas.MemberResponse}	"Members obtenidos con éxito"
-//	@Failure		400	{object}	schemas.Response								"Bad Request"
-//	@Failure		401	{object}	schemas.Response								"Auth is required"
-//	@Failure		403	{object}	schemas.Response								"Not Authorized"
-//	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/member/get/{id} [get]
 func (m *MemberController) MemberGetByID(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los miembros")
 	id := c.Params("id")
-	if id == "" {
-		logging.ERROR("Error: ID is required")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "ID is required",
-		})
+	idint, err := validators.IdValidate(id)
+	if err != nil {
+		return schemas.HandleError(c, err)
 	}
 
-	memebers, err := m.MemberService.MemberGetByID(id)
+	memebers, err := m.MemberService.MemberGetByID(idint)
 	if err != nil {
 		if errResp, ok := err.(*schemas.ErrorStruc); ok {
 			logging.ERROR("Error: %s", errResp.Err.Error())
@@ -101,7 +120,7 @@ func (m *MemberController) MemberGetByID(c *fiber.Ctx) error {
 	})
 }
 
-//	Member godoc
+// Member godoc
 //
 //	@Summary		Memeber Create
 //	@Description	Memeber Create required auth token
@@ -111,14 +130,9 @@ func (m *MemberController) MemberGetByID(c *fiber.Ctx) error {
 //	@Security		CookieAuth
 //	@Param			member_create	body		schemas.MemberCreate	true	"MemberCreate"
 //	@Success		200				{object}	schemas.Response		"Members obtenidos con éxito"
-//	@Failure		400				{object}	schemas.Response		"Bad Request"
-//	@Failure		401				{object}	schemas.Response		"Auth is required"
-//	@Failure		403				{object}	schemas.Response		"Not Authorized"
-//	@Failure		500				{object}	schemas.Response
 //	@Router			/api/v1/member/create [post]
 func (m *MemberController) MemberCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear miembro")
-	user := c.Locals("user").(*schemas.AuthenticatedUser)
 
 	var memberCreate schemas.MemberCreate
 	if err := c.BodyParser(&memberCreate); err != nil {
@@ -130,15 +144,10 @@ func (m *MemberController) MemberCreate(c *fiber.Ctx) error {
 		})
 	}
 	if err := memberCreate.Validate(); err != nil {
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(422).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: err.Error(),
-		})
+		return schemas.HandleError(c, err)
 	}
 
-	id, err := m.MemberService.MemberCreate(&memberCreate, user)
+	id, err := m.MemberService.MemberCreate(&memberCreate)
 	if err != nil {
 		if errResp, ok := err.(*schemas.ErrorStruc); ok {
 			logging.ERROR("Error: %s", errResp.Err.Error())

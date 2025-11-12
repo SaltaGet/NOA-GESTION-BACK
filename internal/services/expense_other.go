@@ -14,8 +14,8 @@ func (e *ExpenseOtherService) ExpenseOtherGetByDate(pointSaleID *int64, fromDate
 	return e.ExpenseOtherRepository.ExpenseOtherGetByDate(pointSaleID, fromDate, toDate, page, limit)
 }
 
-func (e *ExpenseOtherService) ExpenseOtherCreate(memberID, pointSaleID, typeExpenseID int64, expenseOtherCreate *schemas.ExpenseOtherCreate) (int64, error) {
-	return e.ExpenseOtherRepository.ExpenseOtherCreate(memberID, pointSaleID, typeExpenseID, expenseOtherCreate)
+func (e *ExpenseOtherService) ExpenseOtherCreate(memberID, pointSaleID int64, expenseOtherCreate *schemas.ExpenseOtherCreate) (int64, error) {
+	return e.ExpenseOtherRepository.ExpenseOtherCreate(memberID, pointSaleID, expenseOtherCreate)
 }
 
 func (e *ExpenseOtherService) ExpenseOtherUpdate(memberID, pointSaleID int64, expenseOtherUpdate *schemas.ExpenseOtherUpdate) (error) {

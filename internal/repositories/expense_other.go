@@ -79,15 +79,15 @@ func (r *ExpenseOtherRepository) ExpenseOtherGetByDate(pointSaleID *int64, fromD
 }
 
 // ExpenseOtherCreate crea un nuevo egreso
-func (r *ExpenseOtherRepository) ExpenseOtherCreate(memberID, pointSaleID, typeExpenseID int64, expenseOtherCreate *schemas.ExpenseOtherCreate) (int64, error) {
+func (r *ExpenseOtherRepository) ExpenseOtherCreate(memberID, pointSaleID int64, expenseOtherCreate *schemas.ExpenseOtherCreate) (int64, error) {
 	var expenseOtherID int64
 
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
 		// Verificar que el tipo de egreso existe
 		var typeExpense models.TypeExpense
-		if err := tx.First(&typeExpense, typeExpenseID).Error; err != nil {
+		if err := tx.First(&typeExpense, expenseOtherCreate.TypeExpenseID).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(400, fmt.Sprintf("El tipo de egreso %d no existe", typeExpenseID), err)
+				return schemas.ErrorResponse(400, fmt.Sprintf("El tipo de egreso %d no existe", expenseOtherCreate.TypeExpenseID), err)
 			}
 			return schemas.ErrorResponse(500, "Error al obtener el tipo de egreso", err)
 		}
@@ -114,7 +114,7 @@ func (r *ExpenseOtherRepository) ExpenseOtherCreate(memberID, pointSaleID, typeE
 			MemberID:       memberID,
 			CashRegisterID: cashRegisterID,
 			Details:    expenseOtherCreate.Details,
-			TypeExpenseID:  typeExpenseID,
+			TypeExpenseID:  expenseOtherCreate.TypeExpenseID,
 			Total:          expenseOtherCreate.Total,
 			PayMethod:      expenseOtherCreate.PayMethod,
 		}
@@ -152,6 +152,7 @@ func (r *ExpenseOtherRepository) ExpenseOtherUpdate(memberID, pointSaleID int64,
 		existingExpense.Details = expenseOtherUpdate.Details
 		existingExpense.Total = expenseOtherUpdate.Total
 		existingExpense.PayMethod = expenseOtherUpdate.PayMethod
+		existingExpense.MemberID = memberID
 
 		if err := tx.Save(&existingExpense).Error; err != nil {
 			return schemas.ErrorResponse(500, "Error al actualizar el egreso", err)

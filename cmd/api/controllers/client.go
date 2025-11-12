@@ -50,7 +50,7 @@ func (cl *ClientController) ClientGetByID(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		CookieAuth
 //	@Param			search	query		string	true	"Search"
-//	@Success		200	{object}	schemas.Response{body=[]schemas.ClientResponseDTO}
+//	@Success		200		{object}	schemas.Response{body=[]schemas.ClientResponseDTO}
 //	@Router			/api/v1/client [get]
 func (cl *ClientController) ClientGetByFilter(c *fiber.Ctx) error {
 	logging.INFO("Obtener clientes")
@@ -85,13 +85,13 @@ func (cl *ClientController) ClientGetByFilter(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param limit	query		int	true	"Limite por pagina, default 10"
-//	@Param page	query		int	true	"Pagina, default 1"
-//	@Param identifier	query		string	false	"Identificador del cliente"
-//	@Param first_name	query		string	false	"Nombre del cliente"
-//	@Param last_name	query		string	false	"Apellido del cliente"
-//	@Param email	query		string	false	"Correo del cliente"
-//	@Success		200	{object}	schemas.Response{body=[]schemas.ClientResponseDTO}
+//	@Param			limit		query		int		true	"Limite por pagina, default 10"
+//	@Param			page		query		int		true	"Pagina, default 1"
+//	@Param			identifier	query		string	false	"Identificador del cliente"
+//	@Param			first_name	query		string	false	"Nombre del cliente"
+//	@Param			last_name	query		string	false	"Apellido del cliente"
+//	@Param			email		query		string	false	"Correo del cliente"
+//	@Success		200			{object}	schemas.Response{body=[]schemas.ClientResponseDTO}
 //	@Router			/api/v1/client/get_all [get]
 func (cl *ClientController) ClientGetAll(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los clientes")

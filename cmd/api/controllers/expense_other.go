@@ -17,7 +17,7 @@ import (
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			id	path		string											true	"ID of ExpenseOther"
+//	@Param			id	path		string												true	"ID of ExpenseOther"
 //	@Success		200	{object}	schemas.Response{body=schemas.ExpenseOtherResponse}	"ExpenseOther obtained successfully"
 //	@Router			/api/v1/expense_other/{id} [get]
 func (e *ExpenseOtherController) ExpenseOtherGetByID(c *fiber.Ctx) error {
@@ -49,10 +49,10 @@ func (e *ExpenseOtherController) ExpenseOtherGetByID(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			fromDate	query		schemas.DateRangeRequest	true	"Fecha de inicio"
-//	@Param			page	query		int											false	"Page number"				default(1)
-//	@Param			limit	query		int											false	"Number of items per page"	default(20)
-//	@Success		200		{object}	schemas.Response{body=[]schemas.ExpenseOtherResponseSimple}	"List of expenseOthers"
+//	@Param			fromDate	query		schemas.DateRangeRequest									true	"Fecha de inicio"
+//	@Param			page		query		int															false	"Page number"				default(1)
+//	@Param			limit		query		int															false	"Number of items per page"	default(20)
+//	@Success		200			{object}	schemas.Response{body=[]schemas.ExpenseOtherResponseDTO}	"List of expenseOthers"
 //	@Router			/api/v1/expense_other/get_all [get]
 func (e *ExpenseOtherController) ExpenseOtherGetByDate(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los egresos")
@@ -102,8 +102,8 @@ func (e *ExpenseOtherController) ExpenseOtherGetByDate(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			expenseOtherCreate	body		schemas.ExpenseOtherCreate			true	"ExpenseOther information"
-//	@Success		200				{object}	schemas.Response"ExpenseOther created successfully"
+//	@Param			expenseOtherCreate	body		schemas.ExpenseOtherCreate	true	"ExpenseOther information"
+//	@Success		200					{object}	schemas.Response"ExpenseOther created successfully"
 //	@Router			/api/v1/expense_other/create [post]
 func (e *ExpenseOtherController) ExpenseOtherCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear un egreso")
@@ -145,7 +145,7 @@ func (e *ExpenseOtherController) ExpenseOtherCreate(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		CookieAuth
 //	@Param			expenseOtherUpdate	body		schemas.ExpenseOtherUpdate	true	"ExpenseOther data to update"
-//	@Success		200				{object}	schemas.Response		"ExpenseOther updated successfully"
+//	@Success		200					{object}	schemas.Response			"ExpenseOther updated successfully"
 //	@Router			/api/v1/expense_other/update [put]
 func (e *ExpenseOtherController) ExpenseOtherUpdate(c *fiber.Ctx) error {
 	logging.INFO("Actualizar un egreso")
@@ -163,8 +163,9 @@ func (e *ExpenseOtherController) ExpenseOtherUpdate(c *fiber.Ctx) error {
 	}
 
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
+	pointID :=c.Locals("point_sale_id").(int64)
 
-	err := e.ExpenseOtherService.ExpenseOtherUpdate(user.ID, &expenseOtherUpdate)
+	err := e.ExpenseOtherService.ExpenseOtherUpdate(user.ID, pointID, &expenseOtherUpdate)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -196,7 +197,9 @@ func (e *ExpenseOtherController) ExpenseOtherDelete(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	err = e.ExpenseOtherService.ExpenseOtherDelete(idint)
+	pointID :=c.Locals("point_sale_id").(int64)
+
+	err = e.ExpenseOtherService.ExpenseOtherDelete(idint, pointID)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}

@@ -13,12 +13,12 @@ func ClientRoutes(app *fiber.App){
 		return ctrl.ClientGetAll(c)
 	}))
 
-	cli.Get("/get_by_name", GetController("ClientController", func(c *fiber.Ctx, ctrl *controllers.ClientController) error {
-		return ctrl.ClientGetByName(c)
+	cli.Get("/get_by_filter", GetController("ClientController", func(c *fiber.Ctx, ctrl *controllers.ClientController) error {
+		return ctrl.ClientGetByFilter(c)
 	}))
 
 	cli.Post("/create", GetController("ClientController", func(c *fiber.Ctx, ctrl *controllers.ClientController) error {
-		return ctrl.CreateClient(c)
+		return ctrl.ClientCreate(c)
 	}))
 
 	cli.Put("/update", GetController("ClientController", func(c *fiber.Ctx, ctrl *controllers.ClientController) error {
@@ -32,5 +32,4 @@ func ClientRoutes(app *fiber.App){
 	cli.Get("/:id", GetController("ClientController", func(c *fiber.Ctx, ctrl *controllers.ClientController) error {
 		return ctrl.ClientGetByID(c)
 	}))
-
 }

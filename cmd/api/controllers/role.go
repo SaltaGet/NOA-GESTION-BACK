@@ -72,13 +72,8 @@ func (r *RoleController) RoleCreate(c *fiber.Ctx) error {
 		})
 	}
 	if err := roleCreate.Validate(); err != nil {
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(422).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: err.Error(),
-		})
-	}
+		return schemas.HandleError(c, err)
+	}	
 
 	id, err := r.RoleService.RoleCreate(&roleCreate)
 	if err != nil {

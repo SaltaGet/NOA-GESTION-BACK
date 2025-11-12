@@ -3,6 +3,7 @@ package repositories
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
@@ -74,7 +75,11 @@ func (r *MemberRepository) MemberGetAll(limit, page int, search *map[string]stri
 			case "email":
 				query = query.Where("email ILIKE ?", "%"+value+"%")
 			case "is_active":
-				query = query.Where("is_active = ?", value)
+				isAct, err := strconv.ParseBool(value)
+				if err != nil {
+					return nil, 0, schemas.ErrorResponse(400, "is_active, formato no valido", fmt.Errorf("is_active formato no valido"))
+				}
+				query = query.Where("is_active = ?", isAct)
 			}
 		}
 	}

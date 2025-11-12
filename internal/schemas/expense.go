@@ -182,6 +182,7 @@ type ExpenseOtherCreate struct {
 	Details   *string `json:"details"`
 	Total     float64 `json:"total" validate:"required"`
 	PayMethod string  `json:"payment_method" validate:"oneof=cash credit card transfer"`
+	TypeExpenseID int64 `json:"type_expense_id" validate:"required"`
 }
 
 func (e *ExpenseOtherCreate) Validate() error {

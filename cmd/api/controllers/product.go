@@ -1,451 +1,345 @@
 package controllers
 
 import (
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
+	"strconv"
+
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
 )
 
-// ProductGetByID godoc
+// ProductGet godoc
 //
-//	@Summary		Get Product By ID
-//	@Description	Get a product or part by its ID within a specified workplace.
+//	@Summary		ProductGet
+//	@Description	ProductGet obtener un producto por ID
 //	@Tags			Product
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			id	path		string									true	"ID of the product"
-//	@Success		200	{object}	schemas.Response{body=schemas.Product}	"Product obtained with success"
-//	@Failure		400	{object}	schemas.Response						"Bad Request"
-//	@Failure		401	{object}	schemas.Response						"Auth is required"
-//	@Failure		403	{object}	schemas.Response						"Not Authorized"
-//	@Failure		404	{object}	schemas.Response						"Expense not found"
-//	@Failure		500	{object}	schemas.Response						"Internal server error"
-//	@Router			/api/v1/product/{id} [get]
-func (p *ProductController) ProductGetByID(c *fiber.Ctx) error {
-	logging.INFO("Obtener un producto por ID")
-	id := c.Params("id")
-	if id == "" {
-		logging.ERROR("Error: ID is required")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "ID is required",
-		})
-	}
-
-	product, err := p.ProductService.ProductGetByID(id)
+//	@Param			id	path		string	true	"Id del producto"
+//	@Success		200	{object}	schemas.Response{body=schemas.ProductFullResponse}
+//	@Failure		400	{object}	schemas.Response
+//	@Failure		401	{object}	schemas.Response
+//	@Failure		422	{object}	schemas.Response
+//	@Failure		404	{object}	schemas.Response
+//	@Failure		500	{object}	schemas.Response
+//	@Router			/api/v1/product/get/{id} [get]
+func (p *ProductController) ProductGetByID(ctx *fiber.Ctx) error {
+	productID := ctx.Params("id")
+	idint, err := validators.IdValidate(productID)
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Producto obtenido con éxito")
-	return c.Status(200).JSON(schemas.Response{
+	product, err := p.ProductService.ProductGetByID(idint)
+	if err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    product,
-		Message: "Parte obtenida con éxito",
+		Message: "Producto obtenido correctamente",
 	})
 }
 
-// ProductGetAll godoc
+// ProductGetByCode godoc
 //
-//	@Summary		Get All Products
-//	@Description	Get All Products
+//	@Summary		ProductGetByCode
+//	@Description	ProductGetByCode obtener un producto por Codigo
 //	@Tags			Product
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Success		200	{object}	schemas.Response{body=[]schemas.Product}	"Products obtained with success"
-//	@Failure		400	{object}	schemas.Response							"Bad Request"
-//	@Failure		401	{object}	schemas.Response							"Auth is required"
-//	@Failure		403	{object}	schemas.Response							"Not Authorized"
-//	@Failure		500	{object}	schemas.Response							"Internal server error"
-//	@Router			/api/v1/product/get_all [get]
-func (p *ProductController) ProductGetAll(c *fiber.Ctx) error {
-	logging.INFO("Obtener todos los productos")
-	products, err := p.ProductService.ProductGetAll()
-	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
+//	@Param			code	query		string	true	"codigo del producto"
+//	@Success		200		{object}	schemas.Response{body=schemas.ProductResponse}
+//	@Router			/api/v1/product/get_by_code [get]
+func (p *ProductController) ProductGetByCode(ctx *fiber.Ctx) error {
+	code := ctx.Query("code")
+	if code == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
-			Message: "Error interno",
+			Message: "Se necesita el codigo del producto",
 		})
 	}
 
-	logging.INFO("Productos obtenidos con éxito")
-	return c.Status(200).JSON(schemas.Response{
+	product, err := p.ProductService.ProductGetByCode(code)
+	if err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
-		Body:    products,
-		Message: "Partes obtenidas con éxito",
+		Body:    product,
+		Message: "Producto obtenido correctamente",
 	})
 }
 
 // ProductGetByName godoc
 //
-//	@Summary		Get Product By Name
-//	@Description	Fetches products from either laundry or workshop based on the provided name and workplace.
+//	@Summary		ProductGetByName
+//	@Description	ProductGetByName obtener un producto por nombre
 //	@Tags			Product
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			name	query		string										true	"Name of the Product"
-//	@Success		200		{object}	schemas.Response{body=[]schemas.Product}	"List of products"
-//	@Failure		400		{object}	schemas.Response							"Bad Request"
-//	@Failure		401		{object}	schemas.Response							"Auth is required"
-//	@Failure		403		{object}	schemas.Response							"Not Authorized"
-//	@Failure		500		{object}	schemas.Response							"Internal server error"
+//	@Param			name	query		string	true	"nombre del producto"
+//	@Success		200		{object}	schemas.Response{body=schemas.ProductFullResponse}
+//	@Failure		400		{object}	schemas.Response
+//	@Failure		401		{object}	schemas.Response
+//	@Failure		422		{object}	schemas.Response
+//	@Failure		404		{object}	schemas.Response
+//	@Failure		500		{object}	schemas.Response
 //	@Router			/api/v1/product/get_by_name [get]
-func (p *ProductController) ProductGetByName(c *fiber.Ctx) error {
-	logging.INFO("Obtener productos por nombre")
-	name := c.Query("name")
-	if name == "" || len(name) < 3 {
-		logging.ERROR("Error: El valor no debe de ser vacio o menor a 3 caracteres")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
+func (p *ProductController) ProductGetByName(ctx *fiber.Ctx) error {
+	name := ctx.Query("name")
+	if len(name) < 3 {
+		return ctx.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
-			Message: "El valor no debe de ser vacio o menor a 3 caracteres",
+			Message: "El nombre debe de tener al menos 3 caracteres",
 		})
 	}
 
 	products, err := p.ProductService.ProductGetByName(name)
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Productos obtenidos con éxito")
-	return c.Status(200).JSON(schemas.Response{
+	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    products,
-		Message: "Partes obtenidas con éxito",
+		Message: "Productos obtenidos correctamente",
 	})
 }
 
-// ProductGetByIdentifier godoc
+// ProductGetByCategory godoc
 //
-//	@Summary		Get Products by identifier
-//	@Description	Get Products by identifier
+//	@Summary		ProductGetByCategory
+//	@Description	ProductGetByCategory obtener un producto por Id de categoria
 //	@Tags			Product
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			identifier	query		string										true	"Identifier of product"
-//	@Success		200			{object}	schemas.Response{body=[]schemas.Product}	"Products obtained with success"
-//	@Failure		400			{object}	schemas.Response							"Bad Request"
-//	@Failure		401			{object}	schemas.Response							"Auth is required"
-//	@Failure		403			{object}	schemas.Response							"Not Authorized"
-//	@Failure		500			{object}	schemas.Response							"Internal server error"
-//	@Router			/api/v1/product/get_by_identifier [get]
-func (p *ProductController) ProductGetByIdentifier(c *fiber.Ctx) error {
-	logging.INFO("Obtener productos por identificador")
-	identifire := c.Query("identifier")
-	if identifire == "" || len(identifire) < 3 {
-		logging.ERROR("Error: El valor no debe de ser vacio o menor a 3 caracteres")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "El valor no debe de ser vacio o menor a 3 caracteres",
-		})
-	}
-
-	products, err := p.ProductService.ProductGetByIdentifier(identifire)
+//	@Param			category_id	path		string	true	"ID de la categoria"
+//	@Success		200			{object}	schemas.Response{body=schemas.ProductFullResponse}
+//	@Failure		400			{object}	schemas.Response
+//	@Failure		401			{object}	schemas.Response
+//	@Failure		422			{object}	schemas.Response
+//	@Failure		404			{object}	schemas.Response
+//	@Failure		500			{object}	schemas.Response
+//	@Router			/api/v1/product/get_by_category/{category_id} [get]
+func (p *ProductController) ProductGetByCategoryID(ctx *fiber.Ctx) error {
+	categoryID := ctx.Params("category_id")
+	idint, err := validators.IdValidate(categoryID)
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Productos obtenidos con éxito")
-	return c.Status(200).JSON(schemas.Response{
+	products, err := p.ProductService.ProductGetByCategoryID(idint)
+	if err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    products,
-		Message: "Partes obtenidas con éxito",
+		Message: "Productos obtenidos correctamente",
 	})
 }
 
-// ProductUpdateStock godoc
+// ProductGetAll godoc
 //
-//	@Summary		Update Product Stock
-//	@Description	Updates the stock of a product based on the given method (add, subtract, update).
+//	@Summary		ProductGetAll
+//	@Description	ProductGetAll obtener todos los productos
 //	@Tags			Product
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			stock	body		schemas.StockUpdate	true	"Stock update details"
-//	@Success		200		{object}	schemas.Response	"Product stock updated successfully"
-//	@Failure		400		{object}	schemas.Response	"Bad Request"
-//	@Failure		401		{object}	schemas.Response	"Auth is required"
-//	@Failure		403		{object}	schemas.Response	"Not Authorized"
-//	@Failure		404		{object}	schemas.Response	"Product not found"
-//	@Failure		422		{object}	schemas.Response	"Model invalid"
-//	@Failure		500		{object}	schemas.Response	"Internal server error"
-//	@Router			/api/v1/product/update_stock [put]
-func (p *ProductController) ProductUpdateStock(c *fiber.Ctx) error {
-	logging.INFO("Actualizar stock de producto")
-	var stockUpdate schemas.StockUpdate
-	if err := c.BodyParser(&stockUpdate); err != nil {
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := stockUpdate.Validate(); err != nil {
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: err.Error(),
-		})
+//	@Param			page	query		int	false	"Número de página"				default(1)
+//	@Param			limit	query		int	false	"Número de elementos por página"	default(10)
+//	@Success		200		{object}	schemas.Response{body=[]schemas.ProductFullResponse}
+//	@Failure		400		{object}	schemas.Response
+//	@Failure		401		{object}	schemas.Response
+//	@Failure		422		{object}	schemas.Response
+//	@Failure		404		{object}	schemas.Response
+//	@Failure		500		{object}	schemas.Response
+//	@Router			/api/v1/product/get_all [get]
+func (p *ProductController) ProductGetAll(ctx *fiber.Ctx) error {
+	page, err := strconv.Atoi(ctx.Query("page", "1"))
+	if err != nil || page <= 0 {
+		page = 1
 	}
 
-	err := p.ProductService.ProductUpdateStock(&stockUpdate)
+	limit, err := strconv.Atoi(ctx.Query("limit", "10"))
+	if err != nil || limit <= 0 {
+		limit = 10
+	}
+
+	products, total, err := p.ProductService.ProductGetAll(page, limit)
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Producto actualizado con éxito")
-	return c.Status(200).JSON(schemas.Response{
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+
+	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
-		Body:    nil,
-		Message: "Producto actualizado con éxito",
-	})
-}
-
-// ProductUpdate godoc
-//
-//	@Summary		Update Product
-//	@Description	Updates the given product and returns the updated product.
-//	@Tags			Product
-//	@Accept			json
-//	@Produce		json
-//	@Security		CookieAuth
-//	@Param			product	body		schemas.ProductUpdate	true	"Product update details"
-//	@Success		200		{object}	schemas.Response		"Product updated successfully"
-//	@Failure		400		{object}	schemas.Response		"Bad Request"
-//	@Failure		401		{object}	schemas.Response		"Auth is required"
-//	@Failure		403		{object}	schemas.Response		"Not Authorized"
-//	@Failure		404		{object}	schemas.Response		"Product not found"
-//	@Failure		422		{object}	schemas.Response		"Model invalid"
-//	@Failure		500		{object}	schemas.Response		"Internal server error"
-//	@Router			/api/v1/product/update [put]
-func (p *ProductController) ProductUpdate(c *fiber.Ctx) error {
-	logging.INFO("Actualizar producto")
-	var productUpdate schemas.ProductUpdate
-	if err := c.BodyParser(&productUpdate); err != nil {
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := productUpdate.Validate(); err != nil {
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: err.Error(),
-		})
-	}
-
-	err := p.ProductService.ProductUpdate(&productUpdate)
-	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
-	}
-
-	logging.INFO("Producto actualizado con éxito")
-	return c.Status(200).JSON(schemas.Response{
-		Status:  true,
-		Body:    nil,
-		Message: "Producto actualizado con éxito",
-	})
-}
-
-// ProductDelete godoc
-//
-//	@Summary		Delete Product
-//	@Description	Deletes the given product with the given id.
-//	@Tags			Product
-//	@Accept			json
-//	@Produce		json
-//	@Security		CookieAuth
-//	@Param			id	path		string				true	"ID of the product"
-//	@Success		200	{object}	schemas.Response	"Product deleted with success"
-//	@Failure		400	{object}	schemas.Response	"Bad Request"
-//	@Failure		401	{object}	schemas.Response	"Auth is required"
-//	@Failure		403	{object}	schemas.Response	"Not Authorized"
-//	@Failure		404	{object}	schemas.Response	"Product not found"
-//	@Failure		500	{object}	schemas.Response	"Internal server error"
-//	@Router			/api/v1/product/delete/{id} [delete]
-func (p *ProductController) ProductDelete(c *fiber.Ctx) error {
-	logging.INFO("Eliminar producto")
-	id := c.Params("id")
-	if id == "" {
-		logging.ERROR("Error: ID is required")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "ID is required",
-		})
-	}
-
-	err := p.ProductService.ProductDelete(id)
-	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
-	}
-
-	logging.INFO("Producto eliminado con éxito")
-	return c.Status(200).JSON(schemas.Response{
-		Status:  true,
-		Body:    nil,
-		Message: "Producto eliminado con éxito",
+		Body:    map[string]interface{}{"products": products, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
+		Message: "Productos obtenidos correctamente",
 	})
 }
 
 // ProductCreate godoc
 //
-//	@Summary		Create Product
-//	@Description	Creates a new product in the specified workplace.
+//	@Summary		ProductCreate
+//	@Description	ProductCreate crear nuevo producto
 //	@Tags			Product
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			product	body		schemas.ProductCreate	true	"Details of the product to create"
-//	@Success		200		{object}	schemas.Response		"Product created successfully"
-//	@Failure		400		{object}	schemas.Response		"Bad Request"
-//	@Failure		401		{object}	schemas.Response		"Auth is required"
-//	@Failure		403		{object}	schemas.Response		"Not Authorized"
-//	@Failure		422		{object}	schemas.Response		"Model invalid"
-//	@Failure		500		{object}	schemas.Response		"Internal server error"
+//	@Param			productCreate	body		schemas.ProductCreate	true	"Información del producto a crear"
+//	@Success		200				{object}	schemas.Response
+//	@Failure		400				{object}	schemas.Response
+//	@Failure		401				{object}	schemas.Response
+//	@Failure		422				{object}	schemas.Response
+//	@Failure		404				{object}	schemas.Response
+//	@Failure		500				{object}	schemas.Response
 //	@Router			/api/v1/product/create [post]
-func (p *ProductController) ProductCreate(c *fiber.Ctx) error {
-	logging.INFO("Crear producto")
+func (p *ProductController) ProductCreate(ctx *fiber.Ctx) error {
 	var productCreate schemas.ProductCreate
-	if err := c.BodyParser(&productCreate); err != nil {
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := productCreate.Validate(); err != nil {
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
+	if err := ctx.BodyParser(&productCreate); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
 			Message: err.Error(),
 		})
 	}
 
-	productCreated, err := p.ProductService.ProductCreate(&productCreate)
-	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+	if err := productCreate.Validate(); err != nil {
+		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Producto creado con éxito")
-	return c.Status(200).JSON(schemas.Response{
+	productID, err := p.ProductService.ProductCreate(&productCreate)
+	if err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
-		Body:    productCreated,
-		Message: "Producto creado con éxito",
+		Body:    productID,
+		Message: "Producto creado correctamente",
+	})
+}
+
+// ProductUpdate godoc
+//
+//	@Summary		ProductUpdate
+//	@Description	ProductUpdate edita un producto ya creado
+//	@Tags			Product
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			productUpdate	body		schemas.ProductUpdate	true	"Información del producto a editar"
+//	@Success		200				{object}	schemas.Response
+//	@Failure		400				{object}	schemas.Response
+//	@Failure		401				{object}	schemas.Response
+//	@Failure		422				{object}	schemas.Response
+//	@Failure		404				{object}	schemas.Response
+//	@Failure		500				{object}	schemas.Response
+//	@Router			/api/v1/product/update [put]
+func (p *ProductController) ProductUpdate(ctx *fiber.Ctx) error {
+	var productUpdate schemas.ProductUpdate
+	if err := ctx.BodyParser(&productUpdate); err != nil {
+		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
+	}
+
+	if err := productUpdate.Validate(); err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	err := p.ProductService.ProductUpdate(&productUpdate)
+	if err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
+		Message: "Producto actualizado correctamente",
+	})
+}
+
+// ProductPriceUpdate godoc
+//
+//	@Summary		ProductPriceUpdate
+//	@Description	ProductPriceUpdate edita el rpecio de una lista de productos
+//	@Tags			Product
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			listProductUpdate	body		schemas.ListPriceUpdate	true	"Información de los productos y los precios a editar"
+//	@Success		200					{object}	schemas.Response
+//	@Failure		400					{object}	schemas.Response
+//	@Failure		401					{object}	schemas.Response
+//	@Failure		422					{object}	schemas.Response
+//	@Failure		404					{object}	schemas.Response
+//	@Failure		500					{object}	schemas.Response
+//	@Router			/api/v1/product/list_price [put]
+func (p *ProductController) ProductPriceUpdate(ctx *fiber.Ctx) error {
+	var productUpdate schemas.ListPriceUpdate
+	if err := ctx.BodyParser(&productUpdate); err != nil {
+		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
+	}
+
+	if err := productUpdate.Validate(); err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	err := p.ProductService.ProductPriceUpdate(&productUpdate)
+	if err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
+		Message: "Productos actualizados correctamente",
+	})
+}
+
+// ProductDelete godoc
+//
+//	@Summary		ProductDelete
+//	@Description	ProductDelete elimina un producto
+//	@Tags			Product
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			id	path		string	true	"ID del producto"
+//	@Success		200	{object}	schemas.Response
+//	@Failure		400	{object}	schemas.Response
+//	@Failure		401	{object}	schemas.Response
+//	@Failure		422	{object}	schemas.Response
+//	@Failure		404	{object}	schemas.Response
+//	@Failure		500	{object}	schemas.Response
+//	@Router			/api/v1/product/delete/{id} [delete]
+func (p *ProductController) ProductDelete(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+	idint, err := validators.IdValidate(id)
+	if err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	err = p.ProductService.ProductDelete(idint)
+	if err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
+		Message: "Producto eliminado correctamente",
 	})
 }

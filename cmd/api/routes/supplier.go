@@ -13,10 +13,6 @@ func SupplierRoutes(app *fiber.App){
 		return ctrl.SupplierGetAll(c)
 	}))
 
-	supplier.Get("/get_by_name", GetController("SupplierController", func(c *fiber.Ctx, ctrl *controllers.SupplierController) error {
-		return ctrl.SupplierGetByName(c)
-	}))
-
 	supplier.Post("/create", GetController("SupplierController", func(c *fiber.Ctx, ctrl *controllers.SupplierController) error {
 		return ctrl.SupplierCreate(c)
 	}))

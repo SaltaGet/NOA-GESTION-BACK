@@ -75,7 +75,7 @@ import (
 	"syscall"
 	"time"
 
-	// "github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/jobs"
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/jobs"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/middleware"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/routes"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
@@ -109,12 +109,12 @@ func main() {
 		}
 	}
 
-	// local := os.Getenv("LOCAL")
-	// if local == "true" {
-	// 	if err := jobs.GenerateSwagger(); err != nil {
-	// 		log.Fatalf("Error ejecutando swag init: %v", err)
-	// 	}
-	// }
+	local := os.Getenv("LOCAL")
+	if local == "true" {
+		if err := jobs.GenerateSwagger(); err != nil {
+			log.Fatalf("Error ejecutando swag init: %v", err)
+		}
+	}
 
 	// 🔥 Inicializar Redis (opcional, falla gracefully)
 	if err := cache.InitRedis(); err != nil {

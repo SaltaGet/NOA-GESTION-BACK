@@ -467,14 +467,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/client/create": {
+        "/api/v1/cash_register/close": {
             "post": {
                 "security": [
                     {
                         "CookieAuth": []
                     }
                 ],
-                "description": "Create client",
+                "description": "Cierre de caja",
                 "consumes": [
                     "application/json"
                 ],
@@ -482,17 +482,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client"
+                    "CashRegister"
                 ],
-                "summary": "Create client",
+                "summary": "CashRegisterClose",
                 "parameters": [
                     {
-                        "description": "Información del cliente",
-                        "name": "clientCreate",
+                        "description": "Monto de cierre de caja",
+                        "name": "amount_close",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/schemas.ClientCreate"
+                            "$ref": "#/definitions/schemas.CashRegisterClose"
                         }
                     }
                 ],
@@ -515,8 +515,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/schemas.Response"
                         }
                     },
-                    "403": {
-                        "description": "Forbidden",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -536,6 +536,372 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/cash_register/exist_open": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Verifica si existe apertura de caja",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CashRegister"
+                ],
+                "summary": "CashRegisterExistOpen",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/cash_register/get/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "obtener caja por id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CashRegister"
+                ],
+                "summary": "CashRegisterGetByID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id de la caja",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.CashRegisterFullResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/cash_register/inform": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Informes de caja",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CashRegister"
+                ],
+                "summary": "CashRegisterInform",
+                "parameters": [
+                    {
+                        "description": "Fechas de solicitud de informe",
+                        "name": "register_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.DateRangeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/cash_register/open": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Apertura de caja",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CashRegister"
+                ],
+                "summary": "CashRegisterOpen",
+                "parameters": [
+                    {
+                        "description": "Monto de apertura de caja",
+                        "name": "amount_open",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.CashRegisterOpen"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/client": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener clientes por filtro nombre, apellido o idenficador",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "summary": "ClientGetByFilter",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search",
+                        "name": "search",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schemas.ClientResponseDTO"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/client/create": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Crear un cliente",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "summary": "ClientCreate",
+                "parameters": [
+                    {
+                        "description": "Información del cliente",
+                        "name": "clientCreate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.ClientCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/client/delete/{id}": {
             "delete": {
                 "security": [
@@ -543,7 +909,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Delete client by ID",
+                "description": "Eliminar un cliente por ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -566,48 +932,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/schemas.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "$ref": "#/definitions/schemas.Client"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -633,86 +957,44 @@ const docTemplate = `{
                     "Client"
                 ],
                 "summary": "Get All Clients",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/schemas.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/schemas.Client"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/client/get_by_name": {
-            "get": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "Get Client By Name",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Client"
-                ],
-                "summary": "Get Client By Name",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Name",
-                        "name": "name",
+                        "type": "integer",
+                        "description": "Limite por pagina, default 10",
+                        "name": "limit",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Pagina, default 1",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Identificador del cliente",
+                        "name": "identifier",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Nombre del cliente",
+                        "name": "first_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Apellido del cliente",
+                        "name": "last_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Correo del cliente",
+                        "name": "email",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -729,42 +1011,12 @@ const docTemplate = `{
                                         "body": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/schemas.Client"
+                                                "$ref": "#/definitions/schemas.ClientResponseDTO"
                                             }
                                         }
                                     }
                                 }
                             ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
                         }
                     }
                 }
@@ -802,42 +1054,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -884,135 +1100,24 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "body": {
-                                            "$ref": "#/definitions/schemas.Client"
+                                            "$ref": "#/definitions/schemas.ClientResponse"
                                         }
                                     }
                                 }
                             ]
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
                     }
                 }
             }
         },
-        "/api/v1/expense/create": {
-            "post": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "Parses the request body to create a new expense entry.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Expense"
-                ],
-                "summary": "Create Expense",
-                "parameters": [
-                    {
-                        "description": "Expense information",
-                        "name": "expenseCreate",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/schemas.ExpenseCreate"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Expense created successfully",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/schemas.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Model Invalid",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/expense/delete/{id}": {
+        "/api/v1/expenseBuy/delete/{id}": {
             "delete": {
                 "security": [
                     {
                         "CookieAuth": []
                     }
                 ],
-                "description": "Deletes an expense based on the provided ID and workplace context.",
+                "description": "Eliminar un egreso de compra",
                 "consumes": [
                     "application/json"
                 ],
@@ -1020,13 +1125,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Expense"
+                    "ExpenseBuy"
                 ],
-                "summary": "Delete Expense",
+                "summary": "ExpenseBuyDelete",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID of the expense",
+                        "description": "ID of the expenseBuy",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1034,31 +1139,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Expense deleted successfully",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
+                        "description": "ExpenseBuy deleted successfully",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -1066,415 +1147,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/expense/get_all": {
-            "get": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "Fetches all expenses from the specified tenant.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Expense"
-                ],
-                "summary": "Get all expenses",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 20,
-                        "description": "Number of items per page",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "List of expenses",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/schemas.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/schemas.ExpenseDTO"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/expense/get_today": {
-            "get": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "Fetches all expenses from the specified tenant, on the current day.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Expense"
-                ],
-                "summary": "Get expense today",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 20,
-                        "description": "Number of items per page",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "List of expenses",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/schemas.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/schemas.ExpenseDTO"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/expense/update": {
-            "put": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "Updates the details of an expense based on the provided data.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Expense"
-                ],
-                "summary": "Update Expense",
-                "parameters": [
-                    {
-                        "description": "Expense data to update",
-                        "name": "expenseUpdate",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/schemas.ExpenseUpdate"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Expense updated successfully",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Model Invalid",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/expense/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "Get Expense By ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Expense"
-                ],
-                "summary": "Get Expense By ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ID of Expense",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Expense obtained successfully",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/schemas.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "$ref": "#/definitions/schemas.ExpenseResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Expense not found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/income/create": {
-            "post": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "Parses the request body to create a new income entry for either laundry or workshop.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Income"
-                ],
-                "summary": "Create Income",
-                "parameters": [
-                    {
-                        "description": "Income information",
-                        "name": "incomeCreate",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/schemas.IncomeCreate"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Income created successfully",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/schemas.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Expense not found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Model Invalid",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/income/delete/{id}": {
+        "/api/v1/expenseOther/delete/{id}": {
             "delete": {
                 "security": [
                     {
                         "CookieAuth": []
                     }
                 ],
-                "description": "Deletes an income entry based on the provided ID and workplace context.",
+                "description": "Eliminar un egreso de compra",
                 "consumes": [
                     "application/json"
                 ],
@@ -1482,13 +1162,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Income"
+                    "ExpenseOther"
                 ],
-                "summary": "Delete Income",
+                "summary": "ExpenseOtherDelete",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID of the income",
+                        "description": "ID of the expenseOther",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1496,37 +1176,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Income deleted successfully",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Expense not found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno",
+                        "description": "ExpenseOther deleted successfully",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -1534,14 +1184,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/income/get_all": {
-            "get": {
+        "/api/v1/expense_buy/create": {
+            "post": {
                 "security": [
                     {
                         "CookieAuth": []
                     }
                 ],
-                "description": "Fetches all incomes from the specified tenant.",
+                "description": "Crear un egreso de compra",
                 "consumes": [
                     "application/json"
                 ],
@@ -1549,10 +1199,63 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Income"
+                    "ExpenseBuy"
                 ],
-                "summary": "Get all incomes",
+                "summary": "ExpenseBuyCreate",
                 "parameters": [
+                    {
+                        "description": "ExpenseBuy information",
+                        "name": "expenseBuyCreate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.ExpenseBuyCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ExpenseBuy created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/expense_buy/get_all": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtiene los egresos de compras por fecha",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ExpenseBuy"
+                ],
+                "summary": "ExpenseBuyGetByDate",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "2022-01-01",
+                        "name": "from_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "2022-12-31",
+                        "name": "to_date",
+                        "in": "query",
+                        "required": true
+                    },
                     {
                         "type": "integer",
                         "default": 1,
@@ -1570,7 +1273,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of incomes",
+                        "description": "List of expenseBuys",
                         "schema": {
                             "allOf": [
                                 {
@@ -1582,7 +1285,7 @@ const docTemplate = `{
                                         "body": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/schemas.IncomeDTO"
+                                                "$ref": "#/definitions/schemas.ExpenseBuyResponseSimple"
                                             }
                                         }
                                     }
@@ -1608,12 +1311,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/schemas.Response"
                         }
                     },
-                    "404": {
-                        "description": "Expense not found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -1623,87 +1320,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/income/get_today": {
-            "get": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "Fetches all incomes from the specified tenant, on the current day.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Income"
-                ],
-                "summary": "Get Income Today",
-                "responses": {
-                    "200": {
-                        "description": "List of all incomes",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/schemas.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/schemas.IncomeDTO"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Expense not found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/income/update": {
+        "/api/v1/expense_buy/update": {
             "put": {
                 "security": [
                     {
                         "CookieAuth": []
                     }
                 ],
-                "description": "Updates the details of an income based on the provided data.",
+                "description": "Actualizar un egreso de compra",
                 "consumes": [
                     "application/json"
                 ],
@@ -1711,59 +1335,23 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Income"
+                    "ExpenseBuy"
                 ],
-                "summary": "Update Income",
+                "summary": "ExpenseBuyUpdate",
                 "parameters": [
                     {
-                        "description": "Income data to update",
-                        "name": "incomeUpdate",
+                        "description": "ExpenseBuy data to update",
+                        "name": "expenseBuyUpdate",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/schemas.IncomeUpdate"
+                            "$ref": "#/definitions/schemas.ExpenseBuyUpdate"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Income updated successfully",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Expense not found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Model Invalid",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
+                        "description": "ExpenseBuy updated successfully",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -1771,14 +1359,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/income/{id}": {
+        "/api/v1/expense_buy/{id}": {
             "get": {
                 "security": [
                     {
                         "CookieAuth": []
                     }
                 ],
-                "description": "Fetches income details from based on the provided ID and tenant context.",
+                "description": "Get ExpenseBuy By ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -1786,13 +1374,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Income"
+                    "ExpenseBuy"
                 ],
-                "summary": "Get Income By ID",
+                "summary": "ExpenseBuyGetByID",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID of the income",
+                        "description": "ID of ExpenseBuy",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1800,7 +1388,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Income details fetched successfully",
+                        "description": "ExpenseBuy obtained successfully",
                         "schema": {
                             "allOf": [
                                 {
@@ -1810,41 +1398,675 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "body": {
-                                            "$ref": "#/definitions/schemas.IncomeResponse"
+                                            "$ref": "#/definitions/schemas.ExpenseBuyResponse"
                                         }
                                     }
                                 }
                             ]
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
+                    }
+                }
+            }
+        },
+        "/api/v1/expense_other/create": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Crear un egreso de compra",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ExpenseOther"
+                ],
+                "summary": "ExpenseOtherCreate",
+                "parameters": [
+                    {
+                        "description": "ExpenseOther information",
+                        "name": "expenseOtherCreate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.ExpenseOtherCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ExpenseOther created successfully",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
+                    }
+                }
+            }
+        },
+        "/api/v1/expense_other/get_all": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtiene los egresos por fecha",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ExpenseOther"
+                ],
+                "summary": "ExpenseOtherGetByDate",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "2022-01-01",
+                        "name": "from_date",
+                        "in": "query",
+                        "required": true
                     },
-                    "401": {
-                        "description": "Auth is required",
+                    {
+                        "type": "string",
+                        "example": "2022-12-31",
+                        "name": "to_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Number of items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of expenseOthers",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schemas.ExpenseOtherResponseDTO"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/expense_other/update": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Actualizar un egreso de compra",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ExpenseOther"
+                ],
+                "summary": "ExpenseOtherUpdate",
+                "parameters": [
+                    {
+                        "description": "ExpenseOther data to update",
+                        "name": "expenseOtherUpdate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.ExpenseOtherUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ExpenseOther updated successfully",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
+                    }
+                }
+            }
+        },
+        "/api/v1/expense_other/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener un egreso por ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ExpenseOther"
+                ],
+                "summary": "ExpenseOtherGetByID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID of ExpenseOther",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ExpenseOther obtained successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.ExpenseOtherResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/income_other/create": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Crea un nuevo ingreso de venta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IncomeOther"
+                ],
+                "summary": "IncomeOtherCreate",
+                "parameters": [
+                    {
+                        "description": "IncomeOther information",
+                        "name": "incomeOtherCreate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.IncomeOtherCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "IncomeOther created successfully",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
-                    },
-                    "404": {
-                        "description": "Expense not found",
+                    }
+                }
+            }
+        },
+        "/api/v1/income_other/delete/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Elimina un ingreso de venta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IncomeOther"
+                ],
+                "summary": "IncomeOtherDelete",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID of the incomeOther",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "IncomeOther deleted successfully",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
+                    }
+                }
+            }
+        },
+        "/api/v1/income_other/get_all": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtiene ingresos de venta por fecha",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IncomeOther"
+                ],
+                "summary": "IncomeOtherGetByDate",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
                     },
-                    "500": {
-                        "description": "Internal server error",
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Number of items per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Fecha de inicio",
+                        "name": "fromDate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.DateRangeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of incomeOthers",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schemas.IncomeOtherResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/income_other/update": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Actualiza un ingreso de venta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IncomeOther"
+                ],
+                "summary": "IncomeOtherUpdate",
+                "parameters": [
+                    {
+                        "description": "IncomeOther data to update",
+                        "name": "incomeOtherUpdate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.IncomeOtherUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "IncomeOther updated successfully",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/income_other/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtiene ingreso de venta por ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IncomeOther"
+                ],
+                "summary": "IncomeOtherGetByID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID of the incomeOther",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "IncomeOther details fetched successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.IncomeOtherResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/income_sale/create": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Crea un nuevo ingreso de venta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IncomeSale"
+                ],
+                "summary": "IncomeSaleCreate",
+                "parameters": [
+                    {
+                        "description": "IncomeSale information",
+                        "name": "incomeSaleCreate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.IncomeSaleCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "IncomeSale created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/income_sale/delete/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Elimina un ingreso de venta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IncomeSale"
+                ],
+                "summary": "IncomeSaleDelete",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID of the incomeSale",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "IncomeSale deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/income_sale/get_all": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtiene ingresos de venta por fecha",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IncomeSale"
+                ],
+                "summary": "IncomeSaleGetByDate",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Number of items per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Fecha de inicio",
+                        "name": "fromDate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.DateRangeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of incomeSales",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schemas.IncomeSaleResponseDTO"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/income_sale/update": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Actualiza un ingreso de venta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IncomeSale"
+                ],
+                "summary": "IncomeSaleUpdate",
+                "parameters": [
+                    {
+                        "description": "IncomeSale data to update",
+                        "name": "incomeSaleUpdate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.IncomeSaleUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "IncomeSale updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/income_sale/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtiene ingreso de venta por ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IncomeSale"
+                ],
+                "summary": "IncomeSaleGetByID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID of the incomeSale",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "IncomeSale details fetched successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.IncomeSaleResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -1882,30 +2104,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "Members obtenidos con éxito",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -1961,30 +2159,6 @@ const docTemplate = `{
                                 }
                             ]
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
                     }
                 }
             }
@@ -2007,6 +2181,44 @@ const docTemplate = `{
                     "Member"
                 ],
                 "summary": "Memeber GetAll",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limite por pagina, default 10",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Numero de pagina, default 1",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Nombre del miembro",
+                        "name": "first_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Apellido del miembro",
+                        "name": "last_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Username",
+                        "name": "username",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Correo del miembro",
+                        "name": "email",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Members obtenidos con éxito",
@@ -2021,426 +2233,12 @@ const docTemplate = `{
                                         "body": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/schemas.MemberDTO"
+                                                "$ref": "#/definitions/schemas.MemberResponseDTO"
                                             }
                                         }
                                     }
                                 }
                             ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/movement/create": {
-            "post": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "This endpoint creates a new movement type based on the provided JSON payload.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Movement"
-                ],
-                "summary": "Create Movement Type",
-                "parameters": [
-                    {
-                        "description": "Movement Type Details",
-                        "name": "movementType",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/schemas.MovementTypeCreate"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Movement created successfully",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/schemas.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Expense not found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Model invalid",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/movement/delete/{id}": {
-            "delete": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "Deletes a movement type based on its ID.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Movement"
-                ],
-                "summary": "Delete Movement Type",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ID of the movement type",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Movement type deleted successfully",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Expense not found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/movement/get_all": {
-            "get": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "Get all movement types from either laundry or workshop based on the provided isIncome query parameter.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Movement"
-                ],
-                "summary": "Get all movement types",
-                "parameters": [
-                    {
-                        "type": "boolean",
-                        "description": "Is income movement type",
-                        "name": "isIncome",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "List of movement types",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/schemas.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/schemas.MovementType"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Expense not found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/movement/update": {
-            "put": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "This endpoint updates a movement type based on the provided JSON payload.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Movement"
-                ],
-                "summary": "Update Movement Type",
-                "parameters": [
-                    {
-                        "description": "Movement Type Details",
-                        "name": "movementType",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/schemas.MovementTypeUpdate"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Movement updated successfully",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Expense not found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Model invalid",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/movement/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "Get Movement Type By ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Movement"
-                ],
-                "summary": "Get Movement Type By ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ID of the movement type",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Movement type details",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/schemas.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "$ref": "#/definitions/schemas.MovementType"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Expense not found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
                         }
                     }
                 }
@@ -2784,7 +2582,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Creates a new product in the specified workplace.",
+                "description": "ProductCreate crear nuevo producto",
                 "consumes": [
                     "application/json"
                 ],
@@ -2794,11 +2592,11 @@ const docTemplate = `{
                 "tags": [
                     "Product"
                 ],
-                "summary": "Create Product",
+                "summary": "ProductCreate",
                 "parameters": [
                     {
-                        "description": "Details of the product to create",
-                        "name": "product",
+                        "description": "Información del producto a crear",
+                        "name": "productCreate",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -2808,7 +2606,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Product created successfully",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -2820,25 +2618,25 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Auth is required",
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
                     },
-                    "403": {
-                        "description": "Not Authorized",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
                     },
                     "422": {
-                        "description": "Model invalid",
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -2853,7 +2651,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Deletes the given product with the given id.",
+                "description": "ProductDelete elimina un producto",
                 "consumes": [
                     "application/json"
                 ],
@@ -2863,11 +2661,11 @@ const docTemplate = `{
                 "tags": [
                     "Product"
                 ],
-                "summary": "Delete Product",
+                "summary": "ProductDelete",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID of the product",
+                        "description": "ID del producto",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -2875,7 +2673,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Product deleted with success",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -2887,25 +2685,104 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
                     },
                     "404": {
-                        "description": "Product not found",
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/product/get/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "ProductGet obtener un producto por ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Product"
+                ],
+                "summary": "ProductGet",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Id del producto",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.ProductFullResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -2920,7 +2797,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Get All Products",
+                "description": "ProductGetAll obtener todos los productos",
                 "consumes": [
                     "application/json"
                 ],
@@ -2930,10 +2807,26 @@ const docTemplate = `{
                 "tags": [
                     "Product"
                 ],
-                "summary": "Get All Products",
+                "summary": "ProductGetAll",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Número de página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Número de elementos por página",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Products obtained with success",
+                        "description": "OK",
                         "schema": {
                             "allOf": [
                                 {
@@ -2945,7 +2838,7 @@ const docTemplate = `{
                                         "body": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/schemas.Product"
+                                                "$ref": "#/definitions/schemas.ProductFullResponse"
                                             }
                                         }
                                     }
@@ -2960,19 +2853,25 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Auth is required",
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
                     },
-                    "403": {
-                        "description": "Not Authorized",
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -2980,14 +2879,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/product/get_by_identifier": {
+        "/api/v1/product/get_by_category/{category_id}": {
             "get": {
                 "security": [
                     {
                         "CookieAuth": []
                     }
                 ],
-                "description": "Get Products by identifier",
+                "description": "ProductGetByCategory obtener un producto por Id de categoria",
                 "consumes": [
                     "application/json"
                 ],
@@ -2997,19 +2896,19 @@ const docTemplate = `{
                 "tags": [
                     "Product"
                 ],
-                "summary": "Get Products by identifier",
+                "summary": "ProductGetByCategory",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Identifier of product",
-                        "name": "identifier",
-                        "in": "query",
+                        "description": "ID de la categoria",
+                        "name": "category_id",
+                        "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Products obtained with success",
+                        "description": "OK",
                         "schema": {
                             "allOf": [
                                 {
@@ -3019,10 +2918,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "body": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/schemas.Product"
-                                            }
+                                            "$ref": "#/definitions/schemas.ProductFullResponse"
                                         }
                                     }
                                 }
@@ -3036,21 +2932,76 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Auth is required",
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
                     },
-                    "403": {
-                        "description": "Not Authorized",
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/product/get_by_code": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "ProductGetByCode obtener un producto por Codigo",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Product"
+                ],
+                "summary": "ProductGetByCode",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "codigo del producto",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.ProductResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -3063,7 +3014,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Fetches products from either laundry or workshop based on the provided name and workplace.",
+                "description": "ProductGetByName obtener un producto por nombre",
                 "consumes": [
                     "application/json"
                 ],
@@ -3073,11 +3024,11 @@ const docTemplate = `{
                 "tags": [
                     "Product"
                 ],
-                "summary": "Get Product By Name",
+                "summary": "ProductGetByName",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Name of the Product",
+                        "description": "nombre del producto",
                         "name": "name",
                         "in": "query",
                         "required": true
@@ -3085,7 +3036,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of products",
+                        "description": "OK",
                         "schema": {
                             "allOf": [
                                 {
@@ -3095,10 +3046,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "body": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/schemas.Product"
-                                            }
+                                            "$ref": "#/definitions/schemas.ProductFullResponse"
                                         }
                                     }
                                 }
@@ -3112,19 +3060,94 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Auth is required",
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
                     },
-                    "403": {
-                        "description": "Not Authorized",
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/product/list_price": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "ProductPriceUpdate edita el rpecio de una lista de productos",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Product"
+                ],
+                "summary": "ProductPriceUpdate",
+                "parameters": [
+                    {
+                        "description": "Información de los productos y los precios a editar",
+                        "name": "listProductUpdate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.ListPriceUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -3139,7 +3162,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Updates the given product and returns the updated product.",
+                "description": "ProductUpdate edita un producto ya creado",
                 "consumes": [
                     "application/json"
                 ],
@@ -3149,11 +3172,11 @@ const docTemplate = `{
                 "tags": [
                     "Product"
                 ],
-                "summary": "Update Product",
+                "summary": "ProductUpdate",
                 "parameters": [
                     {
-                        "description": "Product update details",
-                        "name": "product",
+                        "description": "Información del producto a editar",
+                        "name": "productUpdate",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -3163,7 +3186,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Product updated successfully",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -3175,185 +3198,25 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
                     },
                     "404": {
-                        "description": "Product not found",
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
                     },
                     "422": {
-                        "description": "Model invalid",
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/product/update_stock": {
-            "put": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "Updates the stock of a product based on the given method (add, subtract, update).",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Product"
-                ],
-                "summary": "Update Product Stock",
-                "parameters": [
-                    {
-                        "description": "Stock update details",
-                        "name": "stock",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/schemas.StockUpdate"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Product stock updated successfully",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Product not found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Model invalid",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/product/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "Get a product or part by its ID within a specified workplace.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Product"
-                ],
-                "summary": "Get Product By ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ID of the product",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Product obtained with success",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/schemas.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "$ref": "#/definitions/schemas.Product"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Expense not found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -3500,19 +3363,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Supplier created successfully",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/schemas.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/schemas.Response"
                         }
                     },
                     "400": {
@@ -3647,83 +3498,7 @@ const docTemplate = `{
                                         "body": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/schemas.Supplier"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/supplier/get_by_name": {
-            "get": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "Fetches suppliers from either laundry or workshop based on the provided name and workplace.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Supplier"
-                ],
-                "summary": "Get Supplier By Name",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Name of the Supplier",
-                        "name": "name",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "List of suppliers",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/schemas.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/schemas.Supplier"
+                                                "$ref": "#/definitions/schemas.SupplierResponseDTO"
                                             }
                                         }
                                     }
@@ -3872,7 +3647,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "body": {
-                                            "$ref": "#/definitions/schemas.Supplier"
+                                            "$ref": "#/definitions/schemas.SupplierResponse"
                                         }
                                     }
                                 }
@@ -4248,31 +4023,87 @@ const docTemplate = `{
                 }
             }
         },
-        "schemas.Client": {
+        "schemas.CashRegisterClose": {
             "type": "object",
             "properties": {
+                "close_amount": {
+                    "type": "number",
+                    "example": 100
+                }
+            }
+        },
+        "schemas.CashRegisterFullResponse": {
+            "type": "object",
+            "properties": {
+                "close_amount": {
+                    "type": "number"
+                },
                 "created_at": {
                     "type": "string"
                 },
-                "cuil": {
+                "expense_buy": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.ExpenseBuyResponseSimple"
+                    }
+                },
+                "expenses": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.ExpenseOtherResponse"
+                    }
+                },
+                "hour_close": {
                     "type": "string"
                 },
-                "dni": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "first_name": {
+                "hour_open": {
                     "type": "string"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "integer"
                 },
-                "last_name": {
-                    "type": "string"
+                "income_other": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.IncomeOtherResponse"
+                    }
                 },
-                "updated_at": {
+                "is_close": {
+                    "type": "boolean"
+                },
+                "member_close": {
+                    "$ref": "#/definitions/schemas.MemberSimpleDTO"
+                },
+                "member_open": {
+                    "$ref": "#/definitions/schemas.MemberSimpleDTO"
+                },
+                "open_amount": {
+                    "type": "number"
+                },
+                "sale_income": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.IncomeSaleSimpleResponse"
+                    }
+                }
+            }
+        },
+        "schemas.CashRegisterOpen": {
+            "type": "object",
+            "properties": {
+                "open_amount": {
+                    "type": "number",
+                    "example": 100
+                }
+            }
+        },
+        "schemas.CategoryResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
                     "type": "string"
                 }
             }
@@ -4280,53 +4111,108 @@ const docTemplate = `{
         "schemas.ClientCreate": {
             "type": "object",
             "required": [
-                "cuil",
-                "email",
                 "first_name",
                 "last_name"
             ],
             "properties": {
-                "cuil": {
-                    "type": "string"
+                "address": {
+                    "type": "string",
+                    "example": " Calle 123 | null"
                 },
-                "dni": {
-                    "type": "string"
+                "company_name": {
+                    "type": "string",
+                    "example": "John Company | null"
                 },
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "john@example.com | null"
                 },
                 "first_name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Jorge"
+                },
+                "identifier": {
+                    "type": "string",
+                    "example": "30000000 | null"
                 },
                 "last_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "schemas.ClientDTO": {
-            "type": "object",
-            "properties": {
-                "first_name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Lopez"
                 },
-                "id": {
-                    "type": "string"
-                },
-                "last_name": {
-                    "type": "string"
+                "phone": {
+                    "type": "string",
+                    "example": "1111111111 | null"
                 }
             }
         },
         "schemas.ClientResponse": {
             "type": "object",
             "properties": {
-                "cuil": {
+                "address": {
                     "type": "string"
                 },
-                "dni": {
+                "company_name": {
                     "type": "string"
                 },
                 "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "identifier": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "member_create": {
+                    "$ref": "#/definitions/schemas.MemberResponseDTO"
+                },
+                "pay": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.PayDebtResponse"
+                    }
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.ClientResponseDTO": {
+            "type": "object",
+            "properties": {
+                "company_name": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "identifier": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.ClientSimpleDTO": {
+            "type": "object",
+            "properties": {
+                "company_name": {
                     "type": "string"
                 },
                 "first_name": {
@@ -4343,245 +4229,787 @@ const docTemplate = `{
         "schemas.ClientUpdate": {
             "type": "object",
             "required": [
-                "cuil",
-                "email",
                 "first_name",
                 "id",
                 "last_name"
             ],
             "properties": {
-                "cuil": {
-                    "type": "string"
+                "address": {
+                    "type": "string",
+                    "example": " Calle 123 | null"
                 },
-                "dni": {
-                    "type": "string"
+                "company_name": {
+                    "type": "string",
+                    "example": "John Company | null"
                 },
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "john@example.com | null"
                 },
                 "first_name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Jorge"
                 },
                 "id": {
                     "type": "string"
+                },
+                "identifier": {
+                    "type": "string",
+                    "example": "30000000 | null"
                 },
                 "last_name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Lopez"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "1111111111 | null"
                 }
             }
         },
-        "schemas.ExpenseCreate": {
+        "schemas.DateRangeRequest": {
             "type": "object",
             "required": [
-                "amount",
-                "details",
-                "movement_type_id"
+                "from_date",
+                "to_date"
             ],
             "properties": {
-                "amount": {
-                    "type": "number"
+                "from_date": {
+                    "type": "string",
+                    "example": "2022-01-01"
                 },
-                "details": {
-                    "type": "string"
-                },
-                "movement_type_id": {
-                    "type": "string"
-                },
-                "purchase_order_id": {
-                    "type": "string"
+                "to_date": {
+                    "type": "string",
+                    "example": "2022-12-31"
                 }
             }
         },
-        "schemas.ExpenseDTO": {
+        "schemas.DepositResponse": {
             "type": "object",
             "properties": {
-                "amount": {
-                    "type": "number"
-                },
-                "created_at": {
-                    "type": "string"
-                },
                 "id": {
-                    "type": "string"
+                    "type": "integer"
                 },
-                "movement_type": {
-                    "$ref": "#/definitions/schemas.MovementTypeDTO"
+                "stock": {
+                    "type": "number"
                 }
             }
         },
-        "schemas.ExpenseResponse": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "number"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "details": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "movement_type": {
-                    "$ref": "#/definitions/schemas.MovementTypeDTO"
-                }
-            }
-        },
-        "schemas.ExpenseUpdate": {
+        "schemas.ExpenseBuyCreate": {
             "type": "object",
             "required": [
-                "amount",
-                "details",
-                "movement_type_id"
+                "expense_item_buys",
+                "pay_expense",
+                "supplier_id",
+                "total"
             ],
             "properties": {
-                "amount": {
-                    "type": "number"
-                },
                 "details": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "string"
-                },
-                "movement_type_id": {
-                    "type": "string"
-                },
-                "purchase_order_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "schemas.IncomeCreate": {
-            "type": "object",
-            "required": [
-                "amount",
-                "client_id",
-                "movement_type_id",
-                "services_id",
-                "vehicle_id"
-            ],
-            "properties": {
-                "amount": {
+                "discount": {
                     "type": "number"
                 },
-                "client_id": {
-                    "type": "string"
-                },
-                "details": {
-                    "type": "string"
-                },
-                "employee_id": {
-                    "type": "string"
-                },
-                "movement_type_id": {
-                    "type": "string"
-                },
-                "services_id": {
+                "expense_item_buys": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/schemas.ExpenseBuyItemCreate"
                     }
                 },
-                "ticket": {
-                    "type": "string"
+                "pay_expense": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.PayExpenseBuyCreate"
+                    }
                 },
-                "vehicle_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "schemas.IncomeDTO": {
-            "type": "object",
-            "properties": {
-                "amount": {
+                "supplier_id": {
+                    "type": "integer"
+                },
+                "total": {
                     "type": "number"
                 },
-                "client": {
-                    "$ref": "#/definitions/schemas.ClientDTO"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "movement_type": {
-                    "$ref": "#/definitions/schemas.MovementTypeDTO"
-                },
-                "ticket": {
-                    "type": "string"
+                "type_discount": {
+                    "type": "string",
+                    "enum": [
+                        "amount",
+                        "percent"
+                    ]
                 }
             }
         },
-        "schemas.IncomeResponse": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "number"
-                },
-                "client": {
-                    "$ref": "#/definitions/schemas.ClientResponse"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "details": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "movement_type": {
-                    "$ref": "#/definitions/schemas.MovementTypeDTO"
-                },
-                "ticket": {
-                    "type": "string"
-                }
-            }
-        },
-        "schemas.IncomeUpdate": {
+        "schemas.ExpenseBuyItemCreate": {
             "type": "object",
             "required": [
-                "amount",
-                "client_id",
-                "movement_type_id",
-                "services_id",
-                "ticket",
-                "vehicle_id"
+                "product_id"
             ],
             "properties": {
                 "amount": {
                     "type": "number"
                 },
-                "client_id": {
+                "created_at": {
+                    "type": "string"
+                },
+                "discount": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "subtotal": {
+                    "type": "number"
+                },
+                "total": {
+                    "type": "number"
+                },
+                "type_discount": {
+                    "type": "string",
+                    "enum": [
+                        "amount",
+                        "percent"
+                    ]
+                }
+            }
+        },
+        "schemas.ExpenseBuyItemResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "discount": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "product": {
+                    "$ref": "#/definitions/schemas.ProductSimpleResponseDTO"
+                },
+                "subtotal": {
+                    "type": "number"
+                },
+                "total": {
+                    "type": "number"
+                },
+                "type_discount": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.ExpenseBuyResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "discount": {
+                    "type": "number"
+                },
+                "expense_item_buys": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.ExpenseBuyItemResponse"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "member": {
+                    "$ref": "#/definitions/schemas.MemberSimpleDTO"
+                },
+                "pay_expense": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.PayExpenseBuyResponse"
+                    }
+                },
+                "subtotal": {
+                    "type": "number"
+                },
+                "supplier": {
+                    "$ref": "#/definitions/schemas.SupplierResponseDTO"
+                },
+                "total": {
+                    "type": "number"
+                },
+                "type_discount": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.ExpenseBuyResponseSimple": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "discount": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "pay_expense": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.PayExpenseBuyResponse"
+                    }
+                },
+                "register_id": {
+                    "type": "integer"
+                },
+                "subtotal": {
+                    "type": "number"
+                },
+                "supplier": {
+                    "$ref": "#/definitions/schemas.SupplierResponseDTO"
+                },
+                "total": {
+                    "type": "number"
+                },
+                "type_discount": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.ExpenseBuyUpdate": {
+            "type": "object",
+            "required": [
+                "expense_item_buys",
+                "id",
+                "pay_expense",
+                "supplier_id",
+                "total"
+            ],
+            "properties": {
+                "details": {
+                    "type": "string"
+                },
+                "discount": {
+                    "type": "number"
+                },
+                "expense_item_buys": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.ExpenseBuyItemCreate"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "pay_expense": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.PayExpenseBuyCreate"
+                    }
+                },
+                "supplier_id": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "number"
+                },
+                "type_discount": {
+                    "type": "string",
+                    "enum": [
+                        "amount",
+                        "percent"
+                    ]
+                }
+            }
+        },
+        "schemas.ExpenseOtherCreate": {
+            "type": "object",
+            "required": [
+                "total",
+                "type_expense_id"
+            ],
+            "properties": {
+                "details": {
+                    "type": "string"
+                },
+                "payment_method": {
+                    "type": "string",
+                    "enum": [
+                        "cash",
+                        "credit",
+                        "card",
+                        "transfer"
+                    ]
+                },
+                "total": {
+                    "type": "number"
+                },
+                "type_expense_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "schemas.ExpenseOtherResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "member": {
+                    "$ref": "#/definitions/schemas.MemberSimpleDTO"
+                },
+                "pay_method": {
+                    "type": "string"
+                },
+                "point_sale": {
+                    "$ref": "#/definitions/schemas.PointSaleResponse"
+                },
+                "register_id": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "number"
+                },
+                "type_expense": {
+                    "$ref": "#/definitions/schemas.TypeExpenseResponse"
+                }
+            }
+        },
+        "schemas.ExpenseOtherResponseDTO": {
+            "type": "object",
+            "properties": {
+                "created_at": {
                     "type": "string"
                 },
                 "details": {
                     "type": "string"
                 },
-                "employee_id": {
+                "id": {
+                    "type": "integer"
+                },
+                "pay_method": {
+                    "type": "string"
+                },
+                "register_id": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "number"
+                }
+            }
+        },
+        "schemas.ExpenseOtherUpdate": {
+            "type": "object",
+            "required": [
+                "id",
+                "total"
+            ],
+            "properties": {
+                "details": {
                     "type": "string"
                 },
                 "id": {
+                    "type": "integer"
+                },
+                "payment_method": {
+                    "type": "string",
+                    "enum": [
+                        "cash",
+                        "credit",
+                        "card",
+                        "transfer"
+                    ]
+                },
+                "total": {
+                    "type": "number"
+                }
+            }
+        },
+        "schemas.IncomeOtherCreate": {
+            "type": "object",
+            "required": [
+                "total",
+                "type_income_id"
+            ],
+            "properties": {
+                "details": {
                     "type": "string"
                 },
-                "movement_type_id": {
+                "method_income": {
+                    "type": "string",
+                    "enum": [
+                        "cash",
+                        "credit",
+                        "card",
+                        "transfer"
+                    ]
+                },
+                "total": {
+                    "type": "number"
+                },
+                "type_income_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "schemas.IncomeOtherResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
                     "type": "string"
                 },
-                "services_id": {
+                "details": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "member": {
+                    "$ref": "#/definitions/schemas.MemberSimpleDTO"
+                },
+                "method_income": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "number"
+                },
+                "type_income": {
+                    "$ref": "#/definitions/schemas.TypeIncomeResponse"
+                }
+            }
+        },
+        "schemas.IncomeOtherUpdate": {
+            "type": "object",
+            "required": [
+                "id",
+                "total",
+                "type_income_id"
+            ],
+            "properties": {
+                "details": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "method_income": {
+                    "type": "string",
+                    "enum": [
+                        "cash",
+                        "credit",
+                        "card",
+                        "transfer"
+                    ]
+                },
+                "total": {
+                    "type": "number"
+                },
+                "type_income_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "schemas.IncomeSaleCreate": {
+            "type": "object",
+            "required": [
+                "client_id",
+                "discount",
+                "items",
+                "pay"
+            ],
+            "properties": {
+                "client_id": {
+                    "type": "integer"
+                },
+                "discount": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "is_budget": {
+                    "type": "boolean"
+                },
+                "items": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/schemas.ItemIncomeSaleCreate"
                     }
                 },
-                "ticket": {
+                "pay": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.PayCreate"
+                    }
+                },
+                "total": {
+                    "type": "number"
+                },
+                "type_discount": {
+                    "type": "string",
+                    "enum": [
+                        "amount",
+                        "percent"
+                    ]
+                }
+            }
+        },
+        "schemas.IncomeSaleItemResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
                     "type": "string"
                 },
-                "vehicle_id": {
+                "discount": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "product": {
+                    "$ref": "#/definitions/schemas.ProductSimpleResponseDTO"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "subtotal": {
+                    "type": "number"
+                },
+                "total": {
+                    "type": "number"
+                },
+                "type_discount": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.IncomeSaleResponse": {
+            "type": "object",
+            "properties": {
+                "client": {
+                    "$ref": "#/definitions/schemas.ClientResponseDTO"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "discount": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_budget": {
+                    "type": "boolean"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.IncomeSaleItemResponse"
+                    }
+                },
+                "member": {
+                    "$ref": "#/definitions/schemas.MemberSimpleDTO"
+                },
+                "pay": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.PayResponse"
+                    }
+                },
+                "subtotal": {
+                    "type": "number"
+                },
+                "total": {
+                    "type": "number"
+                },
+                "type_discount": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.IncomeSaleResponseDTO": {
+            "type": "object",
+            "properties": {
+                "client": {
+                    "$ref": "#/definitions/schemas.ClientSimpleDTO"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "member": {
+                    "$ref": "#/definitions/schemas.MemberSimpleDTO"
+                },
+                "pay": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.PayResponse"
+                    }
+                },
+                "total": {
+                    "type": "number"
+                }
+            }
+        },
+        "schemas.IncomeSaleSimpleResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_budget": {
+                    "type": "boolean"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.ProductSimpleResponseDTO"
+                    }
+                },
+                "pay": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.PayResponse"
+                    }
+                },
+                "total": {
+                    "type": "number"
+                }
+            }
+        },
+        "schemas.IncomeSaleUpdate": {
+            "type": "object",
+            "required": [
+                "client_id",
+                "id",
+                "items",
+                "pay"
+            ],
+            "properties": {
+                "client_id": {
+                    "type": "integer"
+                },
+                "discount": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_budget": {
+                    "type": "boolean"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.ItemIncomeSaleUpdate"
+                    }
+                },
+                "pay": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.PayUpdate"
+                    }
+                },
+                "total": {
+                    "type": "number"
+                },
+                "type_discount": {
+                    "type": "string",
+                    "enum": [
+                        "amount",
+                        "percent"
+                    ]
+                }
+            }
+        },
+        "schemas.ItemIncomeSaleCreate": {
+            "type": "object",
+            "required": [
+                "amount",
+                "product_id"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "discount": {
+                    "type": "number"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "type_discount": {
+                    "type": "string",
+                    "enum": [
+                        "amount",
+                        "percent"
+                    ]
+                }
+            }
+        },
+        "schemas.ItemIncomeSaleUpdate": {
+            "type": "object",
+            "required": [
+                "amount",
+                "product_id"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "discount": {
+                    "type": "number"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "type_discount": {
+                    "type": "string",
+                    "enum": [
+                        "amount",
+                        "percent"
+                    ]
+                }
+            }
+        },
+        "schemas.ListPriceUpdate": {
+            "type": "object",
+            "required": [
+                "list"
+            ],
+            "properties": {
+                "list": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/schemas.ProductPriceUpdate"
+                    }
                 }
             }
         },
@@ -4591,60 +5019,61 @@ const docTemplate = `{
                 "email",
                 "first_name",
                 "last_name",
+                "password",
+                "point_sales_ids",
                 "role_id",
                 "username"
             ],
             "properties": {
-                "email": {
-                    "type": "string"
+                "address": {
+                    "type": "string",
+                    "example": "casita roja|null"
                 },
-                "first_name": {
-                    "type": "string"
-                },
-                "last_name": {
-                    "type": "string"
-                },
-                "role_id": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "schemas.MemberDTO": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
+                "cellphone": {
+                    "type": "string",
+                    "example": "123123123|null"
                 },
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "a@b.com"
                 },
                 "first_name": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "is_active": {
-                    "type": "boolean"
+                    "type": "string",
+                    "example": "John"
                 },
                 "last_name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Doe"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "Password123*"
+                },
+                "point_sales_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "example": [
+                        1,
+                        2,
+                        3
+                    ]
                 },
                 "role_id": {
-                    "$ref": "#/definitions/schemas.RoleDTO"
+                    "type": "integer",
+                    "example": 1
                 },
                 "username": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "johndoe"
                 }
             }
         },
         "schemas.MemberResponse": {
             "type": "object",
             "properties": {
-                "createdAt": {
+                "address": {
                     "type": "string"
                 },
                 "email": {
@@ -4654,101 +5083,188 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "is_active": {
+                    "type": "boolean"
+                },
+                "is_admin": {
                     "type": "boolean"
                 },
                 "last_name": {
                     "type": "string"
                 },
-                "role_id": {
-                    "$ref": "#/definitions/schemas.Role"
+                "phone": {
+                    "type": "string"
+                },
+                "point_sales": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.PointSaleResponse"
+                    }
+                },
+                "role": {
+                    "$ref": "#/definitions/schemas.RoleResponse"
                 },
                 "username": {
                     "type": "string"
                 }
             }
         },
-        "schemas.MovementType": {
+        "schemas.MemberResponseDTO": {
             "type": "object",
             "properties": {
-                "created_at": {
+                "address": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
                     "type": "string"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "integer"
                 },
-                "is_income": {
+                "is_active": {
                     "type": "boolean"
                 },
-                "name": {
+                "is_admin": {
+                    "type": "boolean"
+                },
+                "last_name": {
                     "type": "string"
                 },
-                "updated_at": {
+                "phone": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/schemas.RoleResponseDTO"
+                },
+                "username": {
                     "type": "string"
                 }
             }
         },
-        "schemas.MovementTypeCreate": {
+        "schemas.MemberSimpleDTO": {
             "type": "object",
             "properties": {
-                "is_income": {
-                    "type": "boolean"
+                "first_name": {
+                    "type": "string"
                 },
-                "name": {
+                "id": {
+                    "type": "integer"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }
         },
-        "schemas.MovementTypeDTO": {
+        "schemas.PayCreate": {
+            "type": "object",
+            "required": [
+                "amount"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "method_pay": {
+                    "type": "string",
+                    "enum": [
+                        "cash",
+                        "credit",
+                        "card",
+                        "transfer"
+                    ]
+                }
+            }
+        },
+        "schemas.PayDebtResponse": {
             "type": "object",
             "properties": {
+                "amount": {
+                    "type": "number"
+                },
                 "id": {
-                    "type": "string"
+                    "type": "integer"
                 },
-                "is_income": {
-                    "type": "boolean"
+                "income_sale_id": {
+                    "type": "integer"
                 },
-                "name": {
+                "method_pay": {
                     "type": "string"
                 }
             }
         },
-        "schemas.MovementTypeUpdate": {
+        "schemas.PayExpenseBuyCreate": {
+            "type": "object",
+            "required": [
+                "amount"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "payment_method": {
+                    "type": "string",
+                    "enum": [
+                        "cash",
+                        "credit",
+                        "card",
+                        "transfer"
+                    ]
+                }
+            }
+        },
+        "schemas.PayExpenseBuyResponse": {
             "type": "object",
             "properties": {
+                "amount": {
+                    "type": "number"
+                },
                 "id": {
-                    "type": "string"
+                    "type": "integer"
                 },
-                "is_income": {
-                    "type": "boolean"
-                },
-                "name": {
+                "method_pay": {
                     "type": "string"
                 }
             }
         },
-        "schemas.Permission": {
+        "schemas.PayResponse": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "details": {
-                    "type": "string"
-                },
-                "group": {
-                    "type": "string"
+                "amount": {
+                    "type": "number"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "integer"
                 },
-                "roles": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/schemas.Role"
-                    }
+                "method_pay": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.PayUpdate": {
+            "type": "object",
+            "required": [
+                "amount"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "method_pay": {
+                    "type": "string",
+                    "enum": [
+                        "cash",
+                        "credit",
+                        "card",
+                        "transfer"
+                    ]
                 }
             }
         },
@@ -4765,7 +5281,21 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "schemas.PermissionResponseDTO": {
+            "type": "object",
+            "properties": {
+                "code": {
                     "type": "string"
+                },
+                "group": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 }
             }
         },
@@ -4800,59 +5330,203 @@ const docTemplate = `{
                 }
             }
         },
-        "schemas.Product": {
+        "schemas.PointSaleStockResponse": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
                 "id": {
-                    "type": "string"
-                },
-                "identifier": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
                 },
                 "stock": {
                     "type": "number"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
         "schemas.ProductCreate": {
             "type": "object",
             "required": [
-                "identifier",
+                "category_id",
+                "code",
                 "name"
             ],
             "properties": {
-                "identifier": {
+                "category_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "code": {
+                    "type": "string",
+                    "example": "ABC123"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "description|null"
+                },
+                "min_amount": {
+                    "type": "number",
+                    "example": 10
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Producto1"
+                },
+                "notifier": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "price": {
+                    "type": "number",
+                    "example": 100
+                }
+            }
+        },
+        "schemas.ProductFullResponse": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "$ref": "#/definitions/schemas.CategoryResponse"
+                },
+                "code": {
                     "type": "string"
+                },
+                "deposit": {
+                    "$ref": "#/definitions/schemas.DepositResponse"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "min_amount": {
+                    "type": "number"
                 },
                 "name": {
                     "type": "string"
+                },
+                "notifier": {
+                    "type": "boolean"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "stock_point_sales": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.PointSaleStockResponse"
+                    }
+                }
+            }
+        },
+        "schemas.ProductPriceUpdate": {
+            "type": "object",
+            "required": [
+                "id",
+                "price"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "price": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 100
+                }
+            }
+        },
+        "schemas.ProductResponse": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "$ref": "#/definitions/schemas.CategoryResponse"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "min_amount": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notifier": {
+                    "type": "boolean"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "stock": {
+                    "type": "number"
+                }
+            }
+        },
+        "schemas.ProductSimpleResponseDTO": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
                 }
             }
         },
         "schemas.ProductUpdate": {
             "type": "object",
             "required": [
+                "category_id",
+                "code",
                 "id",
                 "name"
             ],
             "properties": {
-                "id": {
-                    "type": "string"
+                "category_id": {
+                    "type": "integer",
+                    "example": 1
                 },
-                "identifier": {
-                    "type": "string"
+                "code": {
+                    "type": "string",
+                    "example": "ABC123"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "description|null"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "min_amount": {
+                    "type": "number",
+                    "example": 10
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Producto1"
+                },
+                "notifier": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "price": {
+                    "type": "number",
+                    "example": 100
                 }
             }
         },
@@ -4865,23 +5539,6 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "boolean"
-                }
-            }
-        },
-        "schemas.Role": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "permissions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/schemas.Permission"
-                    }
                 }
             }
         },
@@ -4903,22 +5560,11 @@ const docTemplate = `{
                 }
             }
         },
-        "schemas.RoleDTO": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
         "schemas.RoleResponse": {
             "type": "object",
             "properties": {
                 "id": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -4926,57 +5572,18 @@ const docTemplate = `{
                 "permissions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/schemas.PermissionResponse"
+                        "$ref": "#/definitions/schemas.PermissionResponseDTO"
                     }
                 }
             }
         },
-        "schemas.StockUpdate": {
-            "type": "object",
-            "required": [
-                "id",
-                "method",
-                "stock"
-            ],
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "method": {
-                    "type": "string",
-                    "enum": [
-                        "add",
-                        "subtract",
-                        "update"
-                    ]
-                },
-                "stock": {
-                    "type": "number"
-                }
-            }
-        },
-        "schemas.Supplier": {
+        "schemas.RoleResponseDTO": {
             "type": "object",
             "properties": {
-                "address": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
                 "id": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "name": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }
@@ -4984,13 +5591,23 @@ const docTemplate = `{
         "schemas.SupplierCreate": {
             "type": "object",
             "required": [
+                "company_name",
                 "name"
             ],
             "properties": {
                 "address": {
                     "type": "string"
                 },
+                "company_name": {
+                    "type": "string"
+                },
+                "debt_limit": {
+                    "type": "number"
+                },
                 "email": {
+                    "type": "string"
+                },
+                "identifier": {
                     "type": "string"
                 },
                 "name": {
@@ -5001,9 +5618,56 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.SupplierResponse": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "company_name": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "debt_limit": {
+                    "type": "number"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "identifier": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.SupplierResponseDTO": {
+            "type": "object",
+            "properties": {
+                "company_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "schemas.SupplierUpdate": {
             "type": "object",
             "required": [
+                "company_name",
                 "id",
                 "name"
             ],
@@ -5011,10 +5675,19 @@ const docTemplate = `{
                 "address": {
                     "type": "string"
                 },
+                "company_name": {
+                    "type": "string"
+                },
+                "debt_limit": {
+                    "type": "number"
+                },
                 "email": {
                     "type": "string"
                 },
                 "id": {
+                    "type": "integer"
+                },
+                "identifier": {
                     "type": "string"
                 },
                 "name": {
@@ -5101,6 +5774,25 @@ const docTemplate = `{
                 },
                 "user_create": {
                     "$ref": "#/definitions/schemas.UserCreate"
+                }
+            }
+        },
+        "schemas.TypeExpenseResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.TypeIncomeResponse": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
                 }
             }
         },

@@ -41,15 +41,13 @@ func (r *SupplierRepository) SupplierGetAll(limit, page int, search *map[string]
 		for key, value := range *search {
 			switch key {
 			case "name":
-				query = query.Where("name ILIKE ?", "%"+value+"%")
+				query = query.Where("name LIKE ?", "%"+value+"%")
 			case "company_name":
-				query = query.Where("company_name ILIKE ?", "%"+value+"%")
+				query = query.Where("company_name LIKE ?", "%"+value+"%")
 			case "identifier":
-				query = query.Where("identifier ILIKE ?", "%"+value+"%")
+				query = query.Where("identifier LIKE ?", "%"+value+"%")
 			case "email":
-				query = query.Where("email ILIKE ?", "%"+value+"%")
-			case "phone":
-				query = query.Where("phone ILIKE ?", "%"+value+"%")
+				query = query.Where("email LIKE ?", "%"+value+"%")
 			}
 		}
 	}

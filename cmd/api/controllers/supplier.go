@@ -1,8 +1,11 @@
 package controllers
 
 import (
+	"strconv"
+
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -13,40 +16,24 @@ import (
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			id	path		string									true	"ID of the supplier"
-//	@Success		200	{object}	schemas.Response{body=schemas.Supplier}	"Supplier obtained with success"
-//	@Failure		400	{object}	schemas.Response						"Bad Request"
-//	@Failure		401	{object}	schemas.Response						"Auth is required"
-//	@Failure		403	{object}	schemas.Response						"Not Authorized"
-//	@Failure		404	{object}	schemas.Response						"Supplier not found"
-//	@Failure		500	{object}	schemas.Response						"Internal server error"
+//	@Param			id	path		string											true	"ID of the supplier"
+//	@Success		200	{object}	schemas.Response{body=schemas.SupplierResponse}	"Supplier obtained with success"
+//	@Failure		400	{object}	schemas.Response								"Bad Request"
+//	@Failure		401	{object}	schemas.Response								"Auth is required"
+//	@Failure		403	{object}	schemas.Response								"Not Authorized"
+//	@Failure		404	{object}	schemas.Response								"Supplier not found"
+//	@Failure		500	{object}	schemas.Response								"Internal server error"
 //	@Router			/api/v1/supplier/{id} [get]
 func (s *SupplierController) SupplierGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	if id == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "ID is required",
-		})
+	idint, err := validators.IdValidate(id)
+	if err != nil {
+		return schemas.HandleError(c, err)
 	}
 
-	supplier, err := s.SupplierService.SupplierGetByID(id)
+	supplier, err := s.SupplierService.SupplierGetByID(idint)
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+		return schemas.HandleError(c, err)
 	}
 
 	return c.Status(200).JSON(schemas.Response{
@@ -63,88 +50,56 @@ func (s *SupplierController) SupplierGetByID(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Success		200	{object}	schemas.Response{body=[]schemas.Supplier}	"Suppliers obtained with success"
-//	@Failure		400	{object}	schemas.Response							"Bad Request"
-//	@Failure		401	{object}	schemas.Response							"Auth is required"
-//	@Failure		403	{object}	schemas.Response							"Not Authorized"
-//	@Failure		500	{object}	schemas.Response							"Internal server error"
+//	@Success		200	{object}	schemas.Response{body=[]schemas.SupplierResponseDTO}	"Suppliers obtained with success"
+//	@Failure		400	{object}	schemas.Response										"Bad Request"
+//	@Failure		401	{object}	schemas.Response										"Auth is required"
+//	@Failure		403	{object}	schemas.Response										"Not Authorized"
+//	@Failure		500	{object}	schemas.Response										"Internal server error"
 //	@Router			/api/v1/supplier/get_all [get]
 func (s *SupplierController) SupplierGetAll(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los proveedores")
-	suppliers, err := s.SupplierService.SupplierGetAll()
+	limit, err := strconv.ParseInt(c.Query("limit"), 10, 64)
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+		limit = 10
+	}
+	page, err := strconv.ParseInt(c.Query("page"), 10, 64)
+	if err != nil {
+		page = 1
 	}
 
-	logging.INFO("Proveedores obtenidos con éxito")
-	return c.Status(200).JSON(schemas.Response{
-		Status:  true,
-		Body:    suppliers,
-		Message: "Proveedores obtenidos con éxito",
-	})
-}
-
-// SupplierGetByName godoc
-//	@Summary		Get Supplier By Name
-//	@Description	Fetches suppliers from either laundry or workshop based on the provided name and workplace.
-//	@Tags			Supplier
-//	@Accept			json
-//	@Produce		json
-//	@Security		CookieAuth
-//	@Param			name	query		string										true	"Name of the Supplier"
-//	@Success		200		{object}	schemas.Response{body=[]schemas.Supplier}	"List of suppliers"
-//	@Failure		400		{object}	schemas.Response							"Bad Request"
-//	@Failure		401		{object}	schemas.Response							"Auth is required"
-//	@Failure		403		{object}	schemas.Response							"Not Authorized"
-//	@Failure		500		{object}	schemas.Response							"Internal server error"
-//	@Router			/api/v1/supplier/get_by_name [get]
-func (s *SupplierController) SupplierGetByName(c *fiber.Ctx) error {
-	logging.INFO("Obtener proveedores por nombre")
+	search := &map[string]string{}
 	name := c.Query("name")
-	if name == "" || len(name) < 3 {
-		logging.ERROR("Error: El valor no debe de ser vacio o menor a 3 caracteres")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "El valor no debe de ser vacio o menor a 3 caracteres",
-		})
+	if name != "" {
+		(*search)["name"] = name
+	}
+	identifier := c.Query("identifier")
+	if identifier != "" {
+		(*search)["identifier"] = identifier
+	}
+	companyName := c.Query("company_name")
+	if companyName != "" {
+		(*search)["company_name"] = companyName
+	}
+	email := c.Query("email")
+	if email != "" {
+		(*search)["email"] = email
+	}
+	isActive := c.Query("is_active")
+	if isActive != "" {
+		(*search)["is_active"] = isActive
 	}
 
-	supplies, err := s.SupplierService.SupplierGetByName(name)
+	suppliers, total, err := s.SupplierService.SupplierGetAll(int(limit), int(page), search)
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+		return schemas.HandleError(c, err)
 	}
+
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
 	logging.INFO("Proveedores obtenidos con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
-		Body:    supplies,
+		Body:    map[string]any{"suppliers": suppliers, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
 		Message: "Proveedores obtenidos con éxito",
 	})
 }
@@ -156,13 +111,13 @@ func (s *SupplierController) SupplierGetByName(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			supplier	body		schemas.SupplierCreate			true	"Details of the supplier to create"
-//	@Success		200			{object}	schemas.Response{body=string}	"Supplier created successfully"
-//	@Failure		400			{object}	schemas.Response				"Bad Request"
-//	@Failure		401			{object}	schemas.Response				"Auth is required"
-//	@Failure		403			{object}	schemas.Response				"Not Authorized"
-//	@Failure		422			{object}	schemas.Response				"Model is invalid"
-//	@Failure		500			{object}	schemas.Response				"Internal server error"
+//	@Param			supplier	body		schemas.SupplierCreate	true	"Details of the supplier to create"
+//	@Success		200			{object}	schemas.Response		"Supplier created successfully"
+//	@Failure		400			{object}	schemas.Response		"Bad Request"
+//	@Failure		401			{object}	schemas.Response		"Auth is required"
+//	@Failure		403			{object}	schemas.Response		"Not Authorized"
+//	@Failure		422			{object}	schemas.Response		"Model is invalid"
+//	@Failure		500			{object}	schemas.Response		"Internal server error"
 //	@Router			/api/v1/supplier/create [post]
 func (s *SupplierController) SupplierCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear proveedor")
@@ -176,30 +131,12 @@ func (s *SupplierController) SupplierCreate(c *fiber.Ctx) error {
 		})
 	}
 	if err := supplierCreate.Validate(); err != nil {
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: err.Error(),
-		})
+		return schemas.HandleError(c, err)
 	}
-
+	
 	id, err := s.SupplierService.SupplierCreate(&supplierCreate)
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+		return schemas.HandleError(c, err)
 	}
 
 	logging.INFO("Proveedor creado con éxito")
@@ -238,30 +175,12 @@ func (s *SupplierController) SupplierUpdate(c *fiber.Ctx) error {
 		})
 	}
 	if err := supplierUpdate.Validate(); err != nil {
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: err.Error(),
-		})
+		return schemas.HandleError(c, err)
 	}
 
 	err := s.SupplierService.SupplierUpdate(&supplierUpdate)
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+		return schemas.HandleError(c, err)
 	}
 
 	logging.INFO("Proveedor editado con éxito")
@@ -290,31 +209,14 @@ func (s *SupplierController) SupplierUpdate(c *fiber.Ctx) error {
 func (s *SupplierController) SupplierDeleteByID(c *fiber.Ctx) error {
 	logging.INFO("Eliminar proveedor")
 	id := c.Params("id")
-	if id == "" {
-		logging.ERROR("Error: ID is required")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "ID is required",
-		})
+	idint, err := validators.IdValidate(id)
+	if err != nil {
+		return schemas.HandleError(c, err)
 	}
 
-	err := s.SupplierService.SupplierDelete(id)
+	err = s.SupplierService.SupplierDelete(idint)
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+		return schemas.HandleError(c, err)
 	}
 
 	logging.INFO("Proveedor eliminado con éxito")

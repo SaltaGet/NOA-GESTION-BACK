@@ -17,7 +17,7 @@ import (
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			id	path		string											true	"ID of ExpenseBuy"
+//	@Param			id	path		string												true	"ID of ExpenseBuy"
 //	@Success		200	{object}	schemas.Response{body=schemas.ExpenseBuyResponse}	"ExpenseBuy obtained successfully"
 //	@Router			/api/v1/expense_buy/{id} [get]
 func (e *ExpenseBuyController) ExpenseBuyGetByID(c *fiber.Ctx) error {
@@ -49,14 +49,14 @@ func (e *ExpenseBuyController) ExpenseBuyGetByID(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			fromDate	query		schemas.DateRangeRequest	true	"Fecha de inicio"
-//	@Param			page	query		int											false	"Page number"				default(1)
-//	@Param			limit	query		int											false	"Number of items per page"	default(20)
-//	@Success		200		{object}	schemas.Response{body=[]schemas.ExpenseBuyResponseSimple}	"List of expenseBuys"
-//	@Failure		400		{object}	schemas.Response							"Bad Request"
-//	@Failure		401		{object}	schemas.Response							"Auth is required"
-//	@Failure		403		{object}	schemas.Response							"Not Authorized"
-//	@Failure		500		{object}	schemas.Response							"Internal server error"
+//	@Param			fromDate	query		schemas.DateRangeRequest									true	"Fecha de inicio"
+//	@Param			page		query		int															false	"Page number"				default(1)
+//	@Param			limit		query		int															false	"Number of items per page"	default(20)
+//	@Success		200			{object}	schemas.Response{body=[]schemas.ExpenseBuyResponseSimple}	"List of expenseBuys"
+//	@Failure		400			{object}	schemas.Response											"Bad Request"
+//	@Failure		401			{object}	schemas.Response											"Auth is required"
+//	@Failure		403			{object}	schemas.Response											"Not Authorized"
+//	@Failure		500			{object}	schemas.Response											"Internal server error"
 //	@Router			/api/v1/expense_buy/get_all [get]
 func (e *ExpenseBuyController) ExpenseBuyGetByDate(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los egresos")
@@ -104,8 +104,8 @@ func (e *ExpenseBuyController) ExpenseBuyGetByDate(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			expenseBuyCreate	body		schemas.ExpenseBuyCreate			true	"ExpenseBuy information"
-//	@Success		200				{object}	schemas.Response"ExpenseBuy created successfully"
+//	@Param			expenseBuyCreate	body		schemas.ExpenseBuyCreate	true	"ExpenseBuy information"
+//	@Success		200					{object}	schemas.Response"ExpenseBuy created successfully"
 //	@Router			/api/v1/expense_buy/create [post]
 func (e *ExpenseBuyController) ExpenseBuyCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear un egreso")
@@ -146,7 +146,7 @@ func (e *ExpenseBuyController) ExpenseBuyCreate(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		CookieAuth
 //	@Param			expenseBuyUpdate	body		schemas.ExpenseBuyUpdate	true	"ExpenseBuy data to update"
-//	@Success		200				{object}	schemas.Response		"ExpenseBuy updated successfully"
+//	@Success		200					{object}	schemas.Response			"ExpenseBuy updated successfully"
 //	@Router			/api/v1/expense_buy/update [put]
 func (e *ExpenseBuyController) ExpenseBuyUpdate(c *fiber.Ctx) error {
 	logging.INFO("Actualizar un egreso")
