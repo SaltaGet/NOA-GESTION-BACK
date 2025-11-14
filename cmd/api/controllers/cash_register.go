@@ -24,9 +24,9 @@ import (
 //	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/cash_register/exist_open [get]
 func (r *CashRegisterController) CashRegisterExistOpen(ctx *fiber.Ctx) error {
-	pointaSale := ctx.Locals("point_sale").(*schemas.AuthPointSaleContext)
+	pointaSale := ctx.Locals("point_sale_id").(int64)
 	
-	existOpen, err := r.CashRegisterService.CashRegisterExistOpen(pointaSale.ID)
+	existOpen, err := r.CashRegisterService.CashRegisterExistOpen(pointaSale)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
@@ -73,9 +73,9 @@ func (r *CashRegisterController) CashRegisterGetByID(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, schemas.ErrorResponse(422, "el id ser un número", err))
 	}
 
-	pointaSale := ctx.Locals("point_sale").(*schemas.AuthPointSaleContext)
+	pointaSale := ctx.Locals("point_sale_id").(int64)
 	
-	register, err := r.CashRegisterService.CashRegisterGetByID(pointaSale.ID, idint)
+	register, err := r.CashRegisterService.CashRegisterGetByID(pointaSale, idint)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
@@ -112,10 +112,10 @@ func (r *CashRegisterController) CashRegisterOpen(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
-	pointaSale := ctx.Locals("point_sale").(*schemas.AuthPointSaleContext)
+	pointaSale := ctx.Locals("point_sale_id").(int64)
 	user := ctx.Locals("user").(*schemas.AuthenticatedUser)
 
-	err := r.CashRegisterService.CashRegisterOpen(pointaSale.ID, user.ID, amountOpen)
+	err := r.CashRegisterService.CashRegisterOpen(pointaSale, user.ID, amountOpen)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
@@ -152,10 +152,10 @@ func (r *CashRegisterController) CashRegisterClose(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
-	pointaSale := ctx.Locals("point_sale").(*schemas.AuthPointSaleContext)
+	pointaSale := ctx.Locals("point_sale_id").(int64)
 	user := ctx.Locals("user").(*schemas.AuthenticatedUser)
 
-	err := r.CashRegisterService.CashRegisterClose(pointaSale.ID, user.ID, amountClose)
+	err := r.CashRegisterService.CashRegisterClose(pointaSale, user.ID, amountClose)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
@@ -194,10 +194,10 @@ func (r *CashRegisterController) CashRegiterInform(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
-	pointaSale := ctx.Locals("point_sale").(*schemas.AuthPointSaleContext)
+	pointaSale := ctx.Locals("point_sale_id").(int64)
 	user := ctx.Locals("user").(*schemas.AuthenticatedUser)
 
-	informs, err := r.CashRegisterService.CashRegisterInform(pointaSale.ID, user.ID, fromDate, toDate)
+	informs, err := r.CashRegisterService.CashRegisterInform(pointaSale, user.ID, fromDate, toDate)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}

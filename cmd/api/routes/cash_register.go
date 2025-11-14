@@ -6,12 +6,26 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func RegisterRoutes(app *fiber.App, controllers *controllers.CashRegisterController) {
-	register := app.Group("/api/v1/register", middleware.AuthMiddleware(), middleware.AuthPointSaleMiddleware())
+func CashRegisterRoutes(app *fiber.App) {
+	cashRegister := app.Group("/api/v1/cash_register", middleware.AuthMiddleware(), middleware.InjectionDependsTenant(), middleware.AuthPointSaleMiddleware())
 
-	register.Get("/exist_open", controllers.CashRegisterExistOpen)
-	register.Post("/open", controllers.CashRegisterOpen)
-	register.Post("/inform", controllers.CashRegiterInform)
-	register.Post("/close", controllers.CashRegisterClose)
-	register.Get("/get/:id", controllers.CashRegisterGetByID)
+	cashRegister.Get("/exist_open", GetController("CashRegisterController", func(c *fiber.Ctx, ctrl *controllers.CashRegisterController) error {
+		return ctrl.CashRegisterExistOpen(c)
+	}))
+
+	cashRegister.Post("/open", GetController("CashRegisterController", func(c *fiber.Ctx, ctrl *controllers.CashRegisterController) error {
+		return ctrl.CashRegisterOpen(c)
+	}))
+
+	cashRegister.Post("/inform", GetController("CashRegisterController", func(c *fiber.Ctx, ctrl *controllers.CashRegisterController) error {
+		return ctrl.CashRegiterInform(c)
+	}))
+
+	cashRegister.Post("/close", GetController("CashRegisterController", func(c *fiber.Ctx, ctrl *controllers.CashRegisterController) error {
+		return ctrl.CashRegisterClose(c)
+	}))
+
+	cashRegister.Get("/get/:id", GetController("CashRegisterController", func(c *fiber.Ctx, ctrl *controllers.CashRegisterController) error {
+		return ctrl.CashRegisterGetByID(c)
+	}))
 }

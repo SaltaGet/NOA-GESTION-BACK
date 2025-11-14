@@ -7,26 +7,43 @@ import (
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
 )
 
 func (r *ClientRepository) ClientGetByID(id int64) (*schemas.ClientResponse, error) {
-	var client schemas.ClientResponse
-	if err := r.DB.Where("id = ?", id).First(&client).Error; err != nil {
+	var client models.Client
+	if err := r.DB.
+	Preload("MemberCreate", func(db *gorm.DB) *gorm.DB { 
+		return db.Select("id", "first_name", "last_name", "username") 
+	}).
+	Preload("Pay", func(db *gorm.DB) *gorm.DB {
+		return db.Select("id", "income_sale_id", "client_id", "total", "method_pay").Where("method_pay = ?", "credit")
+	}).
+	Where("id = ?", id).First(&client).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, schemas.ErrorResponse(404, "Client no encontrado", err)
 		}
 		return nil, schemas.ErrorResponse(500, "Error al buscar el cliente", err)
 	}
-	return &client, nil
+
+	var clientResponse schemas.ClientResponse
+	copier.Copy(&clientResponse, &client)
+
+
+	return &clientResponse, nil
 }
 
 func (r *ClientRepository) ClientGetByFilter(search string) (*[]schemas.ClientResponseDTO, error) {
-	var client []schemas.ClientResponseDTO
+	var client []models.Client
 	if err := r.DB.Limit(10).Where("last_name LIKE ? OR first_name LIKE ? OR identifier LIKE ?", "%"+search+"%", "%"+search+"%", "%"+search+"%").Find(&client).Error; err != nil {
 		return nil, schemas.ErrorResponse(500, "Error al buscar el cliente", err)
 	}
-	return &client, nil
+
+	var clientResponse []schemas.ClientResponseDTO
+	copier.Copy(&clientResponse, &client)
+
+	return &clientResponse, nil
 }
 
 func (r *ClientRepository) ClientGetAll(limit, page int64, search *map[string]string) (*[]schemas.ClientResponseDTO, int64, error) {

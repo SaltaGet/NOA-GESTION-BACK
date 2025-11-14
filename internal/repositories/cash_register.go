@@ -194,8 +194,8 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 		var incomes total
 		if err := r.DB.Model(&models.PayIncome{}).
 			Select(`
-			SUM(CASE WHEN method_pay = 'cash' THEN amount ELSE 0 END) AS cash,
-			SUM(CASE WHEN method_pay <> 'cash' AND method_pay <> 'credit' THEN amount ELSE 0 END) AS other
+			SUM(CASE WHEN method_pay = 'cash' THEN total ELSE 0 END) AS cash,
+			SUM(CASE WHEN method_pay <> 'cash' AND method_pay <> 'credit' THEN total ELSE 0 END) AS other
 		`).
 			Where("cash_register_id = ?", register.ID).
 			Scan(&incomes).Error; err != nil {
@@ -205,10 +205,10 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 		var incomeOther total
 		if err := r.DB.Model(&models.IncomeOther{}).
 			Select(`
-			SUM(CASE WHEN method_income = 'cash' THEN amount ELSE 0 END) AS cash,
-			SUM(CASE WHEN method_income <> 'cash' AND method_income <> 'credit' THEN amount ELSE 0 END) AS other
+			SUM(CASE WHEN method_income = 'cash' THEN total ELSE 0 END) AS cash,
+			SUM(CASE WHEN method_income <> 'cash' AND method_income <> 'credit' THEN total ELSE 0 END) AS other
 		`).
-			Where("register_id = ?", register.ID).
+			Where("cash_register_id = ?", register.ID).
 			Find(&incomeOther).Error; err != nil {
 			return nil, schemas.ErrorResponse(500, "error al obtener otros ingresos", err)
 		}
@@ -216,10 +216,10 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 		var expenseBuy total
 		if err := r.DB.Model(&models.PayExpenseBuy{}).
 			Select(`
-			SUM(CASE WHEN method_pay = 'cash' THEN amount ELSE 0 END) AS cash,
-			SUM(CASE WHEN method_pay <> 'cash' AND method_pay <> 'credit' THEN amount ELSE 0 END) AS other
+			SUM(CASE WHEN method_pay = 'cash' THEN total ELSE 0 END) AS cash,
+			SUM(CASE WHEN method_pay <> 'cash' AND method_pay <> 'credit' THEN total ELSE 0 END) AS other
 		`).
-			Where("register_id = ?", register.ID).
+			Where("cash_register_id = ?", register.ID).
 			Scan(&expenseBuy).Error; err != nil {
 			return nil, schemas.ErrorResponse(500, "error al obtener egresos por compras", err)
 		}
@@ -227,8 +227,8 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 		var expenseOther total
 		if err := r.DB.Model(&models.PayExpenseOther{}).
 			Select(`
-			SUM(CASE WHEN method_pay = 'cash' THEN amount ELSE 0 END) AS cash,
-			SUM(CASE WHEN method_pay <> 'cash' AND method_pay <> 'credit' THEN amount ELSE 0 END) AS other
+			SUM(CASE WHEN method_pay = 'cash' THEN total ELSE 0 END) AS cash,
+			SUM(CASE WHEN method_pay <> 'cash' AND method_pay <> 'credit' THEN total ELSE 0 END) AS other
 		`).
 			Where("cash_register_id = ?", register.ID).
 			Scan(&expenseOther).Error; err != nil {

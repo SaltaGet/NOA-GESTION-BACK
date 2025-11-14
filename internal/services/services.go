@@ -12,8 +12,16 @@ type CashRegisterService struct {
 	CashRegisterRepository ports.CashRegisterRepository
 }
 
+type CategoryService struct {
+	CategoryRepository ports.CategoryRepository
+}
+
 type ClientService struct {
 	ClientRepository ports.ClientRepository
+}
+
+type DepositService struct {
+	DepositRepository ports.DepositRepository
 }
 
 type ExpenseBuyService struct {

@@ -10,8 +10,10 @@ import (
 type TenantContainer struct {
 	DB       *gorm.DB
 	Services struct {
-		CashResgiter *services.CashRegisterService
+		CashRegister *services.CashRegisterService
+		Category     *services.CategoryService
 		Client       *services.ClientService
+		Deposit      *services.DepositService
 		ExpenseBuy   *services.ExpenseBuyService
 		ExpenseOther *services.ExpenseOtherService
 		IncomeSale   *services.IncomeSaleService
@@ -25,12 +27,14 @@ type TenantContainer struct {
 	}
 	Repositories struct {
 		CashRegister *repositories.CashRegisterRepository
+		Category     *repositories.CategoryRepository
 		Client       *repositories.ClientRepository
+		Deposit      *repositories.DepositRepository
 		Employee     *repositories.EmployeeRepository
-		ExpenseBuy      *repositories.ExpenseBuyRepository
-		ExpenseOther      *repositories.ExpenseOtherRepository
-		IncomeSale       *repositories.IncomeSaleRepository
-		IncomeOther      *repositories.IncomeOtherRepository
+		ExpenseBuy   *repositories.ExpenseBuyRepository
+		ExpenseOther *repositories.ExpenseOtherRepository
+		IncomeSale   *repositories.IncomeSaleRepository
+		IncomeOther  *repositories.IncomeOtherRepository
 		Member       *repositories.MemberRepository
 		Movement     *repositories.MovementTypeRepository
 		Permission   *repositories.PermissionRepository
@@ -46,7 +50,9 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 
 	// Inicializar repositorios
 	c.Repositories.CashRegister = &repositories.CashRegisterRepository{DB: db}
+	c.Repositories.Category = &repositories.CategoryRepository{DB: db}
 	c.Repositories.Client = &repositories.ClientRepository{DB: db}
+	c.Repositories.Deposit = &repositories.DepositRepository{DB: db}
 	c.Repositories.Employee = &repositories.EmployeeRepository{DB: db}
 	c.Repositories.ExpenseBuy = &repositories.ExpenseBuyRepository{DB: db}
 	c.Repositories.ExpenseOther = &repositories.ExpenseOtherRepository{DB: db}
@@ -61,11 +67,17 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 	c.Repositories.Supplier = &repositories.SupplierRepository{DB: db}
 
 	// Inicializar servicios
-	c.Services.CashResgiter = &services.CashRegisterService{
+	c.Services.CashRegister = &services.CashRegisterService{
 		CashRegisterRepository: c.Repositories.CashRegister,
+	}
+	c.Services.Category = &services.CategoryService{
+		CategoryRepository: c.Repositories.Category,
 	}
 	c.Services.Client = &services.ClientService{
 		ClientRepository: c.Repositories.Client,
+	}
+	c.Services.Deposit = &services.DepositService{
+		DepositRepository: c.Repositories.Deposit,
 	}
 	c.Services.ExpenseBuy = &services.ExpenseBuyService{
 		ExpenseBuyRepository: c.Repositories.ExpenseBuy,

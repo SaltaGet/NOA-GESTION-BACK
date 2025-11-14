@@ -9,9 +9,9 @@ import (
 
 type IncomeSaleCreate struct {
 	Items    []ItemIncomeSaleCreate `json:"items" validate:"required,dive"`
-	Pay      []PayCreate            `json:"pay" validate:"required,dive,max=3"`
+	Pay      []PayCreate            `json:"pay" validate:"required,max=3,dive"`
 	ClientID int64                  `json:"client_id" validate:"required"`
-	Discount float64                `json:"discount" validate:"required,min=0"`
+	Discount float64                `json:"discount" validate:"min=0"`
 	Type     string                 `json:"type_discount" validate:"oneof=amount percent"`
 	Total    float64                `json:"total"`
 	IsBudget bool                   `json:"is_budget"`
@@ -20,12 +20,12 @@ type IncomeSaleCreate struct {
 type ItemIncomeSaleCreate struct {
 	ProductID    int64   `json:"product_id" validate:"required"`
 	Amount       float64 `json:"amount" validate:"required"`
-	Discount     float64 `json:"discount"`
+	Discount     float64 `json:"discount" validate:"min=0"`
 	TypeDiscount string  `json:"type_discount" validate:"oneof=amount percent"`
 }
 
 type PayCreate struct {
-	Amount    float64 `json:"amount" validate:"required"`
+	Total    float64 `json:"total" validate:"required"`
 	MethodPay string  `json:"method_pay" validate:"oneof=cash credit card transfer"`
 }
 
@@ -42,7 +42,7 @@ func (i *IncomeSaleCreate) Validate() error {
 
 	var sumPay float64
 	for _, p := range i.Pay {
-		sumPay += p.Amount
+		sumPay += p.Total
 	}
 
 	if sumPay != i.Total {
@@ -56,7 +56,7 @@ func (i *IncomeSaleCreate) Validate() error {
 type IncomeSaleUpdate struct {
 	ID       int64                  `json:"id" validate:"required"`
 	Items    []ItemIncomeSaleUpdate `json:"items" validate:"required,dive"`
-	Pay      []PayUpdate            `json:"pay" validate:"required,dive,max=3"`
+	Pay      []PayUpdate            `json:"pay" validate:"required,max=3,dive"`
 	ClientID int64                  `json:"client_id" validate:"required"`
 	Discount float64                `json:"discount"`
 	Type     string                 `json:"type_discount" validate:"oneof=amount percent"`
@@ -72,7 +72,7 @@ type ItemIncomeSaleUpdate struct {
 }
 
 type PayUpdate struct {
-	Amount    float64 `json:"amount" validate:"required"`
+	Total    float64 `json:"total" validate:"required"`
 	MethodPay string  `json:"method_pay" validate:"oneof=cash credit card transfer"`
 }
 
@@ -89,7 +89,7 @@ func (i *IncomeSaleUpdate) Validate() error {
 
 	var sumPay float64
 	for _, p := range i.Pay {
-		sumPay += p.Amount
+		sumPay += p.Total
 	}
 
 	if sumPay != i.Total {

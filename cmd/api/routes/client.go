@@ -13,7 +13,7 @@ func ClientRoutes(app *fiber.App){
 		return ctrl.ClientGetAll(c)
 	}))
 
-	cli.Get("/get_by_filter", GetController("ClientController", func(c *fiber.Ctx, ctrl *controllers.ClientController) error {
+	cli.Get("/", GetController("ClientController", func(c *fiber.Ctx, ctrl *controllers.ClientController) error {
 		return ctrl.ClientGetByFilter(c)
 	}))
 

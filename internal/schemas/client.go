@@ -76,7 +76,7 @@ type ClientResponse struct {
 	Email        *string           `json:"email,omitempty"`
 	Phone        *string           `json:"phone,omitempty"`
 	Address      *string           `json:"address,omitempty"`
-	MemberCreate MemberResponseDTO `json:"member_create"`
+	MemberCreate *MemberSimpleDTO `json:"member,omitempty"`
 	Pay          []PayDebtResponse     `json:"pay"`
 }
 

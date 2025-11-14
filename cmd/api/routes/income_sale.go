@@ -1,34 +1,32 @@
 package routes
 
 import (
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/controllers"
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/middleware"
 	"github.com/gofiber/fiber/v2"
 )
 
-func IncomeRoutes(app *fiber.App){
-	// inc := app.Group("/api/v1/income", middleware.AuthMiddleware(), middleware.AuthPointSaleMiddleware())
+func IncomeSaleRoutes(app *fiber.App){
+	incomeSale := app.Group("/api/v1/income_sale", middleware.AuthMiddleware(), middleware.InjectionDependsTenant(), middleware.AuthPointSaleMiddleware())
 
-	// inc.Get("/get_all", GetController("IncomeController", func(c *fiber.Ctx, ctrl *controllers.IncomeController) error {
-	// 	return ctrl.GetAllIncomes(c)
-	// }))
+	incomeSale.Get("/get_by_date", GetController("IncomeSaleController", func(c *fiber.Ctx, ctrl *controllers.IncomeSaleController) error {
+		return ctrl.IncomeSaleGetByDate(c)
+	}))
 
-	// inc.Get("/get_today", GetController("IncomeController", func(c *fiber.Ctx, ctrl *controllers.IncomeController) error {
-	// 	return ctrl.GetIncomeToday(c)
-	// }))
+	incomeSale.Post("/create", GetController("IncomeSaleController", func(c *fiber.Ctx, ctrl *controllers.IncomeSaleController) error {
+		return ctrl.IncomeSaleCreate(c)
+	}))
 
-	// inc.Post("/create", GetController("IncomeController", func(c *fiber.Ctx, ctrl *controllers.IncomeController) error {
-	// 	return ctrl.CreateIncome(c)
-	// }))
+	incomeSale.Put("/update", GetController("IncomeSaleController", func(c *fiber.Ctx, ctrl *controllers.IncomeSaleController) error {
+		return ctrl.IncomeSaleUpdate(c)
+	}))
 
-	// inc.Put("/update", GetController("IncomeController", func(c *fiber.Ctx, ctrl *controllers.IncomeController) error {
-	// 	return ctrl.UpdateIncome(c)
-	// }))
+	incomeSale.Delete("/delete/:id", GetController("IncomeSaleController", func(c *fiber.Ctx, ctrl *controllers.IncomeSaleController) error {
+		return ctrl.IncomeSaleDelete(c)
+	}))
 
-	// inc.Delete("/delete/:id", GetController("IncomeController", func(c *fiber.Ctx, ctrl *controllers.IncomeController) error {
-	// 	return ctrl.DeleteIncome(c)
-	// }))
-
-	// inc.Get("/:id", GetController("IncomeController", func(c *fiber.Ctx, ctrl *controllers.IncomeController) error {
-	// 	return ctrl.GetIncomeByID(c)
-	// }))
+	incomeSale.Get("/:id", GetController("IncomeSaleController", func(c *fiber.Ctx, ctrl *controllers.IncomeSaleController) error {
+		return ctrl.IncomeSaleGetByID(c)
+	}))
 
 }

@@ -51,17 +51,17 @@ func (e *ExpenseBuyController) ExpenseBuyGetByID(c *fiber.Ctx) error {
 //	@Security		CookieAuth
 //	@Param			fromDate	query		schemas.DateRangeRequest									true	"Fecha de inicio"
 //	@Param			page		query		int															false	"Page number"				default(1)
-//	@Param			limit		query		int															false	"Number of items per page"	default(20)
+//	@Param			limit		query		int															false	"Number of items per page"	default(10)
 //	@Success		200			{object}	schemas.Response{body=[]schemas.ExpenseBuyResponseSimple}	"List of expenseBuys"
 //	@Failure		400			{object}	schemas.Response											"Bad Request"
 //	@Failure		401			{object}	schemas.Response											"Auth is required"
 //	@Failure		403			{object}	schemas.Response											"Not Authorized"
 //	@Failure		500			{object}	schemas.Response											"Internal server error"
-//	@Router			/api/v1/expense_buy/get_all [get]
+//	@Router			/api/v1/expense_buy/get_by_date [get]
 func (e *ExpenseBuyController) ExpenseBuyGetByDate(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los egresos")
 	pageParam := c.Query("page", "1")
-	limitParam := c.Query("limit", "20")
+	limitParam := c.Query("limit", "10")
 
 	page, err := strconv.Atoi(pageParam)
 	if err != nil || page < 1 {
@@ -73,9 +73,9 @@ func (e *ExpenseBuyController) ExpenseBuyGetByDate(c *fiber.Ctx) error {
 	}
 
 	formDate := &schemas.DateRangeRequest{}
-	if err := c.QueryParser(formDate); err != nil {
-		return schemas.HandleError(c, err)
-	}
+	formDate.FromDate = c.Query("from_date")
+	formDate.ToDate = c.Query("to_date")
+	
 	fromDate, toDate, err := formDate.GetParsedDates()
 	if err != nil {
 		return schemas.HandleError(c, err)

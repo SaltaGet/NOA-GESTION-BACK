@@ -18,14 +18,14 @@ func (r *ExpenseBuyRepository) ExpenseBuyGetByID(id int64) (*schemas.ExpenseBuyR
 		Preload("Member", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "first_name", "last_name", "username")
 		}).
-		Preload("ItemExpenseBuys", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "expense_buy_id", "product_id", "amout", "price", "discount", "type_discount", "subtotal", "total", "created_at")
+		Preload("ExpenseBuyItem", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "expense_buy_id", "product_id", "amount", "price", "discount", "type_discount", "subtotal", "total", "created_at")
 		}).
-		Preload("ItemExpenseBuys.Product", func(db *gorm.DB) *gorm.DB {
+		Preload("ExpenseBuyItem.Product", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "code", "name", "price")
 		}).
-		Preload("PayExpense", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "amount", "method_pay")
+		Preload("PayExpenseBuy", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "expense_buy_id", "total", "method_pay")
 		}).
 		Preload("Supplier", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "name", "company_name")
@@ -52,8 +52,8 @@ func (r *ExpenseBuyRepository) ExpenseBuyGetByDate(fromDate, toDate time.Time, p
 		Preload("Supplier", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "name", "company_name")
 		}).
-		Preload("PayExpense", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "amount", "method_pay")
+		Preload("PayExpenseBuy", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "expense_buy_id", "total", "method_pay")
 		}).
 		Where("created_at BETWEEN ? AND ?", fromDate, toDate).
 		Order("created_at DESC").
@@ -134,7 +134,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyCreate(memberID int64, expenseBuyCreate
 				Price:     item.Price,
 				Discount:  item.Discount,
 				TypeDiscount: item.TypeDiscount,
-				SubTotal:  subtotalItem,
+				Subtotal:  subtotalItem,
 				Total:     totalItem,
 			})
 
@@ -178,10 +178,10 @@ func (r *ExpenseBuyRepository) ExpenseBuyCreate(memberID int64, expenseBuyCreate
 		totalPay := 0.0
 		var payExpenseBuy []*models.PayExpenseBuy
 		for _, pay := range expenseBuyCreate.PayExpenseBuy {
-			totalPay += pay.Amount
+			totalPay += pay.Total
 			payExpenseBuy = append(payExpenseBuy, &models.PayExpenseBuy{
 				ExpenseBuyID:   expenseBuyID,
-				Amount:         pay.Amount,
+				Total:         pay.Total,
 				MethodPay:      pay.MethodPay,
 			})
 		}
@@ -295,7 +295,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate
 				Price:        item.Price,
 				Discount:     item.Discount,
 				TypeDiscount: item.TypeDiscount,
-				SubTotal:     subtotalItem,
+				Subtotal:     subtotalItem,
 				Total:        totalItem,
 			})
 
@@ -340,10 +340,10 @@ func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate
 		totalPay := 0.0
 		var payExpenseBuy []*models.PayExpenseBuy
 		for _, pay := range expenseBuyUpdate.PayExpenseBuy {
-			totalPay += pay.Amount
+			totalPay += pay.Total
 			payExpenseBuy = append(payExpenseBuy, &models.PayExpenseBuy{
 				ExpenseBuyID: expenseBuyUpdate.ID,
-				Amount:       pay.Amount,
+				Total:       pay.Total,
 				MethodPay:    pay.MethodPay,
 			})
 		}

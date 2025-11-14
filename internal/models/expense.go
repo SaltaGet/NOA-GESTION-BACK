@@ -9,8 +9,8 @@ type ExpenseBuy struct {
 	SupplierID     int64            `gorm:"not null" json:"supplier_id"`
 	Supplier       Supplier         `gorm:"foreignKey:SupplierID;references:ID" json:"supplier"`
 	Details        *string          `gorm:"size:255" json:"details"`
-	ExpenseItemBuy []ExpenseBuyItem `gorm:"foreignKey:ExpenseBuyID" json:"expense_item_buys"`
-	PayExpenseBuy  []PayExpenseBuy  `gorm:"foreignKey:ExpenseBuyID" json:"pay_expense"`
+	ExpenseBuyItem []ExpenseBuyItem `gorm:"foreignKey:ExpenseBuyID" json:"expense_buy_items"`
+	PayExpenseBuy  []PayExpenseBuy  `gorm:"foreignKey:ExpenseBuyID" json:"pay_expense_buy"`
 	Subtotal       float64          `gorm:"subtotal" json:"subtotal"`
 	Discount       float64          `gorm:"not null;default:0" json:"discount"`
 	TypeDiscount   string           `gorm:"not null;default:percent" json:"type_discount" validate:"oneof=amount percent"`
@@ -29,7 +29,7 @@ type ExpenseBuyItem struct {
 	Price        float64   `gorm:"not null" json:"price"`
 	Discount     float64   `gorm:"not null;default:0" json:"discount"`
 	TypeDiscount string    `gorm:"not null;default:percent" json:"type_discount" validate:"oneof=amount percent"`
-	SubTotal     float64   `gorm:"not null" json:"subtotal"`
+	Subtotal     float64   `gorm:"not null" json:"subtotal"`
 	Total        float64   `gorm:"not null" json:"total"`
 	CreatedAt    time.Time `gorm:"autoCreateTime:milli" json:"created_at"`
 	UpdatedAt    time.Time `gorm:"autoUpdateTime:milli" json:"updated_at"`

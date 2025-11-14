@@ -11,8 +11,16 @@ type CashRegisterController struct {
 	CashRegisterService ports.CashRegisterService
 }
 
+type CategoryController struct {
+	CategoryService ports.CategoryService
+}
+
 type ClientController struct {
 	ClientService ports.ClientService
+}
+
+type DepositController struct {
+	DepositService ports.DepositService
 }
 
 type ExpenseBuyController struct {

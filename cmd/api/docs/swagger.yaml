@@ -95,12 +95,32 @@ definitions:
         example: 100
         type: number
     type: object
+  schemas.CategoryCreate:
+    properties:
+      name:
+        example: Categoria1
+        type: string
+    required:
+    - name
+    type: object
   schemas.CategoryResponse:
     properties:
       id:
         type: integer
       name:
         type: string
+    type: object
+  schemas.CategoryUpdate:
+    properties:
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Categoria1
+        type: string
+    required:
+    - id
+    - name
     type: object
   schemas.ClientCreate:
     properties:
@@ -145,8 +165,8 @@ definitions:
         type: string
       last_name:
         type: string
-      member_create:
-        $ref: '#/definitions/schemas.MemberResponseDTO'
+      member:
+        $ref: '#/definitions/schemas.MemberSimpleDTO'
       pay:
         items:
           $ref: '#/definitions/schemas.PayDebtResponse'
@@ -226,10 +246,39 @@ definitions:
     type: object
   schemas.DepositResponse:
     properties:
+      category:
+        $ref: '#/definitions/schemas.CategoryResponse'
+      code:
+        type: string
+      description:
+        type: string
       id:
         type: integer
+      name:
+        type: string
+      price:
+        type: number
       stock:
         type: number
+    type: object
+  schemas.DepositUpdateStock:
+    properties:
+      method:
+        enum:
+        - add
+        - subtract
+        - set
+        example: add|subtract|set
+        type: string
+      product_id:
+        example: 1
+        type: integer
+      stock:
+        example: 10
+        type: number
+    required:
+    - product_id
+    - stock
     type: object
   schemas.ExpenseBuyCreate:
     properties:
@@ -244,6 +293,7 @@ definitions:
       pay_expense:
         items:
           $ref: '#/definitions/schemas.PayExpenseBuyCreate'
+        maxItems: 3
         type: array
       supplier_id:
         type: integer
@@ -264,18 +314,12 @@ definitions:
     properties:
       amount:
         type: number
-      created_at:
-        type: string
       discount:
         type: number
-      id:
-        type: integer
       price:
         type: number
       product_id:
         type: integer
-      subtotal:
-        type: number
       total:
         type: number
       type_discount:
@@ -315,7 +359,7 @@ definitions:
         type: string
       discount:
         type: number
-      expense_item_buys:
+      expense_buy_items:
         items:
           $ref: '#/definitions/schemas.ExpenseBuyItemResponse'
         type: array
@@ -376,6 +420,7 @@ definitions:
       pay_expense:
         items:
           $ref: '#/definitions/schemas.PayExpenseBuyCreate'
+        maxItems: 3
         type: array
       supplier_id:
         type: integer
@@ -541,6 +586,7 @@ definitions:
       pay:
         items:
           $ref: '#/definitions/schemas.PayCreate'
+        maxItems: 3
         type: array
       total:
         type: number
@@ -551,7 +597,6 @@ definitions:
         type: string
     required:
     - client_id
-    - discount
     - items
     - pay
     type: object
@@ -658,6 +703,7 @@ definitions:
       pay:
         items:
           $ref: '#/definitions/schemas.PayUpdate'
+        maxItems: 3
         type: array
       total:
         type: number
@@ -677,6 +723,7 @@ definitions:
       amount:
         type: number
       discount:
+        minimum: 0
         type: number
       product_id:
         type: integer
@@ -822,8 +869,6 @@ definitions:
     type: object
   schemas.PayCreate:
     properties:
-      amount:
-        type: number
       method_pay:
         enum:
         - cash
@@ -831,8 +876,10 @@ definitions:
         - card
         - transfer
         type: string
+      total:
+        type: number
     required:
-    - amount
+    - total
     type: object
   schemas.PayDebtResponse:
     properties:
@@ -847,8 +894,6 @@ definitions:
     type: object
   schemas.PayExpenseBuyCreate:
     properties:
-      amount:
-        type: number
       payment_method:
         enum:
         - cash
@@ -856,17 +901,19 @@ definitions:
         - card
         - transfer
         type: string
+      total:
+        type: number
     required:
-    - amount
+    - total
     type: object
   schemas.PayExpenseBuyResponse:
     properties:
-      amount:
-        type: number
       id:
         type: integer
       method_pay:
         type: string
+      total:
+        type: number
     type: object
   schemas.PayResponse:
     properties:
@@ -879,8 +926,6 @@ definitions:
     type: object
   schemas.PayUpdate:
     properties:
-      amount:
-        type: number
       method_pay:
         enum:
         - cash
@@ -888,8 +933,10 @@ definitions:
         - card
         - transfer
         type: string
+      total:
+        type: number
     required:
-    - amount
+    - total
     type: object
   schemas.PermissionResponse:
     properties:
@@ -1778,6 +1825,234 @@ paths:
       summary: CashRegisterOpen
       tags:
       - CashRegister
+  /api/v1/category/create:
+    post:
+      consumes:
+      - application/json
+      description: CategoryCreate crear una categoria
+      parameters:
+      - description: Categoria a crear
+        in: body
+        name: category_create
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CategoryCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  type: integer
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: CategoryCreate
+      tags:
+      - Category
+  /api/v1/category/delete/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: CategoryDelete crear una categoria
+      parameters:
+      - description: Categoria a eliminar por ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: CategoryDelete
+      tags:
+      - Category
+  /api/v1/category/get/{id}:
+    get:
+      consumes:
+      - application/json
+      description: CategoryGet obtener una categoria por ID
+      parameters:
+      - description: Id de la categoria
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.CategoryResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: CategoryGet
+      tags:
+      - Category
+  /api/v1/category/get_all:
+    get:
+      consumes:
+      - application/json
+      description: CategoryGetAll obtener todas las categorias
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.CategoryResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: CategoryGet All
+      tags:
+      - Category
+  /api/v1/category/update:
+    put:
+      consumes:
+      - application/json
+      description: CategoryUpdate crear una categoria
+      parameters:
+      - description: Categoria a editar
+        in: body
+        name: category_update
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CategoryUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: CategoryUpdate
+      tags:
+      - Category
   /api/v1/client:
     get:
       consumes:
@@ -1892,12 +2167,10 @@ paths:
       - description: Limite por pagina, default 10
         in: query
         name: limit
-        required: true
         type: integer
       - description: Pagina, default 1
         in: query
         name: page
-        required: true
         type: integer
       - description: Identificador del cliente
         in: query
@@ -1958,6 +2231,258 @@ paths:
       summary: Actualizar un cliente
       tags:
       - Client
+  /api/v1/deposit/get/{id}:
+    get:
+      consumes:
+      - application/json
+      description: DepositProductGetByID obtener un producto por ID del producto
+      parameters:
+      - description: Id del producto
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.DepositResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: DepositProductGetByID
+      tags:
+      - Deposit
+  /api/v1/deposit/get_all:
+    get:
+      consumes:
+      - application/json
+      description: DepositProductGetAll obtener productos por paginacion
+      parameters:
+      - default: 1
+        description: pagina
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: limite
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.DepositResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: DepositProductGetAll
+      tags:
+      - Deposit
+  /api/v1/deposit/get_by_code:
+    get:
+      consumes:
+      - application/json
+      description: DepositProductGetByCode obtener un producto por codigo del deposito
+      parameters:
+      - description: codigo del producto
+        in: query
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.DepositResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: DepositProductGetByCode
+      tags:
+      - Deposit
+  /api/v1/deposit/get_by_name:
+    get:
+      consumes:
+      - application/json
+      description: DepositProductGetByName obtener productos por por similitud de
+        nombre
+      parameters:
+      - description: nombre por aproximacion del producto
+        in: query
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.DepositResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: DepositProductGetByName
+      tags:
+      - Deposit
+  /api/v1/deposit/update_stock:
+    put:
+      consumes:
+      - application/json
+      description: DepositProductUpdateStock alctualizar stock de un producto del
+        deposito
+      parameters:
+      - description: nombre por aproximacion del producto
+        in: body
+        name: stock_update
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.DepositUpdateStock'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.DepositResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: DepositProductUpdateStock
+      tags:
+      - Deposit
   /api/v1/expense_buy/{id}:
     get:
       consumes:
@@ -2010,7 +2535,7 @@ paths:
       summary: ExpenseBuyCreate
       tags:
       - ExpenseBuy
-  /api/v1/expense_buy/get_all:
+  /api/v1/expense_buy/get_by_date:
     get:
       consumes:
       - application/json
@@ -2031,7 +2556,7 @@ paths:
         in: query
         name: page
         type: integer
-      - default: 20
+      - default: 10
         description: Number of items per page
         in: query
         name: limit

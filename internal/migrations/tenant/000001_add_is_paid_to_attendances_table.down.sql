@@ -1,1 +1,1 @@
-ALTER TABLE attendances DROP COLUMN is_paid;
+SELECT 1;

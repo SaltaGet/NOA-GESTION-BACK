@@ -7,9 +7,12 @@ import (
 
 func SetupRoutes(app *fiber.App, appDependencies *dependencies.MainContainer) {
 	AuthRoutes(app, appDependencies.AuthController)
+	CashRegisterRoutes(app)
+	CategoryRoutes(app)
 	ClientRoutes(app)
-	ExpenseRoutes(app)
-	IncomeRoutes(app)
+	DepositRoutes(app)
+	ExpenseBuyRoutes(app)
+	IncomeSaleRoutes(app)
 	MemberRoutes(app)
 	PermissionRoutes(app)
 	PointSaleRoutes(app)

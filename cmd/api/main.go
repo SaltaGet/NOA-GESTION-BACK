@@ -141,6 +141,11 @@ func main() {
 
 	dep := dependencies.NewApplication(db)
 
+	err = jobs.Migrations(dep)
+	if err != nil {
+		log.Fatalf("Error al aplicar migraciones: %v", err)
+	}
+
 	app := fiber.New(fiber.Config{
 		IdleTimeout:  30 * time.Second,
 		ReadTimeout:  10 * time.Second,

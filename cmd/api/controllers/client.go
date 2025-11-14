@@ -85,8 +85,8 @@ func (cl *ClientController) ClientGetByFilter(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			limit		query		int		true	"Limite por pagina, default 10"
-//	@Param			page		query		int		true	"Pagina, default 1"
+//	@Param			limit		query		int		false	"Limite por pagina, default 10"
+//	@Param			page		query		int		false	"Pagina, default 1"
 //	@Param			identifier	query		string	false	"Identificador del cliente"
 //	@Param			first_name	query		string	false	"Nombre del cliente"
 //	@Param			last_name	query		string	false	"Apellido del cliente"

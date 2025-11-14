@@ -17,6 +17,7 @@ type Client struct {
 	Address        *string        `json:"address"`
 	MemberCreateID int64          `gorm:"not null" json:"member_create_id"`
 	MemberCreate   Member         `gorm:"foreignKey:MemberCreateID" json:"member_create"`
+	Pay            []PayIncome    `gorm:"foreignKey:ClientID" json:"pay"`
 	CreatedAt      time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt      time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"deleted_at"`
