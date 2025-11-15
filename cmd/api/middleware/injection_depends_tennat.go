@@ -40,6 +40,7 @@ func setupTenantControllers(c *fiber.Ctx, container *dependencies.TenantContaine
 		"ProductController":      &controllers.ProductController{ProductService: container.Services.Product},
 		"RoleController":         &controllers.RoleController{RoleService: container.Services.Role},
 		"SupplierController":     &controllers.SupplierController{SupplierService: container.Services.Supplier},
+		"TypeMovementController": &controllers.TypeMovementController{TypeMovementService: container.Services.TypeMovement},
 	}
 
 	for name, ctrl := range controllersMap {

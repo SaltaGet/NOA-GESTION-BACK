@@ -20,7 +20,7 @@ func RolePermissionMiddleware(code string) fiber.Handler {
 			return c.Next()
 		}
 
-		for _, permission := range member.Permissions {
+		for _, permission := range member.ListPermissions {
 			if permission == code {
 				return c.Next()
 			}

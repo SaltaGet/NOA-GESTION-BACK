@@ -53,7 +53,7 @@ func (e *ExpenseOtherController) ExpenseOtherGetByID(c *fiber.Ctx) error {
 //	@Param			page		query		int															false	"Page number"				default(1)
 //	@Param			limit		query		int															false	"Number of items per page"	default(20)
 //	@Success		200			{object}	schemas.Response{body=[]schemas.ExpenseOtherResponseDTO}	"List of expenseOthers"
-//	@Router			/api/v1/expense_other/get_all [get]
+//	@Router			/api/v1/expense_other/get_by_date [get]
 func (e *ExpenseOtherController) ExpenseOtherGetByDate(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los egresos")
 	pageParam := c.Query("page", "1")
@@ -68,18 +68,20 @@ func (e *ExpenseOtherController) ExpenseOtherGetByDate(c *fiber.Ctx) error {
 		limit = 20
 	}
 
-	formDate := &schemas.DateRangeRequest{}
-	if err := c.QueryParser(formDate); err != nil {
-		return schemas.HandleError(c, err)
-	}
-	fromDate, toDate, err := formDate.GetParsedDates()
+	dateTime := &schemas.DateRangeRequest{}
+	fromDate := c.Query("from_date")
+	toDate := c.Query("to_date")
+	dateTime.FromDate = fromDate
+	dateTime.ToDate = toDate
+
+	dateFrom, dateTo, err :=dateTime.GetParsedDates()
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
 	pointID :=c.Locals("point_sale_id").(int64)
 
-	expenseOthers, total, err := e.ExpenseOtherService.ExpenseOtherGetByDate(&pointID, fromDate, toDate, page, limit)
+	expenseOthers, total, err := e.ExpenseOtherService.ExpenseOtherGetByDate(&pointID, dateFrom, dateTo, page, limit)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}

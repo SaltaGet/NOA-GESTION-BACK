@@ -49,16 +49,18 @@ func (i *IncomeOtherController) IncomeOtherGetByID(c *fiber.Ctx) error {
 //	@Security		CookieAuth
 //	@Param			page		query		int														false	"Page number"				default(1)
 //	@Param			limit		query		int														false	"Number of items per page"	default(20)
-//	@Param			fromDate	body		schemas.DateRangeRequest								true	"Fecha de inicio"
+//	@Param			fromDate	query		schemas.DateRangeRequest								true	"Fecha de inicio"
 //	@Success		200			{object}	schemas.Response{body=[]schemas.IncomeOtherResponse}	"List of incomeOthers"
-//	@Router			/api/v1/income_other/get_all [get]
+//	@Router			/api/v1/income_other/get_by_date [get]
 func (i *IncomeOtherController) IncomeOtherGetByDate(c *fiber.Ctx) error {
-	logging.INFO("Obtener todos los ingresos")
+	logging.INFO("Obtener otros ingresos por fecha")
 
 	dateTime := &schemas.DateRangeRequest{}
-	if err := c.QueryParser(dateTime); err != nil {
-		return schemas.HandleError(c, schemas.ErrorResponse(400, "error al obtener la fecha", err))
-	}
+	fromDate := c.Query("from_date")
+	toDate := c.Query("to_date")
+	dateTime.FromDate = fromDate
+	dateTime.ToDate = toDate
+
 	dateFrom, dateTo, err :=dateTime.GetParsedDates()
 	if err != nil {
 		return schemas.HandleError(c, err)
@@ -95,7 +97,7 @@ if pointID, ok := c.Locals("point_sale_id").(int64); ok {
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    map[string]any{"income_dales": incomeOthers, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
-		Message: "Egresos obtenidos con éxito",
+		Message: "Ingresos obtenidos con éxito",
 	})
 }
 
@@ -213,3 +215,5 @@ func (i *IncomeOtherController) IncomeOtherDelete(c *fiber.Ctx) error {
 		Message: "Ingreso eliminado con éxito",
 	})
 }
+
+

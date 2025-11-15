@@ -203,9 +203,9 @@ func UpdateModels(uri string) error {
 }
 
 var permissions []models.Permission = []models.Permission{
-	{Code: "create_client", Details: "Crear clientes", Group: "clients"},
-	{Code: "update_client", Details: "Actualizar clientes", Group: "clients"},
-	{Code: "delete_client", Details: "Eliminar clientes", Group: "clients"},
-	{Code: "create_expense", Details: "Crear gastos", Group: "expenses"},
-	{Code: "update_expense", Details: "Actualizar gastos", Group: "expenses"},
+	{Code: "create_client", Details: "Crear clientes", Group: "clients", Environment: "dashboard"},
+	{Code: "update_client", Details: "Actualizar clientes", Group: "clients", Environment: "dashboard"},
+	{Code: "delete_client", Details: "Eliminar clientes", Group: "clients", Environment: "dashboard"},
+	{Code: "create_expense", Details: "Crear gastos", Group: "expenses", Environment: "point_sale"},
+	{Code: "update_expense", Details: "Actualizar gastos", Group: "expenses", Environment: "point_sale"},
 }

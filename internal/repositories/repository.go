@@ -101,7 +101,7 @@ type SupplierRepository struct {
 	DB *gorm.DB
 }
 
-type VehicleRepository struct {
+type TypeMovementRepository struct {
 	DB *gorm.DB
 }
 

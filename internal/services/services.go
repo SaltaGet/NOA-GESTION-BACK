@@ -70,6 +70,10 @@ type TenantService struct {
 	TenantRepository ports.TenantRepository
 }
 
+type TypeMovementService struct {
+	TypeMovementRepository ports.TypeMovementRepository
+}
+
 type UserService struct {
 	UserRepository ports.UserRepository
 }

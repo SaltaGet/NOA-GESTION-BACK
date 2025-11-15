@@ -12,6 +12,8 @@ func SetupRoutes(app *fiber.App, appDependencies *dependencies.MainContainer) {
 	ClientRoutes(app)
 	DepositRoutes(app)
 	ExpenseBuyRoutes(app)
+	ExpenseOtherRoutes(app)
+	IncomeOtherRoutes(app)
 	IncomeSaleRoutes(app)
 	MemberRoutes(app)
 	PermissionRoutes(app)
@@ -21,6 +23,7 @@ func SetupRoutes(app *fiber.App, appDependencies *dependencies.MainContainer) {
 	SupplierRoutes(app)
 	UserRoutes(app, appDependencies.UserController)
 	TenantRoutes(app, appDependencies.TenantController)
+	TypeMovementRoutes(app)
 }
 
 func GetController[T any](key string, handler func(c *fiber.Ctx, ctrl *T) error) fiber.Handler {

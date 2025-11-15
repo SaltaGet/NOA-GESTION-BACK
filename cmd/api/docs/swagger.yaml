@@ -29,9 +29,13 @@ definitions:
         type: boolean
       last_name:
         type: string
-      permissions:
+      list_permissions:
         items:
           type: string
+        type: array
+      permissions:
+        items:
+          $ref: '#/definitions/schemas.EnvironmentPermissions'
         type: array
       role_id:
         type: integer
@@ -280,6 +284,15 @@ definitions:
     - product_id
     - stock
     type: object
+  schemas.EnvironmentPermissions:
+    properties:
+      environment:
+        type: string
+      groups:
+        items:
+          $ref: '#/definitions/schemas.GroupPermissions'
+        type: array
+    type: object
   schemas.ExpenseBuyCreate:
     properties:
       details:
@@ -511,6 +524,15 @@ definitions:
     required:
     - id
     - total
+    type: object
+  schemas.GroupPermissions:
+    properties:
+      group:
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
     type: object
   schemas.IncomeOtherCreate:
     properties:
@@ -1293,6 +1315,42 @@ definitions:
     properties:
       name:
         type: string
+    type: object
+  schemas.TypeMovementCreate:
+    properties:
+      name:
+        type: string
+      type_movement:
+        enum:
+        - income
+        - expense
+        type: string
+    required:
+    - name
+    - type_movement
+    type: object
+  schemas.TypeMovementResponse:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  schemas.TypeMovementUpdate:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      type_movement:
+        enum:
+        - income
+        - expense
+        type: string
+    required:
+    - id
+    - name
+    - type_movement
     type: object
   schemas.UserCreate:
     properties:
@@ -2672,7 +2730,7 @@ paths:
       summary: ExpenseOtherCreate
       tags:
       - ExpenseOther
-  /api/v1/expense_other/get_all:
+  /api/v1/expense_other/get_by_date:
     get:
       consumes:
       - application/json
@@ -2862,7 +2920,7 @@ paths:
       summary: IncomeOtherDelete
       tags:
       - IncomeOther
-  /api/v1/income_other/get_all:
+  /api/v1/income_other/get_by_date:
     get:
       consumes:
       - application/json
@@ -2878,12 +2936,16 @@ paths:
         in: query
         name: limit
         type: integer
-      - description: Fecha de inicio
-        in: body
-        name: fromDate
+      - example: "2022-01-01"
+        in: query
+        name: from_date
         required: true
-        schema:
-          $ref: '#/definitions/schemas.DateRangeRequest'
+        type: string
+      - example: "2022-12-31"
+        in: query
+        name: to_date
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -4186,6 +4248,84 @@ paths:
       summary: Tenant GetAll
       tags:
       - Tenant
+  /api/v1/type_movement/create:
+    post:
+      consumes:
+      - application/json
+      description: Crea un nuevo tipo de movimiento
+      parameters:
+      - description: MovementCreate
+        in: body
+        name: movement_create
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.TypeMovementCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: TypeMovementCreate
+      tags:
+      - TypeMovement
+  /api/v1/type_movement/get_all:
+    get:
+      consumes:
+      - application/json
+      description: Retorna los tipos de movimientos de ingresos o egresos
+      parameters:
+      - description: TypeMovement
+        in: query
+        name: type_movement
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Movimientos obtenidos con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.TypeMovementResponse'
+                  type: array
+              type: object
+      security:
+      - CookieAuth: []
+      summary: TypeMovementGetAll
+      tags:
+      - TypeMovement
+  /api/v1/type_movement/update:
+    put:
+      consumes:
+      - application/json
+      description: Actualiza un tipo de movimiento
+      parameters:
+      - description: MovementUpdate
+        in: body
+        name: movement_update
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.TypeMovementUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: TypeMovementUpdate
+      tags:
+      - TypeMovement
   /user/create:
     post:
       consumes:

@@ -76,10 +76,12 @@ func (a *AuthService) AuthCurrentUser(tenantID, memberID, pointSaleID int64) (*s
 		return nil, err
 	}
 
-	member, permsissions, err := a.AuthRepository.AuthMemberGetByID(memberID, tenant.Connection, tenantID)
+	member, permissions, err := a.AuthRepository.AuthMemberGetByID(memberID, tenant.Connection, tenantID)
 	if err != nil {
 		return nil, err
 	}
+
+
 
 	authUser := schemas.AuthenticatedUser{
 		ID:               member.ID,
@@ -87,7 +89,8 @@ func (a *AuthService) AuthCurrentUser(tenantID, memberID, pointSaleID int64) (*s
 		LastName:         member.LastName,
 		Username:         member.Username,
 		IsAdmin:          member.IsAdmin,
-		Permissions:      *permsissions,
+		Permissions: BuildUserPermissions(member.Role.Permissions),
+		ListPermissions:      *permissions,
 		TenantID:         tenant.ID,
 		TenantName:       tenant.Name,
 		TenantIdentifier: tenant.Identifier,
@@ -118,4 +121,36 @@ func (a *AuthService) AuthAdminGetByID(userID int64) (*models.Admin, error) {
 
 func (a *AuthService) LogoutPointSale(member *schemas.AuthenticatedUser) (string, error) {
 	return utils.GenerateToken(member.ID, &member.TenantID, nil)
+}
+
+func BuildUserPermissions(perms []models.Permission) ([]schemas.EnvironmentPermissions) {
+	envMap := make(map[string]map[string][]string)
+
+	for _, p := range perms {
+		if _, ok := envMap[p.Environment]; !ok {
+			envMap[p.Environment] = make(map[string][]string)
+		}
+		envMap[p.Environment][p.Group] = append(envMap[p.Environment][p.Group], p.Code)
+	}
+
+	// convertir map en estructura final
+	result := make([]schemas.EnvironmentPermissions, 0)
+
+	for env, groups := range envMap {
+		grpList := make([]schemas.GroupPermissions, 0)
+
+		for group, permCodes := range groups {
+			grpList = append(grpList, schemas.GroupPermissions{
+				Group:       group,
+				Permissions: permCodes,
+			})
+		}
+
+		result = append(result, schemas.EnvironmentPermissions{
+			Environment: env,
+			Groups:      grpList,
+		})
+	}
+
+	return result
 }

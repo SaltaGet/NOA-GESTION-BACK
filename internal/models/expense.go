@@ -51,8 +51,3 @@ type ExpenseOther struct {
 	CreatedAt      time.Time     `gorm:"autoCreateTime:milli" json:"created_at"`
 	UpdatedAt      time.Time     `gorm:"autoUpdateTime:milli" json:"updated_at"`
 }
-
-type TypeExpense struct {
-	ID   int64  `gorm:"primaryKey;autoIncrement" json:"id"`
-	Name string `gorm:"not null;unique" json:"name"`
-}

@@ -2224,7 +2224,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/expense_other/get_all": {
+        "/api/v1/expense_other/get_by_date": {
             "get": {
                 "security": [
                     {
@@ -2461,7 +2461,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/income_other/get_all": {
+        "/api/v1/income_other/get_by_date": {
             "get": {
                 "security": [
                     {
@@ -2495,13 +2495,18 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "description": "Fecha de inicio",
-                        "name": "fromDate",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/schemas.DateRangeRequest"
-                        }
+                        "type": "string",
+                        "example": "2022-01-01",
+                        "name": "from_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "2022-12-31",
+                        "name": "to_date",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -4664,6 +4669,136 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/type_movement/create": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Crea un nuevo tipo de movimiento",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TypeMovement"
+                ],
+                "summary": "TypeMovementCreate",
+                "parameters": [
+                    {
+                        "description": "MovementCreate",
+                        "name": "movement_create",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.TypeMovementCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/type_movement/get_all": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Retorna los tipos de movimientos de ingresos o egresos",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TypeMovement"
+                ],
+                "summary": "TypeMovementGetAll",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "TypeMovement",
+                        "name": "type_movement",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Movimientos obtenidos con éxito",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schemas.TypeMovementResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/type_movement/update": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Actualiza un tipo de movimiento",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TypeMovement"
+                ],
+                "summary": "TypeMovementUpdate",
+                "parameters": [
+                    {
+                        "description": "MovementUpdate",
+                        "name": "movement_update",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.TypeMovementUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/user/create": {
             "post": {
                 "security": [
@@ -4774,10 +4909,16 @@ const docTemplate = `{
                 "last_name": {
                     "type": "string"
                 },
-                "permissions": {
+                "list_permissions": {
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.EnvironmentPermissions"
                     }
                 },
                 "role_id": {
@@ -5142,6 +5283,20 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.EnvironmentPermissions": {
+            "type": "object",
+            "properties": {
+                "environment": {
+                    "type": "string"
+                },
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.GroupPermissions"
+                    }
+                }
+            }
+        },
         "schemas.ExpenseBuyCreate": {
             "type": "object",
             "required": [
@@ -5482,6 +5637,20 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "number"
+                }
+            }
+        },
+        "schemas.GroupPermissions": {
+            "type": "object",
+            "properties": {
+                "group": {
+                    "type": "string"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -6635,6 +6804,59 @@ const docTemplate = `{
             "properties": {
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.TypeMovementCreate": {
+            "type": "object",
+            "required": [
+                "name",
+                "type_movement"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "type_movement": {
+                    "type": "string",
+                    "enum": [
+                        "income",
+                        "expense"
+                    ]
+                }
+            }
+        },
+        "schemas.TypeMovementResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.TypeMovementUpdate": {
+            "type": "object",
+            "required": [
+                "id",
+                "name",
+                "type_movement"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type_movement": {
+                    "type": "string",
+                    "enum": [
+                        "income",
+                        "expense"
+                    ]
                 }
             }
         },

@@ -67,6 +67,10 @@ type TenantController struct {
 	TenantService ports.TenantService
 }
 
+type TypeMovementController struct {
+	TypeMovementService ports.TypeMovementService
+}
+
 type UserController struct {
 	UserService ports.UserService
 }

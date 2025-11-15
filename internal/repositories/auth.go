@@ -112,7 +112,7 @@ func (r *MainRepository) AuthMemberGetByID(id int64, connection string, tenantID
 	}
 
 	var member models.Member
-	if err := db.Where("id = ?", id).First(&member).Error; err != nil {
+	if err := db.Where("id = ?", id).Preload("Role").Preload("Role.Permissions").First(&member).Error; err != nil {
 		return nil, nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
 	}
 

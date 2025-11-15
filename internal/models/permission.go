@@ -5,6 +5,7 @@ type Permission struct {
 	Code    string `gorm:"not null,unique" json:"code"`
 	Details string `gorm:"not null" json:"details"`
 	Group   string `gorm:"not null" json:"group"`
+	Environment string `gorm:"not null" json:"environment"`
 	
 	Roles   []Role `gorm:"many2many:role_permissions;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"roles"`
 }

@@ -19,9 +19,6 @@ func (r *ExpenseOtherRepository) ExpenseOtherGetByID(id int64) (*schemas.Expense
 		Preload("Member", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "first_name", "last_name", "username")
 		}).
-		Preload("PointSale", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name", "address", "is_deposit")
-		}).
 		Preload("TypeExpense").
 		First(&expenseOther, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

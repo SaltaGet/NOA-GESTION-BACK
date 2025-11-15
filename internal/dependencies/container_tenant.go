@@ -24,6 +24,7 @@ type TenantContainer struct {
 		Product      *services.ProductService
 		Role         *services.RoleService
 		Supplier     *services.SupplierService
+		TypeMovement *services.TypeMovementService
 	}
 	Repositories struct {
 		CashRegister *repositories.CashRegisterRepository
@@ -42,6 +43,7 @@ type TenantContainer struct {
 		Product      *repositories.ProductRepository
 		Role         *repositories.RoleRepository
 		Supplier     *repositories.SupplierRepository
+		TypeMovement *repositories.TypeMovementRepository
 	}
 }
 
@@ -65,6 +67,7 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 	c.Repositories.Product = &repositories.ProductRepository{DB: db}
 	c.Repositories.Role = &repositories.RoleRepository{DB: db}
 	c.Repositories.Supplier = &repositories.SupplierRepository{DB: db}
+	c.Repositories.TypeMovement = &repositories.TypeMovementRepository{DB: db}
 
 	// Inicializar servicios
 	c.Services.CashRegister = &services.CashRegisterService{
@@ -108,6 +111,9 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 	}
 	c.Services.Supplier = &services.SupplierService{
 		SupplierRepository: c.Repositories.Supplier,
+	}
+	c.Services.TypeMovement = &services.TypeMovementService{
+		TypeMovementRepository: c.Repositories.TypeMovement,
 	}
 
 	return c

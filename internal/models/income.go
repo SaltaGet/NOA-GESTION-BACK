@@ -55,7 +55,4 @@ type IncomeOther struct {
 	UpdatedAt      time.Time     `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
-type TypeIncome struct {
-	ID   int64  `gorm:"primaryKey;autoIncrement" json:"id"`
-	Name string `gorm:"not null;unique" json:"name"`
-}
+

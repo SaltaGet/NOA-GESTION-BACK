@@ -19,9 +19,6 @@ func (r *IncomeOtherRepository) IncomeOtherGetByID(id int64) (*schemas.IncomeOth
 		Preload("Member", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "first_name", "last_name", "username")
 		}).
-		Preload("PointSale", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name", "address")
-		}).
 		Preload("TypeIncome").
 		First(&incomeOther, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
