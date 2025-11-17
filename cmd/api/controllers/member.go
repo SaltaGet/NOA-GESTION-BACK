@@ -70,15 +70,15 @@ func (m *MemberController) MemberGetAll(c *fiber.Ctx) error {
 	logging.INFO("Miembros obtenidos con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
-		Body:    map[string]any{"members": members, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
+		Body:    map[string]any{"data": members, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
 		Message: "Miembros obtenidos con éxito",
 	})
 }
 
-// Member godoc
+// MemberGetByID godoc
 //
-//	@Summary		Memeber GetAll
-//	@Description	Memeber GetAll required auth token
+//	@Summary		MemberGetByID
+//	@Description	Obtener miembro por ID
 //	@Tags			Member
 //	@Accept			json
 //	@Produce		json
@@ -149,20 +149,7 @@ func (m *MemberController) MemberCreate(c *fiber.Ctx) error {
 
 	id, err := m.MemberService.MemberCreate(&memberCreate)
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+		return schemas.HandleError(c, err)
 	}
 
 	logging.INFO("Miembro creado con éxito")

@@ -20,13 +20,12 @@ func (t *PermissionRepository) PermissionByRoleID(roleID int64) (*[]string, erro
 }
 
 func (t *PermissionRepository) PermissionGetAll() (*[]schemas.PermissionResponse, error) {
-	var permission []schemas.PermissionResponse
-	err := t.DB.Model(&models.Permission{}).Select(`permissions.id, permissions.code, permissions.details, permissions."group"`).
-		Find(&permission).Error
+	var permission *[]schemas.PermissionResponse
+	err := t.DB.Model(&models.Permission{}).Select("id", "code", "details", "group", "environment").Scan(&permission).Error
 	if err != nil {
 		return nil, schemas.ErrorResponse(500, "Error interno al obtener permisos", err)
 	}
-	return &permission, nil
+	return permission, nil
 }
 
 func (t *PermissionRepository) PermissionGetToMe(roleID int64) (*[]schemas.PermissionResponse, error) {
@@ -35,7 +34,7 @@ func (t *PermissionRepository) PermissionGetToMe(roleID int64) (*[]schemas.Permi
 	  Select(`permissions.id, permissions.code, permissions.details, permissions."group"`).
 		Joins("JOIN role_permissions ON role_permissions.permission_id = permissions.id").
 		Where("role_permissions.role_id = ?", roleID).
-		Find(&permissions).Error
+		Scan(&permissions).Error
 	if err != nil {
 		return nil, schemas.ErrorResponse(500, "Error interno al obtener permisos", err)
 	}

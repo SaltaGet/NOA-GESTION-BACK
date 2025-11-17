@@ -18,16 +18,17 @@ type RoleResponse struct {
 }
 
 type RolePermissionRow struct {
-	RoleID      string
+	RoleID      int64
 	RoleName    string
-	PermID      string
+	PermID      int64
 	PermCode    string
 	PermGroup   string
+	Environment string
 }
 
 type RoleCreate struct {
 	Name string `json:"name" validate:"required"`
-	PermissionsID []string `json:"permissions_id" validate:"required,dive,uuid"`
+	PermissionsID []int64 `json:"permissions_id" validate:"required,dive"`
 }
 
 func (r *RoleCreate) Validate() error {

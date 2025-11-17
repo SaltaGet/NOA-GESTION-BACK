@@ -7,7 +7,7 @@ import (
 )
 
 func ClientRoutes(app *fiber.App){
-	cli := app.Group("/api/v1/client", middleware.AuthMiddleware(), middleware.InjectionDependsTenant(), middleware.AuthPointSaleMiddleware())
+	cli := app.Group("/api/v1/client", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
 	cli.Get("/get_all", GetController("ClientController", func(c *fiber.Ctx, ctrl *controllers.ClientController) error {
 		return ctrl.ClientGetAll(c)

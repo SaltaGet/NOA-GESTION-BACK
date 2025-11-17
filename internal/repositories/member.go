@@ -19,6 +19,7 @@ func (r *MemberRepository) MemberGetByID(id int64) (*schemas.MemberResponse, err
 
 	if err := r.DB.
 		Preload("Role").
+		Preload("Role.Permissions").
 		Preload("PointSales").
 		First(&member, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -126,13 +127,7 @@ func (r *MemberRepository) MemberCreate(memberCreate *schemas.MemberCreate) (int
 		}
 
 		if len(pointSales) != len(memberCreate.PointSaleIDs) {
-			return schemas.ErrorResponse(400, "Uno o más puntos de venta no existen", nil)
-		}
-
-		// Hashear contraseña
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(memberCreate.Password), bcrypt.DefaultCost)
-		if err != nil {
-			return schemas.ErrorResponse(500, "Error al hashear la contraseña", err)
+			return schemas.ErrorResponse(400, "Uno o más puntos de venta no existen", fmt.Errorf("uno o más puntos de venta no existen"))
 		}
 
 		// Crear miembro
@@ -141,7 +136,7 @@ func (r *MemberRepository) MemberCreate(memberCreate *schemas.MemberCreate) (int
 			LastName:  memberCreate.LastName,
 			Username:  memberCreate.Username,
 			Email:     memberCreate.Email,
-			Password:  string(hashedPassword),
+			Password:  memberCreate.Password,
 			Address:   memberCreate.Address,
 			Phone:     memberCreate.Phone,
 			RoleID:    memberCreate.RoleID,

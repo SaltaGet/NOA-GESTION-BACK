@@ -90,7 +90,7 @@ func (i *IncomeSaleController) IncomeSaleGetByDate(c *fiber.Ctx) error {
 	logging.INFO("Ingresos obtenidos con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
-		Body:    map[string]any{"income_dales": incomeSales, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
+		Body:    map[string]any{"data": incomeSales, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
 		Message: "Egresos obtenidos con éxito",
 	})
 }

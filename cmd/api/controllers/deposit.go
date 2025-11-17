@@ -158,7 +158,7 @@ func (d *DepositController) DepositGetAll(c *fiber.Ctx) error {
 	logging.INFO("Productos obtenidos correctamente")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
-		Body:    map[string]interface{}{"products": products, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
+		Body:    map[string]any{"data": products, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
 		Message: "Productos obtenidos correctamente",
 	})
 }

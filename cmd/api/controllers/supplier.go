@@ -99,7 +99,7 @@ func (s *SupplierController) SupplierGetAll(c *fiber.Ctx) error {
 	logging.INFO("Proveedores obtenidos con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
-		Body:    map[string]any{"suppliers": suppliers, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
+		Body:    map[string]any{"data": suppliers, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
 		Message: "Proveedores obtenidos con éxito",
 	})
 }

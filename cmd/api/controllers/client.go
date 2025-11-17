@@ -132,7 +132,7 @@ func (cl *ClientController) ClientGetAll(c *fiber.Ctx) error {
 	logging.INFO("Clientes obtenidos con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
-		Body:    map[string]any{"clients": clients, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
+		Body:    map[string]any{"data": clients, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
 		Message: "Clientes obtenidos con éxito",
 	})
 }

@@ -17,13 +17,13 @@ func (r *ProductRepository) ProductGetByID(id int64) (*schemas.ProductFullRespon
 			return db.Select("id", "name")
 		}).
 		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-			return db.Select("stock")
+			return db.Select("product_id", "stock")
 		}).
 		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "name")
 		}).
 		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "stock")
+			return db.Select("id", "product_id", "stock")
 		}).
 		First(&product, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -46,13 +46,13 @@ func (r *ProductRepository) ProductGetByCode(code string) (*schemas.ProductFullR
 			return db.Select("id", "name")
 		}).
 		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-			return db.Select("stock")
+			return db.Select("product_id", "stock")
 		}).
 		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "name")
 		}).
 		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "stock")
+			return db.Select("id", "product_id", "stock")
 		}).
 		Where("code = ?", code).First(&product).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -75,13 +75,13 @@ func (r *ProductRepository) ProductGetByCategoryID(categoryID int64) ([]*schemas
 			return db.Select("id", "name")
 		}).
 		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-			return db.Select("stock")
+			return db.Select("product_id", "stock")
 		}).
 		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "name")
 		}).
 		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "stock")
+			return db.Select("id", "product_id", "stock")
 		}).
 		Where("category_id = ?", categoryID).Find(&products).Error; err != nil {
 		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
@@ -101,13 +101,13 @@ func (r *ProductRepository) ProductGetByName(name string) ([]*schemas.ProductFul
 			return db.Select("id", "name")
 		}).
 		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-			return db.Select("stock")
+			return db.Select("product_id", "stock")
 		}).
 		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "name")
 		}).
 		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "stock")
+			return db.Select("id", "product_id", "stock")
 		}).
 		Where("name LIKE ?", "%"+name+"%").Find(&products).Error; err != nil {
 		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
@@ -135,13 +135,13 @@ func (r *ProductRepository) ProductGetAll(page, limit int) ([]*schemas.ProductFu
 			return db.Select("id", "name")
 		}).
 		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-			return db.Select("stock")
+			return db.Select("product_id", "stock")
 		}).
 		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "name")
 		}).
 		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "stock")
+			return db.Select("id", "product_id", "stock")
 		}).
 		Offset(offset).
 		Limit(limit).
@@ -157,6 +157,14 @@ func (r *ProductRepository) ProductGetAll(page, limit int) ([]*schemas.ProductFu
 
 func (r *ProductRepository) ProductCreate(productCreate *schemas.ProductCreate) (int64, error) {
 	var product models.Product
+	var category models.Category
+	if err := r.DB.First(&category, productCreate.CategoryID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, schemas.ErrorResponse(404, "categoria no encontrada", err)
+		}
+		return 0, schemas.ErrorResponse(500, "error al obtener la categoria", err)
+	}
+
 
 	product.Name = productCreate.Name
 	product.Code = productCreate.Code

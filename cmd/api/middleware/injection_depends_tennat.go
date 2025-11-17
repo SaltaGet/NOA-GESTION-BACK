@@ -38,6 +38,7 @@ func setupTenantControllers(c *fiber.Ctx, container *dependencies.TenantContaine
 		"PermissionController":   &controllers.PermissionController{PermissionService: container.Services.Permission},
 		"PointSaleController":   &controllers.PointSaleController{PointSaleService: container.Services.PointSale},
 		"ProductController":      &controllers.ProductController{ProductService: container.Services.Product},
+		"ReportController":       &controllers.ReportController{ReportService: container.Services.Report},
 		"RoleController":         &controllers.RoleController{RoleService: container.Services.Role},
 		"SupplierController":     &controllers.SupplierController{SupplierService: container.Services.Supplier},
 		"TypeMovementController": &controllers.TypeMovementController{TypeMovementService: container.Services.TypeMovement},

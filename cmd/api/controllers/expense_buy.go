@@ -91,7 +91,7 @@ func (e *ExpenseBuyController) ExpenseBuyGetByDate(c *fiber.Ctx) error {
 	logging.INFO("Egresos obtenidos con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
-		Body:    map[string]any{"expense_buys": expenseBuys, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
+		Body:    map[string]any{"data": expenseBuys, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
 		Message: "Egresos obtenidos con éxito",
 	})
 }

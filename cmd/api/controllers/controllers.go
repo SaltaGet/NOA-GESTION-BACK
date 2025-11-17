@@ -55,6 +55,10 @@ type ProductController struct {
 	ProductService ports.ProductService
 }
 
+type ReportController struct {
+	ReportService ports.ReportService
+}
+
 type RoleController struct {
 	RoleService ports.RoleService
 }

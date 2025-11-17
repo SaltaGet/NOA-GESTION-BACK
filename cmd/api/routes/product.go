@@ -7,7 +7,7 @@ import (
 )
 
 func ProductRoutes(app *fiber.App){
-	prod := app.Group("/api/v1/product", middleware.AuthMiddleware(), middleware.InjectionDependsTenant(), middleware.AuthPointSaleMiddleware())
+	prod := app.Group("/api/v1/product", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
 	prod.Get("/get_all", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
 		return ctrl.ProductGetAll(c)
@@ -33,7 +33,7 @@ func ProductRoutes(app *fiber.App){
 		return ctrl.ProductUpdate(c)
 	}))
 
-	prod.Put("/update_price", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
+	prod.Put("/list_price", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
 		return ctrl.ProductPriceUpdate(c)
 	}))
 
@@ -41,11 +41,11 @@ func ProductRoutes(app *fiber.App){
 		return ctrl.ProductDelete(c)
 	}))
 
-	prod.Get("/get_by_category/:id", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
+	prod.Get("/get_by_category/:category_id", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
 		return ctrl.ProductGetByCategoryID(c)
 	}))
 
-	prod.Get("/:id", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
+	prod.Get("/get/:id", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
 		return ctrl.ProductGetByID(c)
 	}))
 

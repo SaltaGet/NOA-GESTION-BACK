@@ -2900,7 +2900,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Memeber GetAll required auth token",
+                "description": "Obtener miembro por ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -2910,7 +2910,7 @@ const docTemplate = `{
                 "tags": [
                     "Member"
                 ],
-                "summary": "Memeber GetAll",
+                "summary": "MemberGetByID",
                 "parameters": [
                     {
                         "type": "string",
@@ -3971,6 +3971,240 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/report/get_by_date": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtiene un reporte por fechas de los diferentes puntos de ventas, tanto como ingresos, ingresos por cancha y egresos",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Report"
+                ],
+                "summary": "ReportGetByDate",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "day o month",
+                        "name": "form",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Rango de fechas",
+                        "name": "dateRangeRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.DateRangeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/report/get_excel": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtiene un reporte en excel por fechas",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Report"
+                ],
+                "summary": "ReportGetReportExcel",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "2006-01-02",
+                        "name": "start",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "2006-01-02",
+                        "name": "end",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/report/get_profitable_products": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtiene un reporte de productos por fechas de los mas vendidos, los mas rentables y un ranking de los productos",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Report"
+                ],
+                "summary": "ReportGetProfitableProducts",
+                "parameters": [
+                    {
+                        "description": "Rango de fechas",
+                        "name": "dateRangeRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.DateRangeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schemas.ReportProfitableProducts"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -6288,6 +6522,9 @@ const docTemplate = `{
                 "details": {
                     "type": "string"
                 },
+                "environment": {
+                    "type": "string"
+                },
                 "group": {
                     "type": "string"
                 },
@@ -6300,6 +6537,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "code": {
+                    "type": "string"
+                },
+                "environment": {
                     "type": "string"
                 },
                 "group": {
@@ -6541,6 +6781,32 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.ReportProfitableProducts": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "total_cost": {
+                    "type": "number"
+                },
+                "total_profit": {
+                    "type": "number"
+                },
+                "total_quantity": {
+                    "type": "number"
+                },
+                "total_sales": {
+                    "type": "number"
+                }
+            }
+        },
         "schemas.Response": {
             "type": "object",
             "properties": {
@@ -6566,7 +6832,7 @@ const docTemplate = `{
                 "permissions_id": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "type": "integer"
                     }
                 }
             }

@@ -7,7 +7,7 @@ import (
 )
 
 func PermissionRoutes(app *fiber.App){
-	permission := app.Group("/api/v1/permission", middleware.AuthMiddleware(), middleware.AuthPointSaleMiddleware())
+	permission := app.Group("/api/v1/permission", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
 	permission.Get("/get_all", GetController("PermissionController", func(c *fiber.Ctx, ctrl *controllers.PermissionController) error {
 		return ctrl.PermissionGetAll(c)

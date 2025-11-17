@@ -96,7 +96,7 @@ if pointID, ok := c.Locals("point_sale_id").(int64); ok {
 	logging.INFO("Ingresos obtenidos con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
-		Body:    map[string]any{"income_dales": incomeOthers, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
+		Body:    map[string]any{"data": incomeOthers, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
 		Message: "Ingresos obtenidos con éxito",
 	})
 }

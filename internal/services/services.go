@@ -57,6 +57,10 @@ type ProductService struct {
 	ProductRepository ports.ProductRepository
 }
 
+type ReportService struct {
+	ReportRepository ports.ReportRepository
+}
+
 type RoleService struct {
 	RoleRepository ports.RoleRepository
 }

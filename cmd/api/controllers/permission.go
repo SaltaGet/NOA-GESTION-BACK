@@ -68,24 +68,11 @@ func (p *PermissionController) PermissionGetToMe(c *fiber.Ctx) error {
 	if user.IsAdmin {
 		permissions, err := p.PermissionService.PermissionGetAll()
 		if err != nil {
-			if errResp, ok := err.(*schemas.ErrorStruc); ok {
-				logging.ERROR("Error: %s", errResp.Err.Error())
-				return c.Status(errResp.StatusCode).JSON(schemas.Response{
-					Status:  false,
-					Body:    nil,
-					Message: errResp.Message,
-				})
-			}
-			logging.ERROR("Error: %s", err.Error())
-			return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: "Error interno",
-			})
+			return schemas.HandleError(c, err)
 		}
 
 		logging.INFO("Tiene todos los permsios")
-		return c.Status(fiber.StatusForbidden).JSON(schemas.Response{
+		return c.Status(200).JSON(schemas.Response{
 			Status:  false,
 			Body:    permissions,
 			Message: "Tiene todos los permsios",

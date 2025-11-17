@@ -85,7 +85,7 @@ type PurchaseProductRepository struct {
 	DB *gorm.DB
 }
 
-type ResumeRepository struct {
+type ReportRepository struct {
 	DB *gorm.DB
 }
 

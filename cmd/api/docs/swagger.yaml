@@ -966,6 +966,8 @@ definitions:
         type: string
       details:
         type: string
+      environment:
+        type: string
       group:
         type: string
       id:
@@ -974,6 +976,8 @@ definitions:
   schemas.PermissionResponseDTO:
     properties:
       code:
+        type: string
+      environment:
         type: string
       group:
         type: string
@@ -1139,6 +1143,23 @@ definitions:
     - id
     - name
     type: object
+  schemas.ReportProfitableProducts:
+    properties:
+      code:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      total_cost:
+        type: number
+      total_profit:
+        type: number
+      total_quantity:
+        type: number
+      total_sales:
+        type: number
+    type: object
   schemas.Response:
     properties:
       body: {}
@@ -1153,7 +1174,7 @@ definitions:
         type: string
       permissions_id:
         items:
-          type: string
+          type: integer
         type: array
     required:
     - name
@@ -3157,7 +3178,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Memeber GetAll required auth token
+      description: Obtener miembro por ID
       parameters:
       - description: Member ID
         in: path
@@ -3180,7 +3201,7 @@ paths:
               type: object
       security:
       - CookieAuth: []
-      summary: Memeber GetAll
+      summary: MemberGetByID
       tags:
       - Member
   /api/v1/member/get_all:
@@ -3834,6 +3855,156 @@ paths:
       summary: ProductUpdate
       tags:
       - Product
+  /api/v1/report/get_by_date:
+    post:
+      consumes:
+      - application/json
+      description: Obtiene un reporte por fechas de los diferentes puntos de ventas,
+        tanto como ingresos, ingresos por cancha y egresos
+      parameters:
+      - description: day o month
+        in: query
+        name: form
+        required: true
+        type: string
+      - description: Rango de fechas
+        in: body
+        name: dateRangeRequest
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.DateRangeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: ReportGetByDate
+      tags:
+      - Report
+  /api/v1/report/get_excel:
+    get:
+      consumes:
+      - application/json
+      description: Obtiene un reporte en excel por fechas
+      parameters:
+      - description: "2006-01-02"
+        in: query
+        name: start
+        required: true
+        type: string
+      - description: "2006-01-02"
+        in: query
+        name: end
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: ReportGetReportExcel
+      tags:
+      - Report
+  /api/v1/report/get_profitable_products:
+    post:
+      consumes:
+      - application/json
+      description: Obtiene un reporte de productos por fechas de los mas vendidos,
+        los mas rentables y un ranking de los productos
+      parameters:
+      - description: Rango de fechas
+        in: body
+        name: dateRangeRequest
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.DateRangeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.ReportProfitableProducts'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: ReportGetProfitableProducts
+      tags:
+      - Report
   /api/v1/role/create:
     post:
       consumes:

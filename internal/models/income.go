@@ -36,6 +36,7 @@ type IncomeSaleItem struct {
 	TypeDiscount string     `gorm:"not null;default:percent" json:"type_discount" validate:"oneof=amount percent"`
 	Subtotal     float64    `gorm:"not null" json:"subtotal"`
 	Total        float64    `gorm:"not null" json:"total"`
+	CreatedAt    time.Time  `gorm:"autoCreateTime" json:"created_at"`
 }
 
 type IncomeOther struct {

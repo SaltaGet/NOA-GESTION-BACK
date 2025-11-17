@@ -11,7 +11,7 @@ import (
 func (r *RoleRepository) RoleGetAll() (*[]schemas.RoleResponse, error) {
 	var rows []schemas.RolePermissionRow
 	if err := r.DB.Table("roles").
-		Select(`roles.id as role_id, roles.name as role_name, permissions.id as perm_id, permissions.code as perm_code, permissions."group" as perm_group`).
+		Select("roles.id as role_id, roles.name as role_name, permissions.id as perm_id, permissions.code as perm_code, permissions.`group` as perm_group, permissions.environment as environment").
 		Joins("left join role_permissions on roles.id = role_permissions.role_id").
 		Joins("left join permissions on permissions.id = role_permissions.permission_id").
 		Find(&rows).Error; err != nil {
@@ -20,29 +20,23 @@ func (r *RoleRepository) RoleGetAll() (*[]schemas.RoleResponse, error) {
 
 	roleMap := make(map[string]*schemas.RoleResponse)
 	for _, row := range rows {
-		role, exists := roleMap[row.RoleID]
+		role, exists := roleMap[strconv.FormatInt(row.RoleID, 10)]
 		if !exists {
-			idInt, err := strconv.ParseInt(row.RoleID, 10, 64)
-			if err != nil {
-				return nil, schemas.ErrorResponse(500, "Error interno al obtener roles", err)
-			}
+			idInt := row.RoleID
 
 			role = &schemas.RoleResponse{
 				ID:          idInt,
 				Name:        row.RoleName,
 				Permissions: []schemas.PermissionResponseDTO{},
 			}
-			roleMap[row.RoleID] = role
+			roleMap[strconv.FormatInt(row.RoleID, 10)] = role
 		}
 
-		idPerm, err := strconv.ParseInt(row.PermID, 10, 64)
-		if err != nil {
-			return nil, schemas.ErrorResponse(500, "Error interno al obtener roles", err)
-		}
 			role.Permissions = append(role.Permissions, schemas.PermissionResponseDTO{
-				ID:      idPerm,
+				ID:      row.PermID,
 				Code:    row.PermCode,
 				Group:   row.PermGroup,
+				Environment: row.Environment,
 			})
 	}
 	var allRoles []schemas.RoleResponse

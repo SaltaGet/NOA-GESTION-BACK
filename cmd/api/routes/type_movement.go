@@ -7,7 +7,7 @@ import (
 )
 
 func TypeMovementRoutes(app *fiber.App){
-	typeMovement := app.Group("/api/v1/type_movement", middleware.AuthMiddleware(), middleware.InjectionDependsTenant(), middleware.AuthPointSaleMiddleware())
+	typeMovement := app.Group("/api/v1/type_movement", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
 	typeMovement.Get("/get_all", GetController("TypeMovementController", func(c *fiber.Ctx, ctrl *controllers.TypeMovementController) error {
 		return ctrl.TypeMovementGetAll(c)

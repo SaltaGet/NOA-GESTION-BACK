@@ -28,18 +28,15 @@ func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
 	logging.INFO("Login")
 	var loginRequest schemas.AuthLogin
 	if err := c.BodyParser(&loginRequest); err != nil {
-		logging.ERROR("Error: %s", err.Error())
 		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
 	}
 
 	if err := loginRequest.Validate(); err != nil {
-		logging.ERROR("Error: %s", err.Error())
 		return schemas.HandleError(c, err)
 	}
 
 	token, err := a.AuthService.AuthLogin(loginRequest.Username, loginRequest.Password)
 	if err != nil {
-		logging.ERROR("Error: %s", err.Error())
 		return schemas.HandleError(c, err)
 	}
 

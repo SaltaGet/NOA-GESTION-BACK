@@ -22,6 +22,7 @@ type TenantContainer struct {
 		Permission   *services.PermissionService
 		PointSale    *services.PointSaleService
 		Product      *services.ProductService
+		Report       *services.ReportService
 		Role         *services.RoleService
 		Supplier     *services.SupplierService
 		TypeMovement *services.TypeMovementService
@@ -41,6 +42,7 @@ type TenantContainer struct {
 		Permission   *repositories.PermissionRepository
 		PointSale    *repositories.PointSaleRepository
 		Product      *repositories.ProductRepository
+		Report       *repositories.ReportRepository
 		Role         *repositories.RoleRepository
 		Supplier     *repositories.SupplierRepository
 		TypeMovement *repositories.TypeMovementRepository
@@ -65,6 +67,7 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 	c.Repositories.Permission = &repositories.PermissionRepository{DB: db}
 	c.Repositories.PointSale = &repositories.PointSaleRepository{DB: db}
 	c.Repositories.Product = &repositories.ProductRepository{DB: db}
+	c.Repositories.Report = &repositories.ReportRepository{DB: db}
 	c.Repositories.Role = &repositories.RoleRepository{DB: db}
 	c.Repositories.Supplier = &repositories.SupplierRepository{DB: db}
 	c.Repositories.TypeMovement = &repositories.TypeMovementRepository{DB: db}
@@ -105,6 +108,9 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 	}
 	c.Services.Product = &services.ProductService{
 		ProductRepository: c.Repositories.Product,
+	}
+	c.Services.Report = &services.ReportService{
+		ReportRepository: c.Repositories.Report,
 	}
 	c.Services.Role = &services.RoleService{
 		RoleRepository: c.Repositories.Role,
