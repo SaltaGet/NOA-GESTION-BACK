@@ -221,6 +221,15 @@ func (r *MainRepository) TenantUserCreate(tenantUserCreate *schemas.TenantUserCr
 		if errors.Is(err, gorm.ErrInvalidData){
 			return 0, schemas.ErrorResponse(400, "Los campos email, cuit_pdv y identifier deben ser únicos, algun campo ya existe", err)
 		}
+		if schemas.IsDuplicateError(err) {
+			if strings.Contains(err.Error(), "email") {
+				return 0, schemas.ErrorResponse(409, "El email del tenant ya existe", err)
+			} else if strings.Contains(err.Error(), "identifier") {
+				return 0, schemas.ErrorResponse(409, "El identificador del tenant ya existe", err)
+			}	else if strings.Contains(err.Error(), "cuit_pdv") {
+				return 0, schemas.ErrorResponse(409, "El cuit del tenant ya existe", err)
+			}
+		}
 		return 0, schemas.ErrorResponse(500, "Error interno creating tenant", err)
 	}
 
@@ -235,6 +244,13 @@ func (r *MainRepository) TenantUserCreate(tenantUserCreate *schemas.TenantUserCr
 	if err := tx.Create(user).Error; err != nil {
 		tx.Rollback()
 		if errors.Is(err, gorm.ErrInvalidData){
+			if schemas.IsDuplicateError(err) {
+				if strings.Contains(err.Error(), "email") {
+					return 0, schemas.ErrorResponse(409, "El email del usuario ya existe", err)
+				} else if strings.Contains(err.Error(), "username") {
+					return 0, schemas.ErrorResponse(409, "El username del usuario ya existe", err)
+				}
+			}
 			return 0, schemas.ErrorResponse(400, "Los campos email e identifier deben ser únicos, algun campo ya existe", err)
 		}
 		return 0, schemas.ErrorResponse(500, "Error interno creating tenant", err)

@@ -114,6 +114,13 @@ definitions:
       name:
         type: string
     type: object
+  schemas.CategoryResponseStock:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
   schemas.CategoryUpdate:
     properties:
       id:
@@ -221,7 +228,7 @@ definitions:
         example: Jorge
         type: string
       id:
-        type: string
+        type: integer
       identifier:
         example: 30000000 | null
         type: string
@@ -1109,6 +1116,23 @@ definitions:
       name:
         type: string
       price:
+        type: number
+    type: object
+  schemas.ProductStockFullResponse:
+    properties:
+      category:
+        $ref: '#/definitions/schemas.CategoryResponseStock'
+      code:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+      stock:
         type: number
     type: object
   schemas.ProductUpdate:
@@ -3085,7 +3109,7 @@ paths:
       summary: IncomeSaleDelete
       tags:
       - IncomeSale
-  /api/v1/income_sale/get_all:
+  /api/v1/income_sale/get_by_date:
     get:
       consumes:
       - application/json
@@ -3101,12 +3125,16 @@ paths:
         in: query
         name: limit
         type: integer
-      - description: Fecha de inicio
-        in: body
-        name: fromDate
+      - example: "2022-01-01"
+        in: query
+        name: from_date
         required: true
-        schema:
-          $ref: '#/definitions/schemas.DateRangeRequest'
+        type: string
+      - example: "2022-12-31"
+        in: query
+        name: to_date
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -4071,6 +4099,233 @@ paths:
       summary: Retrieve roles for a user in a specific workplace
       tags:
       - Role
+  /api/v1/stock/get/{id}:
+    get:
+      consumes:
+      - application/json
+      description: StockGet obtener un producto-stock por ID
+      parameters:
+      - description: Id del producto
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.ProductStockFullResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: StockGet
+      tags:
+      - Stock
+  /api/v1/stock/get_all:
+    get:
+      consumes:
+      - application/json
+      description: StockGetAll obtener todos los producto-stock
+      parameters:
+      - default: 1
+        description: Número de página
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Número de elementos por página
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.ProductStockFullResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: StockGetAll
+      tags:
+      - Stock
+  /api/v1/stock/get_by_category/{category_id}:
+    get:
+      consumes:
+      - application/json
+      description: obtener un producto-stock por Id de categoria
+      parameters:
+      - description: ID de la categoria
+        in: path
+        name: category_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.ProductStockFullResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: StockGetByCategory
+      tags:
+      - Stock
+  /api/v1/stock/get_by_code:
+    get:
+      consumes:
+      - application/json
+      description: obtener un producto-stock por Codigo
+      parameters:
+      - description: codigo del stocko
+        in: query
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.ProductResponse'
+              type: object
+      security:
+      - CookieAuth: []
+      summary: StockGetByCode
+      tags:
+      - Stock
+  /api/v1/stock/get_by_name:
+    get:
+      consumes:
+      - application/json
+      description: StockGetByName obtener un producto-stock por nombre
+      parameters:
+      - description: nombre del stocko
+        in: query
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.ProductStockFullResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: StockGetByName
+      tags:
+      - Stock
   /api/v1/supplier/{id}:
     get:
       consumes:

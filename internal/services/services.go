@@ -65,6 +65,10 @@ type RoleService struct {
 	RoleRepository ports.RoleRepository
 }
 
+type StockService struct {
+	StockRepository ports.StockRepository
+}
+
 type SupplierService struct {
 	SupplierRepository ports.SupplierRepository
 }

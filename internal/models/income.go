@@ -26,7 +26,7 @@ type IncomeSale struct {
 type IncomeSaleItem struct {
 	ID           int64      `gorm:"primaryKey;autoIncrement" json:"id"`
 	IncomeSaleID int64      `gorm:"index" json:"sale_id"`
-	IncomeSale   IncomeSale `gorm:"foreignKey:IncomeSaleID" json:"sale_income"`
+	IncomeSale   *IncomeSale `gorm:"foreignKey:IncomeSaleID" json:"sale_income"`
 	ProductID    int64      `gorm:"index" json:"product_id"`
 	Product      Product    `gorm:"foreignKey:ProductID" json:"product"`
 	Amount       float64    `gorm:"not null" json:"amount"`

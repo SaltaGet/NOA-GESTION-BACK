@@ -5,7 +5,7 @@ import "time"
 type PayIncome struct {
 	ID             int64         `gorm:"primaryKey;autoIncrement" json:"id"`
 	IncomeSaleID   int64         `gorm:"index" json:"sale_id"`
-	IncomeSale     IncomeSale    `gorm:"foreignKey:IncomeSaleID" json:"income_sale"`
+	IncomeSale     *IncomeSale    `gorm:"foreignKey:IncomeSaleID" json:"income_sale"`
 	CashRegisterID *int64        `gorm:"index" json:"cash_register_id"`
 	CashRegister   *CashRegister `gorm:"foreignKey:CashRegisterID" json:"cash_register"`
 	ClientID       *int64        `gorm:"index" json:"client_id"`

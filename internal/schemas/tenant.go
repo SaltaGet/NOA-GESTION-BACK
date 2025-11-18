@@ -29,7 +29,9 @@ func (t *TenantCreate) Validate() error {
 	tag := validationErr.Tag()
 	param := validationErr.Param()
 
-	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+
+	return ErrorResponse(422, message, fmt.Errorf("%s", message))
 }
 
 type TenantUpdate struct {
@@ -52,7 +54,9 @@ func (t *TenantUpdate) Validate() error {
 	tag := validationErr.Tag()
 	param := validationErr.Param()
 
-	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+
+	return ErrorResponse(422, message, fmt.Errorf("%s", message))
 }
 
 type TenantResponse struct {
@@ -83,5 +87,7 @@ func (t *TenantUserCreate) Validate() error {
 	tag := validationErr.Tag()
 	param := validationErr.Param()
 
-	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+
+	return ErrorResponse(422, message, fmt.Errorf("%s", message))
 }

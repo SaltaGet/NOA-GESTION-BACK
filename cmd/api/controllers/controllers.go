@@ -63,6 +63,10 @@ type RoleController struct {
 	RoleService ports.RoleService
 }
 
+type StockController struct {
+	StockService ports.StockService
+}
+
 type SupplierController struct {
 	SupplierService ports.SupplierService
 }

@@ -12,7 +12,7 @@ type Client struct {
 	LastName       string         `gorm:"not null;size:30" json:"last_name"`
 	CompanyName    *string        `json:"company_name"`
 	Identifier     *string        `gorm:"unique;size:20" json:"cuit,omitempty"`
-	Email          *string        `gorm:"unique" json:"email" validate:"email"`
+	Email          *string        `gorm:"unique" json:"email" validate:"omitempty,email"`
 	Phone          *string        `json:"phone"`
 	Address        *string        `json:"address"`
 	MemberCreateID int64          `gorm:"not null" json:"member_create_id"`

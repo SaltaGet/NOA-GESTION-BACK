@@ -7,11 +7,11 @@ import (
 )
 
 type UserDTO struct {
-	ID        int64    `json:"id"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
+	ID        int64  `json:"id"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
 }
 
 type UserCreate struct {
@@ -34,11 +34,13 @@ func (u *UserCreate) Validate() error {
 	tag := validationErr.Tag()
 	param := validationErr.Param()
 
-	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+
+	return ErrorResponse(422, message, fmt.Errorf("%s", message))
 }
 
 type UserUpdate struct {
-	ID        int64 `json:"id" validate:"required"`
+	ID        int64  `json:"id" validate:"required"`
 	FirstName string `json:"first_name" validate:"required"`
 	LastName  string `json:"last_name" validate:"required"`
 	Username  string `json:"username" validate:"required"`
@@ -58,5 +60,7 @@ func (u *UserUpdate) Validate() error {
 	tag := validationErr.Tag()
 	param := validationErr.Param()
 
-	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+
+	return ErrorResponse(422, message, fmt.Errorf("%s", message))
 }

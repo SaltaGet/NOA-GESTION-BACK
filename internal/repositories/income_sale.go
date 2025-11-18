@@ -50,7 +50,7 @@ func (i *IncomeSaleRepository) IncomeSaleGetByDate(pointSaleID int64, fromDate, 
 	if err := i.DB.
 		Preload("Member", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "first_name", "last_name", "username")
-		}).
+		}). 
 		Preload("Client", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "first_name", "last_name", "company_name")
 		}).

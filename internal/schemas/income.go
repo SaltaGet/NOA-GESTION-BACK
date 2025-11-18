@@ -94,7 +94,7 @@ func (i *IncomeSaleUpdate) Validate() error {
 
 	if sumPay != i.Total {
 		message := fmt.Sprintf("la suma de los pagos (%.2f) no puede superar el total de la venta (%.2f)", sumPay, i.Total)
-		return ErrorResponse(422, message, fmt.Errorf(message))
+		return ErrorResponse(422, message, fmt.Errorf("%s", message))
 	}
 
 	return nil

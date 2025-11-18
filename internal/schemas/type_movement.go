@@ -23,7 +23,9 @@ func (t *TypeMovementCreate) Validate() error {
 	tag := validationErr.Tag()
 	param := validationErr.Param()
 
-	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+
+	return ErrorResponse(422, message, fmt.Errorf("%s", message))
 }
 
 type TypeMovementUpdate struct {
@@ -44,11 +46,12 @@ func (t *TypeMovementUpdate) Validate() error {
 	tag := validationErr.Tag()
 	param := validationErr.Param()
 
-	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+
+	return ErrorResponse(422, message, fmt.Errorf("%s", message))
 }
 
 type TypeMovementResponse struct {
-	ID           int64  `json:"id"`
-	Name         string `json:"name"`
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
 }
-

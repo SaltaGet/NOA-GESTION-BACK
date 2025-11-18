@@ -122,7 +122,11 @@ func (r *ClientRepository) ClientUpdate(client *schemas.ClientUpdate) error {
 	if err := r.DB.Where("id = ?", client.ID).Updates(&models.Client{
 		FirstName: client.FirstName,
 		LastName:  client.LastName,
+		CompanyName: client.CompanyName,
+		Identifier: client.Identifier,
 		Email:     client.Email,
+		Phone:     client.Phone,
+		Address:   client.Address,
 	}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return schemas.ErrorResponse(404, "Cliente no encontrado", err)

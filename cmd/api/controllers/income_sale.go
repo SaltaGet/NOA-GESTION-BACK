@@ -51,17 +51,17 @@ func (i *IncomeSaleController) IncomeSaleGetByID(c *fiber.Ctx) error {
 //	@Security		CookieAuth
 //	@Param			page		query		int														false	"Page number"				default(1)
 //	@Param			limit		query		int														false	"Number of items per page"	default(20)
-//	@Param			fromDate	body		schemas.DateRangeRequest								true	"Fecha de inicio"
+//	@Param			fromDate	query		schemas.DateRangeRequest								true	"Fecha de inicio"
 //	@Success		200			{object}	schemas.Response{body=[]schemas.IncomeSaleResponseDTO}	"List of incomeSales"
-//	@Router			/api/v1/income_sale/get_all [get]
+//	@Router			/api/v1/income_sale/get_by_date [get]
 func (i *IncomeSaleController) IncomeSaleGetByDate(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los ingresos")
 
-	dateTime := &schemas.DateRangeRequest{}
-	if err := c.QueryParser(dateTime); err != nil {
-		return schemas.HandleError(c, schemas.ErrorResponse(400, "error al obtener la fecha", err))
-	}
-	dateFrom, dateTo, err :=dateTime.GetParsedDates()
+	formDate := &schemas.DateRangeRequest{}
+	formDate.FromDate = c.Query("from_date")
+	formDate.ToDate = c.Query("to_date")
+	
+	fromDate, toDate, err := formDate.GetParsedDates()
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -80,7 +80,7 @@ func (i *IncomeSaleController) IncomeSaleGetByDate(c *fiber.Ctx) error {
 
 	pointID := c.Locals("point_sale_id").(int64)
 
-	incomeSales, total, err := i.IncomeSaleService.IncomeSaleGetByDate(pointID, dateFrom, dateTo, page, limit)
+	incomeSales, total, err := i.IncomeSaleService.IncomeSaleGetByDate(pointID, fromDate, toDate, page, limit)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}

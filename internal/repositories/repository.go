@@ -97,6 +97,10 @@ type ServiceRepository struct {
 	DB *gorm.DB
 }
 
+type StockRepository struct {
+	DB *gorm.DB
+}
+
 type SupplierRepository struct {
 	DB *gorm.DB
 }

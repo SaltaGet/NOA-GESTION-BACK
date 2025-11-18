@@ -29,7 +29,9 @@ func (s *SupplierCreate) Validate() error {
 	tag := validationErr.Tag()
 	param := validationErr.Param()
 
-	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+
+	return ErrorResponse(422, message, fmt.Errorf("%s", message))
 }
 
 type SupplierUpdate struct {
@@ -55,7 +57,9 @@ func (s *SupplierUpdate) Validate() error {
 	tag := validationErr.Tag()
 	param := validationErr.Param()
 
-	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+
+	return ErrorResponse(422, message, fmt.Errorf("%s", message))
 }
 
 type SupplierResponse struct {

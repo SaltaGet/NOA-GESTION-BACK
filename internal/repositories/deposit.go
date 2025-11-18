@@ -53,13 +53,18 @@ func (r *DepositRepository) DepositGetAll(page, limit int) ([]*models.Product, i
 
 func (r *DepositRepository) DepositUpdateStock(updateStock schemas.DepositUpdateStock) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var product models.Product
+		if err := tx. Select("id").Where("id = ?", updateStock.ProductID).First(&product).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return schemas.ErrorResponse(404, "producto no encontrado", err)
+			}
+			return schemas.ErrorResponse(500, "error al obtener el producto", err)
+		}	
+
 		var deposit models.Deposit
 
 		if err := tx.Where("product_id = ?", updateStock.ProductID).FirstOrCreate(&deposit, &models.Deposit{ProductID: updateStock.ProductID}).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-			return schemas.ErrorResponse(404, "producto no encontrado", err)
-		}
-		return schemas.ErrorResponse(500, "error al actualizar el stock", err)
+			return schemas.ErrorResponse(500, "error al actualizar el stock", err)
 		}
 
 		switch updateStock.Method {

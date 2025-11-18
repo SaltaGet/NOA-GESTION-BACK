@@ -89,6 +89,37 @@ func PrepareDB(uri string, memberAdmin models.Member) error {
 		return fmt.Errorf("error al migrar permisos: %w", err)
 	}
 
+	if err := db.Create(&models.Client{
+		ID:             1,
+		FirstName:      "Consumidor",
+		LastName:       "Final",
+		CompanyName:    nil,
+		Identifier:     nil,
+		Email:          nil,
+		Phone:          nil,
+		Address:        nil,
+		MemberCreateID: memberAdmin.ID,
+	}).Error; err != nil {
+		handleDBCreationError(env, uri)
+		return fmt.Errorf("error al crear cliente consumidor final: %w", err)
+	}
+
+	if err := db.Create(&models.Category{
+		Name: "Sin categoría",
+	}).Error; err != nil {
+		handleDBCreationError(env, uri)
+		return fmt.Errorf("error al crear categoría sin categoría: %w", err)
+	}
+
+	if err := db.Create(&models.Supplier{
+		ID: 1,
+		Name: "Sin proveedor",
+		CompanyName: "Sin nombre",
+	}).Error; err != nil {
+		handleDBCreationError(env, uri)
+		return fmt.Errorf("error al crear proveedor sin proveedor: %w", err)
+	}
+
 	return nil
 }
 

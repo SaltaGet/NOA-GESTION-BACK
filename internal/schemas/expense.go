@@ -129,7 +129,9 @@ func (e *ExpenseBuyCreate) Validate() error {
 	tag := validationErr.Tag()
 	param := validationErr.Param()
 
-	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+
+	return ErrorResponse(422, message, fmt.Errorf("%s", message))
 }
 
 type ExpenseBuyUpdate struct {
@@ -171,7 +173,9 @@ func (e *ExpenseBuyUpdate) Validate() error {
 	tag := validationErr.Tag()
 	param := validationErr.Param()
 
-	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+
+	return ErrorResponse(422, message, fmt.Errorf("%s", message))
 }
 
 type ExpenseOtherCreate struct {
@@ -215,5 +219,7 @@ func (e *ExpenseOtherUpdate) Validate() error {
 	tag := validationErr.Tag()
 	param := validationErr.Param()
 
-	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+
+	return ErrorResponse(422, message, fmt.Errorf("%s", message))
 }
