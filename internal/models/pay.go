@@ -4,7 +4,7 @@ import "time"
 
 type PayIncome struct {
 	ID             int64         `gorm:"primaryKey;autoIncrement" json:"id"`
-	IncomeSaleID   int64         `gorm:"index" json:"sale_id"`
+	IncomeSaleID   int64         `gorm:"index" json:"income_sale_id"`
 	IncomeSale     *IncomeSale    `gorm:"foreignKey:IncomeSaleID" json:"income_sale"`
 	CashRegisterID *int64        `gorm:"index" json:"cash_register_id"`
 	CashRegister   *CashRegister `gorm:"foreignKey:CashRegisterID" json:"cash_register"`
@@ -18,8 +18,8 @@ type PayIncome struct {
 
 type PayExpenseBuy struct {
 	ID             int64         `gorm:"primaryKey;autoIncrement" json:"id"`
-	ExpenseBuyID   int64         `gorm:"index" json:"sale_id"`
-	ExpenseBuy     ExpenseBuy    `gorm:"foreignKey:ExpenseBuyID" json:"sale_income"`
+	ExpenseBuyID   int64         `gorm:"index" json:"expense_buy_id"`
+	ExpenseBuy     ExpenseBuy    `gorm:"foreignKey:ExpenseBuyID" json:"expense_buy"`
 	CashRegisterID *int64        `gorm:"index" json:"cash_register_id"`
 	CashRegister   *CashRegister `gorm:"foreignKey:CashRegisterID" json:"cash_register"`
 	Total         float64       `gorm:"not null" json:"total"`
@@ -30,7 +30,7 @@ type PayExpenseBuy struct {
 
 type PayExpenseOther struct {
 	ID             int64         `gorm:"primaryKey;autoIncrement" json:"id"`
-	ExpenseOtherID int64         `gorm:"index" json:"sale_id"`
+	ExpenseOtherID int64         `gorm:"index" json:"expense_other_id"`
 	ExpenseOther   ExpenseOther  `gorm:"foreignKey:ExpenseOtherID" json:"expense_other"`
 	CashRegisterID *int64        `gorm:"index" json:"cash_register_id"`
 	CashRegister   *CashRegister `gorm:"foreignKey:CashRegisterID" json:"cash_register"`
