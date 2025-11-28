@@ -12,7 +12,7 @@ func InjectionDependsTenant() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		member := c.Locals("user").(*schemas.AuthenticatedUser)
 
-		db, err := database.GetTenantDB("", member.TenantID)
+			db, err := database.GetTenantDB("", member.TenantID)
 		if err != nil {
 			return schemas.ErrorResponse(401, "No autenticado", err)
 		}
@@ -26,12 +26,12 @@ func InjectionDependsTenant() fiber.Handler {
 
 func setupTenantControllers(c *fiber.Ctx, container *dependencies.TenantContainer) {
 	controllersMap := map[string]any{
-		"CashRegisterController":       &controllers.CashRegisterController{CashRegisterService: container.Services.CashRegister},
-		"CategoryController":       &controllers.CategoryController{CategoryService: container.Services.Category},
+		"CashRegisterController": &controllers.CashRegisterController{CashRegisterService: container.Services.CashRegister},
+		"CategoryController":     &controllers.CategoryController{CategoryService: container.Services.Category},
 		"ClientController":       &controllers.ClientController{ClientService: container.Services.Client},
-		"DepositController":       &controllers.DepositController{DepositService: container.Services.Deposit},
-		"ExpenseBuyController":      &controllers.ExpenseBuyController{ExpenseBuyService: container.Services.ExpenseBuy},
-		"ExpenseOtherController":      &controllers.ExpenseOtherController{ExpenseOtherService: container.Services.ExpenseOther},
+		"DepositController":      &controllers.DepositController{DepositService: container.Services.Deposit},
+		"ExpenseBuyController":   &controllers.ExpenseBuyController{ExpenseBuyService: container.Services.ExpenseBuy},
+		"ExpenseOtherController": &controllers.ExpenseOtherController{ExpenseOtherService: container.Services.ExpenseOther},
 		"IncomeOtherController":       &controllers.IncomeOtherController{IncomeOtherService: container.Services.IncomeOther},
 		"IncomeSaleController":       &controllers.IncomeSaleController{IncomeSaleService: container.Services.IncomeSale},
 		"MemberController":       &controllers.MemberController{MemberService: container.Services.Member},

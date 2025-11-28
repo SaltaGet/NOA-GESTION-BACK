@@ -11,20 +11,34 @@ import (
 	"gorm.io/gorm"
 )
 
-// ExpenseOtherGetByID obtiene un egreso por ID
-func (r *ExpenseOtherRepository) ExpenseOtherGetByID(id int64) (*schemas.ExpenseOtherResponse, error) {
+func (r *ExpenseOtherRepository) ExpenseOtherGetByID(id int64, pointSaleID *int64) (*schemas.ExpenseOtherResponse, error) {
 	var expenseOther models.ExpenseOther
 
-	if err := r.DB.
-		Preload("Member", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "first_name", "last_name", "username")
-		}).
-		Preload("TypeExpense").
-		First(&expenseOther, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "Egreso no encontrado", err)
+	if pointSaleID != nil {
+		if err := r.DB.
+			Preload("Member", func(db *gorm.DB) *gorm.DB {
+				return db.Select("id", "first_name", "last_name", "username")
+			}).
+			Preload("TypeExpense").
+			Where("point_sale_id = ?", *pointSaleID).
+			First(&expenseOther, id).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, schemas.ErrorResponse(404, "Egreso no encontrado", err)
+			}
+			return nil, schemas.ErrorResponse(500, "Error al obtener el egreso", err)
 		}
-		return nil, schemas.ErrorResponse(500, "Error al obtener el egreso", err)
+	} else {
+		if err := r.DB.
+			Preload("Member", func(db *gorm.DB) *gorm.DB {
+				return db.Select("id", "first_name", "last_name", "username")
+			}).
+			Preload("TypeExpense").
+			First(&expenseOther, id).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, schemas.ErrorResponse(404, "Egreso no encontrado", err)
+			}
+			return nil, schemas.ErrorResponse(500, "Error al obtener el egreso", err)
+		}
 	}
 
 	var expenseSchema schemas.ExpenseOtherResponse
@@ -33,7 +47,6 @@ func (r *ExpenseOtherRepository) ExpenseOtherGetByID(id int64) (*schemas.Expense
 	return &expenseSchema, nil
 }
 
-// ExpenseOtherGetByDate obtiene egresos por rango de fechas
 func (r *ExpenseOtherRepository) ExpenseOtherGetByDate(pointSaleID *int64, fromDate, toDate time.Time, page, limit int) ([]*schemas.ExpenseOtherResponseDTO, int64, error) {
 	var expensesOther []*models.ExpenseOther
 
@@ -41,7 +54,6 @@ func (r *ExpenseOtherRepository) ExpenseOtherGetByDate(pointSaleID *int64, fromD
 
 	query := r.DB.Where("created_at BETWEEN ? AND ?", fromDate, toDate)
 
-	// Si se proporciona pointSaleID, filtrar por punto de venta
 	if pointSaleID != nil {
 		query = query.Where("point_sale_id = ?", *pointSaleID)
 	}
@@ -75,12 +87,10 @@ func (r *ExpenseOtherRepository) ExpenseOtherGetByDate(pointSaleID *int64, fromD
 	return expenseSchema, total, nil
 }
 
-// ExpenseOtherCreate crea un nuevo egreso
-func (r *ExpenseOtherRepository) ExpenseOtherCreate(memberID, pointSaleID int64, expenseOtherCreate *schemas.ExpenseOtherCreate) (int64, error) {
+func (r *ExpenseOtherRepository) ExpenseOtherCreate(memberID int64, pointSaleID *int64, expenseOtherCreate *schemas.ExpenseOtherCreate) (int64, error) {
 	var expenseOtherID int64
 
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		// Verificar que el tipo de egreso existe
 		var typeExpense models.TypeExpense
 		if err := tx.First(&typeExpense, expenseOtherCreate.TypeExpenseID).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -89,32 +99,36 @@ func (r *ExpenseOtherRepository) ExpenseOtherCreate(memberID, pointSaleID int64,
 			return schemas.ErrorResponse(500, "Error al obtener el tipo de egreso", err)
 		}
 
-		// Buscar caja abierta para el punto de venta
-		var register models.CashRegister
-		var cashRegisterID *int64
+		expenseOther := models.ExpenseOther{
+			MemberID:      memberID,
+			Details:       expenseOtherCreate.Details,
+			TypeExpenseID: expenseOtherCreate.TypeExpenseID,
+			Total:         expenseOtherCreate.Total,
+			PayMethod:     expenseOtherCreate.PayMethod,
+		}
 
+		if pointSaleID == nil {
+			if err := tx.Create(&expenseOther).Error; err != nil {
+				return schemas.ErrorResponse(500, "Error al crear el egreso", err)
+			}
+
+			expenseOtherID = expenseOther.ID
+			return nil
+		}
+
+		var register models.CashRegister
 		if err := tx.
 			Where("is_close = ? AND point_sale_id = ?", false, pointSaleID).
 			Order("hour_open DESC").
 			First(&register).Error; err != nil {
-			// Si no hay caja abierta, cashRegisterID será nil
-			if !errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(500, "Error al obtener la apertura de caja", err)
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return schemas.ErrorResponse(400, "No hay una caja abierta para el punto de venta", err)
 			}
-		} else {
-			cashRegisterID = &register.ID
+			return schemas.ErrorResponse(500, "Error al obtener la apertura de caja", err)
 		}
 
-		// Crear el egreso
-		expenseOther := models.ExpenseOther{
-			PointSaleID:    &pointSaleID,
-			MemberID:       memberID,
-			CashRegisterID: cashRegisterID,
-			Details:    expenseOtherCreate.Details,
-			TypeExpenseID:  expenseOtherCreate.TypeExpenseID,
-			Total:          expenseOtherCreate.Total,
-			PayMethod:      expenseOtherCreate.PayMethod,
-		}
+		expenseOther.PointSaleID = pointSaleID
+		expenseOther.CashRegisterID = &register.ID
 
 		if err := tx.Create(&expenseOther).Error; err != nil {
 			return schemas.ErrorResponse(500, "Error al crear el egreso", err)
@@ -131,21 +145,29 @@ func (r *ExpenseOtherRepository) ExpenseOtherCreate(memberID, pointSaleID int64,
 	return expenseOtherID, nil
 }
 
-// ExpenseOtherUpdate actualiza un egreso existente
-func (r *ExpenseOtherRepository) ExpenseOtherUpdate(memberID, pointSaleID int64, expenseOtherUpdate *schemas.ExpenseOtherUpdate) error {
+func (r *ExpenseOtherRepository) ExpenseOtherUpdate(memberID int64, pointSaleID *int64, expenseOtherUpdate *schemas.ExpenseOtherUpdate) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
-		// Verificar que el egreso existe y pertenece al punto de venta
 		var existingExpense models.ExpenseOther
-		if err := tx.
-			Where("id = ? AND point_sale_id = ?", expenseOtherUpdate.ID, pointSaleID).
-			First(&existingExpense).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Egreso no encontrado", err)
+		if pointSaleID == nil {
+			if err := tx.
+				Where("id = ?", expenseOtherUpdate.ID).
+				First(&existingExpense).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return schemas.ErrorResponse(404, "Egreso no encontrado", err)
+				}
+				return schemas.ErrorResponse(500, "Error al obtener el egreso", err)
 			}
-			return schemas.ErrorResponse(500, "Error al obtener el egreso", err)
+		} else {
+			if err := tx.
+				Where("id = ? AND point_sale_id = ?", expenseOtherUpdate.ID, pointSaleID).
+				First(&existingExpense).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return schemas.ErrorResponse(404, "Egreso no encontrado", err)
+				}
+				return schemas.ErrorResponse(500, "Error al obtener el egreso", err)
+			}
 		}
 
-		// Actualizar campos
 		existingExpense.Details = expenseOtherUpdate.Details
 		existingExpense.Total = expenseOtherUpdate.Total
 		existingExpense.PayMethod = expenseOtherUpdate.PayMethod
@@ -159,21 +181,29 @@ func (r *ExpenseOtherRepository) ExpenseOtherUpdate(memberID, pointSaleID int64,
 	})
 }
 
-// ExpenseOtherDelete elimina un egreso
-func (r *ExpenseOtherRepository) ExpenseOtherDelete(expenseOtherID, pointSaleID int64) error {
+func (r *ExpenseOtherRepository) ExpenseOtherDelete(expenseOtherID int64, pointSaleID *int64) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
-		// Verificar que el egreso existe y pertenece al punto de venta
 		var existingExpense models.ExpenseOther
-		if err := tx.
-			Where("id = ? AND point_sale_id = ?", expenseOtherID, pointSaleID).
-			First(&existingExpense).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Egreso no encontrado", err)
+		if pointSaleID == nil {
+			if err := tx.
+				Where("id = ?", expenseOtherID).
+				First(&existingExpense).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return schemas.ErrorResponse(404, "Egreso no encontrado", err)
+				}
+				return schemas.ErrorResponse(500, "Error al obtener el egreso", err)
 			}
-			return schemas.ErrorResponse(500, "Error al obtener el egreso", err)
+		} else {
+			if err := tx.
+				Where("id = ? AND point_sale_id = ?", expenseOtherID, pointSaleID).
+				First(&existingExpense).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return schemas.ErrorResponse(404, "Egreso no encontrado", err)
+				}
+				return schemas.ErrorResponse(500, "Error al obtener el egreso", err)
+			}
 		}
 
-		// Eliminar el egreso
 		if err := tx.Delete(&existingExpense).Error; err != nil {
 			return schemas.ErrorResponse(500, "Error al eliminar el egreso", err)
 		}

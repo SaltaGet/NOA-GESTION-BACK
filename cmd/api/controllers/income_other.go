@@ -10,6 +10,7 @@ import (
 )
 
 // IncomeOtherGetByID godoc
+//
 //	@Summary		IncomeOtherGetByID
 //	@Description	Obtiene ingreso de venta por ID
 //	@Tags			IncomeOther
@@ -18,7 +19,7 @@ import (
 //	@Security		CookieAuth
 //	@Param			id	path		string												true	"ID of the incomeOther"
 //	@Success		200	{object}	schemas.Response{body=schemas.IncomeOtherResponse}	"IncomeOther details fetched successfully"
-//	@Router			/api/v1/income_other/{id} [get]
+//	@Router			/api/v1/income_other/get/{id} [get]
 func (i *IncomeOtherController) IncomeOtherGetByID(c *fiber.Ctx) error {
 	logging.INFO("Obtener un ingreso por ID")
 	id := c.Params("id")
@@ -27,7 +28,7 @@ func (i *IncomeOtherController) IncomeOtherGetByID(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	incomeOther, err := i.IncomeOtherService.IncomeOtherGetByID(idint)
+	incomeOther, err := i.IncomeOtherService.IncomeOtherGetByID(idint, nil)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -41,6 +42,7 @@ func (i *IncomeOtherController) IncomeOtherGetByID(c *fiber.Ctx) error {
 }
 
 // IncomeOtherGetByDate godoc
+//
 //	@Summary		IncomeOtherGetByDate
 //	@Description	Obtiene ingresos de venta por fecha
 //	@Tags			IncomeOther
@@ -61,7 +63,7 @@ func (i *IncomeOtherController) IncomeOtherGetByDate(c *fiber.Ctx) error {
 	dateTime.FromDate = fromDate
 	dateTime.ToDate = toDate
 
-	dateFrom, dateTo, err :=dateTime.GetParsedDates()
+	dateFrom, dateTo, err := dateTime.GetParsedDates()
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -78,15 +80,97 @@ func (i *IncomeOtherController) IncomeOtherGetByDate(c *fiber.Ctx) error {
 		limit = 20
 	}
 
-	var pointSaleID *int64
+	incomeOthers, total, err := i.IncomeOtherService.IncomeOtherGetByDate(nil, dateFrom, dateTo, page, limit)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
 
-if pointID, ok := c.Locals("point_sale_id").(int64); ok {
-    pointSaleID = &pointID
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+
+	logging.INFO("Ingresos obtenidos con éxito")
+	return c.Status(200).JSON(schemas.Response{
+		Status:  true,
+		Body:    map[string]any{"data": incomeOthers, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
+		Message: "Ingresos obtenidos con éxito",
+	})
 }
 
-// pointSaleID ahora es un puntero a int64 O es nil.
+// IncomeOtherGetByIDPointSale godoc
+//
+//	@Summary		IncomeOtherGetByIDPointSale
+//	@Description	Obtiene ingreso de venta por ID para un punto de venta específico
+//	@Tags			IncomeOther
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			id	path		string												true	"ID of the incomeOther"
+//	@Success		200	{object}	schemas.Response{body=schemas.IncomeOtherResponse}	"IncomeOther details fetched successfully"
+//	@Router			/api/v1/income_other/get_by_id_point_sale/{id} [get]
+func (i *IncomeOtherController) IncomeOtherGetByIDByPointSale(c *fiber.Ctx) error {
+	logging.INFO("Obtener un ingreso por ID")
+	id := c.Params("id")
+	idint, err := validators.IdValidate(id)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
 
-	incomeOthers, total, err := i.IncomeOtherService.IncomeOtherGetByDate(pointSaleID, dateFrom, dateTo, page, limit)
+	pointID := c.Locals("point_sale_id").(int64)
+
+	incomeOther, err := i.IncomeOtherService.IncomeOtherGetByID(idint, &pointID)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	logging.INFO("Ingreso obtenido con éxito")
+	return c.Status(200).JSON(schemas.Response{
+		Status:  true,
+		Body:    incomeOther,
+		Message: "Ingreso obtenido con éxito",
+	})
+}
+
+// IncomeOtherGetByDatePointSale godoc
+//
+//	@Summary		IncomeOtherGetByDatePointSale
+//	@Description	Obtiene ingresos de venta por fecha para un punto de venta específico
+//	@Tags			IncomeOther
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			page		query		int														false	"Page number"				default(1)
+//	@Param			limit		query		int														false	"Number of items per page"	default(20)
+//	@Param			fromDate	query		schemas.DateRangeRequest								true	"Fecha de inicio"
+//	@Success		200			{object}	schemas.Response{body=[]schemas.IncomeOtherResponse}	"List of incomeOthers"
+//	@Router			/api/v1/income_other/get_by_date_point_sale [get]
+func (i *IncomeOtherController) IncomeOtherGetByDateByPointSale(c *fiber.Ctx) error {
+	logging.INFO("Obtener otros ingresos por fecha")
+
+	dateTime := &schemas.DateRangeRequest{}
+	fromDate := c.Query("from_date")
+	toDate := c.Query("to_date")
+	dateTime.FromDate = fromDate
+	dateTime.ToDate = toDate
+
+	dateFrom, dateTo, err := dateTime.GetParsedDates()
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	pageParam := c.Query("page", "1")
+	limitParam := c.Query("limit", "10")
+
+	page, err := strconv.Atoi(pageParam)
+	if err != nil || page < 1 {
+		page = 1
+	}
+	limit, err := strconv.Atoi(limitParam)
+	if err != nil || limit < 1 {
+		limit = 20
+	}
+
+	pointID := c.Locals("point_sale_id").(int64)
+
+	incomeOthers, total, err := i.IncomeOtherService.IncomeOtherGetByDate(&pointID, dateFrom, dateTo, page, limit)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -102,6 +186,7 @@ if pointID, ok := c.Locals("point_sale_id").(int64); ok {
 }
 
 // IncomeOtherCreate godoc
+//
 //	@Summary		IncomeOtherCreate
 //	@Description	Crea un nuevo ingreso de venta
 //	@Tags			IncomeOther
@@ -127,9 +212,50 @@ func (i *IncomeOtherController) IncomeOtherCreate(c *fiber.Ctx) error {
 	}
 
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
-	pointID :=c.Locals("point_sale_id").(int64)
 
-	id, err := i.IncomeOtherService.IncomeOtherCreate(user.ID, pointID, &incomeOtherCreate)
+	id, err := i.IncomeOtherService.IncomeOtherCreate(user.ID, nil, &incomeOtherCreate)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	logging.INFO("Ingreso creado con éxito")
+	return c.Status(200).JSON(schemas.Response{
+		Status:  true,
+		Body:    id,
+		Message: "Ingreso creado con éxito",
+	})
+}
+
+// IncomeOtherCreateByPointSale godoc
+//
+//	@Summary		IncomeOtherCreateByPointSale
+//	@Description	Crea un nuevo ingreso de venta para un punto de venta específico
+//	@Tags			IncomeOther
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			incomeOtherCreate	body		schemas.IncomeOtherCreate	true	"IncomeOther information"
+//	@Success		200					{object}	schemas.Response			"IncomeOther created successfully"
+//	@Router			/api/v1/income_other/create_point_sale [post]
+func (i *IncomeOtherController) IncomeOtherCreateByPointSale(c *fiber.Ctx) error {
+	logging.INFO("Crear ingreso")
+	var incomeOtherCreate schemas.IncomeOtherCreate
+	if err := c.BodyParser(&incomeOtherCreate); err != nil {
+		logging.ERROR("Error: %s", err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
+			Status:  false,
+			Body:    nil,
+			Message: "Invalid request" + err.Error(),
+		})
+	}
+	if err := incomeOtherCreate.Validate(); err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	user := c.Locals("user").(*schemas.AuthenticatedUser)
+	pointID := c.Locals("point_sale_id").(int64)
+
+	id, err := i.IncomeOtherService.IncomeOtherCreate(user.ID, &pointID, &incomeOtherCreate)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -143,6 +269,7 @@ func (i *IncomeOtherController) IncomeOtherCreate(c *fiber.Ctx) error {
 }
 
 // IncomeOtherUpdate godoc
+//
 //	@Summary		IncomeOtherUpdate
 //	@Description	Actualiza un ingreso de venta
 //	@Tags			IncomeOther
@@ -168,9 +295,8 @@ func (i *IncomeOtherController) IncomeOtherUpdate(c *fiber.Ctx) error {
 	}
 
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
-	pointID :=c.Locals("point_sale_id").(int64)
 
-	err := i.IncomeOtherService.IncomeOtherUpdate(user.ID, pointID, &incomeOtherUpdate)
+	err := i.IncomeOtherService.IncomeOtherUpdate(user.ID, nil, &incomeOtherUpdate)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -184,6 +310,7 @@ func (i *IncomeOtherController) IncomeOtherUpdate(c *fiber.Ctx) error {
 }
 
 // IncomeOtherDelete godoc
+//
 //	@Summary		IncomeOtherDelete
 //	@Description	Elimina un ingreso de venta
 //	@Tags			IncomeOther
@@ -201,9 +328,7 @@ func (i *IncomeOtherController) IncomeOtherDelete(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	pointID :=c.Locals("point_sale_id").(int64)
-
-	err = i.IncomeOtherService.IncomeOtherDelete(idint, pointID)
+	err = i.IncomeOtherService.IncomeOtherDelete(idint, nil)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -216,4 +341,78 @@ func (i *IncomeOtherController) IncomeOtherDelete(c *fiber.Ctx) error {
 	})
 }
 
+// IncomeOtherUpdateByPointSale godoc
+//
+//	@Summary		IncomeOtherUpdateByPointSale
+//	@Description	Actualiza un ingreso de venta para un punto de venta específico
+//	@Tags			IncomeOther
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			incomeOtherUpdate	body		schemas.IncomeOtherUpdate	true	"IncomeOther data to update"
+//	@Success		200					{object}	schemas.Response			"IncomeOther updated successfully"
+//	@Router			/api/v1/income_other/update_point_sale [put]
+func (i *IncomeOtherController) IncomeOtherUpdateByPointSale(c *fiber.Ctx) error {
+	logging.INFO("Actualizar ingreso")
+	var incomeOtherUpdate schemas.IncomeOtherUpdate
+	if err := c.BodyParser(&incomeOtherUpdate); err != nil {
+		logging.ERROR("Error: %s", err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
+			Status:  false,
+			Body:    nil,
+			Message: "Invalid request" + err.Error(),
+		})
+	}
+	if err := incomeOtherUpdate.Validate(); err != nil {
+		return schemas.HandleError(c, err)
+	}
 
+	user := c.Locals("user").(*schemas.AuthenticatedUser)
+	pointID := c.Locals("point_sale_id").(int64)
+
+	err := i.IncomeOtherService.IncomeOtherUpdate(user.ID, &pointID, &incomeOtherUpdate)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	logging.INFO("Ingreso editado con éxito")
+	return c.Status(200).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
+		Message: "Ingreso editado con éxito",
+	})
+}
+
+// IncomeOtherDeleteByPointSale godoc
+//
+//	@Summary		IncomeOtherDeleteByPointSale
+//	@Description	Elimina un ingreso de venta para un punto de venta específico
+//	@Tags			IncomeOther
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			id	path		string				true	"ID of the incomeOther"
+//	@Success		200	{object}	schemas.Response	"IncomeOther deleted successfully"
+//	@Router			/api/v1/income_other/delete_point_sale/{id} [delete]
+func (i *IncomeOtherController) IncomeOtherDeleteByPointSale(c *fiber.Ctx) error {
+	logging.INFO("Eliminar ingreso")
+	id := c.Params("id")
+	idint, err := validators.IdValidate(id)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	pointID := c.Locals("point_sale_id").(int64)
+
+	err = i.IncomeOtherService.IncomeOtherDelete(idint, &pointID)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	logging.INFO("Ingreso eliminado con éxito")
+	return c.Status(200).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
+		Message: "Ingreso eliminado con éxito",
+	})
+}
