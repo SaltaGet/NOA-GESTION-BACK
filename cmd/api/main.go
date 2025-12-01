@@ -1,68 +1,3 @@
-// package main
-
-// import (
-// 	"log"
-// 	"os"
-
-// 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/jobs"
-// 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/middleware"
-// 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/routes"
-// 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
-// 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
-// 	"github.com/gofiber/fiber/v2"
-// 	"github.com/gofiber/swagger"
-// 	"github.com/joho/godotenv"
-
-// 	_ "github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/docs"
-// )
-
-// // @title						APP NOA Gestion
-// // @version					1.0
-// // @description				This is a api to app noa gestion
-// // @termsOfService				http://swagger.io/terms/
-// // @securityDefinitions.apikey	BearerAuth
-// //
-// //	@in							cookie
-// //	@name						access_token
-// //
-// // @description				Type "Bearer" followed by a space and the JWT token. Example: "Bearer eyJhbGciOiJIUz..."
-// func main() {
-// 	err := godotenv.Load()
-// 	if err != nil {
-// 		log.Fatalf("Error al cargar el archivo .env: %v", err)
-// 	}
-
-// 	local := os.Getenv("LOCAL")
-// 	if local == "true" {
-// 		if err := jobs.GenerateSwagger(); err != nil {
-// 			log.Fatalf("Error ejecutando swag init: %v", err)
-// 		}
-// 	}
-
-// 	db, err := database.ConnectDB()
-// 	if err != nil {
-// 		log.Fatalf("Error al conectar con la base de datos: %v", err)
-// 	}
-// 	defer func() {
-// 		database.CloseDB(db)
-// 		database.CloseAllTenantDBs()
-// 	}()
-
-// 	dep := dependencies.NewApplication(db)
-
-// 	app := fiber.New()
-
-// 	app.Use(middleware.BlockAccess())
-// 	app.Use(middleware.LoggingMiddleware)
-// 	app.Use(middleware.InjectionDepends(dep))
-
-// 	app.Get("/api/swagger/*", swagger.HandlerDefault)
-
-// 	routes.SetupRoutes(app, dep)
-
-// 	log.Fatal(app.Listen(":3000"))
-// }
-
 package main
 
 import (
@@ -70,24 +5,33 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
+
+	// "os/signal"
 	"strconv"
 	"strings"
-	"syscall"
+
+	// "syscall"
 	"time"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/initial"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/jobs"
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/middleware"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/routes"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
+	tenant_cache "github.com/SaltaGet/NOA-GESTION-BACK/internal/cache/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/adaptor"
+
+	// "github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/swagger"
 	"github.com/joho/godotenv"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	// "github.com/prometheus/client_golang/prometheus/promhttp"
 
 	_ "github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/docs"
 )
@@ -136,14 +80,29 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Iniciar janitor para limpiar conexiones inactivas
-	go database.StartDBJanitor(ctx)
+	tenants := tenant_cache.GetContainerTenantsCache()
 
-	dep := dependencies.NewApplication(db)
+	// Iniciar janitor para limpiar conexiones inactivas
+	go database.StartDBJanitor(ctx, tenants)
+
+	// s := sse.NewServer(&sse.Options{
+	// 	Headers: map[string]string{
+	// 		"Content-Type":      "text/event-stream",
+	// 		"Cache-Control":     "no-cache, no-transform",
+	// 		"Connection":        "keep-alive",
+	// 		"X-Accel-Buffering": "no",
+	// 	},
+	// })
+	// defer s.Shutdown()
+
+	emailCfg := initial.InitEmail()
+
+	dep := dependencies.NewApplication(db, emailCfg)
 
 	err = jobs.Migrations(dep)
 	if err != nil {
-		log.Fatalf("Error al aplicar migraciones: %v", err)
+		// log.Fatalf("Error al aplicar migraciones: %v", err)
+		logging.ERROR("Error al aplicar migraciones: %v", err)
 	}
 
 	app := fiber.New(fiber.Config{
@@ -151,6 +110,9 @@ func main() {
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		ErrorHandler: customErrorHandler,
+		ProxyHeader: "X-Forwarded-For",
+		DisableStartupMessage: false,
+		StreamRequestBody:     true,
 	})
 
 	app.Use(middleware.BlockAccess())
@@ -192,11 +154,12 @@ func main() {
 	}))
 
 	app.Get("/api/swagger/*", swagger.HandlerDefault)
-	app.Get("/health", healthCheck)
-	app.Get("/cache/stats", cacheStats)
-	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
+	app.Get("/api/health", healthCheck)
+	// app.Get("/cache/stats", cacheStats)
+	// app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 
 	routes.SetupRoutes(app, dep)
+
 
 	// Canal para señales del sistema
 	quit := make(chan os.Signal, 1)
@@ -213,10 +176,10 @@ func main() {
 
 	// Esperar señal de terminación
 	<-quit
-	log.Println("🛑 Apagando servidor...")
+	// log.Println("🛑 Apagando servidor...")
 
 	// Cerrar contexto para detener janitor
-	cancel()
+	// cancel()
 
 	// Shutdown graceful con timeout
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)

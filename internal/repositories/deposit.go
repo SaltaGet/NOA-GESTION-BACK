@@ -67,16 +67,17 @@ func (r *DepositRepository) DepositUpdateStock(updateStock schemas.DepositUpdate
 			return schemas.ErrorResponse(500, "error al actualizar el stock", err)
 		}
 
+		stock := *updateStock.Stock
 		switch updateStock.Method {
 		case "add":
-			deposit.Stock += updateStock.Stock
+			deposit.Stock += stock
 		case "subtract":
-			if deposit.Stock < updateStock.Stock {
-				return schemas.ErrorResponse(400, "stock insuficiente", fmt.Errorf("stock insuficiente: %.2f", updateStock.Stock))
+			if deposit.Stock < stock{
+				return schemas.ErrorResponse(400, "stock insuficiente", fmt.Errorf("stock insuficiente: %.2f", stock))
 			}
-			deposit.Stock -= updateStock.Stock
+			deposit.Stock -= stock
 		case "set":
-			deposit.Stock = updateStock.Stock
+			deposit.Stock = stock
 		default:
 			return schemas.ErrorResponse(400, "metodo de actualizacion no valido", fmt.Errorf("metodo de actualizacion no valido"))
 		}

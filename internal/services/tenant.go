@@ -29,7 +29,7 @@ func (t *TenantService) TenantGetAll() (*[]schemas.TenantResponse, error) {
 	return tenants, nil
 }
 
-func (t *TenantService) TenantGetConections() (*[]string, error) {
+func (t *TenantService) TenantGetConections() ([]*models.Tenant, error) {
 	conections, err := t.TenantRepository.TenantGetConections()
 	if err != nil {
 		return nil, err

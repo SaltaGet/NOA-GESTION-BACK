@@ -256,14 +256,8 @@ func (r *MemberRepository) MemberUpdatePassword(memberID int64, passwordUpdate *
 			return schemas.ErrorResponse(400, "La contraseña actual es incorrecta", err)
 		}
 
-		// Hashear nueva contraseña
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(passwordUpdate.NewPassword), bcrypt.DefaultCost)
-		if err != nil {
-			return schemas.ErrorResponse(500, "Error al hashear la contraseña", err)
-		}
-
 		// Actualizar contraseña
-		member.Password = string(hashedPassword)
+		member.Password = passwordUpdate.NewPassword
 		if err := tx.Save(&member).Error; err != nil {
 			return schemas.ErrorResponse(500, "Error al actualizar la contraseña", err)
 		}

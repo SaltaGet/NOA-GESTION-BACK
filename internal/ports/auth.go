@@ -14,6 +14,8 @@ type AuthRepository interface {
 	AuthMemberGetByID(id int64, connection string, tenantID int64) (*models.Member, *[]string, error)
 	AuthMemberGetByUsername(username string, connection string, tenantID int64) (*models.Member, error)
 	AuthPointSale(pointSaleID int64, connection string, tenantID, memberID int64) (*models.PointSale, error)
+	AuthForgotPassword(forgotPassword *schemas.AuthForgotPassword) (*models.Member, *models.Tenant, error)
+	AuthResetPassword(memberID, tenantID int64, newPass string) error
 }
 
 type AuhtService interface {
@@ -23,4 +25,6 @@ type AuhtService interface {
 	AuthCurrentUser(tenantID, memberID, pointSaleID int64) (*schemas.AuthenticatedUser, error)
 	AuthPointSale(member *schemas.AuthenticatedUser, pointSaleID int64) (string, error)
 	LogoutPointSale(member *schemas.AuthenticatedUser) (string, error)
+	AuthForgotPassword(forgotPassword *schemas.AuthForgotPassword) error
+	AuthResetPassword(resetPassword *schemas.AuthResetPassword) error
 }

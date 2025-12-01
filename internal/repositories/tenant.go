@@ -29,27 +29,26 @@ import (
 // 		return nil, schemas.ErrorResponse(403, "Tenant is inactive", nil)
 // 	}
 
-// 	return &tenant, nil
-// }
+//		return &tenant, nil
+//	}
 func (r *MainRepository) TenantGetByID(tenantID int64) (*models.Tenant, error) {
-    var tenant models.Tenant
-    err := r.DB.
-        Where("id = ?", tenantID).
-        First(&tenant).Error
-    if err != nil {
-        if errors.Is(err, gorm.ErrRecordNotFound) {
-            return nil, schemas.ErrorResponse(404, "Tenant not found", err)
-        }
-        return nil, schemas.ErrorResponse(500, "Error interno retrieving tenant", err)
-    }
+	var tenant models.Tenant
+	err := r.DB.
+		Where("id = ?", tenantID).
+		First(&tenant).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, schemas.ErrorResponse(404, "Tenant not found", err)
+		}
+		return nil, schemas.ErrorResponse(500, "Error interno retrieving tenant", err)
+	}
 
-    if !tenant.IsActive {
-        return nil, schemas.ErrorResponse(403, "Tenant is inactive", fmt.Errorf("tenant is inactive"))
-    }
+	if !tenant.IsActive {
+		return nil, schemas.ErrorResponse(403, "Tenant is inactive", fmt.Errorf("tenant is inactive"))
+	}
 
-    return &tenant, nil
+	return &tenant, nil
 }
-
 
 func (r *MainRepository) TenantGetByIdentifier(identifier string) (*models.Tenant, error) {
 	var tenant models.Tenant
@@ -88,26 +87,24 @@ func (r *MainRepository) TenantGetAll() (*[]schemas.TenantResponse, error) {
 	return &tenants, nil
 }
 
-func (r *MainRepository) TenantGetConections() (*[]string, error) {
-	var connections []string
+func (r *MainRepository) TenantGetConections() ([]*models.Tenant, error) {
+	var tenants []*models.Tenant
 	if err := r.DB.Debug().
-	Model(&models.Tenant{}).
-	Select("connection").
-	Scan(&connections).Error; err != nil {
+		Model(&models.Tenant{}).
+		Select("id", "name", "connection", "identifier").
+		Find(&tenants).Error; err != nil {
 		return nil, schemas.ErrorResponse(500, "Error interno al obtener las connections", err)
 	}
 
-	var connectionsDecrypted []string
-
-	for _, connection := range connections {
-		connectionDecrypted, err := utils.Decrypt(connection)
+	for _, tenant := range tenants {
+		connectionDecrypted, err := utils.Decrypt(tenant.Connection)
 		if err != nil {
 			return nil, schemas.ErrorResponse(500, "Error interno al obtener las connections", err)
 		}
-		connectionsDecrypted = append(connectionsDecrypted, connectionDecrypted)
+		tenant.Connection = connectionDecrypted
 	}
 
-	return &connectionsDecrypted, nil
+	return tenants, nil
 }
 
 func (r *MainRepository) TenantCreateByUserID(tenantCreate *schemas.TenantCreate, userID int64) (int64, error) {
@@ -138,7 +135,7 @@ func (r *MainRepository) TenantCreateByUserID(tenantCreate *schemas.TenantCreate
 
 	if err := tx.Create(tenant).Error; err != nil {
 		tx.Rollback()
-		if errors.Is(err, gorm.ErrInvalidData){
+		if errors.Is(err, gorm.ErrInvalidData) {
 			return 0, schemas.ErrorResponse(400, "Los campos email, cuit_pdv y identifier deben ser únicos, algun campo ya existe", err)
 		}
 		return 0, schemas.ErrorResponse(500, "Error interno al crear tenant", err)
@@ -154,8 +151,8 @@ func (r *MainRepository) TenantCreateByUserID(tenantCreate *schemas.TenantCreate
 	}
 
 	if err := tx.Create(&models.UserTenant{
-		UserID:    user.ID,
-		TenantID:  tenant.ID,
+		UserID:   user.ID,
+		TenantID: tenant.ID,
 	}).Error; err != nil {
 		tx.Rollback()
 		return 0, schemas.ErrorResponse(500, "Error interno al crear user-tenant", err)
@@ -166,12 +163,12 @@ func (r *MainRepository) TenantCreateByUserID(tenantCreate *schemas.TenantCreate
 	memberAdmin := &models.Member{
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
-		Username: user.Username,
-		Email:    user.Email,
-		Password: "1",
-		IsAdmin:  true,
-		Address: user.Address,
-		RoleID: 1,
+		Username:  user.Username,
+		Email:     user.Email,
+		Password:  "1",
+		IsAdmin:   true,
+		Address:   user.Address,
+		RoleID:    1,
 	}
 
 	// enviar email ***
@@ -218,7 +215,7 @@ func (r *MainRepository) TenantUserCreate(tenantUserCreate *schemas.TenantUserCr
 
 	if err := tx.Create(tenant).Error; err != nil {
 		tx.Rollback()
-		if errors.Is(err, gorm.ErrInvalidData){
+		if errors.Is(err, gorm.ErrInvalidData) {
 			return 0, schemas.ErrorResponse(400, "Los campos email, cuit_pdv y identifier deben ser únicos, algun campo ya existe", err)
 		}
 		if schemas.IsDuplicateError(err) {
@@ -226,7 +223,7 @@ func (r *MainRepository) TenantUserCreate(tenantUserCreate *schemas.TenantUserCr
 				return 0, schemas.ErrorResponse(409, "El email del tenant ya existe", err)
 			} else if strings.Contains(err.Error(), "identifier") {
 				return 0, schemas.ErrorResponse(409, "El identificador del tenant ya existe", err)
-			}	else if strings.Contains(err.Error(), "cuit_pdv") {
+			} else if strings.Contains(err.Error(), "cuit_pdv") {
 				return 0, schemas.ErrorResponse(409, "El cuit del tenant ya existe", err)
 			}
 		}
@@ -236,14 +233,14 @@ func (r *MainRepository) TenantUserCreate(tenantUserCreate *schemas.TenantUserCr
 	user := &models.User{
 		FirstName: tenantUserCreate.UserCreate.FirstName,
 		LastName:  tenantUserCreate.UserCreate.LastName,
-		Email:    tenantUserCreate.UserCreate.Email,
-		Address: &tenantUserCreate.TenantCreate.Address,
-		Username: tenantUserCreate.UserCreate.Username,
+		Email:     tenantUserCreate.UserCreate.Email,
+		Address:   &tenantUserCreate.TenantCreate.Address,
+		Username:  tenantUserCreate.UserCreate.Username,
 	}
 
 	if err := tx.Create(user).Error; err != nil {
 		tx.Rollback()
-		if errors.Is(err, gorm.ErrInvalidData){
+		if errors.Is(err, gorm.ErrInvalidData) {
 			if schemas.IsDuplicateError(err) {
 				if strings.Contains(err.Error(), "email") {
 					return 0, schemas.ErrorResponse(409, "El email del usuario ya existe", err)
@@ -257,8 +254,8 @@ func (r *MainRepository) TenantUserCreate(tenantUserCreate *schemas.TenantUserCr
 	}
 
 	if err := tx.Create(&models.UserTenant{
-		UserID:    user.ID,
-		TenantID:  tenant.ID,
+		UserID:   user.ID,
+		TenantID: tenant.ID,
 	}).Error; err != nil {
 		tx.Rollback()
 		return 0, schemas.ErrorResponse(500, "Error interno al crear tenant", err)
@@ -267,12 +264,12 @@ func (r *MainRepository) TenantUserCreate(tenantUserCreate *schemas.TenantUserCr
 	memberAdmin := &models.Member{
 		FirstName: tenantUserCreate.UserCreate.FirstName,
 		LastName:  tenantUserCreate.UserCreate.LastName,
-		Username: tenantUserCreate.UserCreate.Username,
-		Email:    tenantUserCreate.UserCreate.Email,
-		Password: tenantUserCreate.UserCreate.Password,
-		IsAdmin:  true,
-		Address: &tenantUserCreate.TenantCreate.Address,
-		RoleID: 1,
+		Username:  tenantUserCreate.UserCreate.Username,
+		Email:     tenantUserCreate.UserCreate.Email,
+		Password:  tenantUserCreate.UserCreate.Password,
+		IsAdmin:   true,
+		Address:   &tenantUserCreate.TenantCreate.Address,
+		RoleID:    1,
 	}
 
 	err = database.PrepareDB(uri, *memberAdmin)

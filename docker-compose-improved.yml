@@ -1,0 +1,211 @@
+services:
+  db:
+    image: mariadb:11
+    container_name: mariadb-noa
+    ports:
+      - "3308:3306"
+    env_file:
+      - .env
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=${DB_USER}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u${DB_USER} -p${DB_PASSWORD} || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  api:
+    image: danielmchachagua/noagestionback:0.0.4
+    container_name: noa-gestion
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - default
+      - monitoring
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SERVER_ROOT_URL=https://noa-gestion.saltaget.com/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    ports:
+      - "3030:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - monitoring
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    user: root
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./promtail-config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # cadvisor:
+  #   image: gcr.io/cadvisor/cadvisor:latest
+  #   container_name: cadvisor
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /var/run:/var/run:rw
+  #     - /sys:/sys:ro
+  #     - /var/lib/docker/:/var/lib/docker:ro
+  #   restart: unless-stopped
+  #   networks:
+  #     - monitoring
+
+  redis:
+    image: redis:7-alpine
+    container_name: noa_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - monitoring
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: noa_redis_ui
+    restart: unless-stopped
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    networks:
+      - monitoring
+    depends_on:
+      - redis
+
+networks:
+  monitoring:
+
+
+volumes:
+  db-data:
+  grafana-storage:
+  redis_data:
+    driver: local
+
+# services:
+#   mysql:
+#     image: mysql:8.0
+#     container_name: noa_mysql
+#     restart: unless-stopped
+#     environment:
+#       MYSQL_ROOT_PASSWORD: root
+#       MYSQL_DATABASE: noa_gestion_main
+#       MYSQL_USER: noauser
+#       MYSQL_PASSWORD: noapass
+#     ports:
+#       - "3306:3306"
+#     volumes:
+#       - mysql_data:/var/lib/mysql
+#       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+#     command: --default-authentication-plugin=mysql_native_password
+#     networks:
+#       - noa_network
+#     healthcheck:
+#       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+
+#   redis:
+#     image: redis:7-alpine
+#     container_name: noa_redis
+#     restart: unless-stopped
+#     ports:
+#       - "6379:6379"
+#     volumes:
+#       - redis_data:/data
+#     networks:
+#       - noa_network
+#     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+#     healthcheck:
+#       test: [ "CMD", "redis-cli", "ping" ]
+#       interval: 10s
+#       timeout: 3s
+#       retries: 5
+
+#   redis-commander:
+#     image: rediscommander/redis-commander:latest
+#     container_name: noa_redis_ui
+#     restart: unless-stopped
+#     environment:
+#       - REDIS_HOSTS=local:redis:6379
+#     ports:
+#       - "8081:8081"
+#     networks:
+#       - noa_network
+#     depends_on:
+#       - redis
+
+# volumes:
+#   mysql_data:
+#     driver: local
+#   redis_data:
+#     driver: local
+
+# networks:
+#   noa_network:
+#     driver: bridge

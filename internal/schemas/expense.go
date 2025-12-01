@@ -70,7 +70,7 @@ type ExpenseBuyResponseSimple struct {
 type ExpenseOtherResponse struct {
 	ID          int64               `json:"id"`
 	PointSale   *PointSaleResponse  `json:"point_sale,omitempty"`
-	Member      MemberSimpleDTO     `json:"member"`
+	Member      *MemberSimpleDTO     `json:"member,omitempty"`
 	RegisterID  *int64              `json:"register_id,omitempty"`
 	Description *string             `json:"description,omitempty"`
 	Total       float64             `json:"total"`
@@ -85,12 +85,14 @@ type TypeExpenseResponse struct {
 }
 
 type ExpenseOtherResponseDTO struct {
-	ID         int64     `json:"id"`
-	RegisterID *int64    `json:"register_id,omitempty"`
-	Details    *string   `json:"details,omitempty"`
-	Total      float64   `json:"total"`
-	PayMethod  string    `json:"pay_method"`
-	CreatedAt  time.Time `json:"created_at"`
+	ID          int64               `json:"id"`
+	RegisterID  *int64              `json:"register_id,omitempty"`
+	Details     *string             `json:"details,omitempty"`
+	Total       float64             `json:"total"`
+	PayMethod   string              `json:"pay_method"`
+	TypeExpense TypeExpenseResponse `json:"type_expense"`
+	PointSale   *PointSaleResponse  `json:"point_sale,omitempty"`
+	CreatedAt   time.Time           `json:"created_at"`
 }
 
 type ExpenseBuyCreate struct {

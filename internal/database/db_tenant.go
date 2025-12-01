@@ -18,7 +18,7 @@ func PrepareDB(uri string, memberAdmin models.Member) error {
 	env := os.Getenv("ENV")
 
 	var driver gorm.Dialector
-	if err := ensureDatabaseExists(uri); err != nil {
+	if err := EnsureDatabaseExists(uri); err != nil {
 		return fmt.Errorf("error al crear la base: %w", err)
 	}
 	driver = mysql.Open(uri)
@@ -127,7 +127,7 @@ func handleDBCreationError(env, uri string) {
 	if env == "prod" {
 		_ = dropDatabase(uri)
 	} else {
-		_ = os.Remove(filePathFromURI(uri))
+		_ = os.Remove(FilePathFromURI(uri))
 	}
 }
 
@@ -177,7 +177,7 @@ func UpdateModels(uri string) error {
 	env := os.Getenv("ENV")
 
 	var driver gorm.Dialector
-	if err := ensureDatabaseExists(uri); err != nil {
+	if err := EnsureDatabaseExists(uri); err != nil {
 		return fmt.Errorf("error al crear la base: %w", err)
 	}
 	driver = mysql.Open(uri)

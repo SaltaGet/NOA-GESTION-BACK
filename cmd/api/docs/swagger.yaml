@@ -1,4 +1,14 @@
 definitions:
+  schemas.AuthForgotPassword:
+    properties:
+      tenant_identifier:
+        type: string
+      username:
+        type: string
+    required:
+    - tenant_identifier
+    - username
+    type: object
   schemas.AuthLogin:
     properties:
       password:
@@ -18,6 +28,21 @@ definitions:
     required:
     - password
     - username
+    type: object
+  schemas.AuthResetPassword:
+    properties:
+      confirm_pass:
+        example: Password123*
+        type: string
+      new_password:
+        example: Password123*
+        type: string
+      token:
+        type: string
+    required:
+    - confirm_pass
+    - new_password
+    - token
     type: object
   schemas.AuthenticatedUser:
     properties:
@@ -286,6 +311,7 @@ definitions:
         type: integer
       stock:
         example: 10
+        minimum: 0
         type: number
     required:
     - product_id
@@ -508,10 +534,14 @@ definitions:
         type: integer
       pay_method:
         type: string
+      point_sale:
+        $ref: '#/definitions/schemas.PointSaleResponse'
       register_id:
         type: integer
       total:
         type: number
+      type_expense:
+        $ref: '#/definitions/schemas.TypeExpenseResponse'
     type: object
   schemas.ExpenseOtherUpdate:
     properties:
@@ -572,6 +602,8 @@ definitions:
         $ref: '#/definitions/schemas.MemberSimpleDTO'
       method_income:
         type: string
+      point_sale:
+        $ref: '#/definitions/schemas.PointSaleResponse'
       total:
         type: number
       type_income:
@@ -894,6 +926,137 @@ definitions:
       last_name:
         type: string
       username:
+        type: string
+    type: object
+  schemas.MemberUpdate:
+    properties:
+      address:
+        example: address|null
+        type: string
+      email:
+        example: a@b.com
+        type: string
+      first_name:
+        example: John
+        type: string
+      id:
+        example: 1
+        type: integer
+      is_active:
+        example: true
+        type: boolean
+      last_name:
+        example: Doe
+        type: string
+      phone:
+        example: phone|null
+        type: string
+      point_sales_ids:
+        example:
+        - 1
+        - 2
+        - 3
+        items:
+          type: integer
+        type: array
+      role_id:
+        example: 1
+        type: integer
+      username:
+        example: johndoe
+        type: string
+    required:
+    - email
+    - first_name
+    - id
+    - is_active
+    - last_name
+    - point_sales_ids
+    - role_id
+    - username
+    type: object
+  schemas.MemberUpdatePassword:
+    properties:
+      confirm_pass:
+        example: Password123*
+        type: string
+      new_password:
+        example: Password123*
+        type: string
+      old_password:
+        example: Password123*
+        type: string
+    required:
+    - confirm_pass
+    - new_password
+    - old_password
+    type: object
+  schemas.MovementStockItem:
+    properties:
+      amount:
+        example: 10
+        type: number
+      from_id:
+        example: 1
+        type: integer
+      from_type:
+        enum:
+        - deposit
+        - point_sale
+        example: deposit|point_sale
+        type: string
+      ignore_stock:
+        example: false
+        type: boolean
+      to_id:
+        example: 1
+        type: integer
+      to_type:
+        enum:
+        - deposit
+        - point_sale
+        example: deposit|point_sale
+        type: string
+    required:
+    - amount
+    - from_id
+    - ignore_stock
+    - to_id
+    type: object
+  schemas.MovementStockList:
+    properties:
+      movement_stock_item:
+        items:
+          $ref: '#/definitions/schemas.MovementStockItem'
+        type: array
+      product_id:
+        example: 1
+        type: integer
+    required:
+    - movement_stock_item
+    - product_id
+    type: object
+  schemas.MovementStockResponse:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      from_id:
+        type: integer
+      from_type:
+        type: string
+      id:
+        type: integer
+      ignore_stock:
+        type: boolean
+      member:
+        $ref: '#/definitions/schemas.MemberSimpleDTO'
+      product:
+        $ref: '#/definitions/schemas.ProductResponse'
+      to_id:
+        type: integer
+      to_type:
         type: string
     type: object
   schemas.PayCreate:
@@ -1440,29 +1603,31 @@ paths:
                 body:
                   $ref: '#/definitions/schemas.AuthenticatedUser'
               type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/schemas.Response'
       security:
       - CookieAuth: []
       summary: CurrentUser user
+      tags:
+      - Auth
+  /api/v1/auth/forgot_password:
+    post:
+      consumes:
+      - application/json
+      description: recuperar contraseña por email
+      parameters:
+      - description: field to send email
+        in: body
+        name: forgot_password
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.AuthForgotPassword'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      summary: ForgotPassword
       tags:
       - Auth
   /api/v1/auth/login:
@@ -1482,26 +1647,6 @@ paths:
       responses:
         "200":
           description: OK
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal Server Error
           schema:
             $ref: '#/definitions/schemas.Response'
       summary: Login user
@@ -1526,26 +1671,6 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/schemas.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/schemas.Response'
       summary: Login Admin user
       tags:
       - Auth
@@ -1567,30 +1692,6 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/schemas.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/schemas.Response'
       security:
       - CookieAuth: []
       summary: LoginPointSale
@@ -1606,26 +1707,6 @@ paths:
       responses:
         "200":
           description: OK
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal Server Error
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
@@ -1645,26 +1726,6 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/schemas.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/schemas.Response'
       security:
       - CookieAuth: []
       summary: Logout Admin user
@@ -1682,33 +1743,31 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/schemas.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/schemas.Response'
       security:
       - CookieAuth: []
       summary: LogoutPointSale
+      tags:
+      - Auth
+  /api/v1/auth/reset_password:
+    post:
+      consumes:
+      - application/json
+      description: recuperar contraseña por email
+      parameters:
+      - description: new password
+        in: body
+        name: reset_password
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.AuthResetPassword'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      summary: ResetPassword
       tags:
       - Auth
   /api/v1/cash_register/close:
@@ -2723,7 +2782,101 @@ paths:
       summary: ExpenseBuyUpdate
       tags:
       - ExpenseBuy
-  /api/v1/expense_other/{id}:
+  /api/v1/expense_other/create:
+    post:
+      consumes:
+      - application/json
+      description: Crear un egreso de compra
+      parameters:
+      - description: ExpenseOther information
+        in: body
+        name: expenseOtherCreate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.ExpenseOtherCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ExpenseOther created successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: ExpenseOtherCreate
+      tags:
+      - ExpenseOther
+  /api/v1/expense_other/create_point_sale:
+    post:
+      consumes:
+      - application/json
+      description: Crear un egreso de compra de punto de venta
+      parameters:
+      - description: ExpenseOther information
+        in: body
+        name: expenseOtherCreate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.ExpenseOtherCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ExpenseOther created successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: ExpenseOtherCreatePointSale
+      tags:
+      - ExpenseOther
+  /api/v1/expense_other/delete/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Eliminar un egreso de compra
+      parameters:
+      - description: ID of the expenseOther
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ExpenseOther deleted successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: ExpenseOtherDelete
+      tags:
+      - ExpenseOther
+  /api/v1/expense_other/delete_point_sale/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Eliminar un egreso de compra de punto de venta
+      parameters:
+      - description: ID of the expenseOther
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ExpenseOther deleted successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: ExpenseOtherDeletePointSale
+      tags:
+      - ExpenseOther
+  /api/v1/expense_other/get/{id}:
     get:
       consumes:
       - application/json
@@ -2749,30 +2902,6 @@ paths:
       security:
       - CookieAuth: []
       summary: ExpenseOtherGetByID
-      tags:
-      - ExpenseOther
-  /api/v1/expense_other/create:
-    post:
-      consumes:
-      - application/json
-      description: Crear un egreso de compra
-      parameters:
-      - description: ExpenseOther information
-        in: body
-        name: expenseOtherCreate
-        required: true
-        schema:
-          $ref: '#/definitions/schemas.ExpenseOtherCreate'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: ExpenseOther created successfully
-          schema:
-            $ref: '#/definitions/schemas.Response'
-      security:
-      - CookieAuth: []
-      summary: ExpenseOtherCreate
       tags:
       - ExpenseOther
   /api/v1/expense_other/get_by_date:
@@ -2820,6 +2949,79 @@ paths:
       summary: ExpenseOtherGetByDate
       tags:
       - ExpenseOther
+  /api/v1/expense_other/get_by_date_point_sale:
+    get:
+      consumes:
+      - application/json
+      description: Obtiene los egresos por fecha de punto de venta
+      parameters:
+      - example: "2022-01-01"
+        in: query
+        name: from_date
+        required: true
+        type: string
+      - example: "2022-12-31"
+        in: query
+        name: to_date
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of expenseOthers
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.ExpenseOtherResponseDTO'
+                  type: array
+              type: object
+      security:
+      - CookieAuth: []
+      summary: ExpenseOtherGetByDatePointSale
+      tags:
+      - ExpenseOther
+  /api/v1/expense_other/get_point_sale{id}:
+    get:
+      consumes:
+      - application/json
+      description: Obtener un egreso por ID de punto de venta
+      parameters:
+      - description: ID of ExpenseOther
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ExpenseOther obtained successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.ExpenseOtherResponse'
+              type: object
+      security:
+      - CookieAuth: []
+      summary: ExpenseOtherGetByIDPointSale
+      tags:
+      - ExpenseOther
   /api/v1/expense_other/update:
     put:
       consumes:
@@ -2842,6 +3044,30 @@ paths:
       security:
       - CookieAuth: []
       summary: ExpenseOtherUpdate
+      tags:
+      - ExpenseOther
+  /api/v1/expense_other/update_point_sale:
+    put:
+      consumes:
+      - application/json
+      description: Actualizar un egreso de compra de punto de venta
+      parameters:
+      - description: ExpenseOther data to update
+        in: body
+        name: expenseOtherUpdate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.ExpenseOtherUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ExpenseOther updated successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: ExpenseOtherUpdatePointSale
       tags:
       - ExpenseOther
   /api/v1/expenseBuy/delete/{id}:
@@ -2867,13 +3093,61 @@ paths:
       summary: ExpenseBuyDelete
       tags:
       - ExpenseBuy
-  /api/v1/expenseOther/delete/{id}:
+  /api/v1/income_other/create:
+    post:
+      consumes:
+      - application/json
+      description: Crea un nuevo ingreso de venta
+      parameters:
+      - description: IncomeOther information
+        in: body
+        name: incomeOtherCreate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.IncomeOtherCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: IncomeOther created successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: IncomeOtherCreate
+      tags:
+      - IncomeOther
+  /api/v1/income_other/create_point_sale:
+    post:
+      consumes:
+      - application/json
+      description: Crea un nuevo ingreso de venta para un punto de venta específico
+      parameters:
+      - description: IncomeOther information
+        in: body
+        name: incomeOtherCreate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.IncomeOtherCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: IncomeOther created successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: IncomeOtherCreateByPointSale
+      tags:
+      - IncomeOther
+  /api/v1/income_other/delete/{id}:
     delete:
       consumes:
       - application/json
-      description: Eliminar un egreso de compra
+      description: Elimina un ingreso de venta
       parameters:
-      - description: ID of the expenseOther
+      - description: ID of the incomeOther
         in: path
         name: id
         required: true
@@ -2882,15 +3156,38 @@ paths:
       - application/json
       responses:
         "200":
-          description: ExpenseOther deleted successfully
+          description: IncomeOther deleted successfully
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
       - CookieAuth: []
-      summary: ExpenseOtherDelete
+      summary: IncomeOtherDelete
       tags:
-      - ExpenseOther
-  /api/v1/income_other/{id}:
+      - IncomeOther
+  /api/v1/income_other/delete_point_sale/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Elimina un ingreso de venta para un punto de venta específico
+      parameters:
+      - description: ID of the incomeOther
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: IncomeOther deleted successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: IncomeOtherDeleteByPointSale
+      tags:
+      - IncomeOther
+  /api/v1/income_other/get/{id}:
     get:
       consumes:
       - application/json
@@ -2916,53 +3213,6 @@ paths:
       security:
       - CookieAuth: []
       summary: IncomeOtherGetByID
-      tags:
-      - IncomeOther
-  /api/v1/income_other/create:
-    post:
-      consumes:
-      - application/json
-      description: Crea un nuevo ingreso de venta
-      parameters:
-      - description: IncomeOther information
-        in: body
-        name: incomeOtherCreate
-        required: true
-        schema:
-          $ref: '#/definitions/schemas.IncomeOtherCreate'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: IncomeOther created successfully
-          schema:
-            $ref: '#/definitions/schemas.Response'
-      security:
-      - CookieAuth: []
-      summary: IncomeOtherCreate
-      tags:
-      - IncomeOther
-  /api/v1/income_other/delete/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: Elimina un ingreso de venta
-      parameters:
-      - description: ID of the incomeOther
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: IncomeOther deleted successfully
-          schema:
-            $ref: '#/definitions/schemas.Response'
-      security:
-      - CookieAuth: []
-      summary: IncomeOtherDelete
       tags:
       - IncomeOther
   /api/v1/income_other/get_by_date:
@@ -3010,6 +3260,79 @@ paths:
       summary: IncomeOtherGetByDate
       tags:
       - IncomeOther
+  /api/v1/income_other/get_by_date_point_sale:
+    get:
+      consumes:
+      - application/json
+      description: Obtiene ingresos de venta por fecha para un punto de venta específico
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - example: "2022-01-01"
+        in: query
+        name: from_date
+        required: true
+        type: string
+      - example: "2022-12-31"
+        in: query
+        name: to_date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of incomeOthers
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.IncomeOtherResponse'
+                  type: array
+              type: object
+      security:
+      - CookieAuth: []
+      summary: IncomeOtherGetByDatePointSale
+      tags:
+      - IncomeOther
+  /api/v1/income_other/get_by_id_point_sale/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Obtiene ingreso de venta por ID para un punto de venta específico
+      parameters:
+      - description: ID of the incomeOther
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: IncomeOther details fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.IncomeOtherResponse'
+              type: object
+      security:
+      - CookieAuth: []
+      summary: IncomeOtherGetByIDPointSale
+      tags:
+      - IncomeOther
   /api/v1/income_other/update:
     put:
       consumes:
@@ -3032,6 +3355,30 @@ paths:
       security:
       - CookieAuth: []
       summary: IncomeOtherUpdate
+      tags:
+      - IncomeOther
+  /api/v1/income_other/update_point_sale:
+    put:
+      consumes:
+      - application/json
+      description: Actualiza un ingreso de venta para un punto de venta específico
+      parameters:
+      - description: IncomeOther data to update
+        in: body
+        name: incomeOtherUpdate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.IncomeOtherUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: IncomeOther updated successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: IncomeOtherUpdateByPointSale
       tags:
       - IncomeOther
   /api/v1/income_sale/{id}:
@@ -3194,7 +3541,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Members obtenidos con éxito
+          description: Members creado con éxito
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
@@ -3281,6 +3628,213 @@ paths:
       summary: Memeber GetAll
       tags:
       - Member
+  /api/v1/member/update:
+    put:
+      consumes:
+      - application/json
+      description: Update member
+      parameters:
+      - description: MemberUpdate
+        in: body
+        name: member_update
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.MemberUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Members actualizado con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: MemberUpdate
+      tags:
+      - Member
+  /api/v1/member/update_password:
+    put:
+      consumes:
+      - application/json
+      description: Update member password
+      parameters:
+      - description: MemberUpdatePassword
+        in: body
+        name: member_update_update
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.MemberUpdatePassword'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Members obtenidos con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: MemberUpdatePassword
+      tags:
+      - Member
+  /api/v1/movement_stock/get/{id}:
+    get:
+      consumes:
+      - application/json
+      description: MovementStockGet Obtener un movimiento de stock por ID
+      parameters:
+      - description: ID del movimiento de stock
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.MovementStockResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: MovementStockGet
+      tags:
+      - MovementStock
+  /api/v1/movement_stock/get_by_date:
+    get:
+      consumes:
+      - application/json
+      description: Obtener movimeintos de sotck por paginacion
+      parameters:
+      - default: 1
+        description: Número de página
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Número de elementos por página
+        in: query
+        name: limit
+        type: integer
+      - example: "2022-01-01"
+        in: query
+        name: from_date
+        required: true
+        type: string
+      - example: "2022-12-31"
+        in: query
+        name: to_date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.MovementStockResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: MovementStockGetByDate
+      tags:
+      - MovementStock
+  /api/v1/movement_stock/move_list:
+    post:
+      consumes:
+      - application/json
+      description: movimiento de stock entre doposito y puntos de ventas por lista
+      parameters:
+      - description: movimiento de stock
+        in: body
+        name: movement_stock
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/schemas.MovementStockList'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: MovementStockList
+      tags:
+      - MovementStock
   /api/v1/permission/get_all:
     get:
       consumes:

@@ -1,10 +1,14 @@
 package controllers
 
-import "github.com/SaltaGet/NOA-GESTION-BACK/internal/ports"
+import (
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/ports"
+	"github.com/alexandrevicenzi/go-sse"
+)
 
 
 type AuthController struct {
 	AuthService ports.AuhtService
+	EmailService ports.EmailService
 }
 
 type CashRegisterController struct {
@@ -41,6 +45,16 @@ type IncomeSaleController struct {
 
 type MemberController struct {
 	MemberService ports.MemberService
+}
+
+type MovementStockController struct {
+	MovementStockService ports.MovementStockService
+	NotificationController *NotificationController
+}
+
+type NotificationController struct {
+	NotificationService ports.NotificationService
+	SSEServer 	*sse.Server
 }
 
 type PermissionController struct {

@@ -1,52 +1,56 @@
 package routes
 
 import (
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/controllers"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/middleware"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
 	"github.com/gofiber/fiber/v2"
 )
 
-func ProductRoutes(app *fiber.App){
+func ProductRoutes(app *fiber.App) {
 	prod := app.Group("/api/v1/product", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
-	prod.Get("/get_all", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
-		return ctrl.ProductGetAll(c)
-	}))
+	prod.Get("/get_all", func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.ProductController.ProductGetAll(c)
+	})
 
-	prod.Get("/get_by_name", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
-		return ctrl.ProductGetByName(c)
-	}))
-	
-	prod.Get("/get_by_code", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
-		return ctrl.ProductGetByCode(c)
-	}))
+	prod.Get("/get_by_name", func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.ProductController.ProductGetByName(c)
+	})
 
-	prod.Get("/get_all", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
-		return ctrl.ProductGetAll(c)
-	}))
+	prod.Get("/get_by_code", func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.ProductController.ProductGetByCode(c)
+	})
 
-	prod.Post("/create", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
-		return ctrl.ProductCreate(c)
-	}))
+	prod.Post("/create", func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.ProductController.ProductCreate(c)
+	})
 
-	prod.Put("/update", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
-		return ctrl.ProductUpdate(c)
-	}))
+	prod.Put("/update", func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.ProductController.ProductUpdate(c)
+	})
 
-	prod.Put("/list_price", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
-		return ctrl.ProductPriceUpdate(c)
-	}))
+	prod.Put("/list_price", func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.ProductController.ProductPriceUpdate(c)
+	})
 
-	prod.Delete("/delete/:id", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
-		return ctrl.ProductDelete(c)
-	}))
+	prod.Delete("/delete/:id", func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.ProductController.ProductDelete(c)
+	})
 
-	prod.Get("/get_by_category/:category_id", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
-		return ctrl.ProductGetByCategoryID(c)
-	}))
+	prod.Get("/get_by_category/:category_id", func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.ProductController.ProductGetByCategoryID(c)
+	})
 
-	prod.Get("/get/:id", GetController("ProductController", func(c *fiber.Ctx, ctrl *controllers.ProductController) error {
-		return ctrl.ProductGetByID(c)
-	}))
-
+	prod.Get("/get/:id", func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.ProductController.ProductGetByID(c)
+	})
 }

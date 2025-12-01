@@ -18,11 +18,6 @@ import (
 //	@Produce		json
 //	@Param			credentials	body		schemas.AuthLogin	true	"Credentials"
 //	@Success		200			{object}	schemas.Response
-//	@Failure		400			{object}	schemas.Response
-//	@Failure		401			{object}	schemas.Response
-//	@Failure		422			{object}	schemas.Response
-//	@Failure		404			{object}	schemas.Response
-//	@Failure		500			{object}	schemas.Response
 //	@Router			/api/v1/auth/login [post]
 func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
 	logging.INFO("Login")
@@ -70,12 +65,6 @@ func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
 //
 //	@Param			point_sale_id	path		string	true	"id del punto de venta"
 //	@Success		200				{object}	schemas.Response
-//	@Failure		400				{object}	schemas.Response
-//	@Failure		401				{object}	schemas.Response
-//	@Failure		403				{object}	schemas.Response
-//	@Failure		404				{object}	schemas.Response
-//	@Failure		422				{object}	schemas.Response
-//	@Failure		500				{object}	schemas.Response
 //	@Router			/api/v1/auth/login_point_sale/{point_sale_id} [post]
 func (a *AuthController) AuthPointSale(c *fiber.Ctx) error {
 	logging.INFO("Login tenant")
@@ -132,12 +121,6 @@ func (a *AuthController) AuthPointSale(c *fiber.Ctx) error {
 //	@Security		CookieAuth
 //
 //	@Success		200	{object}	schemas.Response
-//	@Failure		400	{object}	schemas.Response
-//	@Failure		401	{object}	schemas.Response
-//	@Failure		403	{object}	schemas.Response
-//	@Failure		404	{object}	schemas.Response
-//	@Failure		422	{object}	schemas.Response
-//	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/auth/logout_point_sale [post]
 func (a *AuthController) LogoutPointSale(c *fiber.Ctx) error {
 	logging.INFO("Logout tenant")
@@ -178,11 +161,6 @@ func (a *AuthController) LogoutPointSale(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response
-//	@Failure		400	{object}	schemas.Response
-//	@Failure		401	{object}	schemas.Response
-//	@Failure		422	{object}	schemas.Response
-//	@Failure		404	{object}	schemas.Response
-//	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/auth/logout [post]
 func (a *AuthController) Logout(ctx *fiber.Ctx) error {
 	logging.INFO("Logout")
@@ -210,11 +188,6 @@ func (a *AuthController) Logout(ctx *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response{body=schemas.AuthenticatedUser}
-//	@Failure		400	{object}	schemas.Response
-//	@Failure		401	{object}	schemas.Response
-//	@Failure		422	{object}	schemas.Response
-//	@Failure		404	{object}	schemas.Response
-//	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/auth/current_user [get]
 func (a *AuthController) CurrentUser(c *fiber.Ctx) error {
 	logging.INFO("Obtener usuario actual")
@@ -237,11 +210,6 @@ func (a *AuthController) CurrentUser(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Param			credentials	body		schemas.AuthLoginAdmin	true	"Credentials"
 //	@Success		200			{object}	schemas.Response
-//	@Failure		400			{object}	schemas.Response
-//	@Failure		401			{object}	schemas.Response
-//	@Failure		422			{object}	schemas.Response
-//	@Failure		404			{object}	schemas.Response
-//	@Failure		500			{object}	schemas.Response
 //	@Router			/api/v1/auth/login_admin [post]
 func (a *AuthController) AuthLoginAdmin(c *fiber.Ctx) error {
 	logging.INFO("Login")
@@ -289,11 +257,6 @@ func (a *AuthController) AuthLoginAdmin(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response
-//	@Failure		400	{object}	schemas.Response
-//	@Failure		401	{object}	schemas.Response
-//	@Failure		422	{object}	schemas.Response
-//	@Failure		404	{object}	schemas.Response
-//	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/auth/logout_admin [post]
 func (a *AuthController) LogoutAdmin(ctx *fiber.Ctx) error {
 	logging.INFO("Logout")
@@ -311,3 +274,70 @@ func (a *AuthController) LogoutAdmin(ctx *fiber.Ctx) error {
 		Message: "Logout exitoso",
 	})
 }
+
+//	ForgotPassword godoc
+//
+//	@Summary		ForgotPassword
+//	@Description	recuperar contraseña por email
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			forgot_password	body		schemas.AuthForgotPassword	true "field to send email"
+//	@Success		200				{object}	schemas.Response
+//	@Router			/api/v1/auth/forgot_password [post]
+func (a *AuthController) AuthForgotPassword(ctx *fiber.Ctx) error {
+	logging.INFO("Forgot Password")
+	var authForgotPassword schemas.AuthForgotPassword
+	if err := ctx.BodyParser(&authForgotPassword); err != nil {
+		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
+	}
+	if err := authForgotPassword.Validate(); err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	err := a.AuthService.AuthForgotPassword(&authForgotPassword)
+	if err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	logging.INFO("Email enviado con exito!")
+	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
+		Message: "Email enviado con exito!",
+	})
+}
+
+//	ResetPassword godoc
+//
+//	@Summary		ResetPassword
+//	@Description	recuperar contraseña por email
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			reset_password	body		schemas.AuthResetPassword	true "new password"
+//	@Success		200				{object}	schemas.Response
+//	@Router			/api/v1/auth/reset_password [post]
+func (a *AuthController) AuthResetPassword(ctx *fiber.Ctx) error {
+	logging.INFO("Reset Password")
+	var authResetPassword schemas.AuthResetPassword
+	if err := ctx.BodyParser(&authResetPassword); err != nil {
+		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
+	}
+	if err := authResetPassword.Validate(); err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	err := a.AuthService.AuthResetPassword(&authResetPassword)
+	if err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	logging.INFO("Contraseña actualizada con exito!")
+	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
+		Message: "Contraseña actualizada con exito!",
+	})
+}
+

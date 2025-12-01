@@ -120,7 +120,7 @@ func (m *MemberController) MemberGetByID(c *fiber.Ctx) error {
 	})
 }
 
-// Member godoc
+// MemberCreate godoc
 //
 //	@Summary		Memeber Create
 //	@Description	Memeber Create required auth token
@@ -129,7 +129,7 @@ func (m *MemberController) MemberGetByID(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		CookieAuth
 //	@Param			member_create	body		schemas.MemberCreate	true	"MemberCreate"
-//	@Success		200				{object}	schemas.Response		"Members obtenidos con éxito"
+//	@Success		200				{object}	schemas.Response		"Members creado con éxito"
 //	@Router			/api/v1/member/create [post]
 func (m *MemberController) MemberCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear miembro")
@@ -157,5 +157,87 @@ func (m *MemberController) MemberCreate(c *fiber.Ctx) error {
 		Status:  true,
 		Body:    id,
 		Message: "Miembro creado con éxito",
+	})
+}
+
+// MemberUpdate godoc
+//
+//	@Summary		MemberUpdate
+//	@Description	Update member
+//	@Tags			Member
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			member_update	body		schemas.MemberUpdate	true	"MemberUpdate"
+//	@Success		200				{object}	schemas.Response		"Members actualizado con éxito"
+//	@Router			/api/v1/member/update [put]
+func (m *MemberController) MemberUpdate(c *fiber.Ctx) error {
+	logging.INFO("Editar miembro")
+
+	var memberUpdate schemas.MemberUpdate
+	if err := c.BodyParser(&memberUpdate); err != nil {
+		logging.ERROR("Error: %s", err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
+			Status:  false,
+			Body:    nil,
+			Message: "Invalid request" + err.Error(),
+		})
+	}
+	if err := memberUpdate.Validate(); err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	err := m.MemberService.MemberUpdate(&memberUpdate)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	logging.INFO("Miembro editado con éxito")
+	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
+		Message: "Miembro editado con éxito",
+	})
+}
+
+// MemberUpdatePassword godoc
+//
+//	@Summary		MemberUpdatePassword
+//	@Description	Update member password
+//	@Tags			Member
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			member_update_update	body		schemas.MemberUpdatePassword	true	"MemberUpdatePassword"
+//	@Success		200						{object}	schemas.Response				"Members obtenidos con éxito"
+//	@Router			/api/v1/member/update_password [put]
+func (m *MemberController) MemberUpdatePassword(c *fiber.Ctx) error {
+	logging.INFO("Editar password miembro")
+
+	var memberUpdatePassword schemas.MemberUpdatePassword
+	if err := c.BodyParser(&memberUpdatePassword); err != nil {
+		logging.ERROR("Error: %s", err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
+			Status:  false,
+			Body:    nil,
+			Message: "Invalid request" + err.Error(),
+		})
+	}
+	if err := memberUpdatePassword.Validate(); err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+
+	err := m.MemberService.MemberUpdatePassword(member.ID, &memberUpdatePassword)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	logging.INFO("Password miembro editado con éxito")
+	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
+		Message: "Password del miembro editado con éxito",
 	})
 }

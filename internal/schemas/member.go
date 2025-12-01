@@ -168,7 +168,7 @@ func (u MemberUpdatePassword) Validate() error {
 
 	// validación manual: confirmación de contraseña
 	if u.NewPassword != u.ConfirmPass {
-		return ErrorResponse(422, "las contraseñas no coinciden", nil)
+		return ErrorResponse(422, "las contraseñas no coinciden", fmt.Errorf("las contraseñas no coinciden"))
 	}
 
 	return nil

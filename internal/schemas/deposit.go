@@ -17,10 +17,11 @@ type DepositResponse struct {
 }
 
 type DepositUpdateStock struct {
-	ProductID int64   `json:"product_id" validate:"required" example:"1"`
-	Stock     float64 `json:"stock" validate:"required" example:"10"`
-	Method    string `json:"method" validate:"oneof=add subtract set" example:"add|subtract|set"`
+	ProductID int64    `json:"product_id" validate:"required" example:"1"`
+	Stock     *float64 `json:"stock" validate:"required,gte=0" example:"10"`
+	Method    string   `json:"method" validate:"oneof=add subtract set" example:"add|subtract|set"`
 }
+
 
 func (d *DepositUpdateStock) Validate() error {
 	validate := validator.New()

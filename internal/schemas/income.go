@@ -25,7 +25,7 @@ type ItemIncomeSaleCreate struct {
 }
 
 type PayCreate struct {
-	Total    float64 `json:"total" validate:"required"`
+	Total     float64 `json:"total" validate:"required"`
 	MethodPay string  `json:"method_pay" validate:"oneof=cash credit card transfer"`
 }
 
@@ -72,7 +72,7 @@ type ItemIncomeSaleUpdate struct {
 }
 
 type PayUpdate struct {
-	Total    float64 `json:"total" validate:"required"`
+	Total     float64 `json:"total" validate:"required"`
 	MethodPay string  `json:"method_pay" validate:"oneof=cash credit card transfer"`
 }
 
@@ -202,6 +202,7 @@ type IncomeOtherResponse struct {
 	TypeIncome   TypeIncomeResponse `json:"type_income"`
 	Details      *string            `json:"details,omitempty"`
 	MethodIncome string             `json:"method_income"`
+	PointSale    *PointSaleResponse `json:"point_sale,omitempty"`
 	CreatedAt    time.Time          `json:"created_at"`
 }
 

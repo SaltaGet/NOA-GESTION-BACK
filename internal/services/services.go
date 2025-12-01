@@ -1,11 +1,15 @@
 package services
 
-import "github.com/SaltaGet/NOA-GESTION-BACK/internal/ports"
+import (
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/ports"
+	"gopkg.in/gomail.v2"
+)
 
 type AuthService struct {
 	AuthRepository ports.AuthRepository
 	UserRepository ports.UserRepository
 	TenantService  ports.TenantService
+	EmailService   ports.EmailService
 }
 
 type CashRegisterService struct {
@@ -22,6 +26,10 @@ type ClientService struct {
 
 type DepositService struct {
 	DepositRepository ports.DepositRepository
+}
+
+type EmailService struct {
+	Dialer *gomail.Dialer
 }
 
 type ExpenseBuyService struct {
@@ -43,6 +51,15 @@ type IncomeOtherService struct {
 type MemberService struct {
 	MemberRepository ports.MemberRepository
 	// UserRepository ports.UserRepository
+}
+
+type MovementStockService struct {
+	MovementStockRepository ports.MovementStockRepository
+	NotifyService           ports.NotificationService
+}
+
+type NotificationService struct {
+	NotificationRepository ports.NotificationRepository
 }
 
 type PermissionService struct {

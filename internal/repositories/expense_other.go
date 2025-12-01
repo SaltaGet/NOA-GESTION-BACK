@@ -47,7 +47,7 @@ func (r *ExpenseOtherRepository) ExpenseOtherGetByID(id int64, pointSaleID *int6
 	return &expenseSchema, nil
 }
 
-func (r *ExpenseOtherRepository) ExpenseOtherGetByDate(pointSaleID *int64, fromDate, toDate time.Time, page, limit int) ([]*schemas.ExpenseOtherResponseDTO, int64, error) {
+func (r *ExpenseOtherRepository) ExpenseOtherGetByDate(pointSaleID *int64, fromDate, toDate time.Time, page, limit int) ([]*schemas.ExpenseOtherResponse, int64, error) {
 	var expensesOther []*models.ExpenseOther
 
 	offset := (page - 1) * limit
@@ -56,10 +56,14 @@ func (r *ExpenseOtherRepository) ExpenseOtherGetByDate(pointSaleID *int64, fromD
 
 	if pointSaleID != nil {
 		query = query.Where("point_sale_id = ?", *pointSaleID)
+	} else {
+		query = query.Preload("PointSale")
 	}
 
 	if err := query.
-		Select("id", "cash_register_id", "details", "total", "pay_method", "created_at").
+		Preload("Member", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "first_name", "last_name", "username")
+		}).
 		Preload("TypeExpense").
 		Order("created_at DESC").
 		Offset(offset).
@@ -81,7 +85,7 @@ func (r *ExpenseOtherRepository) ExpenseOtherGetByDate(pointSaleID *int64, fromD
 		return nil, 0, schemas.ErrorResponse(500, "Error al contar los egresos", err)
 	}
 
-	var expenseSchema []*schemas.ExpenseOtherResponseDTO
+	var expenseSchema []*schemas.ExpenseOtherResponse
 	copier.Copy(&expenseSchema, &expensesOther)
 
 	return expenseSchema, total, nil

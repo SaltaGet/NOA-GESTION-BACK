@@ -1,20 +1,22 @@
 package routes
 
 import (
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/controllers"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/middleware"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
 	"github.com/gofiber/fiber/v2"
 )
 
-func RoleRoutes(app *fiber.App){
+func RoleRoutes(app *fiber.App) {
 	role := app.Group("/api/v1/role", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
-	role.Get("/get_all", GetController("RoleController", func(c *fiber.Ctx, ctrl *controllers.RoleController) error {
-		return ctrl.RoleGetAll(c)
-	}))
+	role.Get("/get_all", func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.RoleController.RoleGetAll(c)
+	})
 
-	role.Post("/create", GetController("RoleController", func(c *fiber.Ctx, ctrl *controllers.RoleController) error {
-		return ctrl.RoleCreate(c)
-	}))
-
+	role.Post("/create", func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.RoleController.RoleCreate(c)
+	})
 }
+

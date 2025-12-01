@@ -6,6 +6,7 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func (a *AuthService) AuthLogin(username, password string) (string, error) {
@@ -81,16 +82,14 @@ func (a *AuthService) AuthCurrentUser(tenantID, memberID, pointSaleID int64) (*s
 		return nil, err
 	}
 
-
-
 	authUser := schemas.AuthenticatedUser{
 		ID:               member.ID,
 		FirstName:        member.FirstName,
 		LastName:         member.LastName,
 		Username:         member.Username,
 		IsAdmin:          member.IsAdmin,
-		Permissions: BuildUserPermissions(member.Role.Permissions),
-		ListPermissions:      *permissions,
+		Permissions:      BuildUserPermissions(member.Role.Permissions),
+		ListPermissions:  *permissions,
 		TenantID:         tenant.ID,
 		TenantName:       tenant.Name,
 		TenantIdentifier: tenant.Identifier,
@@ -123,7 +122,7 @@ func (a *AuthService) LogoutPointSale(member *schemas.AuthenticatedUser) (string
 	return utils.GenerateToken(member.ID, &member.TenantID, nil)
 }
 
-func BuildUserPermissions(perms []models.Permission) ([]schemas.EnvironmentPermissions) {
+func BuildUserPermissions(perms []models.Permission) []schemas.EnvironmentPermissions {
 	envMap := make(map[string]map[string][]string)
 
 	for _, p := range perms {
@@ -153,4 +152,50 @@ func BuildUserPermissions(perms []models.Permission) ([]schemas.EnvironmentPermi
 	}
 
 	return result
+}
+
+func (a *AuthService) AuthForgotPassword(forgotPassword *schemas.AuthForgotPassword) error {
+	member, tenant, err := a.AuthRepository.AuthForgotPassword(forgotPassword)
+	if err != nil {
+		return err
+	}
+
+	token, err := utils.GenerateTokenEmail(member.ID, tenant.ID)
+	if err != nil {
+		return err
+	}
+
+	body := utils.ForgotPassword(member.Username, member.Email, token)
+
+	err = a.EmailService.SendEmail(member, "Restablecimiento de contraseña", body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *AuthService) AuthResetPassword(resetPassword *schemas.AuthResetPassword) error {
+	claims, err := utils.VerifyTokenEmail(resetPassword.Token)
+	if err != nil {
+		return err
+	}
+
+	mapClaims, ok := claims.(jwt.MapClaims)
+	if !ok {
+		return schemas.ErrorResponse(401, "Claims inválidos", fmt.Errorf("claims invalidos"))
+	}
+
+	tenantID := utils.GetIntClaim(mapClaims, "tenant_id")
+	memberID := utils.GetIntClaim(mapClaims, "member_id")
+	if tenantID == -1 || memberID == -1 {
+		return schemas.ErrorResponse(401, "Claims inválidos", fmt.Errorf("claims invalidos"))
+	}
+
+	err = a.AuthRepository.AuthResetPassword(memberID, tenantID, resetPassword.NewPassword)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

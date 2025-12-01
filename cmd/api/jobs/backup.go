@@ -36,13 +36,13 @@ func LoadConfig(deps *dependencies.MainContainer) (*Config, error) {
 		return nil, err
 	}
 
-	connections, err := deps.TenantController.TenantService.TenantGetConections()
+	tenants, err := deps.TenantController.TenantService.TenantGetConections()
 	if err != nil {
 		return nil, err
 	}
 
-	for _, conn := range *connections {
-		dbName, err := extractDBName(conn)
+	for _, conn := range tenants {
+		dbName, err := extractDBName(conn.Connection)
 		if err != nil {
 			return nil, err
 		}

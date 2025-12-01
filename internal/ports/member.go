@@ -9,7 +9,7 @@ type MemberRepository interface {
 	MemberGetAll(limit, page int, search *map[string]string) ([]*schemas.MemberResponseDTO, int64, error)
 	MemberCreate(memeberCreate *schemas.MemberCreate) (int64, error)
 	MemberUpdate(memeberUpdate *schemas.MemberUpdate) (error)
-	MemberUpdatePassword(memberID int64, memeberCreate *schemas.MemberUpdatePassword) (error)
+	MemberUpdatePassword(memberID int64, memeberUpdatePassword *schemas.MemberUpdatePassword) (error)
 	MemberDelete(id int64) (err error)
 }
 
@@ -19,5 +19,6 @@ type MemberService interface {
 	MemberGetAll(limit, page int, search *map[string]string) ([]*schemas.MemberResponseDTO, int64, error)
 	MemberCreate(memeberCreate *schemas.MemberCreate) (int64, error)
 	MemberUpdate(memeberUpdate *schemas.MemberUpdate) (error)
+	MemberUpdatePassword(memberID int64, memeberUpdatePassword *schemas.MemberUpdatePassword) (error)
 	MemberDelete(id int64) (err error)
 }

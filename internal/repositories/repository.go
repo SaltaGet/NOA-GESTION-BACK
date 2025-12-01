@@ -61,9 +61,17 @@ type MemberRepository struct {
 	DB *gorm.DB
 }
 
+type MovementStockRepository struct {
+	DB *gorm.DB
+}
+
 type MovementTypeRepository struct {
 	DB *gorm.DB
 }
+
+// type NotificationRepository struct {
+// 	DB *gorm.DB
+// }
 
 type PermissionRepository struct {
 	DB *gorm.DB

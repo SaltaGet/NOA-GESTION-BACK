@@ -58,6 +58,8 @@ func (r *IncomeOtherRepository) IncomeOtherGetByDate(pointSaleID *int64, fromDat
 	// Si se proporciona pointSaleID, filtrar por punto de venta
 	if pointSaleID != nil {
 		query = query.Where("point_sale_id = ?", *pointSaleID)
+	} else {
+		query = query.Preload("PointSale")
 	}
 
 	if err := query.

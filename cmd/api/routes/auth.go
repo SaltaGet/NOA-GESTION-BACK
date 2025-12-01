@@ -19,6 +19,9 @@ func AuthRoutes(app *fiber.App, controllers *controllers.AuthController) {
 	auth.Post("/logout_point_sale", middleware.AuthMiddleware(), middleware.AuthPointSaleMiddleware(), controllers.LogoutPointSale)
 
 	auth.Get("/current_user", middleware.AuthMiddleware(), controllers.CurrentUser)
+
+	auth.Post("/forgot_password", controllers.AuthForgotPassword)
+	auth.Post("/reset_password", controllers.AuthResetPassword)
 	
 	auth.Post("/login_point_sale/:point_sale_id", middleware.AuthMiddleware(), controllers.AuthPointSale)
 }

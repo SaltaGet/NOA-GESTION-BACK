@@ -28,7 +28,7 @@ func AdminAuthMiddleware() fiber.Handler {
 			return schemas.HandleError(c, schemas.ErrorResponse(401, "Claims inválidos", nil))
 		}
 
-		userID := getIntClaim(mapClaims, "admin_id")
+		userID := utils.GetIntClaim(mapClaims, "admin_id")
 
 		deps, ok := c.Locals(key.AppKey).(*dependencies.MainContainer)
 		if !ok {

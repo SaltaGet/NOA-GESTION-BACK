@@ -186,3 +186,78 @@ func (r *MainRepository) AuthPointSale(pointSaleID int64, connection string, ten
 
 	return &pointSale, nil
 }
+
+func (r *MainRepository) AuthForgotPassword(forgotPassword *schemas.AuthForgotPassword) (*models.Member, *models.Tenant, error) {
+	var tenant models.Tenant
+	err := r.DB.
+		Select("id", "connection").
+		Where("identifier = ?", forgotPassword.TenantIdentifier).
+		First(&tenant).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+		}
+		return nil, nil, schemas.ErrorResponse(500, "Error interno al obtener los tenants", err)
+	}
+
+	db, err := database.GetTenantDB(tenant.Connection, tenant.ID)
+	if err != nil {
+		return nil, nil, schemas.ErrorResponse(500, "Error al recibir la conexión", err)
+	}
+
+	var member models.Member
+	if err := db.
+		Select("id", "username", "email", "is_active").
+		Where("username = ?", forgotPassword.Username).
+		First(&member).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+		}
+		return nil, nil, schemas.ErrorResponse(500, "Error al obtener el miembro", err)
+	}
+
+	if !member.IsActive {
+		return nil, nil, schemas.ErrorResponse(403, "Miembro inactivo", fmt.Errorf("miembro inactivo"))
+	}
+
+	return &member, &tenant, nil
+}
+
+func (r *MainRepository) AuthResetPassword(memberID, tenantID int64, newPass string) (error) {
+	var tenant models.Tenant
+	err := r.DB.
+		Select("id", "connection").
+		First(&tenant, tenantID).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+		}
+		return schemas.ErrorResponse(500, "Error interno al obtener los tenants", err)
+	}
+
+	db, err := database.GetTenantDB(tenant.Connection, tenant.ID)
+	if err != nil {
+		return schemas.ErrorResponse(500, "Error al recibir la conexión", err)
+	}
+
+	var member models.Member
+	if err := db.
+		Select("id", "username", "email", "is_active").
+		First(&member, memberID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+		}
+		return schemas.ErrorResponse(500, "Error al obtener el miembro", err)
+	}
+
+	if !member.IsActive {
+		return schemas.ErrorResponse(403, "Miembro inactivo", fmt.Errorf("miembro inactivo"))
+	}
+
+	member.Password = newPass
+	if err := db.Save(&member).Error; err != nil {
+		return schemas.ErrorResponse(500, "Error al actualizar la contraseña", err)
+	}
+
+	return nil
+}

@@ -6,10 +6,10 @@ import (
 	"os"
 	"strings"
 
-	migrate "github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
-	_ "github.com/go-sql-driver/mysql" 
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 )
 
 func ApplyMigrations(dbURI string, migration embed.FS, dirName string) error {
@@ -17,7 +17,7 @@ func ApplyMigrations(dbURI string, migration embed.FS, dirName string) error {
 	env := os.Getenv("ENV")
 
 	if env == "prod" {
-		if err := ensureDatabaseExists(dbURI); err != nil {
+		if err := EnsureDatabaseExists(dbURI); err != nil {
 			return fmt.Errorf("error al asegurar que la base de datos exista: %w", err)
 		}
 
@@ -28,7 +28,7 @@ func ApplyMigrations(dbURI string, migration embed.FS, dirName string) error {
 		}
 	} else {
 		// Para SQLite, migrate necesita la ruta del archivo con el prefijo "sqlite3://"
-		databaseURI = "sqlite3://" + filePathFromURI(dbURI)
+		databaseURI = "sqlite3://" + FilePathFromURI(dbURI)
 	}
 
 	source, err := iofs.New(migration, dirName)
