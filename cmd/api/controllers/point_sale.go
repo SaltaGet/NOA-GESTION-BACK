@@ -14,10 +14,6 @@ import (
 //	@Produce		json
 //	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.PointSaleResponse}	"puntos de ventas obtenidos con éxito"
-//	@Failure		400	{object}	schemas.Response									"Bad Request"
-//	@Failure		401	{object}	schemas.Response									"Auth is required"
-//	@Failure		403	{object}	schemas.Response									"Not Authorized"
-//	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/point_sale/get_all [get]
 func (p *PointSaleController) PointSaleGetAll(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los puntos de ventas")
@@ -42,10 +38,6 @@ func (p *PointSaleController) PointSaleGetAll(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.PointSaleResponse}	"puntos de ventas obtenidos con éxito"
-//	@Failure		400	{object}	schemas.Response									"Bad Request"
-//	@Failure		401	{object}	schemas.Response									"Auth is required"
-//	@Failure		403	{object}	schemas.Response									"Not Authorized"
-//	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/point_sale/get_all_by_member [get]
 func (p *PointSaleController) PointSaleGetAllByMember(c *fiber.Ctx) error {
 	member := c.Locals("user").(*schemas.AuthenticatedUser)
@@ -73,10 +65,6 @@ func (p *PointSaleController) PointSaleGetAllByMember(c *fiber.Ctx) error {
 //	@Security		CookieAuth
 //	@Param			request	body		schemas.PointSaleCreate	true	"Crear punto de venta"
 //	@Success		200		{object}	schemas.Response		"puntos de ventas creado con éxito"
-//	@Failure		400		{object}	schemas.Response		"Bad Request"
-//	@Failure		401		{object}	schemas.Response		"Auth is required"
-//	@Failure		403		{object}	schemas.Response		"Not Authorized"
-//	@Failure		500		{object}	schemas.Response
 //	@Router			/api/v1/point_sale/create [post]
 func (p *PointSaleController) PointSaleCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear punto de venta")
@@ -97,6 +85,39 @@ func (p *PointSaleController) PointSaleCreate(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    permissions,
+		Message: "Puntos de ventas obtenidos con éxito",
+	})
+}
+
+// PointSaleUpdate godoc
+//	@Summary		PointSaleUpdate 
+//	@Description	Editar punto de venta
+//	@Tags			PointSale
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			request	body		schemas.PointSaleUpdate	true	"Editar punto de venta"
+//	@Success		200		{object}	schemas.Response		"puntos de ventas editado con éxito"
+//	@Router			/api/v1/point_sale/update [put]
+func (p *PointSaleController) PointSaleUpdate(c *fiber.Ctx) error {
+	logging.INFO("Crear punto de venta")
+	var pointSale schemas.PointSaleUpdate
+	if err := c.BodyParser(&pointSale); err != nil {
+		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el modelo", err))
+	}
+	if err := pointSale.Validate(); err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	err := p.PointSaleService.PointSaleUpdate(&pointSale)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	logging.INFO("Puntos de ventas obtenidos con éxito")
+	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
 		Message: "Puntos de ventas obtenidos con éxito",
 	})
 }

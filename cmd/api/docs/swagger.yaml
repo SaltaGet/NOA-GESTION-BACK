@@ -349,6 +349,7 @@ definitions:
         enum:
         - amount
         - percent
+        example: amount percent
         type: string
     required:
     - expense_item_buys
@@ -372,6 +373,7 @@ definitions:
         enum:
         - amount
         - percent
+        example: amount percent
         type: string
     required:
     - product_id
@@ -476,6 +478,7 @@ definitions:
         enum:
         - amount
         - percent
+        example: amount percent
         type: string
     required:
     - expense_item_buys
@@ -494,6 +497,7 @@ definitions:
         - credit
         - card
         - transfer
+        example: cash credit card transfer
         type: string
       total:
         type: number
@@ -555,6 +559,7 @@ definitions:
         - credit
         - card
         - transfer
+        example: cash credit card transfer
         type: string
       total:
         type: number
@@ -581,6 +586,7 @@ definitions:
         - credit
         - card
         - transfer
+        example: cash credit card transfer
         type: string
       total:
         type: number
@@ -621,6 +627,7 @@ definitions:
         - credit
         - card
         - transfer
+        example: cash credit card transfer
         type: string
       total:
         type: number
@@ -655,6 +662,7 @@ definitions:
         enum:
         - amount
         - percent
+        example: amount percent
         type: string
     required:
     - client_id
@@ -772,6 +780,7 @@ definitions:
         enum:
         - amount
         - percent
+        example: amount percent
         type: string
     required:
     - client_id

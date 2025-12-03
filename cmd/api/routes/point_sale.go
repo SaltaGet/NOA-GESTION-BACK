@@ -23,4 +23,9 @@ func PointSaleRoutes(app *fiber.App){
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.PointSaleController.PointSaleCreate(c)
 	})
+	
+pointSale.Put("/update", func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.PointSaleController.PointSaleUpdate(c)
+	})
 }

@@ -13,3 +13,7 @@ func (p *PointSaleService) PointSaleGetAllByMember(memberID int64) ([]schemas.Po
 func (p *PointSaleService) PointSaleGetAll() ([]schemas.PointSaleResponse, error) {
 	return p.PointSaleRepository.PointSaleGetAll()
 }
+
+func (p *PointSaleService) PointSaleUpdate(pointSaleUpdate *schemas.PointSaleUpdate) (error) {
+	return p.PointSaleRepository.PointSaleUpdate(pointSaleUpdate)
+}

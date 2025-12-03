@@ -6642,7 +6642,8 @@
                     "enum": [
                         "amount",
                         "percent"
-                    ]
+                    ],
+                    "example": "amount percent"
                 }
             }
         },
@@ -6672,7 +6673,8 @@
                     "enum": [
                         "amount",
                         "percent"
-                    ]
+                    ],
+                    "example": "amount percent"
                 }
             }
         },
@@ -6833,7 +6835,8 @@
                     "enum": [
                         "amount",
                         "percent"
-                    ]
+                    ],
+                    "example": "amount percent"
                 }
             }
         },
@@ -6854,7 +6857,8 @@
                         "credit",
                         "card",
                         "transfer"
-                    ]
+                    ],
+                    "example": "cash credit card transfer"
                 },
                 "total": {
                     "type": "number"
@@ -6945,7 +6949,8 @@
                         "credit",
                         "card",
                         "transfer"
-                    ]
+                    ],
+                    "example": "cash credit card transfer"
                 },
                 "total": {
                     "type": "number"
@@ -6983,7 +6988,8 @@
                         "credit",
                         "card",
                         "transfer"
-                    ]
+                    ],
+                    "example": "cash credit card transfer"
                 },
                 "total": {
                     "type": "number"
@@ -7043,7 +7049,8 @@
                         "credit",
                         "card",
                         "transfer"
-                    ]
+                    ],
+                    "example": "cash credit card transfer"
                 },
                 "total": {
                     "type": "number"
@@ -7092,7 +7099,8 @@
                     "enum": [
                         "amount",
                         "percent"
-                    ]
+                    ],
+                    "example": "amount percent"
                 }
             }
         },
@@ -7269,7 +7277,8 @@
                     "enum": [
                         "amount",
                         "percent"
-                    ]
+                    ],
+                    "example": "amount percent"
                 }
             }
         },

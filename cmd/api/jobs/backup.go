@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
 )
 
@@ -115,11 +116,11 @@ func runFullBackup(cfg *Config, db string) error {
 	ts := time.Now().Format("2006-01-02_15-04-05")
 	path := filepath.Join(cfg.BackupDir, fmt.Sprintf("%s_full_%s.sql", db, ts))
 	args := []string{
-		"-u", cfg.User, 
-		"-p" + cfg.Password, 
-		"-h", cfg.Host, 
+		"-u", cfg.User,
+		"-p" + cfg.Password,
+		"-h", cfg.Host,
 		"-P", cfg.Port,
-		"--databases", db, 
+		"--databases", db,
 		"--routines", "--events", "--single-transaction"}
 	return runCommand("mysqldump", args, path)
 }
@@ -191,13 +192,13 @@ func runIncrementalBackup(cfg *Config, db string, cp Checkpoint) (Checkpoint, st
 	final := filepath.Join(cfg.BackupDir, fmt.Sprintf("%s_incremental_%s.sql", db, ts))
 
 	args := []string{
-		"--read-from-remote-server", 
-		"--host=" + cfg.Host, 
+		"--read-from-remote-server",
+		"--host=" + cfg.Host,
 		"--port=" + cfg.Port,
-		"--user=" + cfg.User, 
+		"--user=" + cfg.User,
 		"--password=" + cfg.Password,
 		"--database=" + db,
-		"--start-position", fmt.Sprintf("%d", cp.Position), 
+		"--start-position", fmt.Sprintf("%d", cp.Position),
 		cp.BinlogFile}
 
 	if err := runCommand("mysqlbinlog", args, raw); err != nil {
@@ -216,14 +217,14 @@ func runIncrementalBackup(cfg *Config, db string, cp Checkpoint) (Checkpoint, st
 func hasRealChanges(content string) bool {
 	log.Println(content)
 	keywords := []string{
-		"Write_rows",   
+		"Write_rows",
 		"Update_rows",
-		"Delete_rows", 
+		"Delete_rows",
 		"Create_table",
 		"ALTER TABLE",
 		"DROP TABLE",
 		"CREATE TABLE",
-		"Query: CREATE", 
+		"Query: CREATE",
 		"Query: DROP",
 		"Query: ALTER",
 	}
@@ -257,7 +258,7 @@ func RunBackup(cfg *Config) {
 		content, _ := os.ReadFile(file)
 		if hasRealChanges(string(content)) {
 			saveCheckpoint(cfg, db, newCp)
-			fmt.Println("Backup incremental exitoso")
+			log.Println("✅ [CRON] Backup generado con éxito.")
 		} else {
 			os.Remove(file)
 			fmt.Println("No hay cambios relevantes, backup descartado")
@@ -727,24 +728,6 @@ func RunBackup(cfg *Config) {
 // 	}
 // }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ////////// FUNCIONAL A MEDIAS
 // type Config struct {
 // 	User      string   `json:"user"`
@@ -976,7 +959,6 @@ func RunBackup(cfg *Config) {
 
 // 	return getBinlogStatus(cfg)
 // }
-
 
 // func hasChangesForDB(cfg *Config, db string, cp Checkpoint) (bool, error) {
 // 	currentCp, err := getBinlogStatus(cfg)

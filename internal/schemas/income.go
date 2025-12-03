@@ -12,7 +12,7 @@ type IncomeSaleCreate struct {
 	Pay      []PayCreate            `json:"pay" validate:"required,max=3,dive"`
 	ClientID int64                  `json:"client_id" validate:"required"`
 	Discount float64                `json:"discount" validate:"min=0"`
-	Type     string                 `json:"type_discount" validate:"oneof=amount percent"`
+	Type     string                 `json:"type_discount" validate:"oneof=amount percent" example:"amount percent"`
 	Total    float64                `json:"total"`
 	IsBudget bool                   `json:"is_budget"`
 }
@@ -59,7 +59,7 @@ type IncomeSaleUpdate struct {
 	Pay      []PayUpdate            `json:"pay" validate:"required,max=3,dive"`
 	ClientID int64                  `json:"client_id" validate:"required"`
 	Discount float64                `json:"discount"`
-	Type     string                 `json:"type_discount" validate:"oneof=amount percent"`
+	Type     string                 `json:"type_discount" validate:"oneof=amount percent" example:"amount percent"`
 	Total    float64                `json:"total"`
 	IsBudget bool                   `json:"is_budget"`
 }
@@ -104,7 +104,7 @@ type IncomeOtherCreate struct {
 	Total        float64 `json:"total" validate:"required"`
 	TypeIncomeID int64   `json:"type_income_id" validate:"required"`
 	Details      *string `json:"details"`
-	MethodIncome string  `json:"method_income" validate:"oneof=cash credit card transfer"`
+	MethodIncome string  `json:"method_income" validate:"oneof=cash credit card transfer" example:"cash credit card transfer"`
 }
 
 func (i *IncomeOtherCreate) Validate() error {
@@ -126,7 +126,7 @@ type IncomeOtherUpdate struct {
 	Total        float64 `json:"total" validate:"required"`
 	TypeIncomeID int64   `json:"type_income_id" validate:"required"`
 	Details      *string `json:"details"`
-	MethodIncome string  `json:"method_income" validate:"oneof=cash credit card transfer"`
+	MethodIncome string  `json:"method_income" validate:"oneof=cash credit card transfer" example:"cash credit card transfer"`
 }
 
 func (i *IncomeOtherUpdate) Validate() error {

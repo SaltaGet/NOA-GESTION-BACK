@@ -47,7 +47,7 @@ func PrepareDB(uri string, memberAdmin models.Member) error {
 		&models.Category{},
 		&models.Client{},
 		&models.Deposit{},
-	
+
 		&models.ExpenseBuy{},
 		&models.ExpenseBuyItem{},
 		&models.ExpenseOther{},
@@ -112,12 +112,28 @@ func PrepareDB(uri string, memberAdmin models.Member) error {
 	}
 
 	if err := db.Create(&models.Supplier{
-		ID: 1,
-		Name: "Sin proveedor",
+		ID:          1,
+		Name:        "Sin proveedor",
 		CompanyName: "Sin nombre",
 	}).Error; err != nil {
 		handleDBCreationError(env, uri)
 		return fmt.Errorf("error al crear proveedor sin proveedor: %w", err)
+	}
+
+	if err := db.Create(&models.TypeExpense{
+		ID:   1,
+		Name: "Otros",
+	}).Error; err != nil {
+		handleDBCreationError(env, uri)
+		return fmt.Errorf("error al crear tipo de gasto sin tipo de gasto: %w", err)
+	}
+
+	if err := db.Create(&models.TypeIncome{
+		ID:   1,
+		Name: "Otros",
+	}).Error; err != nil {
+		handleDBCreationError(env, uri)
+		return fmt.Errorf("error al crear tipo de gasto sin tipo de gasto: %w", err)
 	}
 
 	return nil
@@ -203,7 +219,7 @@ func UpdateModels(uri string) error {
 		&models.Category{},
 		&models.Client{},
 		&models.Deposit{},
-	
+
 		&models.ExpenseBuy{},
 		&models.ExpenseBuyItem{},
 		&models.ExpenseOther{},
@@ -234,9 +250,89 @@ func UpdateModels(uri string) error {
 }
 
 var permissions []models.Permission = []models.Permission{
-	{Code: "create_client", Details: "Crear clientes", Group: "clients", Environment: "dashboard"},
-	{Code: "update_client", Details: "Actualizar clientes", Group: "clients", Environment: "dashboard"},
-	{Code: "delete_client", Details: "Eliminar clientes", Group: "clients", Environment: "dashboard"},
-	{Code: "create_expense", Details: "Crear gastos", Group: "expenses", Environment: "point_sale"},
-	{Code: "update_expense", Details: "Actualizar gastos", Group: "expenses", Environment: "point_sale"},
+	{ID: 1, Code: "CR01", Name: "verificar apertura", Details: "Verifica si existe alguna apertura de caja del punto de venta", Group: "caja", Environment: "point_sale"},
+	{ID: 2, Code: "CR02", Name: "apertura", Details: "Crea una nueva apertura de caja", Group: "caja", Environment: "point_sale"},
+	{ID: 3, Code: "CR03", Name: "informes", Details: "Obtener infomes de caja", Group: "caja", Environment: "point_sale"},
+	{ID: 4, Code: "CR04", Name: "cierre", Details: "Cerrar una caja abierta", Group: "caja", Environment: "point_sale"},
+	{ID: 5, Code: "CR05", Name: "informe específico", Details: "Obtener informe de una caja específica", Group: "caja", Environment: "point_sale"},
+
+	{ID: 6, Code: "CAT01", Name: "crear", Details: "Crear una nueva categoría", Group: "categoría", Environment: "point_sale"},
+	{ID: 7, Code: "CAT02", Name: "actualizar", Details: "Actualizar una categoria existente", Group: "categoría", Environment: "point_sale"},
+	{ID: 8, Code: "CAT03", Name: "eliminar", Details: "Eliminar una cagotería", Group: "categoría", Environment: "point_sale"},
+	{ID: 9, Code: "CAT04", Name: "obtner uno en específico", Details: "Obtener una categoría en específico", Group: "categoría", Environment: "point_sale"},
+	{ID: 10, Code: "CAT05", Name: "obtner todos", Details: "Obtener todas las categorías", Group: "categoría", Environment: "point_sale"},
+
+	{ID: 11, Code: "CL01", Name: "crear", Details: "Crear un nuevo cliente", Group: "cliente", Environment: "point_sale"},
+	{ID: 12, Code: "CL02", Name: "actualizar", Details: "Actualizar un cliente existente", Group: "cliente", Environment: "point_sale"},
+	{ID: 13, Code: "CL03", Name: "eliminar", Details: "Eliminar un cliente", Group: "cliente", Environment: "point_sale"},
+	{ID: 14, Code: "CL04", Name: "obtener uno en específico", Details: "Obtener un cliente en específico", Group: "cliente", Environment: "point_sale"},
+	{ID: 15, Code: "CL05", Name: "obtener por filtro", Details: "Obtener clientes por filtros", Group: "cliente", Environment: "point_sale"},
+	{ID: 16, Code: "CL06", Name: "obtener todos", Details: "Obtener todos lo clientes", Group: "cliente", Environment: "point_sale"},
+
+	{ID: 17, Code: "DEP01", Name: "obtener uno en específico", Details: "Obtener información de un productos en específico del depósito", Group: "deposito", Environment: "point_sale"},
+	{ID: 18, Code: "DEP02", Name: "obtener por nombre de producto", Details: "Obtener información de un producto en especifico del depósito por nombre", Group: "deposito", Environment: "point_sale"},
+	{ID: 19, Code: "DEP03", Name: "obtener por código de producto", Details: "Obtener información de un producto en especifico del depósito por codigo", Group: "deposito", Environment: "point_sale"},
+	{ID: 20, Code: "DEP04", Name: "obtener todos", Details: "Obtener todos los productos del depósito", Group: "deposito", Environment: "point_sale"},
+	{ID: 21, Code: "DEP05", Name: "actualizar stock de producto", Details: "Actualizar el stock de productos del depósito", Group: "deposito", Environment: "point_sale"},
+
+	{ID: 22, Code: "EB01", Name: "crear", Details: "Crear un nuevo gasto de compra", Group: "gastos de compra", Environment: "dashboard"},
+	{ID: 23, Code: "EB02", Name: "actualizar", Details: "Actualizar un gasto de compra existente", Group: "gastos de compra", Environment: "dashboard"},
+	{ID: 24, Code: "EB03", Name: "eliminar", Details: "Eliminar un gasto de compra", Group: "gastos de compra", Environment: "dashboard"},
+	{ID: 25, Code: "EB04", Name: "obtener uno en específico", Details: "Obtener un gasto de compra en específico", Group: "gastos de compra", Environment: "dashboard"},
+	{ID: 26, Code: "EB05", Name: "obtener por fecha", Details: "Obtener gastos de compra por rango de fechas", Group: "gastos de compra", Environment: "dashboard"},
+	
+	{ID: 27, Code: "EO01", Name: "crear", Details: "Crear un nuevo otros gastos", Group: "otros gastos", Environment: "dashboard"},
+	{ID: 28, Code: "EO02", Name: "actualizar", Details: "Actualizar un otros gastos existente", Group: "otros gastos", Environment: "dashboard"},
+	{ID: 29, Code: "EO03", Name: "eliminar", Details: "Eliminar un otros gastos", Group: "otros gastos", Environment: "dashboard"},
+	{ID: 30, Code: "EO04", Name: "obtener uno en específico", Details: "Obtener un otros gastos en específico", Group: "otros gastos", Environment: "dashboard"},
+	{ID: 31, Code: "EO05", Name: "obtener por fecha", Details: "Obtener otros gastos por rango de fechas", Group: "otros gastos", Environment: "dashboard"},
+
+	{ID: 32, Code: "EOPS01", Name: "crear", Details: "Crear otro gasto para un punto de venta", Group: "otros grastos - punto de venta", Environment: "point_sale"},
+	{ID: 33, Code: "EOPS02", Name: "actualizar", Details: "Actualizar gasto de un punto de venta", Group: "otros grastos - punto de venta", Environment: "point_sale"},
+	{ID: 34, Code: "EOPS03", Name: "eliminar", Details: "Eliminar un gasto de un punto de venta", Group: "otros grastos - punto de venta", Environment: "point_sale"},
+	{ID: 35, Code: "EOPS04", Name: "obtener uno en específico", Details: "Obtener un gasto en específico de un punto de venta", Group: "otros grastos - punto de venta", Environment: "point_sale"},
+	{ID: 36, Code: "EOPS05", Name: "obtener por fecha", Details: "Obtener gastos de compra por rango de fechas de un punto de venta", Group: "otros grastos - punto de venta", Environment: "point_sale"},
+
+	{ID: 37, Code: "INO01", Name: "crear", Details: "Crear otro ingreso", Group: "otros ingresos", Environment: "dashboard"},
+	{ID: 38, Code: "INO02", Name: "actualizar", Details: "Actualizar un ingreso existente", Group: "otros ingresos", Environment: "dashboard"},
+	{ID: 39, Code: "INO03", Name: "eliminar", Details: "Eliminar un ingreso", Group: "otros ingresos", Environment: "dashboard"},
+	{ID: 40, Code: "INO04", Name: "obtener uno en específico", Details: "Obtener un ingreso en específico", Group: "otros ingresos", Environment: "dashboard"},
+	{ID: 41, Code: "INO05", Name: "obtener por fecha", Details: "Obtener ingresos por rango de fechas", Group: "otros ingresos", Environment: "dashboard"},
+	
+	{ID: 42, Code: "INOPS01", Name: "crear", Details: "Crear otro ingreso para un punto de venta", Group: "otros ingresos - punto de venta", Environment: "point_sale"},
+	{ID: 43, Code: "INOPS02", Name: "actualizar", Details: "Actualizar un ingreso de un punto de venta", Group: "otros ingresos - punto de venta", Environment: "point_sale"},
+	{ID: 44, Code: "INOPS03", Name: "eliminar", Details: "Eliminar un ingreso de un punto de venta", Group: "otros ingresos - punto de venta", Environment: "point_sale"},
+	{ID: 45, Code: "INOPS04", Name: "obtener uno en específico", Details: "Obtener un ingreso otros en específico", Group: "otros ingresos - punto de venta", Environment: "point_sale"},
+	{ID: 46, Code: "INOPS05", Name: "obtener por fecha", Details: "Obtener ingresos otros por rango de fechas", Group: "otros ingresos - punto de venta", Environment: "point_sale"},
+
+	{ID: 47, Code: "INS01", Name: "crear", Details: "Crear un nuevo ingreso de venta", Group: "ingreso de venta", Environment: "dashboard"},
+	{ID: 48, Code: "INS02", Name: "actualizar", Details: "Actualizar un ingreso de venta existente", Group: "ingreso de venta", Environment: "dashboard"},
+	{ID: 49, Code: "INS03", Name: "eliminar", Details: "Eliminar un ingreso de venta", Group: "ingreso de venta", Environment: "dashboard"},
+	{ID: 50, Code: "INS04", Name: "obtener uno en específico", Details: "Obtener un ingreso de venta en específico", Group: "ingreso de venta", Environment: "dashboard"},
+	{ID: 51, Code: "INS05", Name: "obtener por fecha", Details: "Obtener ingresos de venta por rango de fechas", Group: "ingreso de venta", Environment: "dashboard"},
+
+	{ID: 52, Code: "MB01", Name: "crear", Details: "Crear un nuevo miembro", Group: "miembro", Environment: "dashboard"},
+	{ID: 53, Code: "MB02", Name: "actualizar", Details: "Actualizar un miembro existente", Group: "miembro", Environment: "dashboard"},
+	{ID: 54, Code: "MB04", Name: "obtener uno en específico", Details: "Obtener un miembro en específico", Group: "miembro", Environment: "dashboard"},
+	{ID: 55, Code: "MB05", Name: "obtener todos", Details: "Obtener todos los miembros", Group: "miembro", Environment: "dashboard"},
+
+	{ID: 56, Code: "MS01", Name: "mover", Details: "Mover stock de productos", Group: "movimiento de stock", Environment: "dashboard"},
+	{ID: 57, Code: "MS02", Name: "obtener uno en específico", Details: "Obtener un movimiento en específico", Group: "movimiento de stock", Environment: "dashboard"},
+	{ID: 58, Code: "MS03", Name: "obtener por fecha", Details: "Obtener movimientos por rango de fechas", Group: "movimiento de stock", Environment: "dashboard"},
+
+	{ID: 58, Code: "PER01", Name: "obtener todos", Details: "Obtener todos los permisos", Group: "permisos", Environment: "dashboard"},
+	{ID: 59, Code: "PER02", Name: "obtener propios", Details: "Obtener los permisos propios del usuario", Group: "permisos", Environment: "dashboard"},
+
+	{ID: 60, Code: "PS01", Name: "crear", Details: "Crear un nuevo punto de venta", Group: "punto de venta", Environment: "dashboard"},
+	{ID: 61, Code: "PS02", Name: "actualizar", Details: "Actualizar un punto de venta existente", Group: "punto de venta", Environment: "dashboard"},
+	{ID: 62, Code: "PS03", Name: "obtener miembros", Details: "Obtener los miembros de un punto de venta", Group: "punto de venta", Environment: "dashboard"},
+	{ID: 62, Code: "PS04", Name: "obtener todos", Details: "Obtener todos los puntos de venta", Group: "punto de venta", Environment: "dashboard"},
+
+	{ID: 63, Code: "E01", Name: "crear", Details: "Crear un nuevo egreso", Group: "egreso", Environment: "dashboard"},
+	{ID: 64, Code: "E02", Name: "actualizar", Details: "Actualizar un egreso existente", Group: "egreso", Environment: "dashboard"},
+	{ID: 65, Code: "E03", Name: "eliminar", Details: "Eliminar un egreso", Group: "egreso", Environment: "dashboard"},
+	{ID: 66, Code: "E04", Name: "obtener uno en específico", Details: "Obtener un egreso en específico", Group: "egreso", Environment: "dashboard"},
+	{ID: 67, Code: "E05", Name: "obtener por fecha", Details: "Obtener egresos por rango de fechas", Group: "egreso", Environment: "dashboard"},
+
+	{ID: 68, Code: "E01", Name: "crear", Details: "Crear un nuevo egreso", Group: "egreso", Environment: "dashboard"},
 }

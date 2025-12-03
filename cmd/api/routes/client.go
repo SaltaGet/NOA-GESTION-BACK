@@ -14,7 +14,7 @@ func ClientRoutes(app *fiber.App) {
 		return tenant.Controllers.ClientController.ClientGetAll(c)
 	})
 
-	cli.Get("/", func(c *fiber.Ctx) error {
+	cli.Get("/get_by_filter", func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.ClientController.ClientGetByFilter(c)
 	})
@@ -34,7 +34,7 @@ func ClientRoutes(app *fiber.App) {
 		return tenant.Controllers.ClientController.ClientDelete(c)
 	})
 
-	cli.Get("/:id", func(c *fiber.Ctx) error {
+	cli.Get("/get/:id", func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.ClientController.ClientGetByID(c)
 	})

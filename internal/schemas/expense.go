@@ -99,7 +99,7 @@ type ExpenseBuyCreate struct {
 	SupplierID     int64                  `json:"supplier_id" validate:"required"`
 	Details        *string                `json:"details"`
 	Discount       float64                `json:"discount"`
-	TypeDiscount   string                 `json:"type_discount" validate:"oneof=amount percent"`
+	TypeDiscount   string                 `json:"type_discount" validate:"oneof=amount percent" example:"amount percent"`
 	ExpenseBuyItem []ExpenseBuyItemCreate `json:"expense_item_buys" validate:"required,dive"`
 	PayExpenseBuy  []PayExpenseBuyCreate  `json:"pay_expense" validate:"required,max=3,dive"`
 	Total          float64                `json:"total" validate:"required"`
@@ -110,7 +110,7 @@ type ExpenseBuyItemCreate struct {
 	Amount       float64 `json:"amount"`
 	Price        float64 `json:"price"`
 	Discount     float64 `json:"discount"`
-	TypeDiscount string  `json:"type_discount" validate:"oneof=amount percent"`
+	TypeDiscount string  `json:"type_discount" validate:"oneof=amount percent" example:"amount percent"`
 	Total        float64 `json:"total"`
 }
 
@@ -141,7 +141,7 @@ type ExpenseBuyUpdate struct {
 	SupplierID     int64                  `json:"supplier_id" validate:"required"`
 	Details        *string                `json:"details"`
 	Discount       float64                `json:"discount"`
-	Type           string                 `json:"type_discount" validate:"oneof=amount percent"`
+	Type           string                 `json:"type_discount" validate:"oneof=amount percent" example:"amount percent"`
 	ExpenseBuyItem []ExpenseBuyItemCreate `json:"expense_item_buys" validate:"required,dive"`
 	PayExpenseBuy  []PayExpenseBuyCreate  `json:"pay_expense" validate:"required,max=3,dive"`
 	Total          float64                `json:"total" validate:"required"`
@@ -152,15 +152,15 @@ type ExpenseBuyItemUpdate struct {
 	Amount       float64                  `json:"amount"`
 	Price        float64                  `json:"price"`
 	Discount     float64                  `json:"discount"`
-	TypeDiscount string                   `json:"type_discount" validate:"oneof=amount percent"`
+	TypeDiscount string                   `json:"type_discount" validate:"oneof=amount percent" example:"amount percent"`
 	SubTotal     float64                  `json:"subtotal"`
 	Total        float64                  `json:"total"`
 	CreatedAt    time.Time                `json:"created_at"`
 }
 
 type PayExpenseBuyUpdate struct {
-	Amount    float64 `json:"amount" validate:"required"`
-	MethodPay string  `json:"payment_method" validate:"oneof=cash credit card transfer"`
+	Amount    float64 `json:"amount" validate:"required" example:"100.00"`
+	MethodPay string  `json:"payment_method" validate:"oneof=cash credit card transfer" example:"cash credit card transfer"`
 }
 
 func (e *ExpenseBuyUpdate) Validate() error {
@@ -183,7 +183,7 @@ func (e *ExpenseBuyUpdate) Validate() error {
 type ExpenseOtherCreate struct {
 	Details       *string `json:"details"`
 	Total         float64 `json:"total" validate:"required"`
-	PayMethod     string  `json:"payment_method" validate:"oneof=cash credit card transfer"`
+	PayMethod     string  `json:"payment_method" validate:"oneof=cash credit card transfer" example:"cash credit card transfer"`
 	TypeExpenseID int64   `json:"type_expense_id" validate:"required"`
 }
 
@@ -206,7 +206,7 @@ type ExpenseOtherUpdate struct {
 	ID        int64   `json:"id" validate:"required"`
 	Details   *string `json:"details,omitempty"`
 	Total     float64 `json:"total" validate:"required"`
-	PayMethod string  `json:"payment_method" validate:"oneof=cash credit card transfer"`
+	PayMethod string  `json:"payment_method" validate:"oneof=cash credit card transfer" example:"cash credit card transfer"`
 }
 
 func (e *ExpenseOtherUpdate) Validate() error {

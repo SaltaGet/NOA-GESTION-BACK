@@ -6650,7 +6650,8 @@ const docTemplate = `{
                     "enum": [
                         "amount",
                         "percent"
-                    ]
+                    ],
+                    "example": "amount percent"
                 }
             }
         },
@@ -6680,7 +6681,8 @@ const docTemplate = `{
                     "enum": [
                         "amount",
                         "percent"
-                    ]
+                    ],
+                    "example": "amount percent"
                 }
             }
         },
@@ -6841,7 +6843,8 @@ const docTemplate = `{
                     "enum": [
                         "amount",
                         "percent"
-                    ]
+                    ],
+                    "example": "amount percent"
                 }
             }
         },
@@ -6862,7 +6865,8 @@ const docTemplate = `{
                         "credit",
                         "card",
                         "transfer"
-                    ]
+                    ],
+                    "example": "cash credit card transfer"
                 },
                 "total": {
                     "type": "number"
@@ -6953,7 +6957,8 @@ const docTemplate = `{
                         "credit",
                         "card",
                         "transfer"
-                    ]
+                    ],
+                    "example": "cash credit card transfer"
                 },
                 "total": {
                     "type": "number"
@@ -6991,7 +6996,8 @@ const docTemplate = `{
                         "credit",
                         "card",
                         "transfer"
-                    ]
+                    ],
+                    "example": "cash credit card transfer"
                 },
                 "total": {
                     "type": "number"
@@ -7051,7 +7057,8 @@ const docTemplate = `{
                         "credit",
                         "card",
                         "transfer"
-                    ]
+                    ],
+                    "example": "cash credit card transfer"
                 },
                 "total": {
                     "type": "number"
@@ -7100,7 +7107,8 @@ const docTemplate = `{
                     "enum": [
                         "amount",
                         "percent"
-                    ]
+                    ],
+                    "example": "amount percent"
                 }
             }
         },
@@ -7277,7 +7285,8 @@ const docTemplate = `{
                     "enum": [
                         "amount",
                         "percent"
-                    ]
+                    ],
+                    "example": "amount percent"
                 }
             }
         },
