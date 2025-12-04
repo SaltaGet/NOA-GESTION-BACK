@@ -56,3 +56,7 @@ func (t *TenantService) TenantUserCreate(tenantUserCreate *schemas.TenantUserCre
 func (t *TenantService) TenantUpdate(userID int64, tenant *schemas.TenantUpdate) error {
 	return t.TenantRepository.TenantUpdate(userID, tenant)
 }
+
+func (t *TenantService) TenantUpdateExpiration(tenantUpdateExpiration *schemas.TenantUpdateExpiration) error {
+	return t.TenantRepository.TenantUpdateExpiration(tenantUpdateExpiration)
+}

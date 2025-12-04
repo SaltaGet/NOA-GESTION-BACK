@@ -66,7 +66,7 @@ func (c *ClientUpdate) Validate() error {
 }
 
 type ClientResponseDTO struct {
-	ID          string  `json:"id"`
+	ID          int64  `json:"id"`
 	FirstName   string  `json:"first_name"`
 	LastName    string  `json:"last_name"`
 	CompanyName *string `json:"company_name,omitempty"`
@@ -76,7 +76,7 @@ type ClientResponseDTO struct {
 }
 
 type ClientResponse struct {
-	ID           string            `json:"id"`
+	ID           int64            `json:"id"`
 	FirstName    string            `json:"first_name"`
 	LastName     string            `json:"last_name"`
 	CompanyName  *string           `json:"company_name,omitempty"`
@@ -89,7 +89,7 @@ type ClientResponse struct {
 }
 
 type ClientSimpleDTO struct {
-	ID          string  `json:"id"`
+	ID          int64  `json:"id"`
 	FirstName   string  `json:"first_name"`
 	LastName    string  `json:"last_name"`
 	CompanyName *string `json:"company_name,omitempty"`

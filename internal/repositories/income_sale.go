@@ -28,7 +28,7 @@ func (i *IncomeSaleRepository) IncomeSaleGetByID(pointSaleID, id int64) (*schema
 			return db.Select("id", "code", "name", "price")
 		}).
 		Preload("Pay", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "total", "method_pay")
+			return db.Select("id", "total", "method_pay", "income_sale_id")
 		}).
 		First(&incomeSaleModel, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -55,7 +55,7 @@ func (i *IncomeSaleRepository) IncomeSaleGetByDate(pointSaleID int64, fromDate, 
 			return db.Select("id", "first_name", "last_name", "company_name")
 		}).
 		Preload("Pay", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "total", "method_pay")
+			return db.Select("id", "total", "method_pay", "income_sale_id")
 		}).
 		Where("created_at BETWEEN ? AND ?", fromDate, toDate).
 		Where("point_sale_id = ?", pointSaleID).

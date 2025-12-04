@@ -12,7 +12,7 @@ type Category struct {
 	Name      string         `gorm:"size:100;not null;uniqueIndex" json:"name"`
 	CreatedAt time.Time      `gorm:"autoCreateTime:milli" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime:milli" json:"updated_at"`
-	// DeleteAt  gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+	DeleteAt  gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
 
 func (c *Category) BeforeCreate(tx *gorm.DB) (err error) {

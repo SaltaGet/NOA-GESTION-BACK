@@ -16,6 +16,86 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/auth/current_plan": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener plan actual",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "CurrentPlan",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.PlanResponseDTO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/current_tenant": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener tenant actual",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "CurrentTenant",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.TenantResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/current_user": {
             "get": {
                 "security": [
@@ -3817,6 +3897,176 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/plan/create": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Crear plan",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Plan"
+                ],
+                "summary": "PlanCreate",
+                "parameters": [
+                    {
+                        "description": "Crear plan",
+                        "name": "plan_create",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.PlanCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "plan creado con éxito",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/plan/get/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener plan por id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Plan"
+                ],
+                "summary": "PlanGetByID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Plan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "planes obtenidos con éxito",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.PlanResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/plan/get_all": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener todos los planes",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Plan"
+                ],
+                "summary": "PlanGetAll",
+                "responses": {
+                    "200": {
+                        "description": "planes obtenidos con éxito",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schemas.PlanResponseDTO"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/plan/update": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Actualizar plan",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Plan"
+                ],
+                "summary": "PlanUpdate",
+                "parameters": [
+                    {
+                        "description": "Crear plan",
+                        "name": "plan_create",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.PlanUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "plan creado con éxito",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/point_sale/create": {
             "post": {
                 "security": [
@@ -3849,30 +4099,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "puntos de ventas creado con éxito",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -3919,30 +4145,6 @@ const docTemplate = `{
                                 }
                             ]
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
                     }
                 }
             }
@@ -3986,27 +4188,81 @@ const docTemplate = `{
                                 }
                             ]
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
+                    }
+                }
+            }
+        },
+        "/api/v1/point_sale/update": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Editar punto de venta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PointSale"
+                ],
+                "summary": "PointSaleUpdate",
+                "parameters": [
+                    {
+                        "description": "Editar punto de venta",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.PointSaleUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "puntos de ventas editado con éxito",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
-                    },
-                    "401": {
-                        "description": "Auth is required",
+                    }
+                }
+            }
+        },
+        "/api/v1/point_sale/update_main": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Editar punto de venta principal",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PointSale"
+                ],
+                "summary": "PointSaleUpdateMain",
+                "parameters": [
+                    {
+                        "description": "Editar punto de venta princiapl",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
                         "schema": {
-                            "$ref": "#/definitions/schemas.Response"
+                            "$ref": "#/definitions/schemas.PointSaleUpdateMain"
                         }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "puntos de venta principal editado con éxito",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -5935,6 +6191,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/tenant/update_expiration": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Actualizar fecha de expiración de un tenant",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tenant"
+                ],
+                "summary": "TenantUpdateExpiration",
+                "parameters": [
+                    {
+                        "description": "TenantUserCreate",
+                        "name": "TenantUserCreate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.TenantUpdateExpiration"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Fecha de expiración actualizada con éxito",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/type_movement/create": {
             "post": {
                 "security": [
@@ -6421,7 +6716,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "identifier": {
                     "type": "string"
@@ -6456,7 +6751,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "identifier": {
                     "type": "string"
@@ -6479,7 +6774,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "last_name": {
                     "type": "string"
@@ -7700,10 +7995,12 @@ const docTemplate = `{
                         "credit",
                         "card",
                         "transfer"
-                    ]
+                    ],
+                    "example": "cash credit card transfer"
                 },
                 "total": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 1000
                 }
             }
         },
@@ -7737,7 +8034,8 @@ const docTemplate = `{
                         "credit",
                         "card",
                         "transfer"
-                    ]
+                    ],
+                    "example": "cash credit card transfer"
                 },
                 "total": {
                     "type": "number"
@@ -7829,8 +8127,146 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.PlanCreate": {
+            "type": "object",
+            "required": [
+                "description",
+                "name",
+                "price",
+                "price_yearly"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "description"
+                },
+                "features": {
+                    "type": "string",
+                    "example": "features"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Plan1"
+                },
+                "price": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 100
+                },
+                "price_yearly": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 1000
+                }
+            }
+        },
+        "schemas.PlanResponse": {
+            "type": "object",
+            "properties": {
+                "amount_member": {
+                    "type": "integer"
+                },
+                "amount_point_sale": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "features": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "price_yearly": {
+                    "type": "number"
+                },
+                "tenants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.TenantResponse"
+                    }
+                }
+            }
+        },
+        "schemas.PlanResponseDTO": {
+            "type": "object",
+            "properties": {
+                "amount_member": {
+                    "type": "integer"
+                },
+                "amount_point_sale": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "features": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "price_yearly": {
+                    "type": "number"
+                }
+            }
+        },
+        "schemas.PlanUpdate": {
+            "type": "object",
+            "required": [
+                "description",
+                "id",
+                "name",
+                "price",
+                "price_yearly"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "description"
+                },
+                "features": {
+                    "type": "string",
+                    "example": "features"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Plan1"
+                },
+                "price": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 100
+                },
+                "price_yearly": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 1000
+                }
+            }
+        },
         "schemas.PointSaleCreate": {
             "type": "object",
+            "required": [
+                "is_deposit"
+            ],
             "properties": {
                 "description": {
                     "type": "string"
@@ -7855,6 +8291,9 @@ const docTemplate = `{
                 "is_deposit": {
                     "type": "boolean"
                 },
+                "is_main": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string"
                 }
@@ -7871,6 +8310,37 @@ const docTemplate = `{
                 },
                 "stock": {
                     "type": "number"
+                }
+            }
+        },
+        "schemas.PointSaleUpdate": {
+            "type": "object",
+            "required": [
+                "is_deposit"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_deposit": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.PointSaleUpdateMain": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "new_main": {
+                    "type": "integer"
                 }
             }
         },
@@ -8327,8 +8797,11 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
-                "id": {
+                "expiration": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "is_active": {
                     "type": "boolean"
@@ -8341,6 +8814,22 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.TenantUpdateExpiration": {
+            "type": "object",
+            "required": [
+                "expiration",
+                "id"
+            ],
+            "properties": {
+                "expiration": {
+                    "type": "string",
+                    "example": "2023-01-01"
+                },
+                "id": {
+                    "type": "integer"
                 }
             }
         },

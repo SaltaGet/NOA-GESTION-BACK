@@ -7,6 +7,7 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jinzhu/copier"
 )
 
 func (a *AuthService) AuthLogin(username, password string) (string, error) {
@@ -106,6 +107,36 @@ func (a *AuthService) AuthCurrentUser(tenantID, memberID, pointSaleID int64) (*s
 	// }
 
 	return &authUser, nil
+}
+
+func (a *AuthService) AuthCurrentPlan(tenantID int64) (*schemas.PlanResponseDTO, error) {
+	tenant, err := a.AuthRepository.AuthTenantGetByID(tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	plan, err := a.PlanRepository.PlanGetByID(tenant.PlanID)
+	if err != nil {
+		return nil, err
+	}
+
+	var planResponse schemas.PlanResponseDTO
+	copier.Copy(&planResponse, &plan)
+	
+
+	return &planResponse, nil
+}
+
+func (a *AuthService) AuthCurrentTenant(tenantID int64) (*schemas.TenantResponse, error) {
+	tenant, err := a.AuthRepository.AuthTenantGetByID(tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	var tenantResponse schemas.TenantResponse
+	copier.Copy(&tenantResponse, &tenant)
+
+	return &tenantResponse, nil
 }
 
 func (a *AuthService) AuthAdminGetByID(userID int64) (*models.Admin, error) {

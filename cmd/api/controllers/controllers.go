@@ -61,6 +61,10 @@ type PermissionController struct {
 	PermissionService ports.PermissionService
 }
 
+type PlanController struct {
+	PlanService ports.PlanService
+}
+
 type PointSaleController struct {
 	PointSaleService ports.PointSaleService
 }

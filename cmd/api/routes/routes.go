@@ -18,6 +18,7 @@ func SetupRoutes(app *fiber.App, appDependencies *dependencies.MainContainer) {
 	MemberRoutes(app)
 	NotificationRoutes(app)
 	PermissionRoutes(app)
+	PlanRoutes(app, appDependencies.PlanController)
 	PointSaleRoutes(app)
 	ProductRoutes(app)
 	ReportRoutes(app)

@@ -23,6 +23,8 @@ type AuhtService interface {
 	AuthLogin(username, password string) (string, error)
 	AuthLoginAdmin(username, password string) (string, error)
 	AuthCurrentUser(tenantID, memberID, pointSaleID int64) (*schemas.AuthenticatedUser, error)
+	AuthCurrentPlan(tenantID int64) (*schemas.PlanResponseDTO, error)
+	AuthCurrentTenant(tenantID int64) (*schemas.TenantResponse, error)
 	AuthPointSale(member *schemas.AuthenticatedUser, pointSaleID int64) (string, error)
 	LogoutPointSale(member *schemas.AuthenticatedUser) (string, error)
 	AuthForgotPassword(forgotPassword *schemas.AuthForgotPassword) error

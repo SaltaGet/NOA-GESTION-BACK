@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
@@ -75,7 +76,7 @@ func (r *MainRepository) TenantGetAll() (*[]schemas.TenantResponse, error) {
 	err := r.DB.
 		Model(&models.Tenant{}).
 		Select(`tenants.id, tenants.name, tenants.address, tenants.phone,
-                tenants.email, tenants.is_active,
+                tenants.email, tenants.is_active, tenants.expiration,
                 tenants.created_at, tenants.updated_at`).
 		Joins("JOIN user_tenants ON tenants.id = user_tenants.tenant_id").
 		Scan(&tenants).Error
@@ -286,23 +287,45 @@ func (r *MainRepository) TenantUserCreate(tenantUserCreate *schemas.TenantUserCr
 }
 
 func (r *MainRepository) TenantUpdate(userID int64, tenant *schemas.TenantUpdate) error {
-	// var userTenant models.UserTenant
+	var userTenant models.UserTenant
 
-	// err := r.DB.First(&userTenant, "user_id = ? AND tenant_id = ?", userID, tenant.ID).Error
-	// if err != nil {
-	// 	return schemas.ErrorResponse(404, "User-tenant relationship not found", err)
+	err := r.DB.First(&userTenant, "user_id = ? AND tenant_id = ?", userID, tenant.ID).Error
+	if err != nil {
+		return schemas.ErrorResponse(404, "User-tenant relationship not found", err)
+	}
+
+	// if !userTenant.IsAdmin {
+	// 	return schemas.ErrorResponse(403, "No tienes permisos para actualizar el tenant", fmt.Errorf("no tienes permisos para actualizar el tenant"))
 	// }
 
-	// // if !userTenant.IsAdmin {
-	// // 	return schemas.ErrorResponse(403, "No tienes permisos para actualizar el tenant", fmt.Errorf("no tienes permisos para actualizar el tenant"))
-	// // }
-
-	// if err := r.DB.Model(&models.Tenant{}).Updates(tenant).Error; err != nil {
-	// 	if errors.Is(err, gorm.ErrRecordNotFound) {
-	// 		return schemas.ErrorResponse(404, "Tenant not found", err)
-	// 	}
-	// 	return schemas.ErrorResponse(500, "Error interno updating tenant", err)
-	// }
+	if err := r.DB.Model(&models.Tenant{}).Updates(tenant).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return schemas.ErrorResponse(404, "Tenant not found", err)
+		}
+		return schemas.ErrorResponse(500, "Error interno updating tenant", err)
+	}
 
 	return nil
+}
+
+func (r *MainRepository) TenantUpdateExpiration(tenantUpdateExpiration *schemas.TenantUpdateExpiration) error {
+    loc, _ := time.LoadLocation("America/Argentina/Buenos_Aires")
+    exp, err := time.ParseInLocation("2006-01-02", tenantUpdateExpiration.Expiration, loc)
+    if err != nil {
+        return schemas.ErrorResponse(422, "Formato de fecha inválido, debe ser YYYY-MM-DD", err)
+    }
+
+    result := r.DB.Model(&models.Tenant{}).
+        Where("id = ?", tenantUpdateExpiration.ID).
+        Update("expiration", &exp)
+
+    if result.Error != nil {
+        return schemas.ErrorResponse(500, "Error interno updating tenant", result.Error)
+    }
+
+    if result.RowsAffected == 0 {
+        return schemas.ErrorResponse(404, "Tenant not found", nil)
+    }
+
+    return nil
 }

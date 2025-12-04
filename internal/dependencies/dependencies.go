@@ -14,6 +14,7 @@ type MainContainer struct {
 	UserController *controllers.UserController
 	TenantController *controllers.TenantController
 	// NotificationController *controllers.NotificationController
+	PlanController *controllers.PlanController
 }
 
 func NewApplication(mainDB *gorm.DB, cfg *schemas.EmailConfig) *MainContainer {
@@ -22,16 +23,18 @@ func NewApplication(mainDB *gorm.DB, cfg *schemas.EmailConfig) *MainContainer {
 	dialer := gomail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)
 	emailService := &services.EmailService{Dialer: dialer}
 
-	authServ := &services.AuthService{AuthRepository: mainRepo, UserRepository: mainRepo, TenantService: mainRepo, EmailService: emailService}
+	authServ := &services.AuthService{AuthRepository: mainRepo, UserRepository: mainRepo, TenantService: mainRepo, EmailService: emailService, PlanRepository: mainRepo}
 	userServ := &services.UserService{UserRepository: mainRepo}
 	tenantServ := &services.TenantService{TenantRepository: mainRepo}
 	// notificationServ := &services.NotificationService{NotificationRepository: mainRepo}
+	planServ := &services.PlanService{PlanRepository: mainRepo}
 
 	return &MainContainer{
 		AuthController: &controllers.AuthController{AuthService: authServ, EmailService: emailService},
 		UserController: &controllers.UserController{UserService: userServ},
 		TenantController: &controllers.TenantController{TenantService: tenantServ},
 		// NotificationController: &controllers.NotificationController{SSEServer: sse, NotificationService: notificationServ},
+		PlanController: &controllers.PlanController{PlanService: planServ},
 	}
 }
 

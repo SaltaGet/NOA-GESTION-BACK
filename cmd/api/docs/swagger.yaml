@@ -196,7 +196,7 @@ definitions:
       first_name:
         type: string
       id:
-        type: string
+        type: integer
       identifier:
         type: string
       last_name:
@@ -219,7 +219,7 @@ definitions:
       first_name:
         type: string
       id:
-        type: string
+        type: integer
       identifier:
         type: string
       last_name:
@@ -234,7 +234,7 @@ definitions:
       first_name:
         type: string
       id:
-        type: string
+        type: integer
       last_name:
         type: string
     type: object
@@ -1076,8 +1076,10 @@ definitions:
         - credit
         - card
         - transfer
+        example: cash credit card transfer
         type: string
       total:
+        example: 1000
         type: number
     required:
     - total
@@ -1101,6 +1103,7 @@ definitions:
         - credit
         - card
         - transfer
+        example: cash credit card transfer
         type: string
       total:
         type: number
@@ -1163,6 +1166,102 @@ definitions:
       id:
         type: integer
     type: object
+  schemas.PlanCreate:
+    properties:
+      description:
+        example: description
+        type: string
+      features:
+        example: features
+        type: string
+      name:
+        example: Plan1
+        type: string
+      price:
+        example: 100
+        minimum: 0
+        type: number
+      price_yearly:
+        example: 1000
+        minimum: 0
+        type: number
+    required:
+    - description
+    - name
+    - price
+    - price_yearly
+    type: object
+  schemas.PlanResponse:
+    properties:
+      amount_member:
+        type: integer
+      amount_point_sale:
+        type: integer
+      description:
+        type: string
+      features:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+      price_yearly:
+        type: number
+      tenants:
+        items:
+          $ref: '#/definitions/schemas.TenantResponse'
+        type: array
+    type: object
+  schemas.PlanResponseDTO:
+    properties:
+      amount_member:
+        type: integer
+      amount_point_sale:
+        type: integer
+      description:
+        type: string
+      features:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+      price_yearly:
+        type: number
+    type: object
+  schemas.PlanUpdate:
+    properties:
+      description:
+        example: description
+        type: string
+      features:
+        example: features
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Plan1
+        type: string
+      price:
+        example: 100
+        minimum: 0
+        type: number
+      price_yearly:
+        example: 1000
+        minimum: 0
+        type: number
+    required:
+    - description
+    - id
+    - name
+    - price
+    - price_yearly
+    type: object
   schemas.PointSaleCreate:
     properties:
       description:
@@ -1171,6 +1270,8 @@ definitions:
         type: boolean
       name:
         type: string
+    required:
+    - is_deposit
     type: object
   schemas.PointSaleResponse:
     properties:
@@ -1179,6 +1280,8 @@ definitions:
       id:
         type: integer
       is_deposit:
+        type: boolean
+      is_main:
         type: boolean
       name:
         type: string
@@ -1191,6 +1294,26 @@ definitions:
         type: string
       stock:
         type: number
+    type: object
+  schemas.PointSaleUpdate:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      is_deposit:
+        type: boolean
+      name:
+        type: string
+    required:
+    - is_deposit
+    type: object
+  schemas.PointSaleUpdateMain:
+    properties:
+      id:
+        type: integer
+      new_main:
+        type: integer
     type: object
   schemas.ProductCreate:
     properties:
@@ -1500,8 +1623,10 @@ definitions:
         type: string
       email:
         type: string
-      id:
+      expiration:
         type: string
+      id:
+        type: integer
       is_active:
         type: boolean
       name:
@@ -1510,6 +1635,17 @@ definitions:
         type: string
       updated_at:
         type: string
+    type: object
+  schemas.TenantUpdateExpiration:
+    properties:
+      expiration:
+        example: "2023-01-01"
+        type: string
+      id:
+        type: integer
+    required:
+    - expiration
+    - id
     type: object
   schemas.TenantUserCreate:
     properties:
@@ -1595,6 +1731,50 @@ info:
   title: APP NOA Gestion
   version: "1.0"
 paths:
+  /api/v1/auth/current_plan:
+    get:
+      consumes:
+      - application/json
+      description: Obtener plan actual
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.PlanResponseDTO'
+              type: object
+      security:
+      - CookieAuth: []
+      summary: CurrentPlan
+      tags:
+      - Auth
+  /api/v1/auth/current_tenant:
+    get:
+      consumes:
+      - application/json
+      description: Obtener tenant actual
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.TenantResponse'
+              type: object
+      security:
+      - CookieAuth: []
+      summary: CurrentTenant
+      tags:
+      - Auth
   /api/v1/auth/current_user:
     get:
       consumes:
@@ -3924,6 +4104,106 @@ paths:
       summary: Permissions GetAlltoME
       tags:
       - Permission
+  /api/v1/plan/create:
+    post:
+      consumes:
+      - application/json
+      description: Crear plan
+      parameters:
+      - description: Crear plan
+        in: body
+        name: plan_create
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.PlanCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: plan creado con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: PlanCreate
+      tags:
+      - Plan
+  /api/v1/plan/get/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Obtener plan por id
+      parameters:
+      - description: Plan ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: planes obtenidos con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.PlanResponse'
+              type: object
+      security:
+      - CookieAuth: []
+      summary: PlanGetByID
+      tags:
+      - Plan
+  /api/v1/plan/get_all:
+    get:
+      consumes:
+      - application/json
+      description: Obtener todos los planes
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: planes obtenidos con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.PlanResponseDTO'
+                  type: array
+              type: object
+      security:
+      - CookieAuth: []
+      summary: PlanGetAll
+      tags:
+      - Plan
+  /api/v1/plan/update:
+    put:
+      consumes:
+      - application/json
+      description: Actualizar plan
+      parameters:
+      - description: Crear plan
+        in: body
+        name: plan_create
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.PlanUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: plan creado con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: PlanUpdate
+      tags:
+      - Plan
   /api/v1/point_sale/create:
     post:
       consumes:
@@ -3941,22 +4221,6 @@ paths:
       responses:
         "200":
           description: puntos de ventas creado con éxito
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "401":
-          description: Auth is required
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "403":
-          description: Not Authorized
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal Server Error
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
@@ -3983,22 +4247,6 @@ paths:
                     $ref: '#/definitions/schemas.PointSaleResponse'
                   type: array
               type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "401":
-          description: Auth is required
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "403":
-          description: Not Authorized
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/schemas.Response'
       security:
       - CookieAuth: []
       summary: PointSale GetAll
@@ -4023,25 +4271,57 @@ paths:
                     $ref: '#/definitions/schemas.PointSaleResponse'
                   type: array
               type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "401":
-          description: Auth is required
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "403":
-          description: Not Authorized
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal Server Error
+      security:
+      - CookieAuth: []
+      summary: GetAllByMember GetAll
+      tags:
+      - PointSale
+  /api/v1/point_sale/update:
+    put:
+      consumes:
+      - application/json
+      description: Editar punto de venta
+      parameters:
+      - description: Editar punto de venta
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.PointSaleUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: puntos de ventas editado con éxito
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
       - CookieAuth: []
-      summary: GetAllByMember GetAll
+      summary: PointSaleUpdate
+      tags:
+      - PointSale
+  /api/v1/point_sale/update_main:
+    put:
+      consumes:
+      - application/json
+      description: Editar punto de venta principal
+      parameters:
+      - description: Editar punto de venta princiapl
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.PointSaleUpdateMain'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: puntos de venta principal editado con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: PointSaleUpdateMain
       tags:
       - PointSale
   /api/v1/product/create:
@@ -5235,6 +5515,30 @@ paths:
       security:
       - CookieAuth: []
       summary: Tenant GetAll
+      tags:
+      - Tenant
+  /api/v1/tenant/update_expiration:
+    put:
+      consumes:
+      - application/json
+      description: Actualizar fecha de expiración de un tenant
+      parameters:
+      - description: TenantUserCreate
+        in: body
+        name: TenantUserCreate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.TenantUpdateExpiration'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Fecha de expiración actualizada con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: TenantUpdateExpiration
       tags:
       - Tenant
   /api/v1/type_movement/create:

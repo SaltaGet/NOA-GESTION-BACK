@@ -201,6 +201,50 @@ func (a *AuthController) CurrentUser(c *fiber.Ctx) error {
 	})
 }
 
+//	CurrentPlan godoc
+//
+//	@Summary		CurrentPlan
+//	@Description	Obtener plan actual
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Success		200	{object}	schemas.Response{body=schemas.PlanResponseDTO}
+//	@Router			/api/v1/auth/current_plan [get]
+func (a *AuthController) CurrentPlan(c *fiber.Ctx) error {
+	logging.INFO("Obtener plan actual")
+	plan := c.Locals("current_plan").(*schemas.PlanResponseDTO)
+
+	logging.INFO("plan actual obtenido")
+	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    plan,
+		Message: "plan actual obtenido",
+	})
+}
+
+//	CurrentTenant godoc
+//
+//	@Summary		CurrentTenant 
+//	@Description	Obtener tenant actual
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Success		200	{object}	schemas.Response{body=schemas.TenantResponse}
+//	@Router			/api/v1/auth/current_tenant [get]
+func (a *AuthController) CurrentTenant(c *fiber.Ctx) error {
+	logging.INFO("Obtener Tenant actual")
+	user := c.Locals("current_tenant").(*schemas.TenantResponse)
+
+	logging.INFO("Tenant actual obtenido")
+	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    user,
+		Message: "Tenant actual obtenido",
+	})
+}
+
 //	LoginAdmin godoc
 //
 //	@Summary		Login Admin user

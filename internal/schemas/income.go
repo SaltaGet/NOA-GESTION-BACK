@@ -25,8 +25,8 @@ type ItemIncomeSaleCreate struct {
 }
 
 type PayCreate struct {
-	Total     float64 `json:"total" validate:"required"`
-	MethodPay string  `json:"method_pay" validate:"oneof=cash credit card transfer"`
+	Total     float64 `json:"total" validate:"required" example:"1000"`
+	MethodPay string  `json:"method_pay" validate:"oneof=cash credit card transfer" example:"cash credit card transfer"`
 }
 
 func (i *IncomeSaleCreate) Validate() error {
@@ -158,15 +158,15 @@ type IncomeSaleResponse struct {
 }
 
 type IncomeSaleItemResponse struct {
-	ID        int64                    `json:"id"`
-	Product   ProductSimpleResponseDTO `json:"product"`
-	Amount    float64                  `json:"quantity"`
-	Price     float64                  `json:"price"`
-	Discount  float64                  `json:"discount"`
-	Type      string                   `json:"type_discount"`
-	SubTotal  float64                  `json:"subtotal"`
-	Total     float64                  `json:"total"`
-	CreatedAt time.Time                `json:"created_at"`
+	ID           int64                    `json:"id"`
+	Product      ProductSimpleResponseDTO `json:"product"`
+	Amount       float64                  `json:"quantity"`
+	Price        float64                  `json:"price"`
+	Discount     float64                  `json:"discount"`
+	TypeDiscount string                   `json:"type_discount"`
+	SubTotal     float64                  `json:"subtotal"`
+	Total        float64                  `json:"total"`
+	CreatedAt    time.Time                `json:"created_at"`
 }
 
 type IncomeSaleResponseDTO struct {

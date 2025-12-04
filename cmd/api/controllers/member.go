@@ -133,7 +133,7 @@ func (m *MemberController) MemberGetByID(c *fiber.Ctx) error {
 //	@Router			/api/v1/member/create [post]
 func (m *MemberController) MemberCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear miembro")
-
+	
 	var memberCreate schemas.MemberCreate
 	if err := c.BodyParser(&memberCreate); err != nil {
 		logging.ERROR("Error: %s", err.Error())
@@ -147,7 +147,9 @@ func (m *MemberController) MemberCreate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	id, err := m.MemberService.MemberCreate(&memberCreate)
+	plan := c.Locals("current_plan").(*schemas.PlanResponseDTO)
+
+	id, err := m.MemberService.MemberCreate(&memberCreate, plan)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}

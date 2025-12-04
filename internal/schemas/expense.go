@@ -116,7 +116,7 @@ type ExpenseBuyItemCreate struct {
 
 type PayExpenseBuyCreate struct {
 	Total     float64 `json:"total" validate:"required"`
-	MethodPay string  `json:"payment_method" validate:"oneof=cash credit card transfer"`
+	MethodPay string  `json:"payment_method" validate:"oneof=cash credit card transfer" example:"cash credit card transfer"`
 }
 
 func (e *ExpenseBuyCreate) Validate() error {

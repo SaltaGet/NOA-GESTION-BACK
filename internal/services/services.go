@@ -10,6 +10,7 @@ type AuthService struct {
 	UserRepository ports.UserRepository
 	TenantService  ports.TenantService
 	EmailService   ports.EmailService
+	PlanRepository ports.PlanRepository
 }
 
 type CashRegisterService struct {
@@ -64,6 +65,10 @@ type NotificationService struct {
 
 type PermissionService struct {
 	PermissionRepository ports.PermissionRepository
+}
+
+type PlanService struct {
+	PlanRepository ports.PlanRepository
 }
 
 type PointSaleService struct {

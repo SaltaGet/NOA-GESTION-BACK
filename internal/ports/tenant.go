@@ -14,6 +14,7 @@ type TenantRepository interface {
 	TenantCreateByUserID(tenantCreate *schemas.TenantCreate, userID int64) (id int64, err error)
 	TenantUserCreate(tenantUserCreate *schemas.TenantUserCreate) (id int64, err error)
 	TenantUpdate(userID int64, tenant *schemas.TenantUpdate) (err error)
+	TenantUpdateExpiration(tenantUpdateExpiration *schemas.TenantUpdateExpiration) (err error)
 }
 
 type TenantService interface {
@@ -24,4 +25,5 @@ type TenantService interface {
 	TenantCreateByUserID(tenantCreate *schemas.TenantCreate, userID int64) (id int64, err error)
 	TenantUserCreate(tenantUserCreate *schemas.TenantUserCreate) (id int64, err error)
 	TenantUpdate(userID int64, tenant *schemas.TenantUpdate) (err error)
+	TenantUpdateExpiration(tenantUpdateExpiration *schemas.TenantUpdateExpiration) (err error)
 }

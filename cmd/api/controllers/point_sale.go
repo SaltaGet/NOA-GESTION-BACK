@@ -76,7 +76,9 @@ func (p *PointSaleController) PointSaleCreate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	permissions, err := p.PointSaleService.PointSaleCreate(&pointSale)
+	plan := c.Locals("current_plan").(*schemas.PlanResponseDTO)
+
+	id, err := p.PointSaleService.PointSaleCreate(&pointSale, plan)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -84,7 +86,7 @@ func (p *PointSaleController) PointSaleCreate(c *fiber.Ctx) error {
 	logging.INFO("Puntos de ventas obtenidos con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
-		Body:    permissions,
+		Body:    id,
 		Message: "Puntos de ventas obtenidos con éxito",
 	})
 }
@@ -100,7 +102,7 @@ func (p *PointSaleController) PointSaleCreate(c *fiber.Ctx) error {
 //	@Success		200		{object}	schemas.Response		"puntos de ventas editado con éxito"
 //	@Router			/api/v1/point_sale/update [put]
 func (p *PointSaleController) PointSaleUpdate(c *fiber.Ctx) error {
-	logging.INFO("Crear punto de venta")
+	logging.INFO("Editar punto de venta")
 	var pointSale schemas.PointSaleUpdate
 	if err := c.BodyParser(&pointSale); err != nil {
 		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el modelo", err))
@@ -114,10 +116,43 @@ func (p *PointSaleController) PointSaleUpdate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Puntos de ventas obtenidos con éxito")
+	logging.INFO("Puntos de venta editado con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
-		Message: "Puntos de ventas obtenidos con éxito",
+		Message: "Puntos de venta editado con éxito",
+	})
+}
+
+// PointSaleUpdateMain godoc
+//	@Summary		PointSaleUpdateMain 
+//	@Description	Editar punto de venta principal
+//	@Tags			PointSale
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			request	body		schemas.PointSaleUpdateMain	true	"Editar punto de venta princiapl"
+//	@Success		200		{object}	schemas.Response			"puntos de venta principal editado con éxito"
+//	@Router			/api/v1/point_sale/update_main [put]
+func (p *PointSaleController) PointSaleUpdateMain(c *fiber.Ctx) error {
+	logging.INFO("Editar punto de venta principal")
+	var pointSale schemas.PointSaleUpdateMain
+	if err := c.BodyParser(&pointSale); err != nil {
+		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el modelo", err))
+	}
+	if err := pointSale.Validate(); err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	err := p.PointSaleService.PointSaleUpdateMain(&pointSale)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	logging.INFO("Puntos de venta principal editado con éxito")
+	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
+		Message: "Puntos de venta principal editado con éxito",
 	})
 }

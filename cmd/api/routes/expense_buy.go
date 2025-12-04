@@ -7,7 +7,7 @@ import (
 )
 
 func ExpenseBuyRoutes(app *fiber.App) {
-	exp := app.Group("/api/v1/expense_buy", middleware.AuthMiddleware(), middleware.InjectionDependsTenant(), middleware.AuthPointSaleMiddleware())
+	exp := app.Group("/api/v1/expense_buy", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
 	exp.Get("/get_by_date", func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)

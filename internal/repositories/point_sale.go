@@ -9,10 +9,19 @@ import (
 )
 
 func (p *PointSaleRepository) PointSaleCreate(pointSaleCreate *schemas.PointSaleCreate) (int64, error) {
+	var pointSaleGet []models.PointSale
+	if err := p.DB.Where("is_main = ?", true).Find(&pointSaleGet).Error; err != nil {
+		return 0, schemas.ErrorResponse(500, "Error al obtener el punto de venta principal", err)
+	}
+
 	pointSale := models.PointSale{
 		Name:        pointSaleCreate.Name,
 		Description: pointSaleCreate.Description,
 		IsDeposit:   *pointSaleCreate.IsDeposit,
+	}
+
+	if len(pointSaleGet) == 0 {
+		pointSale.IsMain = true
 	}
 
 	err := p.DB.Create(&pointSale).Error
@@ -119,3 +128,50 @@ func (p *PointSaleRepository) PointSaleUpdate(pointSaleUpdate *schemas.PointSale
 	})
 }
 
+func (p *PointSaleRepository) PointSaleCount() (int64, error) {
+	var pointSales int64
+	if err := p.DB.Model(&models.PointSale{}).Count(&pointSales).Error; err != nil {
+		return 0, schemas.ErrorResponse(500, "error al obtner la cantidad de puntos de ventas", err)
+	}
+
+	return pointSales, nil
+}
+
+func (p *PointSaleRepository) PointSaleUpdateMain(pointSaleUpdateMain *schemas.PointSaleUpdateMain) error {
+	return p.DB.Transaction(func(tx *gorm.DB) error {
+
+		var pointSaleOld models.PointSale
+		if err := tx.First(&pointSaleOld, pointSaleUpdateMain.ID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return schemas.ErrorResponse(404, "Punto de venta no encontrado", err)
+			}
+			return schemas.ErrorResponse(500, "Error al obtener el punto de venta", err)
+		}
+
+		var pointSaleNew models.PointSale
+		if err := tx.First(&pointSaleNew, pointSaleUpdateMain.NewMain).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return schemas.ErrorResponse(404, "Punto de venta no encontrado", err)
+			}
+			return schemas.ErrorResponse(500, "Error al obtener el punto de venta", err)
+		}
+
+		if !pointSaleOld.IsMain {
+			return schemas.ErrorResponse(400, "El punto de venta indicado no es el principal actual", nil)
+		}
+		if pointSaleNew.IsMain {
+			return schemas.ErrorResponse(400, "El nuevo punto de venta ya es el principal", nil)
+		}
+
+		// Actualizar usando Updates (más seguro)
+		if err := tx.Model(&pointSaleOld).Update("is_main", false).Error; err != nil {
+			return schemas.ErrorResponse(500, "Error actualizando el punto principal", err)
+		}
+
+		if err := tx.Model(&pointSaleNew).Update("is_main", true).Error; err != nil {
+			return schemas.ErrorResponse(500, "Error actualizando el nuevo punto principal", err)
+		}
+
+		return nil
+	})
+}

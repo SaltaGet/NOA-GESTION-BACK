@@ -14,7 +14,7 @@ func MemberRoutes(app *fiber.App){
 		return tenant.Controllers.MemberController.MemberGetAll(c)
 	})
 
-	member.Post("/create", func(c *fiber.Ctx) error {
+	member.Post("/create", middleware.CurrentPlan(), func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.MemberController.MemberCreate(c)
 	})

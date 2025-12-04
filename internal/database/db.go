@@ -13,6 +13,7 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 	lru "github.com/hashicorp/golang-lru"
 	"gorm.io/driver/mysql"
@@ -86,7 +87,10 @@ func ConnectDB() (*gorm.DB, error) {
 		log.Fatalf("Error en migración: %v", err)
 	}
 
-	ensurePlans(db)
+	err = ensurePlans(db)
+	if err != nil {
+		log.Fatalf("Error en migración de planes: %v", err)
+	}
 
 	return ensureAdmin(db)
 }
@@ -117,13 +121,23 @@ func ensureAdmin(db *gorm.DB) (*gorm.DB, error) {
 }
 
 func ensurePlans(db *gorm.DB) error {
-	plans := []models.Plan{
-		{Name: "Free"}, {Name: "Basic"}, {Name: "Premium"},
+	plan := models.Plan{
+		Name:            "Básico",
+		PriceMounthly:   25,
+		PriceYearly:     250,
+		Description:     "Plan básico",
+		Features:        "emmmm, nada es básico, asi que no esperes mucho",
+		AmountPointSale: 1,
+		AmountMember:    5,
 	}
 
-	err := db.Create(&plans)
+	err := db.Create(&plan).Error
 	if err != nil {
-		return err.Error
+		if schemas.IsDuplicateError(err) {
+			log.Println("El plan básico ya existe")
+			return nil
+		}
+		return err
 	}
 	return nil
 }
@@ -367,9 +381,9 @@ func CloseAllTenantDBs() error {
 	return nil
 }
 
-func GetMainDB() *gorm.DB {
-	return mainDB
-}
+// func GetMainDB() *gorm.DB {
+// 	return mainDB
+// }
 
 func InitDBCache(maxEntries int) error {
 	var err error

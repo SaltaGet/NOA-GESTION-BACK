@@ -291,3 +291,12 @@ func (r *MemberRepository) MemberDelete(id int64) error {
 		return nil
 	})
 }
+
+func (r *MemberRepository) MemberCount() (int64, error) {
+	var members int64
+	if err := r.DB.Model(&models.Member{}).Count(&members).Error; err != nil {
+		return 0, schemas.ErrorResponse(500, "error al obtner la cantidad de miembros", err)
+	}
+
+	return members, nil
+}
