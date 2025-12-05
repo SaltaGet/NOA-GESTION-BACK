@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -24,7 +25,7 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
 	"github.com/gofiber/fiber/v2"
-	// "github.com/robfig/cron/v3"
+	"github.com/robfig/cron/v3"
 
 	// "github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -52,6 +53,13 @@ func main() {
 		if err := godotenv.Load(".env"); err != nil {
 			log.Fatalf("Error cargando .env local: %v", err)
 		}
+	}
+
+	path := os.Getenv("APP_ROOT")
+	if path != "" {
+		os.MkdirAll(path+"/backups", os.ModePerm)
+	} else {
+		log.Fatal("No está indicada la ruta raiz")
 	}
 
 	local := os.Getenv("LOCAL")
@@ -107,11 +115,11 @@ func main() {
 	}
 
 	app := fiber.New(fiber.Config{
-		IdleTimeout:  30 * time.Second,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		ErrorHandler: customErrorHandler,
-		ProxyHeader: "X-Forwarded-For",
+		IdleTimeout:           30 * time.Second,
+		ReadTimeout:           10 * time.Second,
+		WriteTimeout:          10 * time.Second,
+		ErrorHandler:          customErrorHandler,
+		ProxyHeader:           "X-Forwarded-For",
 		DisableStartupMessage: false,
 		StreamRequestBody:     true,
 	})
@@ -161,29 +169,30 @@ func main() {
 
 	routes.SetupRoutes(app, dep)
 
-	// c := cron.New()
-	// env := os.Getenv("ENV")
-	// if env == "prod" {
-	// 	// _, err = c.AddFunc("0 4 * * *", func() {
-	// 	_, err = c.AddFunc("@every 1m", func() {
-	// 		logging.INFO("⏰ [CRON] Iniciando backup diario...")
-	// 		cfg, err := jobs.LoadConfig(dep)
-	// 		if err != nil {
-	// 			logging.ERROR("❌ [CRON] error leyendo config: %s", err.Error())
-	// 			return 
-	// 		}
-	// 		fmt.Println("⏰ Iniciando backup:", cfg.Databases)
-	// 		jobs.RunBackup(cfg)
-	// 	})
-	// 	if err != nil {
-	// 		logging.ERROR("❌ Error al crear cron job: %s", err.Error())
-	// 		panic(err)
-	// 	}
-	// }
+	initBackup := os.Getenv("INIT_BACKUP")
+	if initBackup == "true" {
+		c := cron.New()
+		env := os.Getenv("ENV")
+		if env == "prod" {
+			_, err = c.AddFunc("0 4 * * *", func() {
+				logging.INFO("⏰ [CRON] Iniciando backup diario...")
+				cfg, err := jobs.LoadConfig(dep)
+				if err != nil {
+					logging.ERROR("❌ [CRON] error leyendo config: %s", err.Error())
+					return
+				}
+				fmt.Println("⏰ Iniciando backup:", cfg.Databases)
+				jobs.RunBackup(cfg)
+			})
+			if err != nil {
+				logging.ERROR("❌ Error al crear cron job: %s", err.Error())
+				panic(err)
+			}
+		}
 
-	// c.Start()
-	// defer c.Stop()
-
+		c.Start()
+		defer c.Stop()
+	}
 
 	// Canal para señales del sistema
 	quit := make(chan os.Signal, 1)

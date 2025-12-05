@@ -563,9 +563,13 @@ definitions:
         type: string
       total:
         type: number
+      type_expense_id:
+        example: 1
+        type: integer
     required:
     - id
     - total
+    - type_expense_id
     type: object
   schemas.GroupPermissions:
     properties:
@@ -838,9 +842,6 @@ definitions:
       address:
         example: casita roja|null
         type: string
-      cellphone:
-        example: 123123123|null
-        type: string
       email:
         example: a@b.com
         type: string
@@ -852,6 +853,9 @@ definitions:
         type: string
       password:
         example: Password123*
+        type: string
+      phone:
+        example: 123123123|null
         type: string
       point_sales_ids:
         example:

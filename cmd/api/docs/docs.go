@@ -7236,7 +7236,8 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "id",
-                "total"
+                "total",
+                "type_expense_id"
             ],
             "properties": {
                 "details": {
@@ -7257,6 +7258,10 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "number"
+                },
+                "type_expense_id": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -7667,10 +7672,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "casita roja|null"
                 },
-                "cellphone": {
-                    "type": "string",
-                    "example": "123123123|null"
-                },
                 "email": {
                     "type": "string",
                     "example": "a@b.com"
@@ -7686,6 +7687,10 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "example": "Password123*"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "123123123|null"
                 },
                 "point_sales_ids": {
                     "type": "array",

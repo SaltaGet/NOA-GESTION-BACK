@@ -118,7 +118,7 @@ func (r *MainRepository) TenantCreateByUserID(tenantCreate *schemas.TenantCreate
 
 	tenantName := strings.ReplaceAll(tenantCreate.Name, " ", "_")
 	identifier := strings.ReplaceAll(tenantCreate.Identifier, " ", "_")
-	uri := fmt.Sprintf("%s%s_%s.db%s", os.Getenv("URI_PATH"), tenantName, identifier, os.Getenv("URI_CONFIG"))
+	uri := fmt.Sprintf("%s%s_%s%s", os.Getenv("URI_PATH"), tenantName, identifier, os.Getenv("URI_CONFIG"))
 	connection, err := utils.Encrypt(uri)
 	if err != nil {
 		return 0, schemas.ErrorResponse(500, "Error interno al obtener connection", err)
@@ -197,7 +197,7 @@ func (r *MainRepository) TenantUserCreate(tenantUserCreate *schemas.TenantUserCr
 
 	tenantName := strings.ReplaceAll(tenantUserCreate.TenantCreate.Name, " ", "_")
 	identifier := strings.ReplaceAll(tenantUserCreate.TenantCreate.Identifier, " ", "_")
-	uri := fmt.Sprintf("%s%s_%s.db%s", os.Getenv("URI_PATH"), tenantName, identifier, os.Getenv("URI_CONFIG"))
+	uri := fmt.Sprintf("%s%s_%s%s", os.Getenv("URI_PATH"), tenantName, identifier, os.Getenv("URI_CONFIG"))
 	connection, err := utils.Encrypt(uri)
 	if err != nil {
 		return 0, err

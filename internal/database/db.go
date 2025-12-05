@@ -280,10 +280,6 @@ func openTenantDB(connStr string) (*gorm.DB, error) {
 }
 
 func EnsureDatabaseExists(dsn string) error {
-	if os.Getenv("ENV") != "prod" {
-		return nil
-	}
-
 	parts := strings.Split(dsn, "/")
 	if len(parts) < 2 {
 		return fmt.Errorf("DSN inválido: %s", dsn)
