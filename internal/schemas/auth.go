@@ -2,18 +2,26 @@ package schemas
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
 )
 
 type AuthLogin struct {
-	Username string `json:"username" validate:"required"`
+	Username string `json:"username" validate:"required,username"`
 	Password string `json:"password" validate:"required"`
+}
+
+func validateUsername(fl validator.FieldLevel) bool {
+	username := fl.Field().String()
+	return regexp.MustCompile(`^[^@]+@[^.]+$`).MatchString(username) 
 }
 
 func (a *AuthLogin) Validate() error {
 	validate := validator.New()
+	validate.RegisterValidation("username", validateUsername)
+
 	err := validate.Struct(a)
 	if err == nil {
 		return nil

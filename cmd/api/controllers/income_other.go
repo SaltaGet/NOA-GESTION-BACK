@@ -105,7 +105,7 @@ func (i *IncomeOtherController) IncomeOtherGetByDate(c *fiber.Ctx) error {
 //	@Security		CookieAuth
 //	@Param			id	path		string												true	"ID of the incomeOther"
 //	@Success		200	{object}	schemas.Response{body=schemas.IncomeOtherResponse}	"IncomeOther details fetched successfully"
-//	@Router			/api/v1/income_other/get_by_id_point_sale/{id} [get]
+//	@Router			/api/v1/income_other/get_point_sale/{id} [get]
 func (i *IncomeOtherController) IncomeOtherGetByIDByPointSale(c *fiber.Ctx) error {
 	logging.INFO("Obtener un ingreso por ID")
 	id := c.Params("id")

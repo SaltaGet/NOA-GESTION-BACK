@@ -403,7 +403,7 @@ definitions:
     properties:
       created_at:
         type: string
-      description:
+      details:
         type: string
       discount:
         type: number
@@ -511,7 +511,7 @@ definitions:
     properties:
       created_at:
         type: string
-      description:
+      details:
         type: string
       id:
         type: integer
@@ -3494,7 +3494,7 @@ paths:
       summary: IncomeOtherGetByDatePointSale
       tags:
       - IncomeOther
-  /api/v1/income_other/get_by_id_point_sale/{id}:
+  /api/v1/income_other/get_point_sale/{id}:
     get:
       consumes:
       - application/json

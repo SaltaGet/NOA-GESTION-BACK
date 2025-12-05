@@ -20,6 +20,7 @@ func (r *ExpenseOtherRepository) ExpenseOtherGetByID(id int64, pointSaleID *int6
 				return db.Select("id", "first_name", "last_name", "username")
 			}).
 			Preload("TypeExpense").
+			Preload("PointSale").
 			Where("point_sale_id = ?", *pointSaleID).
 			First(&expenseOther, id).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -33,6 +34,7 @@ func (r *ExpenseOtherRepository) ExpenseOtherGetByID(id int64, pointSaleID *int6
 				return db.Select("id", "first_name", "last_name", "username")
 			}).
 			Preload("TypeExpense").
+			Preload("PointSale").
 			First(&expenseOther, id).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, schemas.ErrorResponse(404, "Egreso no encontrado", err)

@@ -3,6 +3,7 @@ package repositories
 import (
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
@@ -186,8 +187,9 @@ func (r *ExpenseBuyRepository) ExpenseBuyCreate(memberID int64, expenseBuyCreate
 			})
 		}
 
-		if totalPay != totalExpense {
-			return schemas.ErrorResponse(400, "El total de pagos no coincide con el total del egreso", nil)
+		if math.Abs(totalPay - totalExpense) > 1 {
+			message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total del egreso (%.2f)", totalPay, totalExpense)
+			return schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
 		}
 
 		if err := tx.Create(&payExpenseBuy).Error; err != nil {
@@ -348,9 +350,9 @@ func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate
 			})
 		}
 
-		if totalPay != totalExpense {
-			message := fmt.Sprintf("La suma de los pagos (%.2f) no puede ser diferente al total de la compra (%.2f)", totalPay, totalExpense)
-			return schemas.ErrorResponse(422, message, fmt.Errorf("%s", message))
+		if math.Abs(totalPay - totalExpense) > 1 {
+			message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total del egreso (%.2f)", totalPay, totalExpense)
+			return schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
 		}
 
 		if err := tx.Create(&payExpenseBuy).Error; err != nil {

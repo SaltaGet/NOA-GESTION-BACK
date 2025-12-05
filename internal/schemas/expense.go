@@ -2,6 +2,7 @@ package schemas
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -11,7 +12,7 @@ type ExpenseBuyResponse struct {
 	ID             int64                    `json:"id"`
 	Member         MemberSimpleDTO          `json:"member"`
 	Supplier       SupplierResponseDTO      `json:"supplier"`
-	Description    *string                  `json:"description,omitempty"`
+	Details        *string                  `json:"details,omitempty"`
 	ExpenseBuyItem []ExpenseBuyItemResponse `json:"expense_buy_items"`
 	PayExpenseBuy  []PayExpenseBuyResponse  `json:"pay_expense"`
 	Subtotal       float64                  `json:"subtotal"`
@@ -70,9 +71,9 @@ type ExpenseBuyResponseSimple struct {
 type ExpenseOtherResponse struct {
 	ID          int64               `json:"id"`
 	PointSale   *PointSaleResponse  `json:"point_sale,omitempty"`
-	Member      *MemberSimpleDTO     `json:"member,omitempty"`
+	Member      *MemberSimpleDTO    `json:"member,omitempty"`
 	RegisterID  *int64              `json:"register_id,omitempty"`
-	Description *string             `json:"description,omitempty"`
+	Details *string             `json:"details,omitempty"`
 	Total       float64             `json:"total"`
 	PayMethod   string              `json:"pay_method"`
 	TypeExpense TypeExpenseResponse `json:"type_expense"`
@@ -123,6 +124,18 @@ func (e *ExpenseBuyCreate) Validate() error {
 	validate := validator.New()
 	err := validate.Struct(e)
 	if err == nil {
+		var sumPay float64
+		for _, p := range e.PayExpenseBuy {
+			sumPay += p.Total
+		}
+
+		if math.Abs(sumPay-e.Total) > 1 {
+			message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total (%.2f) no puede ser mayor que 1",
+				sumPay, e.Total)
+
+			return ErrorResponse(422, message, fmt.Errorf("%s", message))
+		}
+
 		return nil
 	}
 
@@ -167,6 +180,18 @@ func (e *ExpenseBuyUpdate) Validate() error {
 	validate := validator.New()
 	err := validate.Struct(e)
 	if err == nil {
+		var sumPay float64
+		for _, p := range e.PayExpenseBuy {
+			sumPay += p.Total
+		}
+
+		if math.Abs(sumPay-e.Total) > 1 {
+			message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total (%.2f) no puede ser mayor que 1",
+				sumPay, e.Total)
+
+			return ErrorResponse(422, message, fmt.Errorf("%s", message))
+		}
+
 		return nil
 	}
 

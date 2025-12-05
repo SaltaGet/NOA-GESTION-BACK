@@ -2895,7 +2895,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/income_other/get_by_id_point_sale/{id}": {
+        "/api/v1/income_other/get_point_sale/{id}": {
             "get": {
                 "security": [
                     {
@@ -7019,7 +7019,7 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
-                "description": {
+                "details": {
                     "type": "string"
                 },
                 "discount": {
@@ -7177,7 +7177,7 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
-                "description": {
+                "details": {
                     "type": "string"
                 },
                 "id": {

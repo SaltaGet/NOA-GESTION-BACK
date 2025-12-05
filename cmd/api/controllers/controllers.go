@@ -5,9 +5,8 @@ import (
 	"github.com/alexandrevicenzi/go-sse"
 )
 
-
 type AuthController struct {
-	AuthService ports.AuhtService
+	AuthService  ports.AuhtService
 	EmailService ports.EmailService
 }
 
@@ -48,13 +47,13 @@ type MemberController struct {
 }
 
 type MovementStockController struct {
-	MovementStockService ports.MovementStockService
+	MovementStockService   ports.MovementStockService
 	NotificationController *NotificationController
 }
 
 type NotificationController struct {
 	NotificationService ports.NotificationService
-	SSEServer 	*sse.Server
+	SSEServer           *sse.Server
 }
 
 type PermissionController struct {
@@ -100,4 +99,3 @@ type TypeMovementController struct {
 type UserController struct {
 	UserService ports.UserService
 }
-

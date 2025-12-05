@@ -21,6 +21,7 @@ func (r *IncomeOtherRepository) IncomeOtherGetByID(id int64, pointSaleId *int64)
 				return db.Select("id", "first_name", "last_name", "username")
 			}).
 			Preload("TypeIncome").
+			Preload("PointSale").
 			Where("point_sale_id = ?", *pointSaleId).
 			First(&incomeOther, id).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {

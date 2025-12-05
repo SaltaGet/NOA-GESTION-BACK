@@ -2,6 +2,7 @@ package schemas
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -45,8 +46,10 @@ func (i *IncomeSaleCreate) Validate() error {
 		sumPay += p.Total
 	}
 
-	if sumPay != i.Total {
-		message := fmt.Sprintf("la suma de los pagos (%.2f) no puede ser diferente a el total de la venta (%.2f)", sumPay, i.Total)
+	if math.Abs(sumPay-i.Total) > 1 {
+		message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total (%.2f) no puede ser mayor que 1",
+			sumPay, i.Total)
+
 		return ErrorResponse(422, message, fmt.Errorf("%s", message))
 	}
 
@@ -92,8 +95,10 @@ func (i *IncomeSaleUpdate) Validate() error {
 		sumPay += p.Total
 	}
 
-	if sumPay != i.Total {
-		message := fmt.Sprintf("la suma de los pagos (%.2f) no puede superar el total de la venta (%.2f)", sumPay, i.Total)
+	if math.Abs(sumPay-i.Total) > 1 {
+		message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total (%.2f) no puede ser mayor que 1",
+			sumPay, i.Total)
+
 		return ErrorResponse(422, message, fmt.Errorf("%s", message))
 	}
 

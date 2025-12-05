@@ -3,6 +3,7 @@ package repositories
 import (
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
@@ -50,7 +51,7 @@ func (i *IncomeSaleRepository) IncomeSaleGetByDate(pointSaleID int64, fromDate, 
 	if err := i.DB.
 		Preload("Member", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "first_name", "last_name", "username")
-		}). 
+		}).
 		Preload("Client", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "first_name", "last_name", "company_name")
 		}).
@@ -263,14 +264,14 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 				IncomeSaleID:   incomeSaleID,
 				CashRegisterID: &register.ID,
 				ClientID:       &clientExist.ID,
-				Total:         pay.Total,
+				Total:          pay.Total,
 				MethodPay:      pay.MethodPay,
 			})
 		}
 
-		if totalPay != income.Total {
-			message := fmt.Sprintf("la suma de los pagos (%.2f) no puede ser diferente a el total de la venta (%.2f)", totalPay, income.Total)
-			return schemas.ErrorResponse(422, message, fmt.Errorf("%s", message))
+		if math.Abs(totalPay-income.Total) > 1 {
+			message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total del ingreso (%.2f)", totalPay, income.Total)
+			return schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
 		}
 
 		if err := tx.Create(&payModels).Error; err != nil {
@@ -494,14 +495,14 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 				IncomeSaleID:   incomeSaleUpdate.ID,
 				CashRegisterID: &existingIncome.CashRegisterID,
 				ClientID:       &clientExist.ID,
-				Total:         pay.Total,
+				Total:          pay.Total,
 				MethodPay:      pay.MethodPay,
 			})
 		}
 
-		if totalPay != existingIncome.Total {
-			message := fmt.Sprintf("La suma de los pagos (%.2f) no puede ser diferente al total de la venta (%.2f)", totalPay, existingIncome.Total)
-			return schemas.ErrorResponse(422, message, fmt.Errorf("%s", message))
+		if math.Abs(totalPay-existingIncome.Total) > 1 {
+			message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total del ingreso (%.2f)", totalPay, existingIncome.Total)
+			return schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
 		}
 
 		if err := tx.Create(&payModels).Error; err != nil {
