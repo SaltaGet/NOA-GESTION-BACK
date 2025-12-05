@@ -73,7 +73,7 @@ type ExpenseOtherResponse struct {
 	PointSale   *PointSaleResponse  `json:"point_sale,omitempty"`
 	Member      *MemberSimpleDTO    `json:"member,omitempty"`
 	RegisterID  *int64              `json:"register_id,omitempty"`
-	Details *string             `json:"details,omitempty"`
+	Details     *string             `json:"details,omitempty"`
 	Total       float64             `json:"total"`
 	PayMethod   string              `json:"pay_method"`
 	TypeExpense TypeExpenseResponse `json:"type_expense"`
@@ -228,10 +228,11 @@ func (e *ExpenseOtherCreate) Validate() error {
 }
 
 type ExpenseOtherUpdate struct {
-	ID        int64   `json:"id" validate:"required"`
-	Details   *string `json:"details,omitempty"`
-	Total     float64 `json:"total" validate:"required"`
-	PayMethod string  `json:"payment_method" validate:"oneof=cash credit card transfer" example:"cash credit card transfer"`
+	ID            int64   `json:"id" validate:"required"`
+	Details       *string `json:"details,omitempty"`
+	Total         float64 `json:"total" validate:"required"`
+	PayMethod     string  `json:"payment_method" validate:"oneof=cash credit card transfer" example:"cash credit card transfer"`
+	TypeExpenseID int64   `json:"type_expense_id" validate:"required" example:"1"`
 }
 
 func (e *ExpenseOtherUpdate) Validate() error {

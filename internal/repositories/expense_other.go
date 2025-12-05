@@ -174,10 +174,20 @@ func (r *ExpenseOtherRepository) ExpenseOtherUpdate(memberID int64, pointSaleID 
 			}
 		}
 
+		var typeExpense models.TypeExpense
+		if err := tx.Select("id").First(&typeExpense, expenseOtherUpdate.TypeExpenseID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return schemas.ErrorResponse(400, fmt.Sprintf("El tipo de egreso %d no existe", expenseOtherUpdate.TypeExpenseID), err)
+			}
+			return schemas.ErrorResponse(500, "Error al obtener el tipo de egreso", err)
+		}
+
+
 		existingExpense.Details = expenseOtherUpdate.Details
 		existingExpense.Total = expenseOtherUpdate.Total
 		existingExpense.PayMethod = expenseOtherUpdate.PayMethod
 		existingExpense.MemberID = memberID
+		existingExpense.TypeExpenseID = expenseOtherUpdate.TypeExpenseID
 
 		if err := tx.Save(&existingExpense).Error; err != nil {
 			return schemas.ErrorResponse(500, "Error al actualizar el egreso", err)

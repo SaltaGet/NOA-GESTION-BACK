@@ -49,7 +49,7 @@ type MemberCreate struct {
 	Email        string  `json:"email" validate:"email,required" example:"a@b.com"`
 	Password     string  `json:"password" validate:"required,password" example:"Password123*"`
 	Address      *string `json:"address,omitempty" example:"casita roja|null"`
-	Phone        *string `json:"cellphone,omitempty" example:"123123123|null"`
+	Phone        *string `json:"phone,omitempty" example:"123123123|null"`
 	RoleID       int64   `json:"role_id" validate:"required" example:"1"`
 	PointSaleIDs []int64 `json:"point_sales_ids" validate:"required" example:"1,2,3"`
 }
