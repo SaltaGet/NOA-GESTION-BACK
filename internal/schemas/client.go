@@ -34,7 +34,7 @@ func (c *ClientCreate) Validate() error {
 }
 
 type ClientUpdate struct {
-	ID          int64  `json:"id" validate:"required"`
+	ID          int64   `json:"id" validate:"required"`
 	FirstName   string  `json:"first_name" validate:"required" example:"Jorge"`
 	LastName    string  `json:"last_name" validate:"required" example:"Lopez"`
 	CompanyName *string `json:"company_name" example:"John Company | null"`
@@ -46,7 +46,49 @@ type ClientUpdate struct {
 
 func (c *ClientUpdate) Validate() error {
 	if c.ID == 1 {
-		return ErrorResponse(400, "no se puede eliminar el cliente Consumidor Final", fmt.Errorf("no se puede eliminar el cliente Consumidor Final"))
+		return ErrorResponse(400, "no se puede editar el cliente Consumidor Final", fmt.Errorf("no se puede eliminar el cliente Consumidor Final"))
+	}
+
+	validate := validator.New()
+	err := validate.Struct(c)
+	if err == nil {
+		return nil
+	}
+
+	validationErr := err.(validator.ValidationErrors)[0]
+	field := validationErr.Field()
+	tag := validationErr.Tag()
+	param := validationErr.Param()
+
+	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+
+	return ErrorResponse(422, message, fmt.Errorf("%s", message))
+}
+
+type ClientUpdateCredit struct {
+	ID        int64        `json:"id" validate:"required" example:"2"`
+	PayCredit []*PayCredit `json:"pay_credit" validate:"required,min=1,dive"`
+	Total     float64      `json:"total" validate:"required"`
+}
+
+type PayCredit struct {
+	CreditID        int64   `json:"credit_id" validate:"required"`
+	MethodPay string  `json:"method_pay" validate:"oneof=cash card transfer" example:"cash card transfer"`
+	Total     float64 `json:"total" validate:"required"`
+}
+
+func (c *ClientUpdateCredit) Validate() error {
+	if c.ID == 1 {
+		return ErrorResponse(400, "no se puede editar el cliente Consumidor Final", fmt.Errorf("no se puede eliminar el cliente Consumidor Final"))
+	}
+
+	total := 0.0
+	for _, p := range c.PayCredit {
+		total += p.Total
+	}
+
+	if total != c.Total {
+		return ErrorResponse(400, "el total de los pagos no es igual al total", fmt.Errorf("el total de los pagos no es igual al total"))
 	}
 
 	validate := validator.New()
@@ -66,7 +108,7 @@ func (c *ClientUpdate) Validate() error {
 }
 
 type ClientResponseDTO struct {
-	ID          int64  `json:"id"`
+	ID          int64   `json:"id"`
 	FirstName   string  `json:"first_name"`
 	LastName    string  `json:"last_name"`
 	CompanyName *string `json:"company_name,omitempty"`
@@ -76,7 +118,7 @@ type ClientResponseDTO struct {
 }
 
 type ClientResponse struct {
-	ID           int64            `json:"id"`
+	ID           int64             `json:"id"`
 	FirstName    string            `json:"first_name"`
 	LastName     string            `json:"last_name"`
 	CompanyName  *string           `json:"company_name,omitempty"`
@@ -84,12 +126,12 @@ type ClientResponse struct {
 	Email        *string           `json:"email,omitempty"`
 	Phone        *string           `json:"phone,omitempty"`
 	Address      *string           `json:"address,omitempty"`
-	MemberCreate *MemberSimpleDTO `json:"member,omitempty"`
-	Pay          []PayDebtResponse     `json:"pay"`
+	MemberCreate *MemberSimpleDTO  `json:"member,omitempty"`
+	Pay          []PayDebtResponse `json:"pay"`
 }
 
 type ClientSimpleDTO struct {
-	ID          int64  `json:"id"`
+	ID          int64   `json:"id"`
 	FirstName   string  `json:"first_name"`
 	LastName    string  `json:"last_name"`
 	CompanyName *string `json:"company_name,omitempty"`

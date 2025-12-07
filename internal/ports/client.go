@@ -9,6 +9,7 @@ type ClientService interface {
 	ClientGetAll(limit, page int64, search *map[string]string) (*[]schemas.ClientResponseDTO, int64, error)
 	ClientCreate(memberID int64, clientCreate *schemas.ClientCreate) (id int64, err error)
 	ClientUpdate(clienUpdate *schemas.ClientUpdate) (err error)
+	ClientUpdateCredit(pointSaleID int64, clienUpdateCredit *schemas.ClientUpdateCredit) (err error)
 	ClientDelete(id int64) (err error)
 }
 
@@ -18,5 +19,6 @@ type ClientRepository interface {
 	ClientGetAll(limit, page int64, search *map[string]string) (*[]schemas.ClientResponseDTO, int64, error)
 	ClientCreate(memberID int64, clientCreate *schemas.ClientCreate) (id int64, err error)
 	ClientUpdate(clienUpdate *schemas.ClientUpdate) (err error)
+	ClientUpdateCredit(pointSaleID int64, clienUpdateCredit *schemas.ClientUpdateCredit) (err error)
 	ClientDelete(id int64) (err error)
 }

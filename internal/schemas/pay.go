@@ -4,6 +4,7 @@ type PayResponse struct {
 	ID        int64   `json:"id"`
 	Total    float64 `json:"amount"`
 	MethodPay string  `json:"method_pay"`
+	CreatedAt    string  `json:"created_at"`
 }
 
 type PayDebtResponse struct {
@@ -11,4 +12,5 @@ type PayDebtResponse struct {
 	IncomeSaleID int64   `json:"income_sale_id"`
 	Total       float64 `json:"amount"`
 	MethodPay    string  `json:"method_pay"`
+	CreatedAt    string  `json:"created_at"`
 }

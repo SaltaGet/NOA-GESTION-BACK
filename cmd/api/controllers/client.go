@@ -218,6 +218,47 @@ func (cl *ClientController) ClientUpdate(c *fiber.Ctx) error {
 	})
 }
 
+// ClientUpdateCredit godoc
+//
+//	@Summary		ClientUpdateCredit
+//	@Description	Actualizar credito de un cliente
+//	@Tags			Client
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			clientUpdateCredit	body		schemas.ClientUpdateCredit	true	"Cliente a actualizar"
+//	@Success		200					{object}	schemas.Response
+//	@Router			/api/v1/client/update_credit [put]
+func (cl *ClientController) ClientUpdateCredit(c *fiber.Ctx) error {
+	logging.INFO("Actualizar credito de un cliente")
+	var clientUpdate schemas.ClientUpdateCredit
+	if err := c.BodyParser(&clientUpdate); err != nil {
+		logging.ERROR("Error: %s", err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
+			Status:  false,
+			Body:    nil,
+			Message: "Invalid request" + err.Error(),
+		})
+	}
+	if err := clientUpdate.Validate(); err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	pointID := c.Locals("point_sale_id").(int64)
+
+	err := cl.ClientService.ClientUpdateCredit(pointID, &clientUpdate)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	logging.INFO("Credito de un cliente actualizado con éxito")
+	return c.Status(200).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
+		Message: "Cliente actualizado con éxito",
+	})
+}
+
 // ClientDelete godoc
 //
 //	@Summary		Delete client by ID

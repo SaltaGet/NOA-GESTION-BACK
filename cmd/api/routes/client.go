@@ -28,6 +28,11 @@ func ClientRoutes(app *fiber.App) {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.ClientController.ClientUpdate(c)
 	})
+	
+	cli.Put("/update_credit", middleware.AuthPointSaleMiddleware(), func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.ClientController.ClientUpdateCredit(c)
+	})
 
 	cli.Delete("/delete/:id", func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)

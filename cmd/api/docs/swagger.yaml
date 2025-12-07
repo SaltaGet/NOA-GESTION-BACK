@@ -265,6 +265,23 @@ definitions:
     - id
     - last_name
     type: object
+  schemas.ClientUpdateCredit:
+    properties:
+      id:
+        example: 2
+        type: integer
+      pay_credit:
+        items:
+          $ref: '#/definitions/schemas.PayCredit'
+        minItems: 1
+        type: array
+      total:
+        type: number
+    required:
+    - id
+    - pay_credit
+    - total
+    type: object
   schemas.DateRangeRequest:
     properties:
       from_date:
@@ -1100,10 +1117,29 @@ definitions:
     required:
     - total
     type: object
+  schemas.PayCredit:
+    properties:
+      credit_id:
+        type: integer
+      method_pay:
+        enum:
+        - cash
+        - card
+        - transfer
+        example: cash card transfer
+        type: string
+      total:
+        type: number
+    required:
+    - credit_id
+    - total
+    type: object
   schemas.PayDebtResponse:
     properties:
       amount:
         type: number
+      created_at:
+        type: string
       id:
         type: integer
       income_sale_id:
@@ -1139,6 +1175,8 @@ definitions:
     properties:
       amount:
         type: number
+      created_at:
+        type: string
       id:
         type: integer
       method_pay:
@@ -2620,6 +2658,30 @@ paths:
       security:
       - CookieAuth: []
       summary: Actualizar un cliente
+      tags:
+      - Client
+  /api/v1/client/update_credit:
+    put:
+      consumes:
+      - application/json
+      description: Actualizar credito de un cliente
+      parameters:
+      - description: Cliente a actualizar
+        in: body
+        name: clientUpdateCredit
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.ClientUpdateCredit'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: ClientUpdateCredit
       tags:
       - Client
   /api/v1/deposit/get/{id}:

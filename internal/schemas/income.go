@@ -31,6 +31,18 @@ type PayCreate struct {
 }
 
 func (i *IncomeSaleCreate) Validate() error {
+	if i.ClientID == 1 {
+		for _, p := range i.Pay {
+			if p.MethodPay == "credit" {
+				return ErrorResponse(
+					400,
+					"El cliente 'Consumidor Final' no puede pagar con crédito",
+					fmt.Errorf("método de pago 'credit' no permitido para ClientID = 1"),
+				)
+			}
+		}
+	}
+	
 	validate := validator.New()
 
 	if err := validate.Struct(i); err != nil {
@@ -80,6 +92,18 @@ type PayUpdate struct {
 }
 
 func (i *IncomeSaleUpdate) Validate() error {
+	if i.ClientID == 1 {
+		for _, p := range i.Pay {
+			if p.MethodPay == "credit" {
+				return ErrorResponse(
+					400,
+					"El cliente 'Consumidor Final' no puede pagar con crédito",
+					fmt.Errorf("método de pago 'credit' no permitido para ClientID = 1"),
+				)
+			}
+		}
+	}
+
 	validate := validator.New()
 
 	if err := validate.Struct(i); err != nil {
@@ -184,12 +208,12 @@ type IncomeSaleResponseDTO struct {
 }
 
 type IncomeSaleSimpleResponse struct {
-	ID        int64                      `json:"id"`
+	ID        int64                       `json:"id"`
 	Items     []IncomeSaleItemResponseDTO `json:"items"`
-	Pay       []PayResponse              `json:"pay"`
-	Total     float64                    `json:"total"`
-	IsBudget  bool                       `json:"is_budget"`
-	CreatedAt time.Time                  `json:"created_at"`
+	Pay       []PayResponse               `json:"pay"`
+	Total     float64                     `json:"total"`
+	IsBudget  bool                        `json:"is_budget"`
+	CreatedAt time.Time                   `json:"created_at"`
 }
 
 type IncomeSaleItemResponseDTO struct {

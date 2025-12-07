@@ -1408,6 +1408,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/client/update_credit": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Actualizar credito de un cliente",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "summary": "ClientUpdateCredit",
+                "parameters": [
+                    {
+                        "description": "Cliente a actualizar",
+                        "name": "clientUpdateCredit",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.ClientUpdateCredit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/deposit/get/{id}": {
             "get": {
                 "security": [
@@ -6838,6 +6877,30 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.ClientUpdateCredit": {
+            "type": "object",
+            "required": [
+                "id",
+                "pay_credit",
+                "total"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "pay_credit": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/schemas.PayCredit"
+                    }
+                },
+                "total": {
+                    "type": "number"
+                }
+            }
+        },
         "schemas.DateRangeRequest": {
             "type": "object",
             "required": [
@@ -8048,11 +8111,38 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.PayCredit": {
+            "type": "object",
+            "required": [
+                "credit_id",
+                "total"
+            ],
+            "properties": {
+                "credit_id": {
+                    "type": "integer"
+                },
+                "method_pay": {
+                    "type": "string",
+                    "enum": [
+                        "cash",
+                        "card",
+                        "transfer"
+                    ],
+                    "example": "cash card transfer"
+                },
+                "total": {
+                    "type": "number"
+                }
+            }
+        },
         "schemas.PayDebtResponse": {
             "type": "object",
             "properties": {
                 "amount": {
                     "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
                 },
                 "id": {
                     "type": "integer"
@@ -8105,6 +8195,9 @@ const docTemplate = `{
             "properties": {
                 "amount": {
                     "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
                 },
                 "id": {
                     "type": "integer"

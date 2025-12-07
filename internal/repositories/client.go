@@ -3,6 +3,7 @@ package repositories
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
@@ -14,13 +15,13 @@ import (
 func (r *ClientRepository) ClientGetByID(id int64) (*schemas.ClientResponse, error) {
 	var client models.Client
 	if err := r.DB.
-	Preload("MemberCreate", func(db *gorm.DB) *gorm.DB { 
-		return db.Select("id", "first_name", "last_name", "username") 
-	}).
-	Preload("Pay", func(db *gorm.DB) *gorm.DB {
-		return db.Select("id", "income_sale_id", "client_id", "total", "method_pay").Where("method_pay = ?", "credit")
-	}).
-	Where("id = ?", id).First(&client).Error; err != nil {
+		Preload("MemberCreate", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "first_name", "last_name", "username")
+		}).
+		Preload("Pay", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "income_sale_id", "client_id", "total", "method_pay", "created_at").Where("method_pay = ?", "credit")
+		}).
+		Where("id = ?", id).First(&client).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, schemas.ErrorResponse(404, "Client no encontrado", err)
 		}
@@ -29,7 +30,6 @@ func (r *ClientRepository) ClientGetByID(id int64) (*schemas.ClientResponse, err
 
 	var clientResponse schemas.ClientResponse
 	copier.Copy(&clientResponse, &client)
-
 
 	return &clientResponse, nil
 }
@@ -89,7 +89,6 @@ func (r *ClientRepository) ClientGetAll(limit, page int64, search *map[string]st
 	return &clients, total, nil
 }
 
-
 func (r *ClientRepository) ClientCreate(memberID int64, client *schemas.ClientCreate) (int64, error) {
 	newClient := models.Client{
 		FirstName:      client.FirstName,
@@ -120,13 +119,13 @@ func (r *ClientRepository) ClientCreate(memberID int64, client *schemas.ClientCr
 
 func (r *ClientRepository) ClientUpdate(client *schemas.ClientUpdate) error {
 	if err := r.DB.Where("id = ?", client.ID).Updates(&models.Client{
-		FirstName: client.FirstName,
-		LastName:  client.LastName,
+		FirstName:   client.FirstName,
+		LastName:    client.LastName,
 		CompanyName: client.CompanyName,
-		Identifier: client.Identifier,
-		Email:     client.Email,
-		Phone:     client.Phone,
-		Address:   client.Address,
+		Identifier:  client.Identifier,
+		Email:       client.Email,
+		Phone:       client.Phone,
+		Address:     client.Address,
 	}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return schemas.ErrorResponse(404, "Cliente no encontrado", err)
@@ -159,4 +158,58 @@ func (r *ClientRepository) ClientDelete(id int64) error {
 
 		return nil
 	})
+}
+
+func (r *ClientRepository) ClientUpdateCredit(pointSaleID int64, clientUpdateCredit *schemas.ClientUpdateCredit) error {
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		//***
+		var register models.CashRegister
+		if err := tx.
+			Select("id").
+			Where("is_close = ? AND point_sale_id = ?", false, pointSaleID).
+			Order("hour_open DESC").
+			First(&register).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return schemas.ErrorResponse(400, "No hay caja abierta para este punto de venta", err)
+			}
+			return schemas.ErrorResponse(500, "Error al obtener la apertura de caja", err)
+		}
+
+		var client models.Client
+		if err := tx.Select("id").First(&client, clientUpdateCredit.ID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return schemas.ErrorResponse(404, "Cliente no encontrado", err)
+			}
+			return schemas.ErrorResponse(500, "Error al obtener el cliente", err)
+		}
+
+		total := 0.0
+		for _, p := range clientUpdateCredit.PayCredit {
+			var payCredit models.PayIncome
+			if err := tx.Where("client_id = ?", client.ID).First(&payCredit, p.CreditID).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return schemas.ErrorResponse(404, "Credito no encontrado", err)
+				}
+				return schemas.ErrorResponse(500, "Error al obtener el credito", err)
+			}
+
+			payCredit.MethodPay = p.MethodPay
+			payCredit.CashRegisterID = &register.ID
+
+			if err := tx.Save(&payCredit).Error; err != nil {
+				return schemas.ErrorResponse(500, "Error al actualizar el credito", err)
+			}
+
+			total += payCredit.Total
+		}
+
+		if math.Abs(total-clientUpdateCredit.Total) > 1 {
+			message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total del cliente (%.2f) no  puede ser mayor que 1", total, clientUpdateCredit.Total)
+			return schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
+		}
+
+		return nil
+	})
+
+	return err
 }

@@ -29,7 +29,7 @@ func (i *IncomeSaleRepository) IncomeSaleGetByID(pointSaleID, id int64) (*schema
 			return db.Select("id", "code", "name", "price")
 		}).
 		Preload("Pay", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "total", "method_pay", "income_sale_id")
+			return db.Select("id", "total", "method_pay", "income_sale_id", "created_at")
 		}).
 		First(&incomeSaleModel, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -56,7 +56,7 @@ func (i *IncomeSaleRepository) IncomeSaleGetByDate(pointSaleID int64, fromDate, 
 			return db.Select("id", "first_name", "last_name", "company_name")
 		}).
 		Preload("Pay", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "total", "method_pay", "income_sale_id")
+			return db.Select("id", "total", "method_pay", "income_sale_id", "created_at")
 		}).
 		Where("created_at BETWEEN ? AND ?", fromDate, toDate).
 		Where("point_sale_id = ?", pointSaleID).
@@ -89,6 +89,7 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 	err := i.DB.Transaction(func(tx *gorm.DB) error {
 		var register models.CashRegister
 		if err := tx.
+			Select("id").
 			Where("is_close = ? AND point_sale_id = ?", false, pointSaleID).
 			Order("hour_open DESC").
 			First(&register).Error; err != nil {
@@ -260,13 +261,20 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 		totalPay := 0.0
 		for _, pay := range incomeSaleCreate.Pay {
 			totalPay += pay.Total
-			payModels = append(payModels, models.PayIncome{
+
+			newPay := models.PayIncome{
 				IncomeSaleID:   incomeSaleID,
 				CashRegisterID: &register.ID,
 				ClientID:       &clientExist.ID,
 				Total:          pay.Total,
 				MethodPay:      pay.MethodPay,
-			})
+			}
+
+			if pay.MethodPay == "credit" {
+				newPay.CashRegisterID = nil
+			}
+
+			payModels = append(payModels, newPay)
 		}
 
 		if math.Abs(totalPay-income.Total) > 1 {
@@ -491,13 +499,20 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 		totalPay := 0.0
 		for _, pay := range incomeSaleUpdate.Pay {
 			totalPay += pay.Total
-			payModels = append(payModels, models.PayIncome{
+
+			newPay := models.PayIncome{
 				IncomeSaleID:   incomeSaleUpdate.ID,
 				CashRegisterID: &existingIncome.CashRegisterID,
 				ClientID:       &clientExist.ID,
 				Total:          pay.Total,
 				MethodPay:      pay.MethodPay,
-			})
+			}
+
+			if pay.MethodPay == "credit" {
+				newPay.CashRegisterID = nil
+			}
+
+			payModels = append(payModels, newPay)
 		}
 
 		if math.Abs(totalPay-existingIncome.Total) > 1 {

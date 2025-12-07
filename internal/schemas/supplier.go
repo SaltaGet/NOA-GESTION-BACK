@@ -46,6 +46,10 @@ type SupplierUpdate struct {
 }
 
 func (s *SupplierUpdate) Validate() error {
+	if s.ID == 1 {
+		return ErrorResponse(400, "no se puede editar el proveedor por defecto", fmt.Errorf("no se puede editar el proveedor por defecto"))
+	}
+
 	validate := validator.New()
 	err := validate.Struct(s)
 	if err == nil {

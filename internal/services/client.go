@@ -39,6 +39,15 @@ func (c *ClientService) ClientUpdate(clientUpdate *schemas.ClientUpdate) (error)
 	return nil
 }
 
+func (c *ClientService) ClientUpdateCredit(pointSaleID int64, clientUpdate *schemas.ClientUpdateCredit) (error) {
+	err := c.ClientRepository.ClientUpdateCredit(pointSaleID, clientUpdate)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *ClientService) ClientDelete(id int64) (error) {
 	err := c.ClientRepository.ClientDelete(id)
 	if err != nil {
