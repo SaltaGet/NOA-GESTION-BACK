@@ -518,6 +518,15 @@ func (r *ReportService) ReportMovementByDate(fromDate, toDate time.Time, form st
 	return report, nil
 }
 
+func (r *ReportService) ReportMovementByDatePointSale(fromDate, toDate time.Time, form string) (any, error) {
+	report, err := r.ReportRepository.ReportMovementByDatePointSale(fromDate, toDate, form)
+	if err != nil {
+		return nil, err
+	}
+
+	return report, nil
+}
+
 func (r *ReportService) ReportProfitableProducts(start, end time.Time) ([]schemas.ReportProfitableProducts, error) {
 	report, err := r.ReportRepository.ReportProfitableProducts(start, end)
 	if err != nil {

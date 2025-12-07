@@ -46,64 +46,71 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 
 	var incomesModel []models.IncomeSale
 	if err := r.DB.Select("id", "total", "is_budget", "created_at").
+		Preload("Items", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "income_sale_id", "amount", "total", "product_id", "created_at")
+		}).
 		Preload("Items.Product", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "code", "name")
+			return db.Select("id", "code", "name", "price")
 		}).
 		Preload("Pay", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "amount", "method_pay", "income_sale_id")
+			return db.Select("id", "total", "method_pay", "income_sale_id")
 		}).
 		Where("cash_register_id = ? AND point_sale_id = ?", id, pointSaleID).
 		Find(&incomesModel).Error; err != nil {
 		return nil, schemas.ErrorResponse(500, "error al obtener ingresos de caja", err)
 	}
-	var incomes []schemas.IncomeSaleSimpleResponse
+	var incomes []*schemas.IncomeSaleSimpleResponse
 	_ = copier.Copy(&incomes, &incomesModel)
 
 	var incomeOtherModel []models.IncomeOther
-	if err := r.DB.Select("id", "total", "details", "method_income", "created_at").
+	if err := r.DB.Select("id", "total", "details", "method_income", "created_at", "type_income_id").
 		Preload("Member", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "first_name", "last_name", "username")
 		}).
 		Preload("TypeIncome", func(db *gorm.DB) *gorm.DB {
-			return db.Select("name")
+			return db.Select("id", "name")
 		}).
 		Where("cash_register_id = ? AND point_sale_id = ?", id, pointSaleID).
 		Find(&incomeOtherModel).Error; err != nil {
 		return nil, schemas.ErrorResponse(500, "error al obtener ingresos de cancha de caja", err)
 	}
 
-	var incomeOther []schemas.IncomeOtherResponse
+	var incomeOther []*schemas.IncomeOtherResponse
 	_ = copier.Copy(&incomeOther, &incomeOtherModel)
 
-	var expenseBuyModel []models.ExpenseBuy
-	if err := r.DB.Select("id", "total", "details", "method_pay", "created_at").
-		Preload("Supplier", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name", "company_name")
-		}).
-		Preload("PayExpenseBuy", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "amount", "method_pay")
-		}).
-		Where("cash_register_id = ? AND point_sale_id = ?", id, pointSaleID).
-		Find(&expenseBuyModel).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "error al obtener egresos de compra de caja", err)
-	}
+	// var expenseBuyModel []models.ExpenseBuy
+	// if err := r.DB.Select("id", "total", "details", "created_at").
+	// 	Preload("Supplier", func(db *gorm.DB) *gorm.DB {
+	// 		return db.Select("id", "name", "company_name")
+	// 	}).
+	// 	Preload("PayExpenseBuy", func(db *gorm.DB) *gorm.DB {
+	// 		return db.Select("id", "total", "method_pay")
+	// 	}).
+	// 	Where("point_sale_id = ?", pointSaleID).
+	// 	Find(&expenseBuyModel).Error; err != nil {
+	// 	return nil, schemas.ErrorResponse(500, "error al obtener egresos de compra de caja", err)
+	// }
 
-	var expenseBuyResponseSimple []schemas.ExpenseBuyResponseSimple
-	_ = copier.Copy(&expenseBuyResponseSimple, &expenseBuyModel)
+	// var expenseBuyResponseSimple []schemas.ExpenseBuyResponseSimple
+	// _ = copier.Copy(&expenseBuyResponseSimple, &expenseBuyModel)
 
 	var expensesOtherModel []models.ExpenseOther
-	if err := r.DB.Select("id", "total", "register_id", "description", "pay_method", "created_at").
+	if err := r.DB.Select("id", "total", "cash_register_id", "details", "pay_method", "created_at", "member_id").
+		Preload("Member", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "first_name", "last_name", "username")
+		}).
+		Preload("TypeExpense").
 		Where("cash_register_id = ? AND point_sale_id = ?", id, pointSaleID).
 		Find(&expensesOtherModel).Error; err != nil {
 		return nil, schemas.ErrorResponse(500, "error al obtener egresos de caja", err)
 	}
-	var expenseOtherResponse []schemas.ExpenseOtherResponse
+	var expenseOtherResponse []*schemas.ExpenseOtherResponse
 	_ = copier.Copy(&expenseOtherResponse, &expensesOtherModel)
 
-	cashRegisterResponse.IncomeSale = &incomes
-	cashRegisterResponse.IncomeOther = &incomeOther
-	cashRegisterResponse.ExpenseBuy = &expenseBuyResponseSimple
-	cashRegisterResponse.ExpenseOther = &expenseOtherResponse
+	cashRegisterResponse.IncomeSale = incomes
+	cashRegisterResponse.IncomeOther = incomeOther
+	// cashRegisterResponse.ExpenseBuy = &expenseBuyResponseSimple
+	cashRegisterResponse.ExpenseOther = expenseOtherResponse
 
 	return &cashRegisterResponse, nil
 }
@@ -232,8 +239,8 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 		`).
 			Where("cash_register_id = ?", register.ID).
 			Scan(&expenseOther).Error; err != nil {
-				return nil, schemas.ErrorResponse(500, "error al obtener otros egresos", err)
-			}
+			return nil, schemas.ErrorResponse(500, "error al obtener otros egresos", err)
+		}
 
 		totalIncomesCash := incomes.Cash + incomeOther.Cash
 		totalIncomesOthers := incomes.Other + incomeOther.Other

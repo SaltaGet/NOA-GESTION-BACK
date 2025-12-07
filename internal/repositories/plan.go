@@ -16,6 +16,8 @@ func (r *MainRepository) PlanCreate(planCreate *schemas.PlanCreate) (int64, erro
 		PriceYearly: planCreate.PriceYearly,
 		Description: planCreate.Description,
 		Features:    planCreate.Features,
+		AmountPointSale: planCreate.AmountPointSale,
+		AmountMember:    planCreate.AmountMember,
 	}
 
 	if err := r.DB.Create(plan).Error; err != nil {
@@ -42,6 +44,8 @@ func (r *MainRepository) PlanUpdate(planUpdate *schemas.PlanUpdate) (error) {
 	plan.PriceYearly = planUpdate.PriceYearly
 	plan.Description = planUpdate.Description
 	plan.Features = planUpdate.Features
+	plan.AmountPointSale = planUpdate.AmountPointSale
+	plan.AmountMember = planUpdate.AmountMember
 
 	if err := r.DB.Save(&plan).Error; err != nil {
 		if schemas.IsDuplicateError(err) {

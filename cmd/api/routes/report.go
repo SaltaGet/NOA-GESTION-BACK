@@ -23,4 +23,9 @@ func ReportRoutes(app *fiber.App) {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.ReportController.ReportMovementByDate(c)
 	})
+	
+	report.Post("/get_by_date_point_sale", func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.ReportController.ReportMovementByDatePointSale(c)
+	})
 }

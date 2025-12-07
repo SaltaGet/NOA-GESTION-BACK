@@ -186,6 +186,10 @@ func (r *MemberRepository) MemberUpdate(memberUpdate *schemas.MemberUpdate) erro
 			return schemas.ErrorResponse(500, "Error al obtener el miembro", err)
 		}
 
+		if existingMember.IsAdmin && memberUpdate.IsActive != nil && !*memberUpdate.IsActive {
+			return schemas.ErrorResponse(400, "No se puede desactivar un administrador", fmt.Errorf("no se puede desactivar un administrador"))
+		}
+
 		// Verificar que el rol existe
 		var role models.Role
 		if err := tx.First(&role, memberUpdate.RoleID).Error; err != nil {

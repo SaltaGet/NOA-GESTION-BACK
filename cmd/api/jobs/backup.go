@@ -367,120 +367,6 @@ func resetCheckpoint(cfg *Config, db string) error {
     return nil
 }
 
-// func RunBackup(cfg *Config) {
-//     log.Printf("⏰ [CRON] Iniciando backup de %d bases de datos...", len(cfg.Databases))
-    
-//     // 1. Verificar que todas las DBs tengan checkpoint
-//     needsFullBackup := false
-//     for _, db := range cfg.Databases {
-//         if !backupExists(db, cfg.BackupDir) {
-//             log.Printf("DB '%s' necesita backup full", db)
-//             needsFullBackup = true
-//         }
-//     }
-    
-//     // 2. Si alguna DB necesita full backup, hacerlo primero
-//     if needsFullBackup {
-//         for _, db := range cfg.Databases {
-//             if !backupExists(db, cfg.BackupDir) {
-//                 log.Printf("📦 Ejecutando backup full para: %s", db)
-//                 if err := runFullBackup(cfg, db); err != nil {
-//                     log.Printf("❌ Error en backup full de %s: %v", db, err)
-//                     continue
-//                 }
-                
-//                 cp, err := getBinlogStatus(cfg)
-//                 if err != nil {
-//                     log.Printf("❌ Error obteniendo binlog status: %v", err)
-//                     continue
-//                 }
-                
-//                 log.Printf("✅ Checkpoint inicial para %s: File=%s, Position=%d", db, cp.BinlogFile, cp.Position)
-//                 saveCheckpoint(cfg, db, cp)
-//             }
-//         }
-//         return // Esperar al siguiente ciclo para incrementales
-//     }
-    
-//     // 3. Cargar todos los checkpoints
-//     checkpoints := make(map[string]Checkpoint)
-//     oldestCheckpoint := Checkpoint{Position: int(^uint(0) >> 1)} // Max int
-    
-//     for _, db := range cfg.Databases {
-//         cp, err := loadCheckpoint(cfg, db)
-//         if err != nil {
-//             log.Printf("❌ Error cargando checkpoint de %s: %v", db, err)
-//             continue
-//         }
-        
-//         if cp.BinlogFile == "" {
-//             log.Printf("⚠️  Checkpoint inválido para %s, regenerando...", db)
-//             resetCheckpoint(cfg, db)
-//             continue
-//         }
-        
-//         checkpoints[db] = cp
-        
-//         // Encontrar el checkpoint más antiguo (menor posición)
-//         if cp.Position < oldestCheckpoint.Position {
-//             oldestCheckpoint = cp
-//         }
-//     }
-    
-//     if len(checkpoints) == 0 {
-//         log.Printf("⚠️  No hay checkpoints válidos")
-//         return
-//     }
-    
-//     log.Printf("📋 Usando checkpoint más antiguo: File=%s, Position=%d", 
-//         oldestCheckpoint.BinlogFile, oldestCheckpoint.Position)
-    
-//     // 4. Extraer binlog UNA SOLA VEZ desde la posición más antigua
-//     ts := time.Now().Format("2006-01-02_15-04-05")
-//     rawFile := filepath.Join(cfg.BackupDir, fmt.Sprintf("binlog_raw_%s.sql", ts))
-    
-//     if err := extractBinlog(cfg, oldestCheckpoint, rawFile); err != nil {
-//         log.Printf("❌ Error extrayendo binlog: %v", err)
-//         return
-//     }
-    
-//     // 5. Distribuir cambios a cada base de datos
-//     dbChanges := distributeBinlogChanges(rawFile, cfg.Databases)
-    
-//     // 6. Obtener nuevo checkpoint
-//     newCp, err := getBinlogStatus(cfg)
-//     if err != nil {
-//         log.Printf("❌ Error obteniendo nuevo checkpoint: %v", err)
-//         return
-//     }
-    
-//     // 7. Guardar archivos de backup para cada DB que tenga cambios
-//     for db, changes := range dbChanges {
-//         if len(changes) == 0 {
-//             log.Printf("ℹ️  %s: Sin cambios", db)
-//             continue
-//         }
-        
-//         finalFile := filepath.Join(cfg.BackupDir, 
-//             fmt.Sprintf("%s_incremental_%s.sql", db, ts))
-        
-//         if err := os.WriteFile(finalFile, []byte(strings.Join(changes, "\n")), 0644); err != nil {
-//             log.Printf("❌ Error guardando backup de %s: %v", db, err)
-//             continue
-//         }
-        
-//         log.Printf("✅ %s: Backup incremental generado (%d líneas, %d bytes)", 
-//             db, len(changes), len(strings.Join(changes, "\n")))
-        
-//         // Actualizar checkpoint
-//         saveCheckpoint(cfg, db, newCp)
-//     }
-    
-//     // 8. Limpiar archivo raw
-//     os.Remove(rawFile)
-    
-//     log.Printf("✅ [CRON] Backup completado")
-// }
 func RunBackup(cfg *Config) {
     log.Printf("⏰ [CRON] Iniciando backup de %d bases de datos...", len(cfg.Databases))
     
@@ -685,6 +571,44 @@ func extractBinlog(cfg *Config, cp Checkpoint, outputFile string) error {
     
     return os.WriteFile(outputFile, stdout.Bytes(), 0644)
 }
+// func extractBinlog(cfg *Config, cp Checkpoint, outputFile string) error {
+//     args := []string{
+//         "--read-from-remote-server",
+//         fmt.Sprintf("--host=%s", cfg.Host),
+//         fmt.Sprintf("--port=%s", cfg.Port),
+//         fmt.Sprintf("--user=%s", cfg.User),
+//         fmt.Sprintf("--password=%s", cfg.Password),
+//         fmt.Sprintf("--start-position=%d", cp.Position),
+//         cp.BinlogFile,
+//     }
+    
+//     log.Printf("🔄 Extrayendo binlog desde posición %d...", cp.Position)
+    
+//     // Intentar con ambos comandos (Alpine usa mysqlbinlog, otros sistemas usan mariadb-binlog)
+//     commands := []string{"mysqlbinlog", "mariadb-binlog"}
+    
+//     var lastErr error
+//     for _, cmdName := range commands {
+//         cmd := exec.Command(cmdName, args...)
+        
+//         var stdout, stderr bytes.Buffer
+//         cmd.Stdout = &stdout
+//         cmd.Stderr = &stderr
+        
+//         if err := cmd.Run(); err != nil {
+//             lastErr = fmt.Errorf("%s failed: %w\nSTDERR: %s", cmdName, err, stderr.String())
+//             log.Printf("⚠️  Intentando con %s...", cmdName)
+//             continue
+//         }
+        
+//         // Éxito
+//         log.Printf("✅ Usando comando: %s", cmdName)
+//         log.Printf("📊 Binlog extraído: %d bytes", stdout.Len())
+//         return os.WriteFile(outputFile, stdout.Bytes(), 0644)
+//     }
+    
+//     return fmt.Errorf("no se encontró mysqlbinlog ni mariadb-binlog: %w", lastErr)
+// }
 
 // Distribuir cambios del binlog por base de datos
 func distributeBinlogChanges(binlogFile string, databases []string) map[string][]string {

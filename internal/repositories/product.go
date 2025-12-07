@@ -6,21 +6,20 @@ import (
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
 )
 
-func (r *ProductRepository) ProductGetByID(id int64) (*schemas.ProductFullResponse, error) {
+func (r *ProductRepository) ProductGetByID(id int64) (*models.Product, error) {
 	var product models.Product
 	if err := r.DB.
 		Preload("Category", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "name")
 		}).
 		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-			return db.Select("product_id", "stock")
+			return db.Select("product_id", "stock", "point_sale_id")
 		}).
 		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name")
+			return db.Select("id", "name", "is_deposit")
 		}).
 		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "product_id", "stock")
@@ -32,13 +31,10 @@ func (r *ProductRepository) ProductGetByID(id int64) (*schemas.ProductFullRespon
 		return nil, schemas.ErrorResponse(500, "error al obtener el producto", err)
 	}
 
-	var productSchema schemas.ProductFullResponse
-	_ = copier.Copy(&productSchema, &product)
-
-	return &productSchema, nil
+	return &product, nil
 }
 
-func (r *ProductRepository) ProductGetByCode(code string) (*schemas.ProductFullResponse, error) {
+func (r *ProductRepository) ProductGetByCode(code string) (*models.Product, error) {
 	var product *models.Product
 
 	if err := r.DB.
@@ -46,13 +42,13 @@ func (r *ProductRepository) ProductGetByCode(code string) (*schemas.ProductFullR
 			return db.Select("id", "name")
 		}).
 		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-			return db.Select("product_id", "stock")
+			return db.Select("product_id", "stock", "point_sale_id")
 		}).
 		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name")
+			return db.Select("id", "name", "is_deposit")
 		}).
 		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "product_id", "stock")
+			return db.Select("id", "product_id", "stock", "")
 		}).
 		Where("code = ?", code).First(&product).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -61,13 +57,10 @@ func (r *ProductRepository) ProductGetByCode(code string) (*schemas.ProductFullR
 		return nil, schemas.ErrorResponse(500, "error al obtener el producto", err)
 	}
 
-	var productSchema schemas.ProductFullResponse
-	_ = copier.Copy(&productSchema, &product)
-
-	return &productSchema, nil
+	return product, nil
 }
 
-func (r *ProductRepository) ProductGetByCategoryID(categoryID int64) ([]*schemas.ProductFullResponse, error) {
+func (r *ProductRepository) ProductGetByCategoryID(categoryID int64) ([]*models.Product, error) {
 	var products []*models.Product
 
 	if err := r.DB.
@@ -75,10 +68,10 @@ func (r *ProductRepository) ProductGetByCategoryID(categoryID int64) ([]*schemas
 			return db.Select("id", "name")
 		}).
 		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-			return db.Select("product_id", "stock")
+			return db.Select("product_id", "stock", "point_sale_id")
 		}).
 		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name")
+			return db.Select("id", "name", "is_deposit")
 		}).
 		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "product_id", "stock")
@@ -87,13 +80,10 @@ func (r *ProductRepository) ProductGetByCategoryID(categoryID int64) ([]*schemas
 		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
 	}
 
-	var productSchema []*schemas.ProductFullResponse
-	_ = copier.Copy(&productSchema, &products)
-
-	return productSchema, nil
+	return products, nil
 }
 
-func (r *ProductRepository) ProductGetByName(name string) ([]*schemas.ProductFullResponse, error) {
+func (r *ProductRepository) ProductGetByName(name string) ([]*models.Product, error) {
 	var products []*models.Product
 
 	if err := r.DB.
@@ -101,10 +91,10 @@ func (r *ProductRepository) ProductGetByName(name string) ([]*schemas.ProductFul
 			return db.Select("id", "name")
 		}).
 		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-			return db.Select("product_id", "stock")
+			return db.Select("product_id", "stock", "point_sale_id")
 		}).
 		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name")
+			return db.Select("id", "name", "is_deposit")
 		}).
 		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "product_id", "stock")
@@ -113,13 +103,10 @@ func (r *ProductRepository) ProductGetByName(name string) ([]*schemas.ProductFul
 		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
 	}
 
-	var productSchema []*schemas.ProductFullResponse
-	_ = copier.Copy(&productSchema, &products)
-
-	return productSchema, nil
+	return products, nil
 }
 
-func (r *ProductRepository) ProductGetAll(page, limit int) ([]*schemas.ProductFullResponse, int64, error) {
+func (r *ProductRepository) ProductGetAll(page, limit int) ([]*models.Product, int64, error) {
 	var products []*models.Product
 	var total int64
 	offset := (page - 1) * limit
@@ -135,10 +122,10 @@ func (r *ProductRepository) ProductGetAll(page, limit int) ([]*schemas.ProductFu
 			return db.Select("id", "name")
 		}).
 		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-			return db.Select("product_id", "stock")
+			return db.Select("product_id", "stock", "point_sale_id")
 		}).
 		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name")
+			return db.Select("id", "name", "is_deposit")
 		}).
 		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "product_id", "stock")
@@ -149,10 +136,7 @@ func (r *ProductRepository) ProductGetAll(page, limit int) ([]*schemas.ProductFu
 		return nil, 0, schemas.ErrorResponse(500, "error al obtener productos", err)
 	}
 
-	var productSchema []*schemas.ProductFullResponse
-	_ = copier.Copy(&productSchema, &products)
-
-	return productSchema, total, nil
+	return products, total, nil
 }
 
 func (r *ProductRepository) ProductCreate(productCreate *schemas.ProductCreate) (int64, error) {

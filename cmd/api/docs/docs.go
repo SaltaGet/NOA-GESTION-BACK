@@ -600,7 +600,7 @@ const docTemplate = `{
             }
         },
         "/api/v1/cash_register/inform": {
-            "post": {
+            "get": {
                 "security": [
                     {
                         "CookieAuth": []
@@ -619,13 +619,18 @@ const docTemplate = `{
                 "summary": "CashRegisterInform",
                 "parameters": [
                     {
-                        "description": "Fechas de solicitud de informe",
-                        "name": "register_request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/schemas.DateRangeRequest"
-                        }
+                        "type": "string",
+                        "example": "2022-01-01",
+                        "name": "from_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "2022-12-31",
+                        "name": "to_date",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1234,6 +1239,55 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/client/get/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Get client by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "summary": "Get client by id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Id del cliente",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.ClientResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/client/get_all": {
             "get": {
                 "security": [
@@ -1349,55 +1403,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/client/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "CookieAuth": []
-                    }
-                ],
-                "description": "Get client by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Client"
-                ],
-                "summary": "Get client by id",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Id del cliente",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/schemas.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "$ref": "#/definitions/schemas.ClientResponse"
-                                        }
-                                    }
-                                }
-                            ]
                         }
                     }
                 }
@@ -2421,7 +2426,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/expense_other/get_point_sale{id}": {
+        "/api/v1/expense_other/get_point_sale/{id}": {
             "get": {
                 "security": [
                     {
@@ -4926,7 +4931,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Obtiene un reporte por fechas de los diferentes puntos de ventas, tanto como ingresos, ingresos por cancha y egresos",
+                "description": "Obtiene un reporte por fechas tanto como ingresos, y egresos",
                 "consumes": [
                     "application/json"
                 ],
@@ -4961,33 +4966,49 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
+                    }
+                }
+            }
+        },
+        "/api/v1/report/get_by_date_point_sale": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtiene un reporte por fechas de los diferentes puntos de ventas, tanto como ingresos, ingresos por cancha y egresos",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Report"
+                ],
+                "summary": "ReportMovementByDatePointSale",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "day o month",
+                        "name": "form",
+                        "in": "query",
+                        "required": true
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    {
+                        "description": "Rango de fechas",
+                        "name": "dateRangeRequest",
+                        "in": "body",
+                        "required": true,
                         "schema": {
-                            "$ref": "#/definitions/schemas.Response"
+                            "$ref": "#/definitions/schemas.DateRangeRequest"
                         }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -6556,13 +6577,8 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
-                "expense_buy": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/schemas.ExpenseBuyResponseSimple"
-                    }
-                },
-                "expenses": {
+                "expense_others": {
+                    "description": "ExpenseBuy    *[]ExpenseBuyResponseSimple ` + "`" + `json:\"expense_buy\"` + "`" + `",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/schemas.ExpenseOtherResponse"
@@ -7060,6 +7076,9 @@ const docTemplate = `{
         "schemas.ExpenseBuyResponseSimple": {
             "type": "object",
             "properties": {
+                "cash_register_id": {
+                    "type": "integer"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -7077,9 +7096,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/schemas.PayExpenseBuyResponse"
                     }
-                },
-                "register_id": {
-                    "type": "integer"
                 },
                 "subtotal": {
                     "type": "number"
@@ -7174,6 +7190,9 @@ const docTemplate = `{
         "schemas.ExpenseOtherResponse": {
             "type": "object",
             "properties": {
+                "cash_register_id": {
+                    "type": "integer"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -7191,9 +7210,6 @@ const docTemplate = `{
                 },
                 "point_sale": {
                     "$ref": "#/definitions/schemas.PointSaleResponse"
-                },
-                "register_id": {
-                    "type": "integer"
                 },
                 "total": {
                     "type": "number"
@@ -7310,6 +7326,9 @@ const docTemplate = `{
         "schemas.IncomeOtherResponse": {
             "type": "object",
             "properties": {
+                "cash_register_id": {
+                    "type": "integer"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -7444,6 +7463,26 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.IncomeSaleItemResponseDTO": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "product": {
+                    "$ref": "#/definitions/schemas.ProductSimpleResponseDTO"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "total": {
+                    "type": "number"
+                }
+            }
+        },
         "schemas.IncomeSaleResponse": {
             "type": "object",
             "properties": {
@@ -7529,7 +7568,7 @@ const docTemplate = `{
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/schemas.ProductSimpleResponseDTO"
+                        "$ref": "#/definitions/schemas.IncomeSaleItemResponseDTO"
                     }
                 },
                 "pay": {
@@ -8135,12 +8174,22 @@ const docTemplate = `{
         "schemas.PlanCreate": {
             "type": "object",
             "required": [
+                "amount_member",
+                "amount_point_sale",
                 "description",
                 "name",
                 "price",
                 "price_yearly"
             ],
             "properties": {
+                "amount_member": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "amount_point_sale": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "description": {
                     "type": "string",
                     "example": "description"
@@ -8232,6 +8281,8 @@ const docTemplate = `{
         "schemas.PlanUpdate": {
             "type": "object",
             "required": [
+                "amount_member",
+                "amount_point_sale",
                 "description",
                 "id",
                 "name",
@@ -8239,6 +8290,14 @@ const docTemplate = `{
                 "price_yearly"
             ],
             "properties": {
+                "amount_member": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "amount_point_sale": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "description": {
                     "type": "string",
                     "example": "description"
@@ -8309,6 +8368,9 @@ const docTemplate = `{
             "properties": {
                 "id": {
                     "type": "integer"
+                },
+                "is_deposit": {
+                    "type": "boolean"
                 },
                 "name": {
                     "type": "string"
@@ -8396,9 +8458,6 @@ const docTemplate = `{
                 "code": {
                     "type": "string"
                 },
-                "deposit": {
-                    "$ref": "#/definitions/schemas.DepositResponse"
-                },
                 "description": {
                     "type": "string"
                 },
@@ -8415,6 +8474,9 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "price": {
+                    "type": "number"
+                },
+                "stock_deposit": {
                     "type": "number"
                 },
                 "stock_point_sales": {
@@ -8867,6 +8929,9 @@ const docTemplate = `{
         "schemas.TypeIncomeResponse": {
             "type": "object",
             "properties": {
+                "id": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
                 }

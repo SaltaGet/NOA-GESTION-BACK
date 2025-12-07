@@ -10,11 +10,11 @@ type ProductFullResponse struct {
 	ID              int64                     `json:"id"`
 	Code            string                    `json:"code"`
 	Name            string                    `json:"name"`
-	Description     string                    `json:"description"`
+	Description     *string                    `json:"description"`
 	Category        CategoryResponse          `json:"category"`
 	Price           float64                   `json:"price"`
 	StockPointSales []*PointSaleStockResponse `json:"stock_point_sales"`
-	Deposit         *DepositResponse          `json:"deposit"`
+	StockDeposit    float64          `json:"stock_deposit"`
 	Notifier        bool                      `json:"notifier"`
 	MinAmount       float64                   `json:"min_amount"`
 }
@@ -63,7 +63,7 @@ type ProductCreate struct {
 	Code        string   `json:"code" validate:"required" example:"ABC123"`
 	Name        string   `json:"name" validate:"required" example:"Producto1"`
 	Description *string  `json:"description" example:"description|null"`
-	CategoryID  int64     `json:"category_id" validate:"required" example:"1"`
+	CategoryID  int64    `json:"category_id" validate:"required" example:"1"`
 	Price       *float64 `json:"price" example:"100.00"`
 	Notifier    bool     `json:"notifier" example:"false"`
 	MinAmount   float64  `json:"min_amount" example:"10.00"`

@@ -224,7 +224,7 @@ func (r *MovementStockRepository) processSingleMovement(tx *gorm.DB, userID int6
 		var pointSale models.PointSale
 		if err := tx.
 			Select("id", "is_deposit").
-			Where("id = ?", item.FromID).
+			Where("id = ?", item.ToID).
 			First(&pointSale).Error; err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return schemas.ErrorResponse(404, fmt.Sprintf("punto de venta %d no encontrado (movimiento %d)", item.FromID, index+1), err)

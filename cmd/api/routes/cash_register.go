@@ -18,6 +18,7 @@ func CashRegisterRoutes(app *fiber.App) {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.CashRegisterController.CashRegisterOpen(c)
 	})
+	
 	cashRegister.Get("/inform", func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.CashRegisterController.CashRegiterInform(c)

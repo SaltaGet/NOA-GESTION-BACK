@@ -4,3 +4,8 @@ __debug_bin*
 
 
 server.md
+
+docker/**
+
+backups/**
+

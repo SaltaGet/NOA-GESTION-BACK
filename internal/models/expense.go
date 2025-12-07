@@ -41,7 +41,7 @@ type ExpenseOther struct {
 	PointSale      *PointSale    `gorm:"foreignKey:PointSaleID;references:ID" json:"point_sale"`
 	MemberID       int64         `gorm:"not null" json:"member_id"`
 	Member         Member        `gorm:"foreignKey:MemberID;references:ID" json:"member"`
-	CashRegisterID *int64        `gorm:"" json:"register_id"`
+	CashRegisterID *int64        `gorm:"" json:"cash_register_id"`
 	CashRegister   *CashRegister `gorm:"foreignKey:CashRegisterID;references:ID" json:"cash_register"`
 	Details    *string       `gorm:"size:255" json:"details"`
 	TypeExpenseID  int64         `gorm:"not null" json:"type_expense_id"`

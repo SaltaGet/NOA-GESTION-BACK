@@ -30,11 +30,13 @@ type PlanResponseDTO struct {
 }
 
 type PlanCreate struct {
-	Name          string  `json:"name" validate:"required" example:"Plan1"`
-	PriceMounthly float64 `json:"price" validate:"required,gte=0" example:"100.00"`
-	PriceYearly   float64 `json:"price_yearly" validate:"required,gte=0" example:"1000.00"`
-	Description   string  `json:"description" validate:"required" example:"description"`
-	Features      string  `json:"features" example:"features"`
+	Name            string  `json:"name" validate:"required" example:"Plan1"`
+	PriceMounthly   float64 `json:"price" validate:"required,gte=0" example:"100.00"`
+	PriceYearly     float64 `json:"price_yearly" validate:"required,gte=0" example:"1000.00"`
+	Description     string  `json:"description" validate:"required" example:"description"`
+	Features        string  `json:"features" example:"features"`
+	AmountPointSale int64   `json:"amount_point_sale" validate:"required" example:"1"`
+	AmountMember    int64   `json:"amount_member" validate:"required" example:"5"`
 }
 
 func (p *PlanCreate) Validate() error {
@@ -61,6 +63,8 @@ type PlanUpdate struct {
 	PriceYearly   float64 `json:"price_yearly" validate:"required,gte=0" example:"1000.00"`
 	Description   string  `json:"description" validate:"required" example:"description"`
 	Features      string  `json:"features" example:"features"`
+	AmountPointSale int64   `json:"amount_point_sale" validate:"required" example:"1"`
+	AmountMember    int64   `json:"amount_member" validate:"required" example:"5"`
 }
 
 func (p *PlanUpdate) Validate() error {

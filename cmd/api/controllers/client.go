@@ -19,7 +19,7 @@ import (
 //	@Security		CookieAuth
 //	@Param			id	path		string	true	"Id del cliente"
 //	@Success		200	{object}	schemas.Response{body=schemas.ClientResponse}
-//	@Router			/api/v1/client/{id} [get]
+//	@Router			/api/v1/client/get/{id} [get]
 func (cl *ClientController) ClientGetByID(c *fiber.Ctx) error {
 	logging.INFO("Obtener un cliente por ID")
 	id := c.Params("id")

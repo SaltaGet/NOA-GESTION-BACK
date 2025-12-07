@@ -16,6 +16,11 @@ type DepositResponse struct {
 	Stock       float64    `json:"stock"`
 }
 
+type DepositResponseStock struct {
+	ID          int64   `json:"id"`
+	Stock       float64    `json:"stock"`
+}
+
 type DepositUpdateStock struct {
 	ProductID int64    `json:"product_id" validate:"required" example:"1"`
 	Stock     *float64 `json:"stock" validate:"required,gte=0" example:"10"`

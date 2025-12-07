@@ -7,7 +7,7 @@ import (
 )
 
 func MovementStockRoutes(app *fiber.App) {
-	movementStock := app.Group("/api/v1/movement_stock", middleware.AuthMiddleware())
+	movementStock := app.Group("/api/v1/movement_stock", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
 	movementStock.Post("/move_list", func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)

@@ -185,7 +185,7 @@ type IncomeSaleResponseDTO struct {
 
 type IncomeSaleSimpleResponse struct {
 	ID        int64                      `json:"id"`
-	Items     []ProductSimpleResponseDTO `json:"items"`
+	Items     []IncomeSaleItemResponseDTO `json:"items"`
 	Pay       []PayResponse              `json:"pay"`
 	Total     float64                    `json:"total"`
 	IsBudget  bool                       `json:"is_budget"`
@@ -201,16 +201,18 @@ type IncomeSaleItemResponseDTO struct {
 }
 
 type IncomeOtherResponse struct {
-	ID           int64              `json:"id"`
-	Member       *MemberSimpleDTO   `json:"member,omitempty"`
-	Total        float64            `json:"total"`
-	TypeIncome   TypeIncomeResponse `json:"type_income"`
-	Details      *string            `json:"details,omitempty"`
-	MethodIncome string             `json:"method_income"`
-	PointSale    *PointSaleResponse `json:"point_sale,omitempty"`
-	CreatedAt    time.Time          `json:"created_at"`
+	ID             int64              `json:"id"`
+	Member         *MemberSimpleDTO   `json:"member,omitempty"`
+	Total          float64            `json:"total"`
+	TypeIncome     TypeIncomeResponse `json:"type_income"`
+	Details        *string            `json:"details,omitempty"`
+	MethodIncome   string             `json:"method_income"`
+	PointSale      *PointSaleResponse `json:"point_sale,omitempty"`
+	CashRegisterID *int64             `json:"cash_register_id,omitempty"`
+	CreatedAt      time.Time          `json:"created_at"`
 }
 
 type TypeIncomeResponse struct {
-	Name string `gorm:"not null;unique" json:"name"`
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
 }

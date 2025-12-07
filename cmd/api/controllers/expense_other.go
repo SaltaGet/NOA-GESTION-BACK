@@ -221,7 +221,7 @@ func (e *ExpenseOtherController) ExpenseOtherDelete(c *fiber.Ctx) error {
 //	@Security		CookieAuth
 //	@Param			id	path		string												true	"ID of ExpenseOther"
 //	@Success		200	{object}	schemas.Response{body=schemas.ExpenseOtherResponse}	"ExpenseOther obtained successfully"
-//	@Router			/api/v1/expense_other/get_point_sale{id} [get]
+//	@Router			/api/v1/expense_other/get_point_sale/{id} [get]
 func (e *ExpenseOtherController) ExpenseOtherGetByIDPointSale(c *fiber.Ctx) error {
 	logging.INFO("Obtener un egreso por ID")
 	id := c.Params("id")

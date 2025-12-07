@@ -10,6 +10,7 @@ import (
 
 type ReportRepository interface {
 	ReportMovementByDate(fromDate, toDate time.Time, form string) (any, error)
+	ReportMovementByDatePointSale(fromDate, toDate time.Time, form string) (any, error)
 	ReportProfitableProducts(start, end time.Time) ([]schemas.ReportProfitableProducts, error)
 	ReportStockProducts() ([]*models.Product, error)
 }
@@ -17,5 +18,6 @@ type ReportRepository interface {
 type ReportService interface {
 	ReportExcelGet(start, end time.Time) (*excelize.File, error)
 	ReportMovementByDate(fromDate, toDate time.Time, form string) (any, error)
+	ReportMovementByDatePointSale(fromDate, toDate time.Time, form string) (any, error)
 	ReportProfitableProducts(start, end time.Time) ([]schemas.ReportProfitableProducts, error)
 }

@@ -23,7 +23,7 @@ services:
       - monitoring
 
   api:
-    image: danielmchachagua/noagestionback:0.1.9
+    image: danielmchachagua/noagestionback:0.1.4
     container_name: noa-gestion
     ports:
       - "3000:3000"
@@ -32,6 +32,8 @@ services:
     depends_on:
       - db
     restart: unless-stopped
+    volumes:
+      - ./backups:/app/backups
     networks:
       - default
       - monitoring

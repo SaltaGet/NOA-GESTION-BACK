@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/gofiber/fiber/v2"
 )
@@ -24,6 +25,7 @@ import (
 //	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/cash_register/exist_open [get]
 func (r *CashRegisterController) CashRegisterExistOpen(ctx *fiber.Ctx) error {
+	logging.INFO("Verificar si existe apertura de caja")
 	pointaSale := ctx.Locals("point_sale_id").(int64)
 	
 	existOpen, err := r.CashRegisterService.CashRegisterExistOpen(pointaSale)
@@ -39,6 +41,7 @@ func (r *CashRegisterController) CashRegisterExistOpen(ctx *fiber.Ctx) error {
 		message = "No existe apertura de caja"
 	}
 
+	logging.INFO("Apertura de caja verificada con exito")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    existOpen,
@@ -63,6 +66,7 @@ func (r *CashRegisterController) CashRegisterExistOpen(ctx *fiber.Ctx) error {
 //	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/cash_register/get/{id} [get]
 func (r *CashRegisterController) CashRegisterGetByID(ctx *fiber.Ctx) error {
+	logging.INFO("Obtener caja por id")
 	id := ctx.Params("id")
 	if id == "" {
 		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "se necesita el id de la caja", fmt.Errorf("se necesita el id de la caja")))
@@ -80,6 +84,7 @@ func (r *CashRegisterController) CashRegisterGetByID(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
+	logging.INFO("Caja obtenida con éxito")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    register,
@@ -104,6 +109,7 @@ func (r *CashRegisterController) CashRegisterGetByID(ctx *fiber.Ctx) error {
 //	@Failure		500			{object}	schemas.Response
 //	@Router			/api/v1/cash_register/open [post]
 func (r *CashRegisterController) CashRegisterOpen(ctx *fiber.Ctx) error {
+	logging.INFO("Apertura de caja")
 	var amountOpen schemas.CashRegisterOpen
 	if err := ctx.BodyParser(&amountOpen); err != nil {
 		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
@@ -118,8 +124,9 @@ func (r *CashRegisterController) CashRegisterOpen(ctx *fiber.Ctx) error {
 	err := r.CashRegisterService.CashRegisterOpen(pointaSale, user.ID, amountOpen)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
-	}
+	}	
 
+	logging.INFO("Apertura de caja realizada con exito")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -144,6 +151,7 @@ func (r *CashRegisterController) CashRegisterOpen(ctx *fiber.Ctx) error {
 //	@Failure		500				{object}	schemas.Response
 //	@Router			/api/v1/cash_register/close [post]
 func (r *CashRegisterController) CashRegisterClose(ctx *fiber.Ctx) error {
+	logging.INFO("Cierre de caja")
 	var amountClose schemas.CashRegisterClose
 	if err := ctx.BodyParser(&amountClose); err != nil {
 		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
@@ -160,6 +168,7 @@ func (r *CashRegisterController) CashRegisterClose(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
+	logging.INFO("Cierre de caja realizado con exito")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -175,21 +184,21 @@ func (r *CashRegisterController) CashRegisterClose(ctx *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			register_request	body		schemas.DateRangeRequest	true	"Fechas de solicitud de informe"
+//	@Param			register_request	query		schemas.DateRangeRequest	true	"Fechas de solicitud de informe"
 //	@Success		200					{object}	schemas.Response
 //	@Failure		400					{object}	schemas.Response
 //	@Failure		401					{object}	schemas.Response
 //	@Failure		422					{object}	schemas.Response
 //	@Failure		404					{object}	schemas.Response
 //	@Failure		500					{object}	schemas.Response
-//	@Router			/api/v1/cash_register/inform [post]
+//	@Router			/api/v1/cash_register/inform [get]
 func (r *CashRegisterController) CashRegiterInform(ctx *fiber.Ctx) error {
-	var registerInformRequest schemas.DateRangeRequest
-	if err := ctx.BodyParser(&registerInformRequest); err != nil {
-		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
-	}
-
-	fromDate, toDate, err := registerInformRequest.GetParsedDates()
+	logging.INFO("Obtener informes de caja")
+	formDate := &schemas.DateRangeRequest{}
+	formDate.FromDate = ctx.Query("from_date")
+	formDate.ToDate = ctx.Query("to_date")
+	
+	fromDate, toDate, err := formDate.GetParsedDates()
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
@@ -202,6 +211,7 @@ func (r *CashRegisterController) CashRegiterInform(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
+	logging.INFO("Informes obtenidos con exito")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    informs,

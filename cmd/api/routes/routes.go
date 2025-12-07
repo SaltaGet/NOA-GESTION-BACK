@@ -16,6 +16,7 @@ func SetupRoutes(app *fiber.App, appDependencies *dependencies.MainContainer) {
 	IncomeOtherRoutes(app)
 	IncomeSaleRoutes(app)
 	MemberRoutes(app)
+	MovementStockRoutes(app)
 	NotificationRoutes(app)
 	PermissionRoutes(app)
 	PlanRoutes(app, appDependencies.PlanController)

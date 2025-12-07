@@ -9,7 +9,7 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
-func (r *ReportRepository) ReportMovementByDate(start, end time.Time, form string) (any, error) {
+func (r *ReportRepository) ReportMovementByDatePointSale(start, end time.Time, form string) (any, error) {
 	var resultados []map[string]any
 
 	var modo string
@@ -28,18 +28,11 @@ func (r *ReportRepository) ReportMovementByDate(start, end time.Time, form strin
     ps.name as point_sale_name,
     %s,
     COALESCE(SUM(CASE WHEN tipo = 'ingreso_ventas' THEN total ELSE 0 END),0) as total_ingresos_ventas,
-    COALESCE(SUM(CASE WHEN tipo = 'egreso_compras' THEN total ELSE 0 END),0) as total_egresos_compras,
     COALESCE(SUM(CASE WHEN tipo = 'ingreso_otros' THEN total ELSE 0 END),0) as total_otros_ingresos,
     COALESCE(SUM(CASE WHEN tipo = 'egreso_otros' THEN total ELSE 0 END),0) as total_otros_egresos
 	FROM (
     SELECT created_at as fecha, total, 'ingreso_ventas' as tipo, point_sale_id
 			FROM income_sales
-			WHERE created_at BETWEEN ? AND ?
-			
-			UNION ALL
-			
-			SELECT created_at as fecha, total, 'egreso_compras' as tipo, point_sale_id
-			FROM expense_buys
 			WHERE created_at BETWEEN ? AND ?
 			
 			UNION ALL
@@ -58,6 +51,84 @@ func (r *ReportRepository) ReportMovementByDate(start, end time.Time, form strin
 	WHERE mov.fecha BETWEEN ? AND ?
 	GROUP BY ps.id, ps.name, %s
 	ORDER BY ps.id
+	`, dateFormat, modo)
+
+	err := r.DB.Raw(query,
+		start, end,
+		start, end,
+		start, end,
+		start, end,
+	).Scan(&resultados).Error
+	if err != nil {
+		return nil, schemas.ErrorResponse(500, "Error al obtener los datos", err)
+	}
+
+	grouped := make(map[string][]map[string]any)
+	for _, row := range resultados {
+		var fecha string
+		if form == "month" {
+			fecha = row["fecha"].(string)
+		} else {
+			fecha = row["fecha"].(time.Time).Format("2006-01-02") // key simple
+
+		}
+		grouped[fecha] = append(grouped[fecha], row)
+	}
+
+	// Transformar al formato esperado
+	var result []map[string]any
+	for fecha, movimientos := range grouped {
+		result = append(result, map[string]any{
+			"fecha":      fecha,
+			"movimiento": movimientos,
+		})
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i]["fecha"].(string) < result[j]["fecha"].(string)
+	})
+
+	return result, nil
+}
+
+func (r *ReportRepository) ReportMovementByDate(start, end time.Time, form string) (any, error) {
+	var resultados []map[string]any
+
+	var modo string
+	var dateFormat string
+	if form == "month" {
+		modo = "YEAR(mov.fecha), MONTH(mov.fecha)"
+		dateFormat = "DATE_FORMAT(mov.fecha, '%Y-%m') as fecha"
+	} else {
+		modo = "DATE(mov.fecha)"
+		dateFormat = "DATE(mov.fecha) as fecha"
+	}
+
+	query := fmt.Sprintf(`
+	SELECT 
+    %s,
+    COALESCE(SUM(CASE WHEN tipo = 'egreso_compras' THEN total ELSE 0 END),0) as total_compra_egresos,
+    COALESCE(SUM(CASE WHEN tipo = 'ingreso_otros' THEN total ELSE 0 END),0) as total_otros_ingresos,
+    COALESCE(SUM(CASE WHEN tipo = 'egreso_otros' THEN total ELSE 0 END),0) as total_otros_egresos
+	FROM (
+    SELECT created_at as fecha, total, 'egreso_compras' as tipo
+			FROM income_sales
+			WHERE created_at BETWEEN ? AND ? AND point_sale_id IS NULL
+			
+			UNION ALL
+			
+			SELECT created_at as fecha, total, 'ingreso_otros' as tipo
+			FROM income_others
+			WHERE created_at BETWEEN ? AND ? AND point_sale_id IS NULL
+			
+			UNION ALL
+			
+			SELECT created_at as fecha, total, 'egreso_otros' as tipo
+			FROM expense_others
+			WHERE created_at BETWEEN ? AND ? AND point_sale_id IS NULL
+	) AS mov
+	WHERE mov.fecha BETWEEN ? AND ?
+	GROUP BY %s
 	`, dateFormat, modo)
 
 	err := r.DB.Raw(query,

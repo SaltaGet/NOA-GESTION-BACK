@@ -174,7 +174,8 @@ func main() {
 		c := cron.New()
 		env := os.Getenv("ENV")
 		if env == "prod" {
-			_, err = c.AddFunc("0 4 * * *", func() {
+			// _, err = c.AddFunc("0 4 * * *", func() {
+			_, err = c.AddFunc("@every 1m", func() {
 				logging.INFO("⏰ [CRON] Iniciando backup diario...")
 				cfg, err := jobs.LoadConfig(dep)
 				if err != nil {

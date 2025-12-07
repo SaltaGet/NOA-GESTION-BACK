@@ -58,7 +58,7 @@ type ExpenseBuyResponseDTO struct {
 type ExpenseBuyResponseSimple struct {
 	ID            int64                   `json:"id"`
 	Supplier      SupplierResponseDTO     `json:"supplier"`
-	RegisterID    *int64                  `json:"register_id,omitempty"`
+	CashRegisterID    *int64                  `json:"cash_register_id,omitempty"`
 	Description   *string                 `json:"description,omitempty"`
 	PayExpenseBuy []PayExpenseBuyResponse `json:"pay_expense"`
 	Subtotal      float64                 `json:"subtotal"`
@@ -72,7 +72,7 @@ type ExpenseOtherResponse struct {
 	ID          int64               `json:"id"`
 	PointSale   *PointSaleResponse  `json:"point_sale,omitempty"`
 	Member      *MemberSimpleDTO    `json:"member,omitempty"`
-	RegisterID  *int64              `json:"register_id,omitempty"`
+	CashRegisterID  *int64              `json:"cash_register_id,omitempty"`
 	Details     *string             `json:"details,omitempty"`
 	Total       float64             `json:"total"`
 	PayMethod   string              `json:"pay_method"`
