@@ -211,6 +211,8 @@ definitions:
     properties:
       company_name:
         type: string
+      debt:
+        type: number
       email:
         type: string
       first_name:
@@ -1095,7 +1097,7 @@ definitions:
       member:
         $ref: '#/definitions/schemas.MemberSimpleDTO'
       product:
-        $ref: '#/definitions/schemas.ProductResponse'
+        $ref: '#/definitions/schemas.ProductSimpleResponseDTO'
       to_id:
         type: integer
       to_type:
@@ -2617,6 +2619,11 @@ paths:
         in: query
         name: email
         type: string
+      - description: Deuda
+        in: query
+        name: debt
+        required: true
+        type: boolean
       produces:
       - application/json
       responses:
@@ -4328,6 +4335,36 @@ paths:
       security:
       - CookieAuth: []
       summary: PointSaleCreate
+      tags:
+      - PointSale
+  /api/v1/point_sale/get/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Obtener punto de venta por ID
+      parameters:
+      - description: PointSale ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: puntos de ventas obtenidos con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.PointSaleResponse'
+                  type: array
+              type: object
+      security:
+      - CookieAuth: []
+      summary: PointSaleGetByID
       tags:
       - PointSale
   /api/v1/point_sale/get_all:

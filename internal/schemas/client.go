@@ -72,7 +72,7 @@ type ClientUpdateCredit struct {
 }
 
 type PayCredit struct {
-	CreditID        int64   `json:"credit_id" validate:"required"`
+	CreditID  int64   `json:"credit_id" validate:"required"`
 	MethodPay string  `json:"method_pay" validate:"oneof=cash card transfer" example:"cash card transfer"`
 	Total     float64 `json:"total" validate:"required"`
 }
@@ -108,13 +108,14 @@ func (c *ClientUpdateCredit) Validate() error {
 }
 
 type ClientResponseDTO struct {
-	ID          int64   `json:"id"`
-	FirstName   string  `json:"first_name"`
-	LastName    string  `json:"last_name"`
-	CompanyName *string `json:"company_name,omitempty"`
-	Identifier  *string `json:"identifier,omitempty"`
-	Email       *string `json:"email,omitempty"`
-	Phone       *string `json:"phone,omitempty"`
+	ID          int64    `json:"id"`
+	FirstName   string   `json:"first_name"`
+	LastName    string   `json:"last_name"`
+	CompanyName *string  `json:"company_name,omitempty"`
+	Identifier  *string  `json:"identifier,omitempty"`
+	Email       *string  `json:"email,omitempty"`
+	Phone       *string  `json:"phone,omitempty"`
+	Debt      *float64 `json:"debt,omitempty"`
 }
 
 type ClientResponse struct {

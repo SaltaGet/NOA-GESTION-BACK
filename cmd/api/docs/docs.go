@@ -1342,6 +1342,13 @@ const docTemplate = `{
                         "description": "Correo del cliente",
                         "name": "email",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Deuda",
+                        "name": "debt",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -4150,6 +4157,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/point_sale/get/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener punto de venta por ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PointSale"
+                ],
+                "summary": "PointSaleGetByID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "PointSale ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "puntos de ventas obtenidos con éxito",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schemas.PointSaleResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/point_sale/get_all": {
             "get": {
                 "security": [
@@ -6799,6 +6858,9 @@ const docTemplate = `{
                 "company_name": {
                     "type": "string"
                 },
+                "debt": {
+                    "type": "number"
+                },
                 "email": {
                     "type": "string"
                 },
@@ -8079,7 +8141,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/schemas.MemberSimpleDTO"
                 },
                 "product": {
-                    "$ref": "#/definitions/schemas.ProductResponse"
+                    "$ref": "#/definitions/schemas.ProductSimpleResponseDTO"
                 },
                 "to_id": {
                     "type": "integer"

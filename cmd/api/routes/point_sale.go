@@ -33,4 +33,9 @@ func PointSaleRoutes(app *fiber.App) {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.PointSaleController.PointSaleUpdateMain(c)
 	})
+
+	pointSale.Get("/get/:id", func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.PointSaleController.PointSaleGetByID(c)
+	})
 }

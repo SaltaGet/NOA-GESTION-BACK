@@ -5,6 +5,7 @@ import (
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
 )
 
@@ -50,7 +51,7 @@ func (p *PointSaleRepository) PointSaleGetAllByMember(memberID int64) ([]schemas
 	var pointSales []schemas.PointSaleResponse
 	err := p.DB.
 		Model(&models.PointSale{}).
-		Select("point_sales.id", "point_sales.name", "point_sales.description", "point_sales.is_deposit").
+		Select("point_sales.id", "point_sales.name", "point_sales.description", "point_sales.is_deposit", "point_sales.is_main").
 		Joins("JOIN member_point_sales mp ON mp.point_sale_id = point_sales.id").
 		Where("mp.member_id = ?", memberID).
 		Scan(&pointSales).Error
@@ -63,12 +64,28 @@ func (p *PointSaleRepository) PointSaleGetAllByMember(memberID int64) ([]schemas
 
 func (p *PointSaleRepository) PointSaleGetAll() ([]schemas.PointSaleResponse, error) {
 	var pointSales []schemas.PointSaleResponse
-	err := p.DB.Model(&models.PointSale{}).Select("id", "name", "description", "is_deposit").Scan(&pointSales).Error
+	err := p.DB.Model(&models.PointSale{}).Select("id", "name", "description", "is_deposit", "is_main").Scan(&pointSales).Error
 	if err != nil {
 		return nil, schemas.ErrorResponse(500, "Error al obtener los puntos de venta", err)
 	}
 
 	return pointSales, nil
+}
+
+func (p *PointSaleRepository) PointSaleGetByID(id int64) (*schemas.PointSaleResponse, error) {
+	var pointSales models.PointSale
+	err := p.DB.Select("id", "name", "description", "is_deposit", "is_main").First(&pointSales, id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, schemas.ErrorResponse(404, "Punto de venta no encontrado", err)
+		}
+		return nil, schemas.ErrorResponse(500, "Error al obtener los puntos de venta", err)
+	}
+
+	var pointSaleResponse schemas.PointSaleResponse
+	copier.Copy(&pointSaleResponse, &pointSales)
+
+	return &pointSaleResponse, nil
 }
 
 func (p *PointSaleRepository) PointSaleUpdate(pointSaleUpdate *schemas.PointSaleUpdate) error {

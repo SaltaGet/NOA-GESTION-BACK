@@ -3,8 +3,40 @@ package controllers
 import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
 )
+
+// PointSaleGetByID godoc
+//	@Summary		PointSaleGetByID
+//	@Description	Obtener punto de venta por ID
+//	@Tags			PointSale
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			id	path		string												true	"PointSale ID"
+//	@Success		200	{object}	schemas.Response{body=[]schemas.PointSaleResponse}	"puntos de ventas obtenidos con éxito"
+//	@Router			/api/v1/point_sale/get/{id} [get]
+func (p *PointSaleController) PointSaleGetByID(c *fiber.Ctx) error {
+	id := c.Params("id")
+	logging.INFO("Obtener punto de venta por ID: %s", id)
+	idint, err := validators.IdValidate(id)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	pointSale, err := p.PointSaleService.PointSaleGetByID(idint)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	logging.INFO("Punto de venta por ID obtenido con éxito")
+	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    pointSale,
+		Message: "Punto de venta por ID obtenido con éxito",
+	})
+}
 
 // PointSale GetAll godoc
 //	@Summary		PointSale GetAll

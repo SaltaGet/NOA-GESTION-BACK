@@ -27,6 +27,10 @@ func (p *PointSaleService) PointSaleGetAll() ([]schemas.PointSaleResponse, error
 	return p.PointSaleRepository.PointSaleGetAll()
 }
 
+func (p *PointSaleService) PointSaleGetByID(id int64) (*schemas.PointSaleResponse, error) {
+	return p.PointSaleRepository.PointSaleGetByID(id)
+}
+
 func (p *PointSaleService) PointSaleUpdate(pointSaleUpdate *schemas.PointSaleUpdate) (error) {
 	return p.PointSaleRepository.PointSaleUpdate(pointSaleUpdate)
 }

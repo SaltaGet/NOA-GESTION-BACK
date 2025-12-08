@@ -24,7 +24,7 @@ func (cl *ClientController) ClientGetByID(c *fiber.Ctx) error {
 	logging.INFO("Obtener un cliente por ID")
 	id := c.Params("id")
 	idint, err := validators.IdValidate(id)
-	if err != nil{
+	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -91,6 +91,7 @@ func (cl *ClientController) ClientGetByFilter(c *fiber.Ctx) error {
 //	@Param			first_name	query		string	false	"Nombre del cliente"
 //	@Param			last_name	query		string	false	"Apellido del cliente"
 //	@Param			email		query		string	false	"Correo del cliente"
+// @Param			debt		query		bool	true	"Deuda"
 //	@Success		200			{object}	schemas.Response{body=[]schemas.ClientResponseDTO}
 //	@Router			/api/v1/client/get_all [get]
 func (cl *ClientController) ClientGetAll(c *fiber.Ctx) error {
@@ -122,7 +123,9 @@ func (cl *ClientController) ClientGetAll(c *fiber.Ctx) error {
 		(*search)["email"] = email
 	}
 
-	clients, total, err := cl.ClientService.ClientGetAll(limit, page, search)
+	debt := c.QueryBool("debt", false)
+
+	clients, total, err := cl.ClientService.ClientGetAll(limit, page, search, debt)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -274,7 +277,7 @@ func (cl *ClientController) ClientDelete(c *fiber.Ctx) error {
 	logging.INFO("Eliminar un cliente")
 	id := c.Params("id")
 	idint, err := validators.IdValidate(id)
-	if err != nil{
+	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 

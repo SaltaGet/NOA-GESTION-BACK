@@ -4,8 +4,8 @@ import (
 "github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
-func (c *ClientService) ClientGetAll(limit, page int64, search *map[string]string) (*[]schemas.ClientResponseDTO, int64, error) {
-	return c.ClientRepository.ClientGetAll(limit, page, search)
+func (c *ClientService) ClientGetAll(limit, page int64, search *map[string]string, filterDrbt bool) (*[]schemas.ClientResponseDTO, int64, error) {
+	return c.ClientRepository.ClientGetAll(limit, page, search, filterDrbt)
 }
 
 func (c *ClientService) ClientGetByID(id int64) (*schemas.ClientResponse, error) {

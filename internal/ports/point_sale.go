@@ -8,6 +8,7 @@ type PointSaleRepository interface {
 	PointSaleUpdateMain(pointSaleUpdateMain *schemas.PointSaleUpdateMain) error
 	PointSaleGetAllByMember(memberID int64) ([]schemas.PointSaleResponse, error)
 	PointSaleGetAll() ([]schemas.PointSaleResponse, error)
+	PointSaleGetByID(id int64) (*schemas.PointSaleResponse, error)
 	PointSaleCount() (int64, error)
 }
 
@@ -18,4 +19,5 @@ type PointSaleService interface {
 
 	PointSaleGetAllByMember(memberID int64) ([]schemas.PointSaleResponse, error)
 	PointSaleGetAll() ([]schemas.PointSaleResponse, error)
+	PointSaleGetByID(id int64) (*schemas.PointSaleResponse, error)
 }

@@ -46,10 +46,67 @@ func (r *ClientRepository) ClientGetByFilter(search string) (*[]schemas.ClientRe
 	return &clientResponse, nil
 }
 
-func (r *ClientRepository) ClientGetAll(limit, page int64, search *map[string]string) (*[]schemas.ClientResponseDTO, int64, error) {
+// func (r *ClientRepository) ClientGetAll(limit, page int64, search *map[string]string) (*[]schemas.ClientResponseDTO, int64, error) {
+// 	var clients []schemas.ClientResponseDTO
+
+// 	query := r.DB.Model(&models.Client{})
+
+// 	// Aplicar filtros dinámicos
+// 	if search != nil {
+// 		for key, value := range *search {
+// 			if value == "" {
+// 				continue
+// 			}
+
+// 			switch strings.ToLower(key) {
+// 			case "identifier":
+// 				query = query.Where("identifier LIKE ?", "%"+value+"%")
+// 			case "first_name":
+// 				query = query.Where("first_name LIKE ?", "%"+value+"%")
+// 			case "last_name":
+// 				query = query.Where("last_name LIKE ?", "%"+value+"%")
+// 			case "email":
+// 				query = query.Where("email LIKE ?", "%"+value+"%")
+// 			}
+// 		}
+// 	}
+
+// 	if limit > 0 {
+// 		offset := (page - 1) * limit
+// 		query = query.Limit(int(limit)).Offset(int(offset))
+// 	}
+
+// 	if err := query.Find(&clients).Error; err != nil {
+// 		return nil, 0, schemas.ErrorResponse(500, "Error al buscar los clientes", err)
+// 	}
+
+// 	// Contar total de registros
+// 	var total int64
+// 	if err := r.DB.Model(&models.Client{}).Count(&total).Error; err != nil {
+// 		return nil, 0, schemas.ErrorResponse(500, "Error al contar los clientes", err)
+// 	}
+
+// 	return &clients, total, nil
+// }
+func (r *ClientRepository) ClientGetAll(limit, page int64, search *map[string]string, filterDrbt bool) (*[]schemas.ClientResponseDTO, int64, error) {
 	var clients []schemas.ClientResponseDTO
 
-	query := r.DB.Model(&models.Client{})
+	// Base query con join opcional si hay que calcular deuda
+	query := r.DB.Table("clients c")
+
+	if filterDrbt {
+		query = query.
+			Select(`
+				c.id, c.first_name, c.last_name, c.company_name, c.identifier,
+				c.email, c.phone, c.address, c.member_create_id, c.created_at, c.updated_at,
+				COALESCE(SUM(CASE WHEN p.method_pay = 'credit' THEN p.total ELSE 0 END), 0) AS debt
+			`).
+			Joins("LEFT JOIN pay_incomes p ON p.client_id = c.id").
+			Group("c.id").
+			Having("debt > 0")
+	} else {
+		query = query.Select("c.*")
+	}
 
 	// Aplicar filtros dinámicos
 	if search != nil {
@@ -60,34 +117,48 @@ func (r *ClientRepository) ClientGetAll(limit, page int64, search *map[string]st
 
 			switch strings.ToLower(key) {
 			case "identifier":
-				query = query.Where("identifier LIKE ?", "%"+value+"%")
+				query = query.Where("c.identifier LIKE ?", "%"+value+"%")
 			case "first_name":
-				query = query.Where("first_name LIKE ?", "%"+value+"%")
+				query = query.Where("c.first_name LIKE ?", "%"+value+"%")
 			case "last_name":
-				query = query.Where("last_name LIKE ?", "%"+value+"%")
+				query = query.Where("c.last_name LIKE ?", "%"+value+"%")
 			case "email":
-				query = query.Where("email LIKE ?", "%"+value+"%")
+				query = query.Where("c.email LIKE ?", "%"+value+"%")
 			}
 		}
 	}
 
+	// Paginación
 	if limit > 0 {
 		offset := (page - 1) * limit
 		query = query.Limit(int(limit)).Offset(int(offset))
 	}
 
-	if err := query.Find(&clients).Error; err != nil {
+	// Ejecutar consulta
+	if err := query.Scan(&clients).Error; err != nil {
 		return nil, 0, schemas.ErrorResponse(500, "Error al buscar los clientes", err)
 	}
 
-	// Contar total de registros
+	// Contar total
 	var total int64
-	if err := r.DB.Model(&models.Client{}).Count(&total).Error; err != nil {
+	countQuery := r.DB.Model(&models.Client{})
+
+	// Si solo queremos los deudores, aplicar el mismo HAVING al count
+	if filterDrbt {
+		countQuery = countQuery.
+			Select("clients.id").
+			Joins("LEFT JOIN pay_incomes p ON p.client_id = clients.id").
+			Group("clients.id").
+			Having("SUM(CASE WHEN p.method_pay = 'credit' THEN p.total ELSE 0 END) > 0")
+	}
+
+	if err := countQuery.Count(&total).Error; err != nil {
 		return nil, 0, schemas.ErrorResponse(500, "Error al contar los clientes", err)
 	}
 
 	return &clients, total, nil
 }
+
 
 func (r *ClientRepository) ClientCreate(memberID int64, client *schemas.ClientCreate) (int64, error) {
 	newClient := models.Client{
