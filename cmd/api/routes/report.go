@@ -9,23 +9,31 @@ import (
 func ReportRoutes(app *fiber.App) {
 	report := app.Group("/api/v1/report", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
-	report.Get("/get_excel", func(c *fiber.Ctx) error {
-		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
-		return tenant.Controllers.ReportController.ReportExcelGet(c)
-	})
+	report.Get("/get_excel",
+		middleware.RolePermissionMiddleware("RP04"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.ReportController.ReportExcelGet(c)
+		})
 
-	report.Post("/get_profitable_products", func(c *fiber.Ctx) error {
-		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
-		return tenant.Controllers.ReportController.ReportProfitableProducts(c)
-	})
+	report.Post("/get_profitable_products",
+		middleware.RolePermissionMiddleware("RP04"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.ReportController.ReportProfitableProducts(c)
+		})
 
-	report.Post("/get_by_date", func(c *fiber.Ctx) error {
-		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
-		return tenant.Controllers.ReportController.ReportMovementByDate(c)
-	})
-	
-	report.Post("/get_by_date_point_sale", func(c *fiber.Ctx) error {
-		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
-		return tenant.Controllers.ReportController.ReportMovementByDatePointSale(c)
-	})
+	report.Post("/get_by_date",
+		middleware.RolePermissionMiddleware("RP04"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.ReportController.ReportMovementByDate(c)
+		})
+
+	report.Post("/get_by_date_point_sale",
+		middleware.RolePermissionMiddleware("RP04"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.ReportController.ReportMovementByDatePointSale(c)
+		})
 }

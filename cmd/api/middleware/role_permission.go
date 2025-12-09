@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"slices"
+
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/gofiber/fiber/v2"
 )
@@ -20,11 +22,9 @@ func RolePermissionMiddleware(code string) fiber.Handler {
 			return c.Next()
 		}
 
-		for _, permission := range member.ListPermissions {
-			if permission == code {
-				return c.Next()
-			}
-		} 
+		if slices.Contains(member.ListPermissions, code) {
+			return c.Next()
+		}
 
 		return c.Status(403).JSON(schemas.Response{
 			Status:  false,

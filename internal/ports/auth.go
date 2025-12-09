@@ -18,7 +18,7 @@ type AuthRepository interface {
 	AuthResetPassword(memberID, tenantID int64, newPass string) error
 }
 
-type AuhtService interface {
+type AuthService interface {
 	AuthAdminGetByID(id int64) (*models.Admin, error)
 	AuthLogin(username, password string) (string, error)
 	AuthLoginAdmin(username, password string) (string, error)

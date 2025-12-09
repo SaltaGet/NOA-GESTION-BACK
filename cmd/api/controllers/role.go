@@ -3,8 +3,41 @@ package controllers
 import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
 )
+
+// GetRoleByID godoc
+//
+//	@Summary		GetRoleByID
+//	@Description	Obtener role por id
+//	@Tags			Role
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			id	path		string										true	"Role ID"
+//	@Success		200	{object}	schemas.Response{body=schemas.RoleResponse}	"Roles retrieved successfully"
+//	@Router			/api/v1/role/get/{id} [get]
+func (r *RoleController) RoleGetByID(c *fiber.Ctx) error {
+	logging.INFO("Obtener rol por id")
+	id := c.Params("id")
+	intID, err := validators.IdValidate(id)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	role, err := r.RoleService.RoleGetByID(intID)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	logging.INFO("Roles obtenidos exitosamente")
+	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    role,
+		Message: "Roles obtenidos exitosamente",
+	})
+}
 
 // GetRoles godoc
 //
@@ -17,8 +50,6 @@ import (
 //	@Produce		json
 //	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.RoleResponse}	"Roles retrieved successfully"
-//	@Failure		400	{object}	schemas.Response								"Bad request if user or workplace is missing"
-//	@Failure		500	{object}	schemas.Response								"Internal server error on failure"
 //	@Router			/api/v1/role/get_all [get]
 func (r *RoleController) RoleGetAll(c *fiber.Ctx) error {
 	logging.INFO("Obtener todos los roles")
@@ -49,6 +80,7 @@ func (r *RoleController) RoleGetAll(c *fiber.Ctx) error {
 }
 
 // Create Role godoc
+//
 //	@Summary		Retrieve roles for a user in a specific workplace
 //	@Description	This function fetches roles based on the user's role and workplace identifier
 //	@Tags			Role
@@ -56,9 +88,7 @@ func (r *RoleController) RoleGetAll(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		CookieAuth
 //	@Param			role	body		schemas.RoleCreate	true	"Role object"
-//	@Success		200		{object}	schemas.Response	"Roles retrieved successfully"
-//	@Failure		400		{object}	schemas.Response	"Bad request if user or workplace is missing"
-//	@Failure		500		{object}	schemas.Response	"Internal server error on failure"
+//	@Success		200		{object}	schemas.Response	"Roles created successfully"
 //	@Router			/api/v1/role/create [post]
 func (r *RoleController) RoleCreate(c *fiber.Ctx) error {
 	logging.INFO("Crear rol")
@@ -73,7 +103,7 @@ func (r *RoleController) RoleCreate(c *fiber.Ctx) error {
 	}
 	if err := roleCreate.Validate(); err != nil {
 		return schemas.HandleError(c, err)
-	}	
+	}
 
 	id, err := r.RoleService.RoleCreate(&roleCreate)
 	if err != nil {
@@ -92,11 +122,50 @@ func (r *RoleController) RoleCreate(c *fiber.Ctx) error {
 			Message: "Error interno",
 		})
 	}
-	
+
 	logging.INFO("Rol creado exitosamente")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    id,
 		Message: "Rol creado exitosamente",
+	})
+}
+
+// UpdateRole godoc
+//
+//	@Summary		UpdateRole
+//	@Description	Actualizar rol
+//	@Tags			Role
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			role	body		schemas.RoleUpdate	true	"Role object"
+//	@Success		200		{object}	schemas.Response	"Roles updated successfully"
+//	@Router			/api/v1/role/update [put]
+func (r *RoleController) RoleUpdate(c *fiber.Ctx) error {
+	logging.INFO("Editar rol")
+	var roleCreate schemas.RoleUpdate
+	if err := c.BodyParser(&roleCreate); err != nil {
+		logging.ERROR("Error: %s", err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
+			Status:  false,
+			Body:    nil,
+			Message: "Bad request" + err.Error(),
+		})
+	}
+	if err := roleCreate.Validate(); err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	err := r.RoleService.RoleUpdate(&roleCreate)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	logging.INFO("Rol editado exitosamente")
+	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
+		Message: "Rol editado exitosamente",
 	})
 }

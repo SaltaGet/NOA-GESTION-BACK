@@ -145,7 +145,7 @@ func (r *MemberRepository) MemberCreate(memberCreate *schemas.MemberCreate) (int
 		}
 
 		if err := tx.Create(&member).Error; err != nil {
-			if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
+			if schemas.IsDuplicateError(err) {
 				if strings.Contains(err.Error(), "username") {
 					return schemas.ErrorResponse(400, "El nombre de usuario ya existe", err)
 				}
@@ -222,7 +222,7 @@ func (r *MemberRepository) MemberUpdate(memberUpdate *schemas.MemberUpdate) erro
 		}
 
 		if err := tx.Save(&existingMember).Error; err != nil {
-			if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
+			if schemas.IsDuplicateError(err) {
 				if strings.Contains(err.Error(), "username") {
 					return schemas.ErrorResponse(400, "El nombre de usuario ya existe", err)
 				}

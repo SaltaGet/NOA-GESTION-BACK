@@ -9,27 +9,37 @@ import (
 func ExpenseBuyRoutes(app *fiber.App) {
 	exp := app.Group("/api/v1/expense_buy", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
-	exp.Get("/get_by_date", func(c *fiber.Ctx) error {
+	exp.Get("/get_by_date", 
+	middleware.RolePermissionMiddleware("EB04"),
+	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.ExpenseBuyController.ExpenseBuyGetByDate(c)
 	})
 
-	exp.Post("/create", func(c *fiber.Ctx) error {
+	exp.Post("/create", 
+	middleware.RolePermissionMiddleware("EB01"),
+	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.ExpenseBuyController.ExpenseBuyCreate(c)
 	})
 
-	exp.Put("/update", func(c *fiber.Ctx) error {
+	exp.Put("/update", 
+	middleware.RolePermissionMiddleware("EB02"),
+	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.ExpenseBuyController.ExpenseBuyUpdate(c)
 	})
 
-	exp.Delete("/delete/:id", func(c *fiber.Ctx) error {
+	exp.Delete("/delete/:id", 
+	middleware.RolePermissionMiddleware("EB03"),
+	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.ExpenseBuyController.ExpenseBuyDelete(c)
 	})
 
-	exp.Get("/:id", func(c *fiber.Ctx) error {
+	exp.Get("/:id", 
+	middleware.RolePermissionMiddleware("EB04"),
+	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.ExpenseBuyController.ExpenseBuyGetByID(c)
 	})

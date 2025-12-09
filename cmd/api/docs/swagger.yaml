@@ -1211,17 +1211,6 @@ definitions:
       id:
         type: integer
     type: object
-  schemas.PermissionResponseDTO:
-    properties:
-      code:
-        type: string
-      environment:
-        type: string
-      group:
-        type: string
-      id:
-        type: integer
-    type: object
   schemas.PlanCreate:
     properties:
       amount_member:
@@ -1581,7 +1570,7 @@ definitions:
         type: string
       permissions:
         items:
-          $ref: '#/definitions/schemas.PermissionResponseDTO'
+          $ref: '#/definitions/schemas.PermissionResponse'
         type: array
     type: object
   schemas.RoleResponseDTO:
@@ -1590,6 +1579,21 @@ definitions:
         type: integer
       name:
         type: string
+    type: object
+  schemas.RoleUpdate:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      permissions_id:
+        items:
+          type: integer
+        type: array
+    required:
+    - id
+    - name
+    - permissions_id
     type: object
   schemas.SupplierCreate:
     properties:
@@ -5041,20 +5045,40 @@ paths:
       - application/json
       responses:
         "200":
-          description: Roles retrieved successfully
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "400":
-          description: Bad request if user or workplace is missing
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal server error on failure
+          description: Roles created successfully
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
       - CookieAuth: []
       summary: Retrieve roles for a user in a specific workplace
+      tags:
+      - Role
+  /api/v1/role/get/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Obtener role por id
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Roles retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.RoleResponse'
+              type: object
+      security:
+      - CookieAuth: []
+      summary: GetRoleByID
       tags:
       - Role
   /api/v1/role/get_all:
@@ -5077,17 +5101,33 @@ paths:
                     $ref: '#/definitions/schemas.RoleResponse'
                   type: array
               type: object
-        "400":
-          description: Bad request if user or workplace is missing
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal server error on failure
+      security:
+      - CookieAuth: []
+      summary: Retrieve roles for a user in a specific workplace
+      tags:
+      - Role
+  /api/v1/role/update:
+    put:
+      consumes:
+      - application/json
+      description: Actualizar rol
+      parameters:
+      - description: Role object
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.RoleUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Roles updated successfully
           schema:
             $ref: '#/definitions/schemas.Response'
       security:
       - CookieAuth: []
-      summary: Retrieve roles for a user in a specific workplace
+      summary: UpdateRole
       tags:
       - Role
   /api/v1/stock/get/{id}:

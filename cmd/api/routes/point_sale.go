@@ -9,33 +9,45 @@ import (
 func PointSaleRoutes(app *fiber.App) {
 	pointSale := app.Group("/api/v1/point_sale", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
-	pointSale.Get("/get_all", func(c *fiber.Ctx) error {
-		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
-		return tenant.Controllers.PointSaleController.PointSaleGetAll(c)
-	})
+	pointSale.Get("/get_all",
+		middleware.RolePermissionMiddleware("PS04"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.PointSaleController.PointSaleGetAll(c)
+		})
 
-	pointSale.Get("/get_all_by_member", func(c *fiber.Ctx) error {
-		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
-		return tenant.Controllers.PointSaleController.PointSaleGetAllByMember(c)
-	})
+	pointSale.Get("/get_all_by_member",
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.PointSaleController.PointSaleGetAllByMember(c)
+		})
 
-	pointSale.Post("/create", middleware.CurrentPlan(), func(c *fiber.Ctx) error {
-		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
-		return tenant.Controllers.PointSaleController.PointSaleCreate(c)
-	})
+	pointSale.Post("/create",
+		middleware.RolePermissionMiddleware("PS01"),
+		middleware.CurrentPlan(),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.PointSaleController.PointSaleCreate(c)
+		})
 
-	pointSale.Put("/update", func(c *fiber.Ctx) error {
-		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
-		return tenant.Controllers.PointSaleController.PointSaleUpdate(c)
-	})
+	pointSale.Put("/update",
+		middleware.RolePermissionMiddleware("PS02"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.PointSaleController.PointSaleUpdate(c)
+		})
 
-	pointSale.Put("/update_main", func(c *fiber.Ctx) error {
-		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
-		return tenant.Controllers.PointSaleController.PointSaleUpdateMain(c)
-	})
+	pointSale.Put("/update_main",
+		middleware.RolePermissionMiddleware("PS02"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.PointSaleController.PointSaleUpdateMain(c)
+		})
 
-	pointSale.Get("/get/:id", func(c *fiber.Ctx) error {
-		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
-		return tenant.Controllers.PointSaleController.PointSaleGetByID(c)
-	})
+	pointSale.Get("/get/:id",
+		middleware.RolePermissionMiddleware("PS04"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.PointSaleController.PointSaleGetByID(c)
+		})
 }

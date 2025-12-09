@@ -9,27 +9,35 @@ import (
 func CategoryRoutes(app *fiber.App) {
 	category := app.Group("/api/v1/category", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
-	category.Post("/create", func(c *fiber.Ctx) error {
+	category.Post("/create", 
+	middleware.RolePermissionMiddleware("CAT01"), 
+	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.CategoryController.CategoryCreate(c)
 	})
 
-	category.Get("/get_all", func(c *fiber.Ctx) error {
+	category.Get("/get_all", 
+	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.CategoryController.CategoryGetAll(c)
 	})
 
-	category.Put("/update", func(c *fiber.Ctx) error {
+	category.Put("/update", 
+	middleware.RolePermissionMiddleware("CAT02"), 
+	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.CategoryController.CategoryUpdate(c)
 	})
 
-	category.Get("/get/:id", func(c *fiber.Ctx) error {
+	category.Get("/get/:id", 
+	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.CategoryController.CategoryGet(c)
 	})
 
-	category.Delete("/delete/:id", func(c *fiber.Ctx) error {
+	category.Delete("/delete/:id", 
+	middleware.RolePermissionMiddleware("CAT03"), 
+	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.CategoryController.CategoryDelete(c)
 	})

@@ -5303,21 +5303,58 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
+                        "description": "Roles created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/role/get/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener role por id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Role"
+                ],
+                "summary": "GetRoleByID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
                         "description": "Roles retrieved successfully",
                         "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request if user or workplace is missing",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error on failure",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.RoleResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -5362,15 +5399,42 @@ const docTemplate = `{
                                 }
                             ]
                         }
-                    },
-                    "400": {
-                        "description": "Bad request if user or workplace is missing",
+                    }
+                }
+            }
+        },
+        "/api/v1/role/update": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Actualizar rol",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Role"
+                ],
+                "summary": "UpdateRole",
+                "parameters": [
+                    {
+                        "description": "Role object",
+                        "name": "role",
+                        "in": "body",
+                        "required": true,
                         "schema": {
-                            "$ref": "#/definitions/schemas.Response"
+                            "$ref": "#/definitions/schemas.RoleUpdate"
                         }
-                    },
-                    "500": {
-                        "description": "Internal server error on failure",
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Roles updated successfully",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -8309,23 +8373,6 @@ const docTemplate = `{
                 }
             }
         },
-        "schemas.PermissionResponseDTO": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "environment": {
-                    "type": "string"
-                },
-                "group": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                }
-            }
-        },
         "schemas.PlanCreate": {
             "type": "object",
             "required": [
@@ -8846,7 +8893,7 @@ const docTemplate = `{
                 "permissions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/schemas.PermissionResponseDTO"
+                        "$ref": "#/definitions/schemas.PermissionResponse"
                     }
                 }
             }
@@ -8859,6 +8906,28 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.RoleUpdate": {
+            "type": "object",
+            "required": [
+                "id",
+                "name",
+                "permissions_id"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "permissions_id": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 }
             }
         },

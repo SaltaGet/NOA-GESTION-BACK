@@ -6,7 +6,7 @@ import (
 )
 
 type AuthController struct {
-	AuthService  ports.AuhtService
+	AuthService  ports.AuthService
 	EmailService ports.EmailService
 }
 

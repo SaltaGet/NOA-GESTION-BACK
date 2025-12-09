@@ -9,28 +9,38 @@ import (
 func SupplierRoutes(app *fiber.App) {
 	supplier := app.Group("/api/v1/supplier", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
-	supplier.Get("/get_all", func(c *fiber.Ctx) error {
-		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
-		return tenant.Controllers.SupplierController.SupplierGetAll(c)
-	})
+	supplier.Get("/get_all",
+		middleware.RolePermissionMiddleware("SP04"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.SupplierController.SupplierGetAll(c)
+		})
 
-	supplier.Post("/create", func(c *fiber.Ctx) error {
-		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
-		return tenant.Controllers.SupplierController.SupplierCreate(c)
-	})
+	supplier.Post("/create",
+		middleware.RolePermissionMiddleware("SP01"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.SupplierController.SupplierCreate(c)
+		})
 
-	supplier.Put("/update", func(c *fiber.Ctx) error {
-		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
-		return tenant.Controllers.SupplierController.SupplierUpdate(c)
-	})
+	supplier.Put("/update",
+		middleware.RolePermissionMiddleware("SP02"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.SupplierController.SupplierUpdate(c)
+		})
 
-	supplier.Delete("/delete/:id", func(c *fiber.Ctx) error {
-		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
-		return tenant.Controllers.SupplierController.SupplierDeleteByID(c)
-	})
+	supplier.Delete("/delete/:id",
+		middleware.RolePermissionMiddleware("SP03"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.SupplierController.SupplierDeleteByID(c)
+		})
 
-	supplier.Get("/:id", func(c *fiber.Ctx) error {
-		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
-		return tenant.Controllers.SupplierController.SupplierGetByID(c)
-	})
+	supplier.Get("/:id",
+		middleware.RolePermissionMiddleware("SP04"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.SupplierController.SupplierGetByID(c)
+		})
 }

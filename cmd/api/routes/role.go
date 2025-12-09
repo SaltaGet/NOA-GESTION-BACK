@@ -9,14 +9,32 @@ import (
 func RoleRoutes(app *fiber.App) {
 	role := app.Group("/api/v1/role", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
-	role.Get("/get_all", func(c *fiber.Ctx) error {
+	role.Get("/get_all", 
+	middleware.RolePermissionMiddleware("RL04"),
+	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.RoleController.RoleGetAll(c)
 	})
 
-	role.Post("/create", func(c *fiber.Ctx) error {
+	role.Post("/create", 
+	middleware.RolePermissionMiddleware("RL01"),
+	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.RoleController.RoleCreate(c)
+	})
+	
+	role.Put("/update", 
+	middleware.RolePermissionMiddleware("RL02"),
+	func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.RoleController.RoleUpdate(c)
+	})
+	
+	role.Get("/get/:id", 
+	middleware.RolePermissionMiddleware("RL04"),
+	func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.RoleController.RoleGetByID(c)
 	})
 }
 

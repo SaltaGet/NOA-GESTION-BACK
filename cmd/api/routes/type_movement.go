@@ -9,17 +9,23 @@ import (
 func TypeMovementRoutes(app *fiber.App) {
 	typeMovement := app.Group("/api/v1/type_movement", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
-	typeMovement.Get("/get_all", func(c *fiber.Ctx) error {
+	typeMovement.Get("/get_all", 
+	middleware.RolePermissionMiddleware("TM04"),
+	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.TypeMovementController.TypeMovementGetAll(c)
 	})
 
-	typeMovement.Post("/create", func(c *fiber.Ctx) error {
+	typeMovement.Post("/create", 
+	middleware.RolePermissionMiddleware("TM01"),
+	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.TypeMovementController.TypeMovementCreate(c)
 	})
 
-	typeMovement.Put("/update", func(c *fiber.Ctx) error {
+	typeMovement.Put("/update", 
+	middleware.RolePermissionMiddleware("TM02"),
+	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.TypeMovementController.TypeMovementUpdate(c)
 	})
