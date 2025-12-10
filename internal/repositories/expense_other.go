@@ -17,7 +17,7 @@ func (r *ExpenseOtherRepository) ExpenseOtherGetByID(id int64, pointSaleID *int6
 	if pointSaleID != nil {
 		if err := r.DB.
 			Preload("Member", func(db *gorm.DB) *gorm.DB {
-				return db.Select("id", "first_name", "last_name", "username")
+				return db.Select("id", "first_name", "last_name", "username").Unscoped()
 			}).
 			Preload("TypeExpense").
 			Preload("PointSale").
@@ -31,7 +31,7 @@ func (r *ExpenseOtherRepository) ExpenseOtherGetByID(id int64, pointSaleID *int6
 	} else {
 		if err := r.DB.
 			Preload("Member", func(db *gorm.DB) *gorm.DB {
-				return db.Select("id", "first_name", "last_name", "username")
+				return db.Select("id", "first_name", "last_name", "username").Unscoped()
 			}).
 			Preload("TypeExpense").
 			Preload("PointSale").
@@ -64,7 +64,7 @@ func (r *ExpenseOtherRepository) ExpenseOtherGetByDate(pointSaleID *int64, fromD
 
 	if err := query.
 		Preload("Member", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "first_name", "last_name", "username")
+			return db.Select("id", "first_name", "last_name", "username").Unscoped()
 		}).
 		Preload("TypeExpense").
 		Order("created_at DESC").

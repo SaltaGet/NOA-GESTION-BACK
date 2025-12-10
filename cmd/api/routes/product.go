@@ -29,6 +29,7 @@ func ProductRoutes(app *fiber.App) {
 
 	prod.Post("/create",
 		middleware.RolePermissionMiddleware("PR01"),
+		middleware.CurrentPlan(),
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.ProductController.ProductCreate(c)

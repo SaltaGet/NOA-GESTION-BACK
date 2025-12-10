@@ -136,6 +136,19 @@ func PrepareDB(uri string, memberAdmin models.Member) error {
 		return fmt.Errorf("error al crear tipo de gasto sin tipo de gasto: %w", err)
 	}
 
+
+	description := "Mi primer putno de venta de NOA Gestión"
+	if err := db.Create(&models.PointSale{
+		ID: 1,
+		Name: "Mi punto de venta",
+		Description: &description,
+		IsDeposit: true,
+		IsMain: true,
+	}).Error; err != nil {
+		handleDBCreationError(env, uri)
+		return fmt.Errorf("error al crear punto de venta sin punto de venta: %w", err)
+	}
+
 	return nil
 }
 
@@ -251,14 +264,13 @@ func UpdateModels(uri string) error {
 
 var permissions []models.Permission = []models.Permission{
 	//CASH REGISTER
-	{Code: "CR01", Name: "crear apertura", Details: "Crea nueva apertura de caja", Group: "caja", Environment: "point_sale"},
-	{Code: "CR02", Name: "cierre", Details: "Verifica si existe alguna apertura de caja del punto de venta", Group: "caja", Environment: "point_sale"},
+	{Code: "CR01", Name: "apertura y cierre de caja", Details: "Apertura y cierre de caja del punto de venta", Group: "caja", Environment: "point_sale"},
 	{Code: "CR04", Name: "informes", Details: "Obtener infomes de caja", Group: "caja", Environment: "point_sale"},
 	
 	//CATEGORY
-	{Code: "CAT01", Name: "crear", Details: "Crear nueva categoría", Group: "categoría", Environment: "point_sale"},
-	{Code: "CAT02", Name: "actualizar", Details: "Actualizar categoria existente", Group: "categoría", Environment: "point_sale"},
-	{Code: "CAT03", Name: "eliminar", Details: "Eliminar cagotería", Group: "categoría", Environment: "point_sale"},
+	{Code: "CAT01", Name: "crear", Details: "Crear nueva categoría", Group: "categoría", Environment: "dashboard"},
+	{Code: "CAT02", Name: "actualizar", Details: "Actualizar categoria existente", Group: "categoría", Environment: "dashboard"},
+	{Code: "CAT03", Name: "eliminar", Details: "Eliminar cagotería", Group: "categoría", Environment: "dashboard"},
 	
 	//CLIENT
 	{Code: "CL01", Name: "crear", Details: "Crear nuevo cliente", Group: "cliente", Environment: "point_sale"},
@@ -267,8 +279,8 @@ var permissions []models.Permission = []models.Permission{
 	// {Code: "CL04", Name: "obtener clientes", Details: "Obtener clientes", Group: "cliente", Environment: "point_sale"},
 	
 	//DEPOSIT
-	{Code: "DEP02", Name: "actualizar stock de productos", Details: "Actualizar el stock de productos en el depósito", Group: "deposito", Environment: "point_sale"},
-	{Code: "DEP04", Name: "obtener depópsito", Details: "Obtener información de los productos del depósito", Group: "deposito", Environment: "point_sale"},
+	{Code: "DEP02", Name: "actualizar stock de productos", Details: "Actualizar el stock de productos en el depósito", Group: "deposito", Environment: "dashboard"},
+	{Code: "DEP04", Name: "obtener depópsito", Details: "Obtener información de los productos del depósito", Group: "deposito", Environment: "dashboard"},
 	
 	//EXPENSE BUY
 	{Code: "EB01", Name: "crear", Details: "Crear  nuevo gasto de compra", Group: "gastos de compra", Environment: "dashboard"},
@@ -301,10 +313,10 @@ var permissions []models.Permission = []models.Permission{
 	{Code: "INOPS04", Name: "obtener otros ingresos", Details: "Obtener otros ingresos de un punto de venta", Group: "otros ingresos - punto de venta", Environment: "point_sale"},
 	
 	//INCOME SALE
-	{Code: "INS01", Name: "crear", Details: "Crear nuevo ingreso de venta", Group: "ingreso de venta", Environment: "dashboard"},
-	{Code: "INS02", Name: "actualizar", Details: "Actualizar ingreso de venta existente", Group: "ingreso de venta", Environment: "dashboard"},
-	{Code: "INS03", Name: "eliminar", Details: "Eliminar ingreso de venta", Group: "ingreso de venta", Environment: "dashboard"},
-	{Code: "INS04", Name: "obtener ingresos de ventas", Details: "Obtener ingresos de ventas", Group: "ingreso de venta", Environment: "dashboard"},
+	{Code: "INS01", Name: "crear", Details: "Crear nuevo ingreso de venta", Group: "ingreso de venta", Environment: "point_sale"},
+	{Code: "INS02", Name: "actualizar", Details: "Actualizar ingreso de venta existente", Group: "ingreso de venta", Environment: "point_sale"},
+	{Code: "INS03", Name: "eliminar", Details: "Eliminar ingreso de venta", Group: "ingreso de venta", Environment: "point_sale"},
+	{Code: "INS04", Name: "obtener ingresos de ventas", Details: "Obtener ingresos de ventas", Group: "ingreso de venta", Environment: "point_sale"},
 	
 	//MEMBER
 	{Code: "MB01", Name: "crear", Details: "Crear un nuevo miembro", Group: "miembro", Environment: "dashboard"},

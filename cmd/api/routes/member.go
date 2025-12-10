@@ -30,6 +30,13 @@ func MemberRoutes(app *fiber.App){
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.MemberController.MemberUpdate(c)
 	})
+	
+	member.Delete("/delete/:id", 
+	middleware.RolePermissionMiddleware("MB03"),	
+	func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.MemberController.MemberDelete(c)
+	})
 
 	member.Get("/get/:id", 
 	middleware.RolePermissionMiddleware("MB04"),	

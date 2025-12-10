@@ -282,12 +282,10 @@ func (r *MemberRepository) MemberDelete(id int64) error {
 			return schemas.ErrorResponse(500, "Error al obtener el miembro", err)
 		}
 
-		// No permitir eliminar admin principal (opcional)
 		if member.IsAdmin {
 			return schemas.ErrorResponse(400, "No se puede eliminar un administrador", nil)
 		}
 
-		// Soft delete
 		if err := tx.Delete(&member).Error; err != nil {
 			return schemas.ErrorResponse(500, "Error al eliminar el miembro", err)
 		}

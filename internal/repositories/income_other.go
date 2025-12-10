@@ -18,7 +18,7 @@ func (r *IncomeOtherRepository) IncomeOtherGetByID(id int64, pointSaleId *int64)
 	if pointSaleId != nil {
 		if err := r.DB.
 			Preload("Member", func(db *gorm.DB) *gorm.DB {
-				return db.Select("id", "first_name", "last_name", "username")
+				return db.Select("id", "first_name", "last_name", "username").Unscoped()
 			}).
 			Preload("TypeIncome").
 			Preload("PointSale").
@@ -32,7 +32,7 @@ func (r *IncomeOtherRepository) IncomeOtherGetByID(id int64, pointSaleId *int64)
 	} else {
 		if err := r.DB.
 			Preload("Member", func(db *gorm.DB) *gorm.DB {
-				return db.Select("id", "first_name", "last_name", "username")
+				return db.Select("id", "first_name", "last_name", "username").Unscoped()
 			}).
 			Preload("TypeIncome").
 			First(&incomeOther, id).Error; err != nil {
@@ -65,7 +65,7 @@ func (r *IncomeOtherRepository) IncomeOtherGetByDate(pointSaleID *int64, fromDat
 
 	if err := query.
 		Preload("Member", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "first_name", "last_name", "username")
+			return db.Select("id", "first_name", "last_name", "username").Unscoped()
 		}).
 		Preload("TypeIncome").
 		Order("created_at DESC").

@@ -10,35 +10,30 @@ func StockRoutes(app *fiber.App) {
 	stock := app.Group("/api/v1/stock", middleware.AuthMiddleware(), middleware.InjectionDependsTenant(), middleware.AuthPointSaleMiddleware())
 
 	stock.Get("/get_all", 
-	middleware.RolePermissionMiddleware("ST04"),
 	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.StockController.StockGetAll(c)
 	})
 
 	stock.Get("/get_by_name", 
-	middleware.RolePermissionMiddleware("ST04"),
 	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.StockController.StockGetByName(c)
 	})
 
 	stock.Get("/get_by_code", 
-	middleware.RolePermissionMiddleware("ST04"),
 	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.StockController.StockGetByCode(c)
 	})
 
 	stock.Get("/get_by_category/:category_id", 
-	middleware.RolePermissionMiddleware("ST04"),
 	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.StockController.StockGetByCategoryID(c)
 	})
 
 	stock.Get("/get/:id", 
-	middleware.RolePermissionMiddleware("ST04"),
 	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.StockController.StockGetByID(c)

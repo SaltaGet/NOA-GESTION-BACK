@@ -12,7 +12,7 @@ import (
 
 func (r *MovementStockRepository) MovementStockGetByID(id int64) (*models.MovementStock, error) {
 	var movement *models.MovementStock
-	if err := r.DB.Preload("Member").Preload("Product").Preload("Product.Category").First(&movement, id).Error; err != nil {
+	if err := r.DB.Preload("Member", func(db *gorm.DB) *gorm.DB { return db.Unscoped()}).Preload("Product").Preload("Product.Category").First(&movement, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, schemas.ErrorResponse(404, "movimiento no encontrado", err)
 		}
@@ -27,7 +27,7 @@ func (r *MovementStockRepository) MovementStockGetByDate(page, limit int, fromDa
 	var movements []*models.MovementStock
 	var total int64
 	if err := r.DB.
-		Preload("Member").
+		Preload("Member", func(db *gorm.DB) *gorm.DB { return db.Unscoped()}).
 		Preload("Product").
 		Offset(offset).
 		Limit(limit).

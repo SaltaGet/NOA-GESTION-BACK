@@ -17,7 +17,6 @@ func PermissionRoutes(app *fiber.App) {
 		})
 
 	permission.Get("/get_to_me",
-		middleware.RolePermissionMiddleware("PER04"),
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.PermissionController.PermissionGetToMe(c)

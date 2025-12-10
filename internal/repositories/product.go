@@ -139,7 +139,16 @@ func (r *ProductRepository) ProductGetAll(page, limit int) ([]*models.Product, i
 	return products, total, nil
 }
 
-func (r *ProductRepository) ProductCreate(productCreate *schemas.ProductCreate) (int64, error) {
+func (r *ProductRepository) ProductCreate(productCreate *schemas.ProductCreate, plan *schemas.PlanResponseDTO) (int64, error) {
+	var countTotal int64
+	if err := r.DB.Model(&models.Product{}).Count(&countTotal).Error; err != nil {
+		return 0, schemas.ErrorResponse(500, "error al contar productos", err)
+	}
+
+	if countTotal >= plan.AmountProduct {
+		return 0, schemas.ErrorResponse(400, "el plan actual no permite crear más productos", nil)
+	}
+
 	var product models.Product
 	var category models.Category
 	if err := r.DB.First(&category, productCreate.CategoryID).Error; err != nil {

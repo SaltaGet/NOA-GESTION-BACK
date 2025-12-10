@@ -10,7 +10,6 @@ func SupplierRoutes(app *fiber.App) {
 	supplier := app.Group("/api/v1/supplier", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
 	supplier.Get("/get_all",
-		middleware.RolePermissionMiddleware("SP04"),
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.SupplierController.SupplierGetAll(c)
@@ -38,7 +37,6 @@ func SupplierRoutes(app *fiber.App) {
 		})
 
 	supplier.Get("/:id",
-		middleware.RolePermissionMiddleware("SP04"),
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.SupplierController.SupplierGetByID(c)

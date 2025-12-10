@@ -31,8 +31,8 @@ func (r *CashRegisterRepository) CashRegisterExistOpen(pointSaleID int64) (bool,
 func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*schemas.CashRegisterFullResponse, error) {
 	var register models.CashRegister
 	if err := r.DB.
-		Preload("MemberOpen").
-		Preload("MemberClose").
+		Preload("MemberOpen", func(db *gorm.DB) *gorm.DB { return db.Unscoped()}).
+		Preload("MemberClose", func(db *gorm.DB) *gorm.DB { return db.Unscoped()}).
 		Where("id = ? AND point_sale_id = ?", id, pointSaleID).
 		First(&register).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -65,7 +65,7 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 	var incomeOtherModel []models.IncomeOther
 	if err := r.DB.Select("id", "total", "details", "method_income", "created_at", "type_income_id").
 		Preload("Member", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "first_name", "last_name", "username")
+			return db.Select("id", "first_name", "last_name", "username").Unscoped()
 		}).
 		Preload("TypeIncome", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "name")
@@ -97,7 +97,7 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 	var expensesOtherModel []models.ExpenseOther
 	if err := r.DB.Select("id", "total", "cash_register_id", "details", "pay_method", "created_at", "member_id").
 		Preload("Member", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "first_name", "last_name", "username")
+			return db.Select("id", "first_name", "last_name", "username").Unscoped()
 		}).
 		Preload("TypeExpense").
 		Where("cash_register_id = ? AND point_sale_id = ?", id, pointSaleID).
@@ -161,9 +161,9 @@ func (r *CashRegisterRepository) CashRegisterClose(pointSaleID int64, userID int
 		return schemas.ErrorResponse(404, "usuario no encontrado", err)
 	}
 
-	if member.Role.Name != "admin" && member.ID != register.MemberOpenID {
-		return schemas.ErrorResponse(403, "no tienes permiso para cerrar la caja, solo el creador o el admin", fmt.Errorf("no tienes permiso para cerrar la caja, solo el creador o el admin"))
-	}
+	// if member.Role.Name != "admin" && member.ID != register.MemberOpenID {
+	// 	return schemas.ErrorResponse(403, "no tienes permiso para cerrar la caja, solo el creador o el admin", fmt.Errorf("no tienes permiso para cerrar la caja, solo el creador o el admin"))
+	// }
 
 	now := time.Now().UTC()
 	register.CloseAmount = &amountOpen.CloseAmount
@@ -181,8 +181,8 @@ func (r *CashRegisterRepository) CashRegisterClose(pointSaleID int64, userID int
 func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID int64, fromDate, toDate time.Time) ([]*schemas.CashRegisterInformResponse, error) {
 	var registers []*models.CashRegister
 	if err := r.DB.
-		Preload("MemberOpen").
-		Preload("MemberClose").
+		Preload("MemberOpen", func(db *gorm.DB) *gorm.DB { return db.Unscoped()}).
+		Preload("MemberClose", func(db *gorm.DB) *gorm.DB { return db.Unscoped()}).
 		Where("point_sale_id = ? AND created_at >= ? AND created_at <= ?", pointSaleID, fromDate, toDate).
 		Order("created_at DESC").
 		Find(&registers).Error; err != nil {

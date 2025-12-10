@@ -243,3 +243,35 @@ func (m *MemberController) MemberUpdatePassword(c *fiber.Ctx) error {
 		Message: "Password del miembro editado con éxito",
 	})
 }
+
+// MemberDelete godoc
+//
+//	@Summary		MemberDelete
+//	@Description	Eliminar miembro por ID
+//	@Tags			Member
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			id	path		string				true	"Member ID"
+//	@Success		200	{object}	schemas.Response	"Members obtenidos con éxito"
+//	@Router			/api/v1/member/delete/{id} [delete]
+func (m *MemberController) MemberDelete(c *fiber.Ctx) error {
+	logging.INFO("Eliminar miembro")
+	id := c.Params("id")
+	idint, err := validators.IdValidate(id)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	err = m.MemberService.MemberDelete(idint)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	logging.INFO("Miembros obtenidos con éxito")
+	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
+		Message: "Miembros obtenidos con éxito",
+	})
+}

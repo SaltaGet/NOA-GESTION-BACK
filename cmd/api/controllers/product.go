@@ -233,7 +233,9 @@ func (p *ProductController) ProductCreate(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
-	productID, err := p.ProductService.ProductCreate(&productCreate)
+	plan := ctx.Locals("current_plan").(*schemas.PlanResponseDTO)
+
+	productID, err := p.ProductService.ProductCreate(&productCreate, plan)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}

@@ -17,7 +17,7 @@ func (i *IncomeSaleRepository) IncomeSaleGetByID(pointSaleID, id int64) (*schema
 
 	if err := i.DB.
 		Preload("Member", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "first_name", "last_name", "username")
+			return db.Select("id", "first_name", "last_name", "username").Unscoped()
 		}).
 		Preload("Client", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "first_name", "last_name", "company_name", "identifier", "email", "phone")
@@ -50,7 +50,7 @@ func (i *IncomeSaleRepository) IncomeSaleGetByDate(pointSaleID int64, fromDate, 
 	var incomeSaleModel []models.IncomeSale
 	if err := i.DB.
 		Preload("Member", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "first_name", "last_name", "username")
+			return db.Select("id", "first_name", "last_name", "username").Unscoped()
 		}).
 		Preload("Client", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "first_name", "last_name", "company_name")
@@ -242,7 +242,7 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 			Discount:       incomeSaleCreate.Discount,
 			Type:           incomeSaleCreate.Type,
 			Total:          totalIncome,
-			IsBudget:       incomeSaleCreate.IsBudget,
+			IsBudget:       *incomeSaleCreate.IsBudget,
 		}
 
 		if err := tx.Create(&income).Error; err != nil {

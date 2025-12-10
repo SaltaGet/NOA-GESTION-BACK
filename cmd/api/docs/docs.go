@@ -3349,6 +3349,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/member/delete/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Eliminar miembro por ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Member"
+                ],
+                "summary": "MemberDelete",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Member ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Members obtenidos con éxito",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/member/get/{id}": {
             "get": {
                 "security": [
@@ -7580,8 +7617,10 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "client_id",
+                "is_budget",
                 "items",
-                "pay"
+                "pay",
+                "total"
             ],
             "properties": {
                 "client_id": {
@@ -7589,10 +7628,12 @@ const docTemplate = `{
                 },
                 "discount": {
                     "type": "number",
-                    "minimum": 0
+                    "minimum": 0,
+                    "example": 10
                 },
                 "is_budget": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": false
                 },
                 "items": {
                     "type": "array",
@@ -7608,7 +7649,8 @@ const docTemplate = `{
                     }
                 },
                 "total": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 1000
                 },
                 "type_discount": {
                     "type": "string",
@@ -7826,21 +7868,25 @@ const docTemplate = `{
             ],
             "properties": {
                 "amount": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 10
                 },
                 "discount": {
                     "type": "number",
-                    "minimum": 0
+                    "minimum": 0,
+                    "example": 10
                 },
                 "product_id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "type_discount": {
                     "type": "string",
                     "enum": [
                         "amount",
                         "percent"
-                    ]
+                    ],
+                    "example": "amount percent"
                 }
             }
         },
@@ -8392,6 +8438,9 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "amount_product": {
+                    "type": "integer"
+                },
                 "description": {
                     "type": "string",
                     "example": "description"
@@ -8423,6 +8472,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "amount_point_sale": {
+                    "type": "integer"
+                },
+                "amount_product": {
                     "type": "integer"
                 },
                 "description": {
@@ -8458,6 +8510,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "amount_point_sale": {
+                    "type": "integer"
+                },
+                "amount_product": {
                     "type": "integer"
                 },
                 "description": {
@@ -8499,6 +8554,9 @@ const docTemplate = `{
                 "amount_point_sale": {
                     "type": "integer",
                     "example": 1
+                },
+                "amount_product": {
+                    "type": "integer"
                 },
                 "description": {
                     "type": "string",

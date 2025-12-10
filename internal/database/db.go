@@ -129,6 +129,7 @@ func ensurePlans(db *gorm.DB) error {
 		Features:        "emmmm, nada es básico, asi que no esperes mucho",
 		AmountPointSale: 1,
 		AmountMember:    5,
+		AmountProduct: 1000,
 	}
 
 	err := db.Create(&plan).Error

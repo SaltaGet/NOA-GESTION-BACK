@@ -10,7 +10,6 @@ func CashRegisterRoutes(app *fiber.App) {
 	cashRegister := app.Group("/api/v1/cash_register", middleware.AuthMiddleware(), middleware.InjectionDependsTenant(), middleware.AuthPointSaleMiddleware())
 
 	cashRegister.Get("/exist_open",
-		middleware.RolePermissionMiddleware("CR04"),
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.CashRegisterController.CashRegisterExistOpen(c)
@@ -31,7 +30,7 @@ func CashRegisterRoutes(app *fiber.App) {
 		})
 
 	cashRegister.Post("/close",
-		middleware.RolePermissionMiddleware("CR02"),
+		middleware.RolePermissionMiddleware("CR01"),
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.CashRegisterController.CashRegisterClose(c)

@@ -16,7 +16,7 @@ func (r *ClientRepository) ClientGetByID(id int64) (*schemas.ClientResponse, err
 	var client models.Client
 	if err := r.DB.
 		Preload("MemberCreate", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "first_name", "last_name", "username")
+			return db.Select("id", "first_name", "last_name", "username").Unscoped()
 		}).
 		Preload("Pay", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "income_sale_id", "client_id", "total", "method_pay", "created_at").Where("method_pay = ?", "credit")

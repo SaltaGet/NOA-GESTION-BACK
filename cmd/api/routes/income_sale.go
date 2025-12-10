@@ -38,7 +38,6 @@ func IncomeSaleRoutes(app *fiber.App){
 	})
 
 	incomeSale.Get("/:id", 
-	middleware.RolePermissionMiddleware("INS04"),
 	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.IncomeSaleController.IncomeSaleGetByID(c)

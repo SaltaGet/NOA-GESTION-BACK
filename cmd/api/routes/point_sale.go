@@ -10,7 +10,6 @@ func PointSaleRoutes(app *fiber.App) {
 	pointSale := app.Group("/api/v1/point_sale", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
 	pointSale.Get("/get_all",
-		middleware.RolePermissionMiddleware("PS04"),
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.PointSaleController.PointSaleGetAll(c)
@@ -45,7 +44,6 @@ func PointSaleRoutes(app *fiber.App) {
 		})
 
 	pointSale.Get("/get/:id",
-		middleware.RolePermissionMiddleware("PS04"),
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.PointSaleController.PointSaleGetByID(c)

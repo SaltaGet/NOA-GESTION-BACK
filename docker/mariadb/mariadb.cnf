@@ -6,8 +6,9 @@ expire_logs_days = 10
 max_binlog_size = 100M
 
 # 🔥 Necesario para backup incremental
-binlog_format = ROW
-binlog_row_image = FULL
+# binlog_format = MIXED
+binlog_format = STATEMENT
+# binlog_row_image = FULL
 
 # Character set
 character-set-server = utf8mb4

@@ -29,7 +29,7 @@ import (
 
 	// "github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/limiter"
+	// "github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/swagger"
 	"github.com/joho/godotenv"
 
@@ -126,6 +126,7 @@ func main() {
 
 	app.Use(middleware.BlockAccess())
 	app.Use(middleware.LoggingMiddleware)
+	app.Use(middleware.ReadOnlyMiddleware())
 	app.Use(middleware.InjectionDepends(dep))
 
 	// Rate limiting global (100 req/min por IP)
@@ -149,18 +150,18 @@ func main() {
 		MaxAge:           maxAge,
 	}))
 
-	app.Use(limiter.New(limiter.Config{
-		Max:        120,
-		Expiration: 1 * time.Minute,
-		KeyGenerator: func(c *fiber.Ctx) string {
-			return c.IP()
-		},
-		LimitReached: func(c *fiber.Ctx) error {
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
-				"error": "Demasiadas peticiones. Intentá más tarde.",
-			})
-		},
-	}))
+	// app.Use(limiter.New(limiter.Config{
+	// 	Max:        120,
+	// 	Expiration: 1 * time.Minute,
+	// 	KeyGenerator: func(c *fiber.Ctx) string {
+	// 		return c.IP()
+	// 	},
+	// 	LimitReached: func(c *fiber.Ctx) error {
+	// 		return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+	// 			"error": "Demasiadas peticiones. Intentá más tarde.",
+	// 		})
+	// 	},
+	// }))
 
 	app.Get("/api/swagger/*", swagger.HandlerDefault)
 	app.Get("/api/health", healthCheck)
@@ -182,6 +183,10 @@ func main() {
 					logging.ERROR("❌ [CRON] error leyendo config: %s", err.Error())
 					return
 				}
+				// if err := jobs.ExampleRestore(cfg, "string_tenant2"); err != nil {
+				// 	// log.Fatal(err)
+				// 	logging.ERROR("❌ [CRON] error restaurando DB: %s", err.Error())
+				// }
 				fmt.Println("⏰ Iniciando backup:", cfg.Databases)
 				jobs.RunBackup(cfg)
 			})

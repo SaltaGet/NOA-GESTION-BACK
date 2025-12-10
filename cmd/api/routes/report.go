@@ -17,21 +17,21 @@ func ReportRoutes(app *fiber.App) {
 		})
 
 	report.Post("/get_profitable_products",
-		middleware.RolePermissionMiddleware("RP04"),
+		middleware.RolePermissionMiddleware("RP01"),
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.ReportController.ReportProfitableProducts(c)
 		})
 
 	report.Post("/get_by_date",
-		middleware.RolePermissionMiddleware("RP04"),
+		middleware.RolePermissionMiddleware("RP01"),
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.ReportController.ReportMovementByDate(c)
 		})
 
 	report.Post("/get_by_date_point_sale",
-		middleware.RolePermissionMiddleware("RP04"),
+		middleware.RolePermissionMiddleware("RP01"),
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.ReportController.ReportMovementByDatePointSale(c)

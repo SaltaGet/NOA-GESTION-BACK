@@ -202,8 +202,8 @@ func (p *ProductService) ProductGetAll(page, limit int) ([]*schemas.ProductFullR
 	return productsResponse, total, nil
 }
 
-func (p *ProductService) ProductCreate(productCreate *schemas.ProductCreate) (int64, error) {
-	return p.ProductRepository.ProductCreate(productCreate)
+func (p *ProductService) ProductCreate(productCreate *schemas.ProductCreate, plan *schemas.PlanResponseDTO) (int64, error) {
+	return p.ProductRepository.ProductCreate(productCreate, plan)
 }
 
 func (p *ProductService) ProductUpdate(productUpdate *schemas.ProductUpdate) error {

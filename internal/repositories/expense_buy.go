@@ -17,7 +17,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyGetByID(id int64) (*schemas.ExpenseBuyR
 
 	if err := r.DB.
 		Preload("Member", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "first_name", "last_name", "username")
+			return db.Select("id", "first_name", "last_name", "username").Unscoped()
 		}).
 		Preload("ExpenseBuyItem", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "expense_buy_id", "product_id", "amount", "price", "discount", "type_discount", "subtotal", "total", "created_at")

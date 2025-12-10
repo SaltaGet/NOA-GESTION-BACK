@@ -12,17 +12,17 @@ type IncomeSaleCreate struct {
 	Items    []ItemIncomeSaleCreate `json:"items" validate:"required,dive"`
 	Pay      []PayCreate            `json:"pay" validate:"required,max=3,dive"`
 	ClientID int64                  `json:"client_id" validate:"required"`
-	Discount float64                `json:"discount" validate:"min=0"`
+	Discount float64                `json:"discount" validate:"min=0" example:"10"`
 	Type     string                 `json:"type_discount" validate:"oneof=amount percent" example:"amount percent"`
-	Total    float64                `json:"total"`
-	IsBudget bool                   `json:"is_budget"`
+	Total    float64                `json:"total" validate:"required" example:"1000"`
+	IsBudget *bool                  `json:"is_budget" validate:"required" example:"false"`
 }
 
 type ItemIncomeSaleCreate struct {
-	ProductID    int64   `json:"product_id" validate:"required"`
-	Amount       float64 `json:"amount" validate:"required"`
-	Discount     float64 `json:"discount" validate:"min=0"`
-	TypeDiscount string  `json:"type_discount" validate:"oneof=amount percent"`
+	ProductID    int64   `json:"product_id" validate:"required" example:"1"`
+	Amount       float64 `json:"amount" validate:"required" example:"10"`
+	Discount     float64 `json:"discount" validate:"min=0" example:"10"`
+	TypeDiscount string  `json:"type_discount" validate:"oneof=amount percent" example:"amount percent"`
 }
 
 type PayCreate struct {
@@ -42,7 +42,7 @@ func (i *IncomeSaleCreate) Validate() error {
 			}
 		}
 	}
-	
+
 	validate := validator.New()
 
 	if err := validate.Struct(i); err != nil {

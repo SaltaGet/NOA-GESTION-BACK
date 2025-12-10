@@ -23,7 +23,7 @@ services:
       - monitoring
 
   api:
-    image: danielmchachagua/noagestionback:0.1.4
+    image: danielmchachagua/noagestionback:0.1.50
     container_name: noa-gestion
     ports:
       - "3000:3000"
