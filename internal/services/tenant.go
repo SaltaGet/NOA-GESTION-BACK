@@ -37,26 +37,26 @@ func (t *TenantService) TenantGetConections() ([]*models.Tenant, error) {
 	return conections, nil
 }
 
-func (t *TenantService) TenantCreateByUserID(tenantCreate *schemas.TenantCreate, userID int64) (int64, error) {
-	id, err := t.TenantRepository.TenantCreateByUserID(tenantCreate, userID)
+func (t *TenantService) TenantCreateByUserID(adminID int64, tenantCreate *schemas.TenantCreate, userID int64) (int64, error) {
+	id, err := t.TenantRepository.TenantCreateByUserID(adminID, tenantCreate, userID)
 	if err != nil {
 		return 0, err
 	}
 	return id, nil
 }
 
-func (t *TenantService) TenantUserCreate(tenantUserCreate *schemas.TenantUserCreate) (int64, error) {
-	id, err := t.TenantRepository.TenantUserCreate(tenantUserCreate)
+func (t *TenantService) TenantUserCreate(adminID int64, tenantUserCreate *schemas.TenantUserCreate) (int64, error) {
+	id, err := t.TenantRepository.TenantUserCreate(adminID, tenantUserCreate)
 	if err != nil {
 		return 0, err
 	}
 	return id, nil
 }
 
-func (t *TenantService) TenantUpdate(userID int64, tenant *schemas.TenantUpdate) error {
-	return t.TenantRepository.TenantUpdate(userID, tenant)
+func (t *TenantService) TenantUpdate(adminID int64, userID int64, tenant *schemas.TenantUpdate) error {
+	return t.TenantRepository.TenantUpdate(adminID, userID, tenant)
 }
 
-func (t *TenantService) TenantUpdateExpiration(tenantUpdateExpiration *schemas.TenantUpdateExpiration) error {
-	return t.TenantRepository.TenantUpdateExpiration(tenantUpdateExpiration)
+func (t *TenantService) TenantUpdateExpiration(adminID int64, tenantUpdateExpiration *schemas.TenantUpdateExpiration) error {
+	return t.TenantRepository.TenantUpdateExpiration(adminID, tenantUpdateExpiration)
 }

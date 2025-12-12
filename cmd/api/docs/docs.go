@@ -3871,7 +3871,7 @@ const docTemplate = `{
                 "summary": "Permissions GetAll",
                 "responses": {
                     "200": {
-                        "description": "Members obtenidos con éxito",
+                        "description": "Permisos obtenidos con éxito",
                         "schema": {
                             "allOf": [
                                 {
@@ -3914,7 +3914,7 @@ const docTemplate = `{
                 "summary": "Permissions GetAlltoME",
                 "responses": {
                     "200": {
-                        "description": "Members obtenidos con éxito",
+                        "description": "Permisos obtenidos con éxito",
                         "schema": {
                             "allOf": [
                                 {
@@ -3932,6 +3932,34 @@ const docTemplate = `{
                                     }
                                 }
                             ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/permission/update_all": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "update all",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Permission"
+                ],
+                "summary": "PermissionUpdateAll",
+                "responses": {
+                    "200": {
+                        "description": "Permisos obtenidos con éxito",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
                         }
                     }
                 }

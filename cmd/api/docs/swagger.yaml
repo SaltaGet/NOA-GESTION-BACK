@@ -4186,7 +4186,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Members obtenidos con éxito
+          description: Permisos obtenidos con éxito
           schema:
             allOf:
             - $ref: '#/definitions/schemas.Response'
@@ -4210,7 +4210,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Members obtenidos con éxito
+          description: Permisos obtenidos con éxito
           schema:
             allOf:
             - $ref: '#/definitions/schemas.Response'
@@ -4223,6 +4223,23 @@ paths:
       security:
       - CookieAuth: []
       summary: Permissions GetAlltoME
+      tags:
+      - Permission
+  /api/v1/permission/update_all:
+    put:
+      consumes:
+      - application/json
+      description: update all
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Permisos obtenidos con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: PermissionUpdateAll
       tags:
       - Permission
   /api/v1/plan/create:

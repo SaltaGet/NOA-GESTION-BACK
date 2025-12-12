@@ -30,7 +30,6 @@ func RoleRoutes(app *fiber.App) {
 	})
 	
 	role.Get("/get/:id", 
-	middleware.RolePermissionMiddleware("RL04"),
 	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 		return tenant.Controllers.RoleController.RoleGetByID(c)

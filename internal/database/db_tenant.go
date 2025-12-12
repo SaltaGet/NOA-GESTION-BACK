@@ -78,7 +78,7 @@ func PrepareDB(uri string, memberAdmin models.Member) error {
 		return fmt.Errorf("error al crear member admin: %w", err)
 	}
 
-	if err := db.Create(&permissions).Error; err != nil {
+	if err := db.Create(&Permissions).Error; err != nil {
 		handleDBCreationError(uri)
 		return fmt.Errorf("error al migrar permisos: %w", err)
 	}
@@ -254,7 +254,7 @@ func UpdateModels(uri string) error {
 	return nil
 }
 
-var permissions []models.Permission = []models.Permission{
+var Permissions []models.Permission = []models.Permission{
 	//CASH REGISTER
 	{Code: "CR01", Name: "apertura y cierre de caja", Details: "Apertura y cierre de caja del punto de venta", Group: "caja", Environment: "point_sale"},
 	{Code: "CR04", Name: "informes", Details: "Obtener infomes de caja", Group: "caja", Environment: "point_sale"},
@@ -335,17 +335,18 @@ var permissions []models.Permission = []models.Permission{
 	// {Code: "PR04", Name: "obtener uno en específico", Details: "Obtener un producto en específico", Group: "producto", Environment: "dashboard"},
 
 	//REPORT
-	{Code: "RP01", Name: "obtener excel", Details: "Obtener reporte en excel", Group: "report", Environment: "dashboard"},
-	{Code: "RP02", Name: "obtener rentabilidad de productos", Details: "Obtener rentabilidad de productos", Group: "report", Environment: "dashboard"},
-	{Code: "RP03", Name: "obtener por fecha", Details: "Obtener reporte por rango de fechas", Group: "report", Environment: "dashboard"},
+	{Code: "RP01", Name: "obtener reportes", Details: "Obtener reporte de productos y balances", Group: "report", Environment: "dashboard"},
+	// {Code: "RP02", Name: "obtener rentabilidad de productos", Details: "Obtener rentabilidad de productos", Group: "report", Environment: "dashboard"},
+	// {Code: "RP03", Name: "obtener por fecha", Details: "Obtener reporte por rango de fechas", Group: "report", Environment: "dashboard"},
 
 	//ROLE
 	{Code: "RL01", Name: "crear", Details: "Crear un nuevo rol", Group: "rol", Environment: "dashboard"},
-	{Code: "RL02", Name: "obtener todos", Details: "Obtener todos los roles", Group: "rol", Environment: "dashboard"},
+	{Code: "RL02", Name: "editar", Details: "Editar rol existente", Group: "rol", Environment: "dashboard"},
+	{Code: "RL04", Name: "obtener todos", Details: "Obtener todos los roles", Group: "rol", Environment: "dashboard"},
 
-	//STOCK POINT SALE
-	{Code: "ST01", Name: "crear", Details: "Crear nuevo stock de producto", Group: "stock", Environment: "point_sale"},
-	{Code: "ST04", Name: "obtener stock", Details: "Obtener stock de un producto en punto de venta", Group: "stock", Environment: "point_sale"},
+	// //STOCK POINT SALE
+	// {Code: "ST01", Name: "crear", Details: "Crear nuevo stock de producto", Group: "stock", Environment: "point_sale"},
+	// {Code: "ST04", Name: "obtener stock", Details: "Obtener stock de un producto en punto de venta", Group: "stock", Environment: "point_sale"},
 
 	//SUPPLIER
 	{Code: "SP01", Name: "crear", Details: "Crear un nuevo proveedor", Group: "proveedor", Environment: "dashboard"},

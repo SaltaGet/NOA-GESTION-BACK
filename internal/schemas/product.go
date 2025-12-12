@@ -136,3 +136,9 @@ func (p *ListPriceUpdate) Validate() error {
 	errorMessage := field + " " + tag + " " + params
 	return ErrorResponse(422, fmt.Sprintf("error al validar campo(s): %s", errorMessage), err)
 }
+
+type ProductStockWithScore struct {
+    Product *ProductStockFullResponse
+    Score   float64
+    Length  int
+}

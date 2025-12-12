@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
@@ -85,7 +86,9 @@ func (t *PlanController) PlanCreate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	id, err := t.PlanService.PlanCreate(&planCreate)
+	admin :=c.Locals("user_admin").(*models.Admin)
+
+	id, err := t.PlanService.PlanCreate(admin.ID, &planCreate)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -122,7 +125,8 @@ func (t *PlanController) PlanUpdate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	err := t.PlanService.PlanUpdate(&planUpdate)
+	admin :=c.Locals("user_admin").(*models.Admin)
+	err := t.PlanService.PlanUpdate(admin.ID, &planUpdate)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}

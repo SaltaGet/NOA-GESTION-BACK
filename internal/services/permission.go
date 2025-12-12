@@ -15,3 +15,8 @@ func (p *PermissionService) PermissionGetAll() (*[]schemas.PermissionResponse, e
 func (p *PermissionService) PermissionGetToMe(roleID int64) (*[]schemas.PermissionResponse, error) {
 	return p.PermissionRepository.PermissionGetToMe(roleID)
 }
+
+func (p *PermissionService) PermissionUpdateAll() (error) {
+	return p.PermissionRepository.PermissionUpdateAll()
+}
+

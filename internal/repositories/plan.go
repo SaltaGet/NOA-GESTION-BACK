@@ -3,19 +3,20 @@ package repositories
 import (
 	"errors"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
 )
 
-func (r *MainRepository) PlanCreate(planCreate *schemas.PlanCreate) (int64, error) {
+func (r *MainRepository) PlanCreate(adminID int64, planCreate *schemas.PlanCreate) (int64, error) {
 	plan := &models.Plan{
-		Name:        planCreate.Name,
-		PriceMounthly: planCreate.PriceMounthly,
-		PriceYearly: planCreate.PriceYearly,
-		Description: planCreate.Description,
-		Features:    planCreate.Features,
+		Name:            planCreate.Name,
+		PriceMounthly:   planCreate.PriceMounthly,
+		PriceYearly:     planCreate.PriceYearly,
+		Description:     planCreate.Description,
+		Features:        planCreate.Features,
 		AmountPointSale: planCreate.AmountPointSale,
 		AmountMember:    planCreate.AmountMember,
 	}
@@ -27,17 +28,25 @@ func (r *MainRepository) PlanCreate(planCreate *schemas.PlanCreate) (int64, erro
 		return 0, schemas.ErrorResponse(500, "Error al crear el plan", err)
 	}
 
+	go database.SaveAuditAdminAsync(r.DB, models.AuditLogAdmin{
+		AdminID: adminID,
+		Method:  "create",
+		Path:    "plan",
+	}, nil, plan)
+
 	return plan.ID, nil
 }
 
-func (r *MainRepository) PlanUpdate(planUpdate *schemas.PlanUpdate) (error) {
-	var plan models.Plan
+func (r *MainRepository) PlanUpdate(adminID int64, planUpdate *schemas.PlanUpdate) error {
+	var plan, oldPlan models.Plan
 	if err := r.DB.First(&plan, planUpdate.ID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return schemas.ErrorResponse(404, "El plan no encopntrado", err)
-		} 
+		}
 		return schemas.ErrorResponse(500, "Error al buscar el plan", err)
 	}
+
+	oldPlan = plan
 
 	plan.Name = planUpdate.Name
 	plan.PriceMounthly = planUpdate.PriceMounthly
@@ -53,6 +62,12 @@ func (r *MainRepository) PlanUpdate(planUpdate *schemas.PlanUpdate) (error) {
 		}
 		return schemas.ErrorResponse(500, "Error al actualizar el plan", err)
 	}
+
+	go database.SaveAuditAdminAsync(r.DB, models.AuditLogAdmin{
+		AdminID: adminID,
+		Method:  "update",
+		Path:    "plan",
+	}, oldPlan, plan)
 
 	return nil
 }

@@ -56,6 +56,10 @@ type RoleUpdate struct {
 }
 
 func (r *RoleUpdate) Validate() error {
+	if r.ID == 1 {
+		return ErrorResponse(422, "No se puede actualizar el rol admin", fmt.Errorf("no se puede actualizar el rol admin"))
+	}
+	
 	validate := validator.New()
 	err := validate.Struct(r)
 	if err == nil {

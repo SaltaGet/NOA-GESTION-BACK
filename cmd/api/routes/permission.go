@@ -10,7 +10,6 @@ func PermissionRoutes(app *fiber.App) {
 	permission := app.Group("/api/v1/permission", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
 	permission.Get("/get_all",
-		middleware.RolePermissionMiddleware("PER04"),
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.PermissionController.PermissionGetAll(c)
@@ -21,4 +20,10 @@ func PermissionRoutes(app *fiber.App) {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.PermissionController.PermissionGetToMe(c)
 		})
-}
+
+		permission.Put("/update_all",
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.PermissionController.PermissionUpdateAll(c)
+		})
+	}

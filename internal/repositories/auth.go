@@ -112,13 +112,26 @@ func (r *MainRepository) AuthMemberGetByID(id int64, connection string, tenantID
 	}
 
 	var member models.Member
-	if err := db.Where("id = ?", id).Preload("Role").Preload("Role.Permissions").First(&member).Error; err != nil {
+	if err := db.Preload("Role").Where("id = ?", id).First(&member).Error; err != nil {
 		return nil, nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
 	}
 
 	if !member.IsActive {
 		return nil, nil, schemas.ErrorResponse(403, "Miembro inactivo", fmt.Errorf("miembro inactivo"))
 	}
+	
+	var permissions []models.Permission
+	if member.Role.Name == "admin" {
+		if err := db.Find(&permissions).Error; err != nil {
+			return nil, nil, schemas.ErrorResponse(500, "Error al obtener los permisos", err)
+		}
+	} else {
+		if err := db.Model(&member.Role).Association("Permissions").Find(&permissions); err != nil {
+			return nil, nil, schemas.ErrorResponse(500, "Error al obtener los permisos", err)
+		}
+	}
+
+	member.Role.Permissions = permissions
 
 	perm := make([]string, len(member.Role.Permissions))
 	for i, p := range member.Role.Permissions {

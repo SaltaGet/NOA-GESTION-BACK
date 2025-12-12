@@ -67,6 +67,7 @@ require (
 )
 
 require (
+	github.com/agnivade/levenshtein v1.2.1
 	github.com/alexandrevicenzi/go-sse v1.6.0
 	github.com/alexedwards/argon2id v1.0.0
 	github.com/andybalholm/brotli v1.1.0 // indirect

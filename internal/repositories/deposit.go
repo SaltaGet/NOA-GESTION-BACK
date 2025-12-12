@@ -3,6 +3,8 @@ package repositories
 import (
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
@@ -33,12 +35,71 @@ func (r *DepositRepository) DepositGetByCode(code string) (*models.Product, erro
 }
 
 func (r *DepositRepository) DepositGetByName(name string) ([]*models.Product, error) {
-	var products []*models.Product
-	if err := r.DB.Preload("Category").Preload("StockDeposit").Where("name LIKE ?", "%"+name+"%").Find(&products).Error; err != nil {
+	var allProducts []*models.Product
+
+	if err := r.DB.
+		Preload("Category", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name")
+		}).
+		Preload("StockDeposit").
+		Where("name LIKE ?", "%"+name+"%").
+		Find(&allProducts).Error; err != nil {
 		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
 	}
+
+	if strings.TrimSpace(name) == "" {
+		if len(allProducts) > 10 {
+			return allProducts[:10], nil
+		}
+		return allProducts, nil
+	}
+
+	scored := make([]models.ProductWithScore, 0)
+	lowerSearch := strings.ToLower(strings.TrimSpace(name))
+
+	for _, product := range allProducts {
+		lowerName := strings.ToLower(product.Name)
+		score := models.CalculateRelevance(lowerSearch, lowerName)
+
+		if score > 0 {
+			scored = append(scored, models.ProductWithScore{
+				Product: product,
+				Score:   score,
+				Length:  len(product.Name),
+			})
+		}
+	}
+
+	// Ordenar según los criterios especificados
+	sort.Slice(scored, func(i, j int) bool {
+		// Si los scores son diferentes, ordenar por score (descendente)
+		if scored[i].Score != scored[j].Score {
+			return scored[i].Score > scored[j].Score
+		}
+		// Si los scores son iguales, ordenar por longitud (ascendente - más corto primero)
+		return scored[i].Length < scored[j].Length
+	})
+
+	// Limitar a 10 resultados
+	limit := 10
+	products := make([]*models.Product, 0, limit)
+	for i, ps := range scored {
+		if i >= limit {
+			break
+		}
+		products = append(products, ps.Product)
+	}
+
 	return products, nil
 }
+
+// func (r *DepositRepository) DepositGetByName(name string) ([]*models.Product, error) {
+// 	var products []*models.Product
+// 	if err := r.DB.Preload("Category").Preload("StockDeposit").Where("name LIKE ?", "%"+name+"%").Find(&products).Error; err != nil {
+// 		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
+// 	}
+// 	return products, nil
+// }
 
 func (r *DepositRepository) DepositGetAll(page, limit int) ([]*models.Product, int64, error) {
 	var products []*models.Product
