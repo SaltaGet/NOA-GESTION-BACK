@@ -17,10 +17,11 @@ type Tenant struct {
 	IsActive    bool           `gorm:"not null;default:true" json:"is_active"`
 	PlanID      int64          `gorm:"not null" json:"plan_id"`
 	Connection  string         `gorm:"not null" json:"connection"`
-	Expiration  *time.Time      `gorm:"" json:"expiration"`
+	Expiration  *time.Time     `gorm:"" json:"expiration"`
 	CreatedAt   time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+	PayTenant   []PayTenant    `gorm:"foreignKey:TenantID" json:"pay_tenants"`
 	UserTenants []UserTenant   `gorm:"foreignKey:TenantID" json:"user_tenants"`
 	Plan        Plan           `gorm:"foreignKey:PlanID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"plan"`
 }

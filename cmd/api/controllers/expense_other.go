@@ -3,10 +3,10 @@ package controllers
 import (
 	"strconv"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
+	"github.com/rs/zerolog/log"
 )
 
 // ExpenseOtherGetByID godoc
@@ -21,7 +21,6 @@ import (
 //	@Success		200	{object}	schemas.Response{body=schemas.ExpenseOtherResponse}	"ExpenseOther obtained successfully"
 //	@Router			/api/v1/expense_other/get/{id} [get]
 func (e *ExpenseOtherController) ExpenseOtherGetByID(c *fiber.Ctx) error {
-	logging.INFO("Obtener un egreso por ID")
 	id := c.Params("id")
 	idint, err := validators.IdValidate(id)
 	if err != nil {
@@ -33,7 +32,6 @@ func (e *ExpenseOtherController) ExpenseOtherGetByID(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Egreso obtenido con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    expenseOther,
@@ -55,7 +53,6 @@ func (e *ExpenseOtherController) ExpenseOtherGetByID(c *fiber.Ctx) error {
 //	@Success		200			{object}	schemas.Response{body=[]schemas.ExpenseOtherResponseDTO}	"List of expenseOthers"
 //	@Router			/api/v1/expense_other/get_by_date [get]
 func (e *ExpenseOtherController) ExpenseOtherGetByDate(c *fiber.Ctx) error {
-	logging.INFO("Obtener todos los egresos")
 	pageParam := c.Query("page", "1")
 	limitParam := c.Query("limit", "20")
 
@@ -74,7 +71,7 @@ func (e *ExpenseOtherController) ExpenseOtherGetByDate(c *fiber.Ctx) error {
 	dateTime.FromDate = fromDate
 	dateTime.ToDate = toDate
 
-	dateFrom, dateTo, err :=dateTime.GetParsedDates()
+	dateFrom, dateTo, err := dateTime.GetParsedDates()
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -86,7 +83,6 @@ func (e *ExpenseOtherController) ExpenseOtherGetByDate(c *fiber.Ctx) error {
 
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
-	logging.INFO("Egresos obtenidos con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    map[string]any{"data": expenseOthers, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
@@ -106,10 +102,9 @@ func (e *ExpenseOtherController) ExpenseOtherGetByDate(c *fiber.Ctx) error {
 //	@Success		200					{object}	schemas.Response"ExpenseOther created successfully"
 //	@Router			/api/v1/expense_other/create [post]
 func (e *ExpenseOtherController) ExpenseOtherCreate(c *fiber.Ctx) error {
-	logging.INFO("Crear un egreso")
 	var expenseOtherCreate schemas.ExpenseOtherCreate
 	if err := c.BodyParser(&expenseOtherCreate); err != nil {
-		logging.ERROR("Error: %s", err.Error())
+		log.Err(err).Msg("Error al parsear el body")
 		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
@@ -127,7 +122,6 @@ func (e *ExpenseOtherController) ExpenseOtherCreate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Egreso creado con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    id,
@@ -147,10 +141,9 @@ func (e *ExpenseOtherController) ExpenseOtherCreate(c *fiber.Ctx) error {
 //	@Success		200					{object}	schemas.Response			"ExpenseOther updated successfully"
 //	@Router			/api/v1/expense_other/update [put]
 func (e *ExpenseOtherController) ExpenseOtherUpdate(c *fiber.Ctx) error {
-	logging.INFO("Actualizar un egreso")
 	var expenseOtherUpdate schemas.ExpenseOtherUpdate
 	if err := c.BodyParser(&expenseOtherUpdate); err != nil {
-		logging.ERROR("Error: %s", err.Error())
+		log.Err(err).Msg("Error al parsear el body")
 		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
@@ -168,7 +161,6 @@ func (e *ExpenseOtherController) ExpenseOtherUpdate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Egreso editado con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -188,19 +180,18 @@ func (e *ExpenseOtherController) ExpenseOtherUpdate(c *fiber.Ctx) error {
 //	@Success		200	{object}	schemas.Response	"ExpenseOther deleted successfully"
 //	@Router			/api/v1/expense_other/delete/{id} [delete]
 func (e *ExpenseOtherController) ExpenseOtherDelete(c *fiber.Ctx) error {
-	logging.INFO("Eliminar un egreso")
 	id := c.Params("id")
 	idint, err := validators.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	err = e.ExpenseOtherService.ExpenseOtherDelete(idint, nil)
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	err = e.ExpenseOtherService.ExpenseOtherDelete(member.ID, idint, nil)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Egreso eliminado con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -209,7 +200,6 @@ func (e *ExpenseOtherController) ExpenseOtherDelete(c *fiber.Ctx) error {
 }
 
 // POINTSALE
-
 
 // ExpenseOtherGetByIDPointSale godoc
 //
@@ -223,21 +213,19 @@ func (e *ExpenseOtherController) ExpenseOtherDelete(c *fiber.Ctx) error {
 //	@Success		200	{object}	schemas.Response{body=schemas.ExpenseOtherResponse}	"ExpenseOther obtained successfully"
 //	@Router			/api/v1/expense_other/get_point_sale/{id} [get]
 func (e *ExpenseOtherController) ExpenseOtherGetByIDPointSale(c *fiber.Ctx) error {
-	logging.INFO("Obtener un egreso por ID")
 	id := c.Params("id")
 	idint, err := validators.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	pointID :=c.Locals("point_sale_id").(int64)
+	pointID := c.Locals("point_sale_id").(int64)
 
 	expenseOther, err := e.ExpenseOtherService.ExpenseOtherGetByID(idint, &pointID)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Egreso obtenido con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    expenseOther,
@@ -259,7 +247,6 @@ func (e *ExpenseOtherController) ExpenseOtherGetByIDPointSale(c *fiber.Ctx) erro
 //	@Success		200			{object}	schemas.Response{body=[]schemas.ExpenseOtherResponseDTO}	"List of expenseOthers"
 //	@Router			/api/v1/expense_other/get_by_date_point_sale [get]
 func (e *ExpenseOtherController) ExpenseOtherGetByDatePointSale(c *fiber.Ctx) error {
-	logging.INFO("Obtener todos los egresos")
 	pageParam := c.Query("page", "1")
 	limitParam := c.Query("limit", "20")
 
@@ -278,12 +265,12 @@ func (e *ExpenseOtherController) ExpenseOtherGetByDatePointSale(c *fiber.Ctx) er
 	dateTime.FromDate = fromDate
 	dateTime.ToDate = toDate
 
-	dateFrom, dateTo, err :=dateTime.GetParsedDates()
+	dateFrom, dateTo, err := dateTime.GetParsedDates()
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	pointID :=c.Locals("point_sale_id").(int64)
+	pointID := c.Locals("point_sale_id").(int64)
 
 	expenseOthers, total, err := e.ExpenseOtherService.ExpenseOtherGetByDate(&pointID, dateFrom, dateTo, page, limit)
 	if err != nil {
@@ -292,7 +279,6 @@ func (e *ExpenseOtherController) ExpenseOtherGetByDatePointSale(c *fiber.Ctx) er
 
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
-	logging.INFO("Egresos obtenidos con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    map[string]any{"data": expenseOthers, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
@@ -312,10 +298,9 @@ func (e *ExpenseOtherController) ExpenseOtherGetByDatePointSale(c *fiber.Ctx) er
 //	@Success		200					{object}	schemas.Response"ExpenseOther created successfully"
 //	@Router			/api/v1/expense_other/create_point_sale [post]
 func (e *ExpenseOtherController) ExpenseOtherCreatePointSale(c *fiber.Ctx) error {
-	logging.INFO("Crear un egreso")
 	var expenseOtherCreate schemas.ExpenseOtherCreate
 	if err := c.BodyParser(&expenseOtherCreate); err != nil {
-		logging.ERROR("Error: %s", err.Error())
+		log.Err(err).Msg("Error al parsear el body")
 		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
@@ -327,14 +312,13 @@ func (e *ExpenseOtherController) ExpenseOtherCreatePointSale(c *fiber.Ctx) error
 	}
 
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
-	pointID :=c.Locals("point_sale_id").(int64)
+	pointID := c.Locals("point_sale_id").(int64)
 
 	id, err := e.ExpenseOtherService.ExpenseOtherCreate(user.ID, &pointID, &expenseOtherCreate)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Egreso creado con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    id,
@@ -354,10 +338,9 @@ func (e *ExpenseOtherController) ExpenseOtherCreatePointSale(c *fiber.Ctx) error
 //	@Success		200					{object}	schemas.Response			"ExpenseOther updated successfully"
 //	@Router			/api/v1/expense_other/update_point_sale [put]
 func (e *ExpenseOtherController) ExpenseOtherUpdatePointSale(c *fiber.Ctx) error {
-	logging.INFO("Actualizar un egreso")
 	var expenseOtherUpdate schemas.ExpenseOtherUpdate
 	if err := c.BodyParser(&expenseOtherUpdate); err != nil {
-		logging.ERROR("Error: %s", err.Error())
+		log.Err(err).Msg("Error al parsear el body")
 		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
@@ -369,14 +352,13 @@ func (e *ExpenseOtherController) ExpenseOtherUpdatePointSale(c *fiber.Ctx) error
 	}
 
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
-	pointID :=c.Locals("point_sale_id").(int64)
+	pointID := c.Locals("point_sale_id").(int64)
 
 	err := e.ExpenseOtherService.ExpenseOtherUpdate(user.ID, &pointID, &expenseOtherUpdate)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Egreso editado con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -396,21 +378,19 @@ func (e *ExpenseOtherController) ExpenseOtherUpdatePointSale(c *fiber.Ctx) error
 //	@Success		200	{object}	schemas.Response	"ExpenseOther deleted successfully"
 //	@Router			/api/v1/expense_other/delete_point_sale/{id} [delete]
 func (e *ExpenseOtherController) ExpenseOtherDeletePointSale(c *fiber.Ctx) error {
-	logging.INFO("Eliminar un egreso")
 	id := c.Params("id")
 	idint, err := validators.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	pointID :=c.Locals("point_sale_id").(int64)
-
-	err = e.ExpenseOtherService.ExpenseOtherDelete(idint, &pointID)
+	pointID := c.Locals("point_sale_id").(int64)
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	err = e.ExpenseOtherService.ExpenseOtherDelete(member.ID, idint, &pointID)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Egreso eliminado con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,

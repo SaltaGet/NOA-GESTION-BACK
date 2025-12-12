@@ -10,6 +10,7 @@ services:
       - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
       - MYSQL_DATABASE=${DB_USER}
     volumes:
+      # - ./databases:/var/lib/mysql
       - db-data:/var/lib/mysql
       - ./docker/mariadb/mariadb.cnf:/etc/mysql/mariadb.conf.d/99-custom.cnf:ro
     healthcheck:

@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/gofiber/fiber/v2"
+	"github.com/rs/zerolog/log"
 )
 
 //	Login godoc
@@ -20,7 +20,6 @@ import (
 //	@Success		200			{object}	schemas.Response
 //	@Router			/api/v1/auth/login [post]
 func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
-	logging.INFO("Login")
 	var loginRequest schemas.AuthLogin
 	if err := c.BodyParser(&loginRequest); err != nil {
 		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
@@ -45,7 +44,6 @@ func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
 
 	c.Cookie(cookie)
 
-	logging.INFO("Login exitoso")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -67,10 +65,9 @@ func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
 //	@Success		200				{object}	schemas.Response
 //	@Router			/api/v1/auth/login_point_sale/{point_sale_id} [post]
 func (a *AuthController) AuthPointSale(c *fiber.Ctx) error {
-	logging.INFO("Login tenant")
 	id := c.Params("point_sale_id")
 	if id == "" {
-		logging.ERROR("ID is required")
+		log.Err(nil).Msg("ID is required")
 		return c.Status(400).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
@@ -80,7 +77,6 @@ func (a *AuthController) AuthPointSale(c *fiber.Ctx) error {
 
 	pointSaleID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		logging.ERROR("tenant_id must be a number")
 		return c.Status(400).JSON(schemas.ErrorResponse(400, "tenant_id debe ser un número", err))
 	}
 
@@ -102,7 +98,6 @@ func (a *AuthController) AuthPointSale(c *fiber.Ctx) error {
 
 	c.Cookie(cookie)
 
-	logging.INFO("Login tenant exitoso")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -123,13 +118,10 @@ func (a *AuthController) AuthPointSale(c *fiber.Ctx) error {
 //	@Success		200	{object}	schemas.Response
 //	@Router			/api/v1/auth/logout_point_sale [post]
 func (a *AuthController) LogoutPointSale(c *fiber.Ctx) error {
-	logging.INFO("Logout tenant")
 	member := c.Locals("user").(*schemas.AuthenticatedUser)
-
 
 	token, err := a.AuthService.LogoutPointSale(member)
 	if err != nil {
-		logging.ERROR("Error: %s", err.Error())
 		return schemas.HandleError(c, err)
 	}
 
@@ -144,7 +136,6 @@ func (a *AuthController) LogoutPointSale(c *fiber.Ctx) error {
 
 	c.Cookie(cookie)
 
-	logging.INFO("Logout Punto de venta exitoso")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -163,7 +154,6 @@ func (a *AuthController) LogoutPointSale(c *fiber.Ctx) error {
 //	@Success		200	{object}	schemas.Response
 //	@Router			/api/v1/auth/logout [post]
 func (a *AuthController) Logout(ctx *fiber.Ctx) error {
-	logging.INFO("Logout")
 	ctx.Cookie(&fiber.Cookie{
 		Name:     "access_token",
 		Value:    "",
@@ -190,10 +180,8 @@ func (a *AuthController) Logout(ctx *fiber.Ctx) error {
 //	@Success		200	{object}	schemas.Response{body=schemas.AuthenticatedUser}
 //	@Router			/api/v1/auth/current_user [get]
 func (a *AuthController) CurrentUser(c *fiber.Ctx) error {
-	logging.INFO("Obtener usuario actual")
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
 
-	logging.INFO("Usuario actual obtenido")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    user,
@@ -212,10 +200,8 @@ func (a *AuthController) CurrentUser(c *fiber.Ctx) error {
 //	@Success		200	{object}	schemas.Response{body=schemas.PlanResponseDTO}
 //	@Router			/api/v1/auth/current_plan [get]
 func (a *AuthController) CurrentPlan(c *fiber.Ctx) error {
-	logging.INFO("Obtener plan actual")
 	plan := c.Locals("current_plan").(*schemas.PlanResponseDTO)
 
-	logging.INFO("plan actual obtenido")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    plan,
@@ -234,10 +220,8 @@ func (a *AuthController) CurrentPlan(c *fiber.Ctx) error {
 //	@Success		200	{object}	schemas.Response{body=schemas.TenantResponse}
 //	@Router			/api/v1/auth/current_tenant [get]
 func (a *AuthController) CurrentTenant(c *fiber.Ctx) error {
-	logging.INFO("Obtener Tenant actual")
 	user := c.Locals("current_tenant").(*schemas.TenantResponse)
 
-	logging.INFO("Tenant actual obtenido")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    user,
@@ -256,21 +240,17 @@ func (a *AuthController) CurrentTenant(c *fiber.Ctx) error {
 //	@Success		200			{object}	schemas.Response
 //	@Router			/api/v1/auth/login_admin [post]
 func (a *AuthController) AuthLoginAdmin(c *fiber.Ctx) error {
-	logging.INFO("Login")
 	var loginRequest schemas.AuthLoginAdmin
 	if err := c.BodyParser(&loginRequest); err != nil {
-		logging.ERROR("Error: %s", err.Error())
 		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
 	}
 
 	if err := loginRequest.Validate(); err != nil {
-		logging.ERROR("Error: %s", err.Error())
 		return schemas.HandleError(c, err)
 	}
 
 	token, err := a.AuthService.AuthLoginAdmin(loginRequest.Username, loginRequest.Password)
 	if err != nil {
-		logging.ERROR("Error: %s", err.Error())
 		return schemas.HandleError(c, err)
 	}
 
@@ -284,7 +264,6 @@ func (a *AuthController) AuthLoginAdmin(c *fiber.Ctx) error {
 
 	c.Cookie(cookie)
 
-	logging.INFO("Login exitoso")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -303,7 +282,6 @@ func (a *AuthController) AuthLoginAdmin(c *fiber.Ctx) error {
 //	@Success		200	{object}	schemas.Response
 //	@Router			/api/v1/auth/logout_admin [post]
 func (a *AuthController) LogoutAdmin(ctx *fiber.Ctx) error {
-	logging.INFO("Logout")
 	ctx.Cookie(&fiber.Cookie{
 		Name:     "access_token_admin",
 		Value:    "",
@@ -330,7 +308,6 @@ func (a *AuthController) LogoutAdmin(ctx *fiber.Ctx) error {
 //	@Success		200				{object}	schemas.Response
 //	@Router			/api/v1/auth/forgot_password [post]
 func (a *AuthController) AuthForgotPassword(ctx *fiber.Ctx) error {
-	logging.INFO("Forgot Password")
 	var authForgotPassword schemas.AuthForgotPassword
 	if err := ctx.BodyParser(&authForgotPassword); err != nil {
 		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
@@ -344,7 +321,6 @@ func (a *AuthController) AuthForgotPassword(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Email enviado con exito!")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -363,7 +339,6 @@ func (a *AuthController) AuthForgotPassword(ctx *fiber.Ctx) error {
 //	@Success		200				{object}	schemas.Response
 //	@Router			/api/v1/auth/reset_password [post]
 func (a *AuthController) AuthResetPassword(ctx *fiber.Ctx) error {
-	logging.INFO("Reset Password")
 	var authResetPassword schemas.AuthResetPassword
 	if err := ctx.BodyParser(&authResetPassword); err != nil {
 		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
@@ -377,7 +352,6 @@ func (a *AuthController) AuthResetPassword(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Contraseña actualizada con exito!")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,

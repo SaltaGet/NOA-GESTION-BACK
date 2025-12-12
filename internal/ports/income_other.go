@@ -12,7 +12,7 @@ type IncomeOtherRepository interface {
 	IncomeOtherGetByDate(pointSaleID *int64, fromDate, toDate time.Time, page, limit int) ([]*schemas.IncomeOtherResponse, int64, error)
 	IncomeOtherCreate(memberID int64, pointSaleID *int64, incomeCreate *schemas.IncomeOtherCreate) (id int64, err error)
 	IncomeOtherUpdate(memberID int64, pointSaleID *int64, incomeUpdate *schemas.IncomeOtherUpdate) (err error)
-	IncomeOtherDelete(incomeOtherID int64, pointSaleID *int64,) error
+	IncomeOtherDelete(memberID int64, incomeOtherID int64, pointSaleID *int64,) error
 }
 
 type IncomeOtherService interface {
@@ -20,5 +20,5 @@ type IncomeOtherService interface {
 	IncomeOtherGetByDate(pointSaleID *int64, fromDate, toDate time.Time, page, limit int) ([]*schemas.IncomeOtherResponse, int64, error)
 	IncomeOtherCreate(memberID int64, pointSaleID *int64, incomeCreate *schemas.IncomeOtherCreate) (id int64, err error)
 	IncomeOtherUpdate(memberID int64, pointSaleID *int64, incomeUpdate *schemas.IncomeOtherUpdate) (err error)
-	IncomeOtherDelete(incomeOtherID int64, pointSaleID *int64,) error
+	IncomeOtherDelete(memberID int64, incomeOtherID int64, pointSaleID *int64,) error
 }

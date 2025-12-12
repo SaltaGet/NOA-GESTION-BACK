@@ -3,32 +3,26 @@ package database
 import (
 	"embed"
 	"fmt"
-	"os"
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/rs/zerolog/log"
 )
 
 func ApplyMigrations(dbURI string, migration embed.FS, dirName string) error {
 	var databaseURI string
-	env := os.Getenv("ENV")
 
-	if env == "prod" {
-		if err := EnsureDatabaseExists(dbURI); err != nil {
-			return fmt.Errorf("error al asegurar que la base de datos exista: %w", err)
-		}
+	if err := EnsureDatabaseExists(dbURI); err != nil {
+		return fmt.Errorf("error al asegurar que la base de datos exista: %w", err)
+	}
 
-		if !strings.HasPrefix(dbURI, "mysql") {
-			databaseURI = "mysql://" + dbURI
-		} else {
-			databaseURI = dbURI
-		}
+	if !strings.HasPrefix(dbURI, "mysql") {
+		databaseURI = "mysql://" + dbURI
 	} else {
-		// Para SQLite, migrate necesita la ruta del archivo con el prefijo "sqlite3://"
-		databaseURI = "sqlite3://" + FilePathFromURI(dbURI)
+		databaseURI = dbURI
 	}
 
 	source, err := iofs.New(migration, dirName)
@@ -46,6 +40,6 @@ func ApplyMigrations(dbURI string, migration embed.FS, dirName string) error {
 		return fmt.Errorf("error al aplicar migraciones: %w", err)
 	}
 
-	fmt.Println("Migraciones aplicadas exitosamente.")
+	log.Info().Msg("Migraciones aplicadas exitosamente.")
 	return nil
 }

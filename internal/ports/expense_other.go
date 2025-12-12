@@ -11,7 +11,7 @@ type ExpenseOtherRepository interface {
 	ExpenseOtherGetByDate(pointSaleID *int64, fromDate, toDate time.Time, page, limit int) ([]*schemas.ExpenseOtherResponse, int64, error)
 	ExpenseOtherCreate(memberID int64, pointSaleID *int64, expenseOtherCreate *schemas.ExpenseOtherCreate) (int64, error)
 	ExpenseOtherUpdate(memberID int64, pointSaleID *int64, expenseOtherUpdate *schemas.ExpenseOtherUpdate) (error)
-	ExpenseOtherDelete(expenseOtherID int64, pointSaleID *int64) error
+	ExpenseOtherDelete(memberID int64, expenseOtherID int64, pointSaleID *int64) error
 }
 
 type ExpenseOtherService interface {
@@ -19,5 +19,5 @@ type ExpenseOtherService interface {
 	ExpenseOtherGetByDate(pointSaleID *int64, fromDate, toDate time.Time, page, limit int) ([]*schemas.ExpenseOtherResponse, int64, error)
 	ExpenseOtherCreate(memberID int64, pointSaleID *int64, expenseOtherCreate *schemas.ExpenseOtherCreate) (int64, error)
 	ExpenseOtherUpdate(memberID int64, pointSaleID *int64, expenseOtherUpdate *schemas.ExpenseOtherUpdate) (error)
-	ExpenseOtherDelete(expenseOtherID int64, pointSaleID *int64) error
+	ExpenseOtherDelete(memberID int64, expenseOtherID int64, pointSaleID *int64) error
 }

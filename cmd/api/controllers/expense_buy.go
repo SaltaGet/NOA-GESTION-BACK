@@ -3,10 +3,10 @@ package controllers
 import (
 	"strconv"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
+	"github.com/rs/zerolog/log"
 )
 
 // ExpenseBuyGetByID godoc
@@ -21,7 +21,6 @@ import (
 //	@Success		200	{object}	schemas.Response{body=schemas.ExpenseBuyResponse}	"ExpenseBuy obtained successfully"
 //	@Router			/api/v1/expense_buy/{id} [get]
 func (e *ExpenseBuyController) ExpenseBuyGetByID(c *fiber.Ctx) error {
-	logging.INFO("Obtener un egreso por ID de compra")
 	id := c.Params("id")
 	idint, err := validators.IdValidate(id)
 	if err != nil {
@@ -33,7 +32,6 @@ func (e *ExpenseBuyController) ExpenseBuyGetByID(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Egreso obtenido con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    expenseBuy,
@@ -59,7 +57,6 @@ func (e *ExpenseBuyController) ExpenseBuyGetByID(c *fiber.Ctx) error {
 //	@Failure		500			{object}	schemas.Response											"Internal server error"
 //	@Router			/api/v1/expense_buy/get_by_date [get]
 func (e *ExpenseBuyController) ExpenseBuyGetByDate(c *fiber.Ctx) error {
-	logging.INFO("Obtener todos los egresos de compra")
 	pageParam := c.Query("page", "1")
 	limitParam := c.Query("limit", "10")
 
@@ -88,7 +85,6 @@ func (e *ExpenseBuyController) ExpenseBuyGetByDate(c *fiber.Ctx) error {
 
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
-	logging.INFO("Egresos obtenidos con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    map[string]any{"data": expenseBuys, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
@@ -108,10 +104,9 @@ func (e *ExpenseBuyController) ExpenseBuyGetByDate(c *fiber.Ctx) error {
 //	@Success		200					{object}	schemas.Response"ExpenseBuy created successfully"
 //	@Router			/api/v1/expense_buy/create [post]
 func (e *ExpenseBuyController) ExpenseBuyCreate(c *fiber.Ctx) error {
-	logging.INFO("Crear un egreso de compra")
 	var expenseBuyCreate schemas.ExpenseBuyCreate
 	if err := c.BodyParser(&expenseBuyCreate); err != nil {
-		logging.ERROR("Error: %s", err.Error())
+		log.Err(err).Msg("Error al parsear el body")
 		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
@@ -129,7 +124,6 @@ func (e *ExpenseBuyController) ExpenseBuyCreate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Egreso creado con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    id,
@@ -149,10 +143,9 @@ func (e *ExpenseBuyController) ExpenseBuyCreate(c *fiber.Ctx) error {
 //	@Success		200					{object}	schemas.Response			"ExpenseBuy updated successfully"
 //	@Router			/api/v1/expense_buy/update [put]
 func (e *ExpenseBuyController) ExpenseBuyUpdate(c *fiber.Ctx) error {
-	logging.INFO("Actualizar un egreso de compra")
 	var expenseBuyUpdate schemas.ExpenseBuyUpdate
 	if err := c.BodyParser(&expenseBuyUpdate); err != nil {
-		logging.ERROR("Error: %s", err.Error())
+		log.Err(err).Msg("Error al parsear el body")
 		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
@@ -170,7 +163,6 @@ func (e *ExpenseBuyController) ExpenseBuyUpdate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Egreso editado con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -190,19 +182,18 @@ func (e *ExpenseBuyController) ExpenseBuyUpdate(c *fiber.Ctx) error {
 //	@Success		200	{object}	schemas.Response	"ExpenseBuy deleted successfully"
 //	@Router			/api/v1/expenseBuy/delete/{id} [delete]
 func (e *ExpenseBuyController) ExpenseBuyDelete(c *fiber.Ctx) error {
-	logging.INFO("Eliminar un egreso de compra")
 	id := c.Params("id")
 	idint, err := validators.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	err = e.ExpenseBuyService.ExpenseBuyDelete(idint)
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	err = e.ExpenseBuyService.ExpenseBuyDelete(member.ID, idint)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Egreso eliminado con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,

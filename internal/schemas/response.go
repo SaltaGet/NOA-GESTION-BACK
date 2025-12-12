@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
+	"github.com/rs/zerolog/log"
 )
 
 type Response struct {
@@ -39,7 +39,7 @@ func HandleError(ctx *fiber.Ctx, err error) error {
 	}
 
 	if errResp, ok := err.(*ErrorStruc); ok {
-		logging.ERROR("Error: %s", errResp.Err.Error())
+		log.Err(err).Msgf("Error: %s", errResp.Err.Error())
 		return ctx.Status(errResp.StatusCode).JSON(Response{
 			Status:  false,
 			Body:    nil,
@@ -47,7 +47,7 @@ func HandleError(ctx *fiber.Ctx, err error) error {
 		})
 	}
 
-	logging.ERROR("Error: %s", err.Error())
+	log.Err(err).Msgf("Error: %s", err.Error())
 	return ctx.Status(fiber.StatusInternalServerError).JSON(Response{
 		Status:  false,
 		Body:    nil,

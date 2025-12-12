@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/gofiber/fiber/v2"
 )
@@ -14,32 +13,13 @@ import (
 //	@Produce		json
 //	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.PermissionResponse}	"Members obtenidos con éxito"
-//	@Failure		400	{object}	schemas.Response									"Bad Request"
-//	@Failure		401	{object}	schemas.Response									"Auth is required"
-//	@Failure		403	{object}	schemas.Response									"Not Authorized"
-//	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/permission/get_all [get]
 func (p *PermissionController) PermissionGetAll(c *fiber.Ctx) error {
-	logging.INFO("Obtener todos los permisos")
 	permissions, err := p.PermissionService.PermissionGetAll()
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Permisos obtenidos con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    permissions,
@@ -56,13 +36,8 @@ func (p *PermissionController) PermissionGetAll(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.PermissionResponse}	"Members obtenidos con éxito"
-//	@Failure		400	{object}	schemas.Response									"Bad Request"
-//	@Failure		401	{object}	schemas.Response									"Auth is required"
-//	@Failure		403	{object}	schemas.Response									"Not Authorized"
-//	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/permission/get_to_me [get]
 func (p *PermissionController) PermissionGetToMe(c *fiber.Ctx) error {
-	logging.INFO("Obtener todos mis permisos")
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
 
 	if user.IsAdmin {
@@ -71,7 +46,6 @@ func (p *PermissionController) PermissionGetToMe(c *fiber.Ctx) error {
 			return schemas.HandleError(c, err)
 		}
 
-		logging.INFO("Tiene todos los permsios")
 		return c.Status(200).JSON(schemas.Response{
 			Status:  false,
 			Body:    permissions,
@@ -81,23 +55,9 @@ func (p *PermissionController) PermissionGetToMe(c *fiber.Ctx) error {
 
 	permissions, err := p.PermissionService.PermissionGetToMe(user.RoleID)
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Permisos obtenidos con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    permissions,

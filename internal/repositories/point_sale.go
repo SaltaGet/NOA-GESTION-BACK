@@ -3,49 +3,51 @@ package repositories
 import (
 	"errors"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
-func (p *PointSaleRepository) PointSaleCreate(pointSaleCreate *schemas.PointSaleCreate) (int64, error) {
-	var pointSaleGet []models.PointSale
-	if err := p.DB.Where("is_main = ?", true).Find(&pointSaleGet).Error; err != nil {
-		return 0, schemas.ErrorResponse(500, "Error al obtener el punto de venta principal", err)
-	}
+// func (p *PointSaleRepository) PointSaleCreate(pointSaleCreate *schemas.PointSaleCreate) (int64, error) {
+// 	var pointSaleGet []models.PointSale
+// 	if err := p.DB.Where("is_main = ?", true).Find(&pointSaleGet).Error; err != nil {
+// 		return 0, schemas.ErrorResponse(500, "Error al obtener el punto de venta principal", err)
+// 	}
 
-	pointSale := models.PointSale{
-		Name:        pointSaleCreate.Name,
-		Description: pointSaleCreate.Description,
-		IsDeposit:   *pointSaleCreate.IsDeposit,
-	}
+// 	pointSale := models.PointSale{
+// 		Name:        pointSaleCreate.Name,
+// 		Description: pointSaleCreate.Description,
+// 		IsDeposit:   *pointSaleCreate.IsDeposit,
+// 	}
 
-	if len(pointSaleGet) == 0 {
-		pointSale.IsMain = true
-	}
+// 	if len(pointSaleGet) == 0 {
+// 		pointSale.IsMain = true
+// 	}
 
-	err := p.DB.Create(&pointSale).Error
-	if err != nil {
-		if schemas.IsDuplicateError(err) {
-			return 0, schemas.ErrorResponse(409, "El punto de venta "+pointSale.Name+" ya existe", err)
-		}
-		return 0, schemas.ErrorResponse(500, "Error al crear punto de venta", err)
-	}
+// 	err := p.DB.Create(&pointSale).Error
+// 	if err != nil {
+// 		if schemas.IsDuplicateError(err) {
+// 			return 0, schemas.ErrorResponse(409, "El punto de venta "+pointSale.Name+" ya existe", err)
+// 		}
+// 		return 0, schemas.ErrorResponse(500, "Error al crear punto de venta", err)
+// 	}
 
-	var membersAdmin []models.Member
-	if err := p.DB.Where("is_admin = ?", true).Find(&membersAdmin).Error; err != nil {
-		return 0, schemas.ErrorResponse(500, "Error al obtener los administradores", err)
-	}
+// 	var membersAdmin []models.Member
+// 	if err := p.DB.Where("is_admin = ?", true).Find(&membersAdmin).Error; err != nil {
+// 		return 0, schemas.ErrorResponse(500, "Error al obtener los administradores", err)
+// 	}
 
-	if len(membersAdmin) > 0 {
-		if err := p.DB.Model(&pointSale).Association("Members").Append(&membersAdmin); err != nil {
-			return 0, schemas.ErrorResponse(500, "Error al asignar punto de venta a administradores", err)
-		}
-	}
+// 	if len(membersAdmin) > 0 {
+// 		if err := p.DB.Model(&pointSale).Association("Members").Append(&membersAdmin); err != nil {
+// 			return 0, schemas.ErrorResponse(500, "Error al asignar punto de venta a administradores", err)
+// 		}
+// 	}
 
-	return pointSale.ID, nil
-}
+// 	return pointSale.ID, nil
+// }
 
 func (p *PointSaleRepository) PointSaleGetAllByMember(memberID int64) ([]schemas.PointSaleResponse, error) {
 	var pointSales []schemas.PointSaleResponse
@@ -88,8 +90,172 @@ func (p *PointSaleRepository) PointSaleGetByID(id int64) (*schemas.PointSaleResp
 	return &pointSaleResponse, nil
 }
 
-func (p *PointSaleRepository) PointSaleUpdate(pointSaleUpdate *schemas.PointSaleUpdate) error {
-	return p.DB.Transaction(func(tx *gorm.DB) error {
+// func (p *PointSaleRepository) PointSaleUpdate(pointSaleUpdate *schemas.PointSaleUpdate) error {
+// 	return p.DB.Transaction(func(tx *gorm.DB) error {
+// 		var pointSale models.PointSale
+// 		if err := tx.First(&pointSale, pointSaleUpdate.ID).Error; err != nil {
+// 			if errors.Is(err, gorm.ErrRecordNotFound) {
+// 				return schemas.ErrorResponse(404, "Punto de venta no encontrado", err)
+// 			}
+// 			return schemas.ErrorResponse(500, "Error al obtener el punto de venta", err)
+// 		}
+
+// 		pointSale.Name = pointSaleUpdate.Name
+// 		pointSale.Description = pointSaleUpdate.Description
+
+// 		if !pointSale.IsDeposit && *pointSaleUpdate.IsDeposit {
+// 			var stockList []models.StockPointSale
+// 			if err := tx.Where("point_sale_id = ?", pointSale.ID).Find(&stockList).Error; err != nil {
+// 				return schemas.ErrorResponse(500, "Error obteniendo el stock del punto de venta", err)
+// 			}
+
+// 			for _, s := range stockList {
+// 				var deposit models.Deposit
+// 				err := tx.Where("product_id = ?", s.ProductID).First(&deposit).Error
+
+// 				if errors.Is(err, gorm.ErrRecordNotFound) {
+// 					deposit = models.Deposit{
+// 						ProductID: s.ProductID,
+// 						Stock:     s.Stock,
+// 					}
+// 					if err := tx.Create(&deposit).Error; err != nil {
+// 						return schemas.ErrorResponse(500, "Error creando registro en depósito", err)
+// 					}
+// 				} else if err == nil {
+// 					deposit.Stock += s.Stock
+// 					if err := tx.Save(&deposit).Error; err != nil {
+// 						return schemas.ErrorResponse(500, "Error actualizando stock en depósito", err)
+// 					}
+// 				} else {
+// 					return schemas.ErrorResponse(500, "Error validando stock en depósito", err)
+// 				}
+
+// 				s.Stock = 0
+// 				if err := tx.Save(&s).Error; err != nil {
+// 					return schemas.ErrorResponse(500, "Error limpiando stock de punto de venta", err)
+// 				}
+// 			}
+// 		}
+
+// 		pointSale.IsDeposit = *pointSaleUpdate.IsDeposit
+
+// 		if err := tx.Save(&pointSale).Error; err != nil {
+// 			return schemas.ErrorResponse(500, "Error actualizando punto de venta", err)
+// 		}
+
+// 		return nil
+// 	})
+// }
+
+func (p *PointSaleRepository) PointSaleCount() (int64, error) {
+	var pointSales int64
+	if err := p.DB.Model(&models.PointSale{}).Count(&pointSales).Error; err != nil {
+		return 0, schemas.ErrorResponse(500, "error al obtner la cantidad de puntos de ventas", err)
+	}
+
+	return pointSales, nil
+}
+
+// func (p *PointSaleRepository) PointSaleUpdateMain(pointSaleUpdateMain *schemas.PointSaleUpdateMain) error {
+// 	return p.DB.Transaction(func(tx *gorm.DB) error {
+
+// 		var pointSaleOld models.PointSale
+// 		if err := tx.First(&pointSaleOld, pointSaleUpdateMain.ID).Error; err != nil {
+// 			if errors.Is(err, gorm.ErrRecordNotFound) {
+// 				return schemas.ErrorResponse(404, "Punto de venta no encontrado", err)
+// 			}
+// 			return schemas.ErrorResponse(500, "Error al obtener el punto de venta", err)
+// 		}
+
+// 		var pointSaleNew models.PointSale
+// 		if err := tx.First(&pointSaleNew, pointSaleUpdateMain.NewMain).Error; err != nil {
+// 			if errors.Is(err, gorm.ErrRecordNotFound) {
+// 				return schemas.ErrorResponse(404, "Punto de venta no encontrado", err)
+// 			}
+// 			return schemas.ErrorResponse(500, "Error al obtener el punto de venta", err)
+// 		}
+
+// 		if !pointSaleOld.IsMain {
+// 			return schemas.ErrorResponse(400, "El punto de venta indicado no es el principal actual", nil)
+// 		}
+// 		if pointSaleNew.IsMain {
+// 			return schemas.ErrorResponse(400, "El nuevo punto de venta ya es el principal", nil)
+// 		}
+
+// 		// Actualizar usando Updates (más seguro)
+// 		if err := tx.Model(&pointSaleOld).Update("is_main", false).Error; err != nil {
+// 			return schemas.ErrorResponse(500, "Error actualizando el punto principal", err)
+// 		}
+
+// 		if err := tx.Model(&pointSaleNew).Update("is_main", true).Error; err != nil {
+// 			return schemas.ErrorResponse(500, "Error actualizando el nuevo punto principal", err)
+// 		}
+
+// 		return nil
+// 	})
+// }
+
+// PointSaleCreate crea un nuevo punto de venta con auditoría
+func (p *PointSaleRepository) PointSaleCreate(memberID int64, pointSaleCreate *schemas.PointSaleCreate) (int64, error) {
+	var pointSaleSave models.PointSale
+
+	err := p.DB.Transaction(func(tx *gorm.DB) error {
+		var pointSaleGet []models.PointSale
+		if err := tx.Where("is_main = ?", true).Find(&pointSaleGet).Error; err != nil {
+			return schemas.ErrorResponse(500, "Error al obtener el punto de venta principal", err)
+		}
+
+		pointSale := models.PointSale{
+			Name:        pointSaleCreate.Name,
+			Description: pointSaleCreate.Description,
+			IsDeposit:   *pointSaleCreate.IsDeposit,
+		}
+
+		if len(pointSaleGet) == 0 {
+			pointSale.IsMain = true
+		}
+
+		if err := tx.Create(&pointSale).Error; err != nil {
+			if schemas.IsDuplicateError(err) {
+				return schemas.ErrorResponse(409, "El punto de venta "+pointSale.Name+" ya existe", err)
+			}
+			return schemas.ErrorResponse(500, "Error al crear punto de venta", err)
+		}
+
+		pointSaleSave = pointSale
+
+		var membersAdmin []models.Member
+		if err := tx.Where("is_admin = ?", true).Find(&membersAdmin).Error; err != nil {
+			return schemas.ErrorResponse(500, "Error al obtener los administradores", err)
+		}
+
+		if len(membersAdmin) > 0 {
+			if err := tx.Model(&pointSale).Association("Members").Append(&membersAdmin); err != nil {
+				return schemas.ErrorResponse(500, "Error al asignar punto de venta a administradores", err)
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return 0, err
+	}
+
+	// Guardar auditoría
+	go database.SaveAuditAsync(p.DB, models.AuditLog{
+		MemberID: memberID,
+		Method:   "create",
+		Path:     "point-sale",
+	}, nil, pointSaleSave)
+
+	return pointSaleSave.ID, nil
+}
+
+// PointSaleUpdate actualiza un punto de venta con auditoría
+func (p *PointSaleRepository) PointSaleUpdate(memberID int64, pointSaleUpdate *schemas.PointSaleUpdate) error {
+	var savePointSale, newPointSale models.PointSale
+	err := p.DB.Transaction(func(tx *gorm.DB) error {
 		var pointSale models.PointSale
 		if err := tx.First(&pointSale, pointSaleUpdate.ID).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -98,9 +264,13 @@ func (p *PointSaleRepository) PointSaleUpdate(pointSaleUpdate *schemas.PointSale
 			return schemas.ErrorResponse(500, "Error al obtener el punto de venta", err)
 		}
 
+		// Guardar estado anterior
+		savePointSale = pointSale
+
 		pointSale.Name = pointSaleUpdate.Name
 		pointSale.Description = pointSaleUpdate.Description
 
+		// Si se convierte a depósito, mover el stock
 		if !pointSale.IsDeposit && *pointSaleUpdate.IsDeposit {
 			var stockList []models.StockPointSale
 			if err := tx.Where("point_sale_id = ?", pointSale.ID).Find(&stockList).Error; err != nil {
@@ -108,9 +278,9 @@ func (p *PointSaleRepository) PointSaleUpdate(pointSaleUpdate *schemas.PointSale
 			}
 
 			for _, s := range stockList {
+
 				var deposit models.Deposit
 				err := tx.Where("product_id = ?", s.ProductID).First(&deposit).Error
-
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					deposit = models.Deposit{
 						ProductID: s.ProductID,
@@ -119,11 +289,13 @@ func (p *PointSaleRepository) PointSaleUpdate(pointSaleUpdate *schemas.PointSale
 					if err := tx.Create(&deposit).Error; err != nil {
 						return schemas.ErrorResponse(500, "Error creando registro en depósito", err)
 					}
+
 				} else if err == nil {
 					deposit.Stock += s.Stock
 					if err := tx.Save(&deposit).Error; err != nil {
 						return schemas.ErrorResponse(500, "Error actualizando stock en depósito", err)
 					}
+
 				} else {
 					return schemas.ErrorResponse(500, "Error validando stock en depósito", err)
 				}
@@ -141,46 +313,60 @@ func (p *PointSaleRepository) PointSaleUpdate(pointSaleUpdate *schemas.PointSale
 			return schemas.ErrorResponse(500, "Error actualizando punto de venta", err)
 		}
 
+		newPointSale = pointSale
 		return nil
 	})
-}
 
-func (p *PointSaleRepository) PointSaleCount() (int64, error) {
-	var pointSales int64
-	if err := p.DB.Model(&models.PointSale{}).Count(&pointSales).Error; err != nil {
-		return 0, schemas.ErrorResponse(500, "error al obtner la cantidad de puntos de ventas", err)
+	if err == nil {
+		go database.SaveAuditAsync(p.DB, models.AuditLog{
+			MemberID: memberID,
+			Method:   "update",
+			Path:     "point-sale",
+		}, savePointSale, newPointSale)
 	}
 
-	return pointSales, nil
+	return err
 }
 
-func (p *PointSaleRepository) PointSaleUpdateMain(pointSaleUpdateMain *schemas.PointSaleUpdateMain) error {
-	return p.DB.Transaction(func(tx *gorm.DB) error {
+// PointSaleUpdateMain actualiza el punto de venta principal con auditoría
+func (p *PointSaleRepository) PointSaleUpdateMain(memberID int64, pointSaleUpdateMain *schemas.PointSaleUpdateMain) error {
+	var savePointSaleOld, savePointSaleNew models.PointSale
+
+	err := p.DB.Transaction(func(tx *gorm.DB) error {
 
 		var pointSaleOld models.PointSale
-		if err := tx.First(&pointSaleOld, pointSaleUpdateMain.ID).Error; err != nil {
+		if err := tx.
+			Clauses(clause.Locking{Strength: "UPDATE"}).
+			First(&pointSaleOld, pointSaleUpdateMain.ID).Error; err != nil {
+
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return schemas.ErrorResponse(404, "Punto de venta no encontrado", err)
 			}
 			return schemas.ErrorResponse(500, "Error al obtener el punto de venta", err)
 		}
 
+		savePointSaleOld = pointSaleOld
+
 		var pointSaleNew models.PointSale
-		if err := tx.First(&pointSaleNew, pointSaleUpdateMain.NewMain).Error; err != nil {
+		if err := tx.
+			Clauses(clause.Locking{Strength: "UPDATE"}).
+			First(&pointSaleNew, pointSaleUpdateMain.NewMain).Error; err != nil {
+
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Punto de venta no encontrado", err)
+				return schemas.ErrorResponse(404, "Nuevo punto de venta no encontrado", err)
 			}
-			return schemas.ErrorResponse(500, "Error al obtener el punto de venta", err)
+			return schemas.ErrorResponse(500, "Error al obtener el nuevo punto de venta", err)
 		}
 
 		if !pointSaleOld.IsMain {
 			return schemas.ErrorResponse(400, "El punto de venta indicado no es el principal actual", nil)
 		}
+
 		if pointSaleNew.IsMain {
 			return schemas.ErrorResponse(400, "El nuevo punto de venta ya es el principal", nil)
 		}
 
-		// Actualizar usando Updates (más seguro)
+		// Actualizar
 		if err := tx.Model(&pointSaleOld).Update("is_main", false).Error; err != nil {
 			return schemas.ErrorResponse(500, "Error actualizando el punto principal", err)
 		}
@@ -189,6 +375,26 @@ func (p *PointSaleRepository) PointSaleUpdateMain(pointSaleUpdateMain *schemas.P
 			return schemas.ErrorResponse(500, "Error actualizando el nuevo punto principal", err)
 		}
 
+		// Recargar actualizados
+		if err := tx.First(&savePointSaleOld, pointSaleOld.ID).Error; err != nil {
+			return err
+		}
+
+		if err := tx.First(&savePointSaleNew, pointSaleNew.ID).Error; err != nil {
+			return err
+		}
+
 		return nil
 	})
+
+	if err == nil {
+		go database.SaveAuditAsync(p.DB, models.AuditLog{
+			MemberID: memberID,
+			Method:   "update",
+			Path:     "point-sale",
+		}, savePointSaleOld, savePointSaleNew)
+	}
+
+	return err
 }
+

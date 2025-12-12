@@ -3,10 +3,11 @@ package controllers
 import (
 	"strconv"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
+
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
+	"github.com/rs/zerolog/log"
 )
 
 //	Member godoc
@@ -28,7 +29,6 @@ import (
 //	@Success		200			{object}	schemas.Response{body=[]schemas.MemberResponseDTO}	"Members obtenidos con éxito"
 //	@Router			/api/v1/member/get_all [get]
 func (m *MemberController) MemberGetAll(c *fiber.Ctx) error {
-	logging.INFO("Obtener todos los miembros")
 	limit, err := strconv.ParseInt(c.Query("limit"), 10, 64)
 	if err != nil {
 		limit = 10
@@ -67,7 +67,6 @@ func (m *MemberController) MemberGetAll(c *fiber.Ctx) error {
 
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
-	logging.INFO("Miembros obtenidos con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    map[string]any{"data": members, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
@@ -87,7 +86,6 @@ func (m *MemberController) MemberGetAll(c *fiber.Ctx) error {
 //	@Success		200	{object}	schemas.Response{body=[]schemas.MemberResponse}	"Members obtenidos con éxito"
 //	@Router			/api/v1/member/get/{id} [get]
 func (m *MemberController) MemberGetByID(c *fiber.Ctx) error {
-	logging.INFO("Obtener todos los miembros")
 	id := c.Params("id")
 	idint, err := validators.IdValidate(id)
 	if err != nil {
@@ -96,23 +94,9 @@ func (m *MemberController) MemberGetByID(c *fiber.Ctx) error {
 
 	memebers, err := m.MemberService.MemberGetByID(idint)
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
-			logging.ERROR("Error: %s", errResp.Err.Error())
-			return c.Status(errResp.StatusCode).JSON(schemas.Response{
-				Status:  false,
-				Body:    nil,
-				Message: errResp.Message,
-			})
-		}
-		logging.ERROR("Error: %s", err.Error())
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Error interno",
-		})
+		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Miembros obtenidos con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    memebers,
@@ -132,11 +116,10 @@ func (m *MemberController) MemberGetByID(c *fiber.Ctx) error {
 //	@Success		200				{object}	schemas.Response		"Members creado con éxito"
 //	@Router			/api/v1/member/create [post]
 func (m *MemberController) MemberCreate(c *fiber.Ctx) error {
-	logging.INFO("Crear miembro")
 	
 	var memberCreate schemas.MemberCreate
 	if err := c.BodyParser(&memberCreate); err != nil {
-		logging.ERROR("Error: %s", err.Error())
+		log.Err(err).Msg("Error al parsear el body")
 		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
@@ -148,13 +131,12 @@ func (m *MemberController) MemberCreate(c *fiber.Ctx) error {
 	}
 
 	plan := c.Locals("current_plan").(*schemas.PlanResponseDTO)
-
-	id, err := m.MemberService.MemberCreate(&memberCreate, plan)
+member := c.Locals("user").(*schemas.AuthenticatedUser)
+	id, err := m.MemberService.MemberCreate(member.ID, &memberCreate, plan)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Miembro creado con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    id,
@@ -174,11 +156,10 @@ func (m *MemberController) MemberCreate(c *fiber.Ctx) error {
 //	@Success		200				{object}	schemas.Response		"Members actualizado con éxito"
 //	@Router			/api/v1/member/update [put]
 func (m *MemberController) MemberUpdate(c *fiber.Ctx) error {
-	logging.INFO("Editar miembro")
 
 	var memberUpdate schemas.MemberUpdate
 	if err := c.BodyParser(&memberUpdate); err != nil {
-		logging.ERROR("Error: %s", err.Error())
+		log.Err(err).Msg("Error al parsear el body")
 		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
@@ -189,12 +170,12 @@ func (m *MemberController) MemberUpdate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	err := m.MemberService.MemberUpdate(&memberUpdate)
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	err := m.MemberService.MemberUpdate(member.ID, &memberUpdate)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Miembro editado con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -214,11 +195,9 @@ func (m *MemberController) MemberUpdate(c *fiber.Ctx) error {
 //	@Success		200						{object}	schemas.Response				"Members obtenidos con éxito"
 //	@Router			/api/v1/member/update_password [put]
 func (m *MemberController) MemberUpdatePassword(c *fiber.Ctx) error {
-	logging.INFO("Editar password miembro")
-
 	var memberUpdatePassword schemas.MemberUpdatePassword
 	if err := c.BodyParser(&memberUpdatePassword); err != nil {
-		logging.ERROR("Error: %s", err.Error())
+		log.Err(err).Msg("Error al parsear el body")
 		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
@@ -236,7 +215,6 @@ func (m *MemberController) MemberUpdatePassword(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Password miembro editado con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -256,19 +234,18 @@ func (m *MemberController) MemberUpdatePassword(c *fiber.Ctx) error {
 //	@Success		200	{object}	schemas.Response	"Members obtenidos con éxito"
 //	@Router			/api/v1/member/delete/{id} [delete]
 func (m *MemberController) MemberDelete(c *fiber.Ctx) error {
-	logging.INFO("Eliminar miembro")
 	id := c.Params("id")
 	idint, err := validators.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	err = m.MemberService.MemberDelete(idint)
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	err = m.MemberService.MemberDelete(member.ID, idint)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Miembros obtenidos con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,

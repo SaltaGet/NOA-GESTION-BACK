@@ -4,18 +4,17 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/rs/zerolog/log"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -66,14 +65,14 @@ func getEnvInt(key string, defaultVal int) int {
 	return defaultVal
 }
 
-func ConnectDB() (*gorm.DB, error) {
+func ConnectDB(cfg *schemas.EmailConfig) (*gorm.DB, error) {
 	dsn := os.Getenv("URI_DB")
 	if dsn == "" {
 		return nil, fmt.Errorf("la variable de entorno URI_DB no esta definida")
 	}
 
 	if err := EnsureDatabaseExists(dsn); err != nil {
-		log.Fatalf("No se pudo crear la base: %v", err)
+		log.Fatal().Err(err).Msg("No se pudo crear la base")
 	}
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
@@ -83,42 +82,101 @@ func ConnectDB() (*gorm.DB, error) {
 
 	setupDBConnection(db, mainDBConfig)
 
-	if err := db.AutoMigrate(&models.Tenant{}, &models.User{}, &models.UserTenant{}, &models.Plan{}, &models.Admin{}); err != nil {
-		log.Fatalf("Error en migración: %v", err)
+	if err := db.AutoMigrate(
+		&models.Tenant{}, 
+		&models.User{}, 
+		&models.UserTenant{}, 
+		&models.Plan{}, 
+		&models.Admin{}, 
+		&models.PayTenant{},
+		&models.PayDetail{},
+		&models.AuditLogAdmin{}); err != nil {
+		log.Fatal().Err(err).Msg("Error en migración")
 	}
 
 	err = ensurePlans(db)
 	if err != nil {
-		log.Fatalf("Error en migración de planes: %v", err)
+		log.Fatal().Err(err).Msg("Error en migración de planes")
 	}
 
-	return ensureAdmin(db)
+	return ensureAdmin(db, cfg)
 }
 
-func ensureAdmin(db *gorm.DB) (*gorm.DB, error) {
-	var email string
-	db.Model(&models.Admin{}).Select("email").Where("email = ?", os.Getenv("ADMIN_EMAIL")).Scan(&email)
-
-	if email != "" {
-		log.Println("El admin ya existe")
-		mainDB = db
+func ensureAdmin(db *gorm.DB, cfg *schemas.EmailConfig) (*gorm.DB, error) {
+	raw := os.Getenv("ADMIN_EMAIL")
+	if raw == "" {
+		log.Warn().Msg("No se definió ADMIN_EMAIL")
 		return db, nil
 	}
 
-	if err := db.Create(&models.Admin{
-		FirstName:    os.Getenv("FIRSTNAME_ADMIN"),
-		LastName:     os.Getenv("LASTNAME_ADMIN"),
-		Username:     os.Getenv("ADMIN_USERNAME"),
-		Email:        os.Getenv("ADMIN_EMAIL"),
-		Password:     os.Getenv("ADMIN_PASSWORD"),
-		IsSuperAdmin: true,
-	}).Error; err != nil {
+	emailList := strings.Split(strings.ReplaceAll(raw, " ", ""), ",")
+
+	var existing []string
+	if err := db.Model(&models.Admin{}).
+		Where("email IN (?)", emailList).
+		Pluck("email", &existing).Error; err != nil {
 		return nil, err
 	}
 
-	mainDB = db
+	exists := map[string]bool{}
+	for _, e := range existing {
+		exists[e] = true
+	}
+
+	var adminsToCreate []models.Admin
+	var passwords = map[string]string{} // guardar contraseñas generadas
+
+	for _, email := range emailList {
+		if exists[email] {
+			continue
+		}
+
+		pass, err := utils.GenerateRandomString(6)
+		if err != nil {
+			return nil, err
+		}
+
+		if os.Getenv("ENV") == "dev" {
+			pass = "123456"
+		}
+
+		userName := strings.Split(email, "@")[0]
+
+		passwords[email] = pass
+
+		adminsToCreate = append(adminsToCreate, models.Admin{
+			Email:        email,
+			Password:     pass,
+			Username:     userName,
+			IsSuperAdmin: true,
+			FirstName:    "Admin",
+			LastName:     "Admin",
+		})
+	}
+
+	// Crear en DB
+	if len(adminsToCreate) > 0 {
+		if err := db.Create(&adminsToCreate).Error; err != nil {
+			return nil, err
+		}
+
+		// Ahora que existen en la DB, enviar los emails
+		for _, adm := range adminsToCreate {
+			pass := passwords[adm.Email]
+
+			utils.SendEmail(
+				adm.Email,
+				"Bienvenido a NOA-GESTION",
+				utils.WelcomeAdmin(adm.Email, adm.Username, pass),
+				cfg,
+			)
+		}
+	}
+
 	return db, nil
 }
+
+
 
 func ensurePlans(db *gorm.DB) error {
 	plan := models.Plan{
@@ -135,7 +193,7 @@ func ensurePlans(db *gorm.DB) error {
 	err := db.Create(&plan).Error
 	if err != nil {
 		if schemas.IsDuplicateError(err) {
-			log.Println("El plan básico ya existe")
+			log.Warn().Msg("El plan básico ya existe")
 			return nil
 		}
 		return err
@@ -146,7 +204,7 @@ func ensurePlans(db *gorm.DB) error {
 func setupDBConnection(db *gorm.DB, config DBConfig) {
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Fatalf("Error al obtener conexión de base: %v", err)
+		log.Fatal().Err(err).Msg("Error al obtener conexión de base")
 	}
 	sqlDB.SetMaxOpenConns(config.MaxOpenConns)
 	sqlDB.SetMaxIdleConns(config.MaxIdleConns)
@@ -263,14 +321,6 @@ func InvalidateTenantConnection(tenantID int64) {
 }
 
 func openTenantDB(connStr string) (*gorm.DB, error) {
-	// Validar archivo SQLite en modo dev
-	if os.Getenv("ENV") != "prod" {
-		key := FilePathFromURI(connStr)
-		if _, err := os.Stat(key); os.IsNotExist(err) {
-			return nil, fmt.Errorf("la base de datos del tenant no existe: %s", connStr)
-		}
-	}
-
 	db, err := gorm.Open(mysql.Open(connStr), &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("error al abrir DB de tenant: %w", err)
@@ -340,9 +390,9 @@ func cleanupInactiveConnections(tenants *sync.Map) {
 				db.Close()
 			}
 			tenantDBs.Remove(key)
-			logging.INFO("Conexión de tenant %v cerrada por inactividad", key)
+			log.Info().Msgf("Conexión de tenant %v cerrada por inactividad", key)
 			tenants.Delete(key.(int64))
-			logging.INFO("Conexión de tenant cache %v cerrada por inactividad", key)
+			log.Info().Msgf("Conexión de tenant cache %v cerrada por inactividad", key)
 		}
 	}
 }

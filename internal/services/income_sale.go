@@ -22,6 +22,6 @@ func (i *IncomeSaleService) IncomeSaleUpdate(memberID, pointSaleID int64, income
 	return i.IncomeSaleRepository.IncomeSaleUpdate(memberID, pointSaleID, incomeSaleUpdate)
 }
 
-func (i *IncomeSaleService) IncomeSaleDelete(id, pointSaleID int64) error {
-	return i.IncomeSaleRepository.IncomeSaleDelete(id, pointSaleID)
+func (i *IncomeSaleService) IncomeSaleDelete(memberID int64, id, pointSaleID int64) error {
+	return i.IncomeSaleRepository.IncomeSaleDelete(memberID, id, pointSaleID)
 }

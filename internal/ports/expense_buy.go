@@ -11,7 +11,7 @@ type ExpenseBuyRepository interface {
 	ExpenseBuyGetByDate(fromDate, toDate time.Time, page, limit int) ([]*schemas.ExpenseBuyResponseSimple, int64, error)
 	ExpenseBuyCreate(userID int64, incomeCreate *schemas.ExpenseBuyCreate) (int64, error)
 	ExpenseBuyUpdate(userID int64, incomeCreate *schemas.ExpenseBuyUpdate) (error)
-	ExpenseBuyDelete(id int64) error
+	ExpenseBuyDelete(memberID int64, id int64) error
 }
 
 type ExpenseBuyService interface {
@@ -19,5 +19,5 @@ type ExpenseBuyService interface {
 	ExpenseBuyGetByDate(fromDate, toDate time.Time, page, limit int) ([]*schemas.ExpenseBuyResponseSimple, int64, error)
 	ExpenseBuyCreate(userID int64, incomeCreate *schemas.ExpenseBuyCreate) (int64, error)
 	ExpenseBuyUpdate(userID int64, incomeCreate *schemas.ExpenseBuyUpdate) (error)
-	ExpenseBuyDelete(id int64) error
+	ExpenseBuyDelete(memberID int64, id int64) error
 }

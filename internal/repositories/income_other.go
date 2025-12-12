@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
 )
@@ -94,9 +96,8 @@ func (r *IncomeOtherRepository) IncomeOtherGetByDate(pointSaleID *int64, fromDat
 	return incomeSchema, total, nil
 }
 
-// IncomeOtherCreate crea un nuevo ingreso
 func (r *IncomeOtherRepository) IncomeOtherCreate(memberID int64, pointSaleID *int64, incomeOtherCreate *schemas.IncomeOtherCreate) (int64, error) {
-	var incomeOtherID int64
+	var incomeOtherSave models.IncomeOther
 
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
 		// Verificar que el tipo de ingreso existe
@@ -122,7 +123,7 @@ func (r *IncomeOtherRepository) IncomeOtherCreate(memberID int64, pointSaleID *i
 				return schemas.ErrorResponse(500, "Error al crear el ingreso", err)
 			}
 
-			incomeOtherID = incomeOther.ID
+			incomeOtherSave = incomeOther
 			return nil
 		}
 
@@ -132,7 +133,7 @@ func (r *IncomeOtherRepository) IncomeOtherCreate(memberID int64, pointSaleID *i
 			Order("hour_open DESC").
 			First(&register).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Apertura de caja no encantrada", err)
+				return schemas.ErrorResponse(404, "Apertura de caja no encontrada", err)
 			}
 			return schemas.ErrorResponse(500, "Error al obtener la apertura de caja", err)
 		}
@@ -143,7 +144,7 @@ func (r *IncomeOtherRepository) IncomeOtherCreate(memberID int64, pointSaleID *i
 			return schemas.ErrorResponse(500, "Error al crear el ingreso", err)
 		}
 
-		incomeOtherID = incomeOther.ID
+		incomeOtherSave = incomeOther
 		return nil
 	})
 
@@ -151,12 +152,21 @@ func (r *IncomeOtherRepository) IncomeOtherCreate(memberID int64, pointSaleID *i
 		return 0, err
 	}
 
-	return incomeOtherID, nil
+	// Auditoría
+	go database.SaveAuditAsync(r.DB, models.AuditLog{
+		MemberID: memberID,
+		Method:   "create",
+		Path:     utils.Ternary(pointSaleID == nil, "income-other", "income-other-point-sale"),
+	}, nil, incomeOtherSave)
+
+	return incomeOtherSave.ID, nil
 }
 
 // IncomeOtherUpdate actualiza un ingreso existente
 func (r *IncomeOtherRepository) IncomeOtherUpdate(memberID int64, pointSaleID *int64, incomeOtherUpdate *schemas.IncomeOtherUpdate) error {
-	return r.DB.Transaction(func(tx *gorm.DB) error {
+	var saveIncome models.IncomeOther
+	var existingIncomeSave models.IncomeOther
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
 		var existingIncome models.IncomeOther
 		if pointSaleID != nil {
 			if err := tx.
@@ -178,6 +188,9 @@ func (r *IncomeOtherRepository) IncomeOtherUpdate(memberID int64, pointSaleID *i
 			}
 		}
 
+		// Guardar estado anterior para auditoría
+		saveIncome = existingIncome
+
 		var typeIncome models.TypeIncome
 		if err := tx.First(&typeIncome, incomeOtherUpdate.TypeIncomeID).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -191,16 +204,29 @@ func (r *IncomeOtherRepository) IncomeOtherUpdate(memberID int64, pointSaleID *i
 		existingIncome.Details = incomeOtherUpdate.Details
 		existingIncome.MethodIncome = incomeOtherUpdate.MethodIncome
 
+		existingIncomeSave = existingIncome
+		
 		if err := tx.Save(&existingIncome).Error; err != nil {
 			return schemas.ErrorResponse(500, "Error al actualizar el ingreso", err)
 		}
 
 		return nil
 	})
+
+	if err == nil {
+		go database.SaveAuditAsync(r.DB, models.AuditLog{
+			MemberID: memberID,
+			Method:   "update",
+			Path:     utils.Ternary(pointSaleID == nil, "income-other", "income-other-point-sale"),
+		}, saveIncome, existingIncomeSave)
+	}
+
+	return err
 }
 
-func (r *IncomeOtherRepository) IncomeOtherDelete(incomeOtherID int64, pointSaleID *int64) error {
-	return r.DB.Transaction(func(tx *gorm.DB) error {
+func (r *IncomeOtherRepository) IncomeOtherDelete(memberID int64, incomeOtherID int64, pointSaleID *int64) error {
+	var saveIncome models.IncomeOther
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
 		// Verificar que el ingreso existe y pertenece al punto de venta
 		var existingIncome models.IncomeOther
 		if pointSaleID != nil {
@@ -223,11 +249,162 @@ func (r *IncomeOtherRepository) IncomeOtherDelete(incomeOtherID int64, pointSale
 			}
 		}
 
+		// Guardar estado antes de eliminar para auditoría
+		saveIncome = existingIncome
+		
 		// Eliminar el ingreso
 		if err := tx.Delete(&existingIncome).Error; err != nil {
 			return schemas.ErrorResponse(500, "Error al eliminar el ingreso", err)
 		}
-
 		return nil
 	})
+
+	if err == nil {
+// Auditoría
+		go database.SaveAuditAsync(r.DB, models.AuditLog{
+			MemberID: memberID,
+			Method:   "delete",
+			Path:     utils.Ternary(pointSaleID == nil, "income-other", "income-other-point-sale"),
+		}, saveIncome, nil)
+	}
+
+	return err
 }
+
+// IncomeOtherCreate crea un nuevo ingreso
+// func (r *IncomeOtherRepository) IncomeOtherCreate(memberID int64, pointSaleID *int64, incomeOtherCreate *schemas.IncomeOtherCreate) (int64, error) {
+// 	var incomeOtherID int64
+
+// 	err := r.DB.Transaction(func(tx *gorm.DB) error {
+// 		// Verificar que el tipo de ingreso existe
+// 		var typeIncome models.TypeIncome
+// 		if err := tx.First(&typeIncome, incomeOtherCreate.TypeIncomeID).Error; err != nil {
+// 			if errors.Is(err, gorm.ErrRecordNotFound) {
+// 				return schemas.ErrorResponse(400, fmt.Sprintf("El tipo de ingreso %d no existe", incomeOtherCreate.TypeIncomeID), err)
+// 			}
+// 			return schemas.ErrorResponse(500, "Error al obtener el tipo de ingreso", err)
+// 		}
+
+// 		incomeOther := models.IncomeOther{
+// 			PointSaleID:  pointSaleID,
+// 			MemberID:     &memberID,
+// 			Total:        incomeOtherCreate.Total,
+// 			TypeIncomeID: incomeOtherCreate.TypeIncomeID,
+// 			Details:      incomeOtherCreate.Details,
+// 			MethodIncome: incomeOtherCreate.MethodIncome,
+// 		}
+
+// 		if pointSaleID == nil {
+// 			if err := tx.Create(&incomeOther).Error; err != nil {
+// 				return schemas.ErrorResponse(500, "Error al crear el ingreso", err)
+// 			}
+
+// 			incomeOtherID = incomeOther.ID
+// 			return nil
+// 		}
+
+// 		var register models.CashRegister
+// 		if err := tx.
+// 			Where("is_close = ? AND point_sale_id = ?", false, pointSaleID).
+// 			Order("hour_open DESC").
+// 			First(&register).Error; err != nil {
+// 			if errors.Is(err, gorm.ErrRecordNotFound) {
+// 				return schemas.ErrorResponse(404, "Apertura de caja no encantrada", err)
+// 			}
+// 			return schemas.ErrorResponse(500, "Error al obtener la apertura de caja", err)
+// 		}
+
+// 		incomeOther.CashRegisterID = &register.ID
+
+// 		if err := tx.Create(&incomeOther).Error; err != nil {
+// 			return schemas.ErrorResponse(500, "Error al crear el ingreso", err)
+// 		}
+
+// 		incomeOtherID = incomeOther.ID
+// 		return nil
+// 	})
+
+// 	if err != nil {
+// 		return 0, err
+// 	}
+
+// 	return incomeOtherID, nil
+// }
+
+// // IncomeOtherUpdate actualiza un ingreso existente
+// func (r *IncomeOtherRepository) IncomeOtherUpdate(memberID int64, pointSaleID *int64, incomeOtherUpdate *schemas.IncomeOtherUpdate) error {
+// 	return r.DB.Transaction(func(tx *gorm.DB) error {
+// 		var existingIncome models.IncomeOther
+// 		if pointSaleID != nil {
+// 			if err := tx.
+// 				Where("id = ? AND point_sale_id = ?", incomeOtherUpdate.ID, pointSaleID).
+// 				First(&existingIncome).Error; err != nil {
+// 				if errors.Is(err, gorm.ErrRecordNotFound) {
+// 					return schemas.ErrorResponse(404, "Ingreso no encontrado", err)
+// 				}
+// 				return schemas.ErrorResponse(500, "Error al obtener el ingreso", err)
+// 			}
+// 		} else {
+// 			if err := tx.
+// 				Where("id = ?", incomeOtherUpdate.ID).
+// 				First(&existingIncome).Error; err != nil {
+// 				if errors.Is(err, gorm.ErrRecordNotFound) {
+// 					return schemas.ErrorResponse(404, "Ingreso no encontrado", err)
+// 				}
+// 				return schemas.ErrorResponse(500, "Error al obtener el ingreso", err)
+// 			}
+// 		}
+
+// 		var typeIncome models.TypeIncome
+// 		if err := tx.First(&typeIncome, incomeOtherUpdate.TypeIncomeID).Error; err != nil {
+// 			if errors.Is(err, gorm.ErrRecordNotFound) {
+// 				return schemas.ErrorResponse(400, fmt.Sprintf("El tipo de ingreso %d no existe", incomeOtherUpdate.TypeIncomeID), err)
+// 			}
+// 			return schemas.ErrorResponse(500, "Error al obtener el tipo de ingreso", err)
+// 		}
+
+// 		existingIncome.Total = incomeOtherUpdate.Total
+// 		existingIncome.TypeIncomeID = incomeOtherUpdate.TypeIncomeID
+// 		existingIncome.Details = incomeOtherUpdate.Details
+// 		existingIncome.MethodIncome = incomeOtherUpdate.MethodIncome
+
+// 		if err := tx.Save(&existingIncome).Error; err != nil {
+// 			return schemas.ErrorResponse(500, "Error al actualizar el ingreso", err)
+// 		}
+
+// 		return nil
+// 	})
+// }
+
+// func (r *IncomeOtherRepository) IncomeOtherDelete(incomeOtherID int64, pointSaleID *int64) error {
+// 	return r.DB.Transaction(func(tx *gorm.DB) error {
+// 		// Verificar que el ingreso existe y pertenece al punto de venta
+// 		var existingIncome models.IncomeOther
+// 		if pointSaleID != nil {
+// 			if err := tx.
+// 				Where("id = ? AND point_sale_id = ?", incomeOtherID, pointSaleID).
+// 				First(&existingIncome).Error; err != nil {
+// 				if errors.Is(err, gorm.ErrRecordNotFound) {
+// 					return schemas.ErrorResponse(404, "Ingreso no encontrado", err)
+// 				}
+// 				return schemas.ErrorResponse(500, "Error al obtener el ingreso", err)
+// 			}
+// 		} else {
+// 			if err := tx.
+// 				Where("id = ?", incomeOtherID).
+// 				First(&existingIncome).Error; err != nil {
+// 				if errors.Is(err, gorm.ErrRecordNotFound) {
+// 					return schemas.ErrorResponse(404, "Ingreso no encontrado", err)
+// 				}
+// 				return schemas.ErrorResponse(500, "Error al obtener el ingreso", err)
+// 			}
+// 		}
+
+// 		// Eliminar el ingreso
+// 		if err := tx.Delete(&existingIncome).Error; err != nil {
+// 			return schemas.ErrorResponse(500, "Error al eliminar el ingreso", err)
+// 		}
+
+// 		return nil
+// 	})
+// }

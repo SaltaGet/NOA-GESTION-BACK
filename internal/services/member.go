@@ -21,7 +21,7 @@ func (m *MemberService) MemberGetAll(limit, page int, search *map[string]string)
 	return m.MemberRepository.MemberGetAll(limit, page, search)
 }
 
-func (m *MemberService) MemberCreate(memeberCreate *schemas.MemberCreate, plan *schemas.PlanResponseDTO) (int64, error) {
+func (m *MemberService) MemberCreate(memberID int64, memeberCreate *schemas.MemberCreate, plan *schemas.PlanResponseDTO) (int64, error) {
 	amountMember, err := m.MemberRepository.MemberCount()
 	if err != nil {
 		return 0, err
@@ -31,19 +31,19 @@ func (m *MemberService) MemberCreate(memeberCreate *schemas.MemberCreate, plan *
 		return 0, schemas.ErrorResponse(400, "El plan no permite agregar mas miembros", fmt.Errorf("el plan no permite agregar mas miembros"))
 	}
 
-	return m.MemberRepository.MemberCreate(memeberCreate)
+	return m.MemberRepository.MemberCreate(memberID, memeberCreate)
 }
 
-func (m *MemberService) MemberUpdate(memeberUpdate *schemas.MemberUpdate) error {
-	return m.MemberRepository.MemberUpdate(memeberUpdate)
+func (m *MemberService) MemberUpdate(memberID int64, memeberUpdate *schemas.MemberUpdate) error {
+	return m.MemberRepository.MemberUpdate(memberID, memeberUpdate)
 }
 
 func (m *MemberService) MemberUpdatePassword(memberID int64, memeberCreate *schemas.MemberUpdatePassword) error {
 	return m.MemberRepository.MemberUpdatePassword(memberID, memeberCreate)
 }
 
-func (m *MemberService) MemberDelete(id int64) (error) {
-	return m.MemberRepository.MemberDelete(id)
+func (m *MemberService) MemberDelete(memberID int64, id int64) (error) {
+	return m.MemberRepository.MemberDelete(memberID, id)
 }
 
 // ********************************************************************************************************************************

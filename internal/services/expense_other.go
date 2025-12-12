@@ -22,6 +22,6 @@ func (e *ExpenseOtherService) ExpenseOtherUpdate(memberID int64, pointSaleID *in
 	return e.ExpenseOtherRepository.ExpenseOtherUpdate(memberID, pointSaleID, expenseOtherUpdate)
 }
 
-func (e *ExpenseOtherService) ExpenseOtherDelete(expenseOtherID int64, pointSaleID *int64) error {
-	return e.ExpenseOtherRepository.ExpenseOtherDelete(expenseOtherID, pointSaleID)
+func (e *ExpenseOtherService) ExpenseOtherDelete(memberID int64, expenseOtherID int64, pointSaleID *int64) error {
+	return e.ExpenseOtherRepository.ExpenseOtherDelete(memberID, expenseOtherID, pointSaleID)
 }

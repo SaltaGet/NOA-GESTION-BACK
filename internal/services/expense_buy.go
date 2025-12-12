@@ -22,6 +22,6 @@ func (e *ExpenseBuyService) ExpenseBuyUpdate(memberID int64, expenseBuy *schemas
 	return e.ExpenseBuyRepository.ExpenseBuyUpdate(memberID, expenseBuy)
 }
 
-func (e *ExpenseBuyService) ExpenseBuyDelete(id int64) error {
-	return e.ExpenseBuyRepository.ExpenseBuyDelete(id)
+func (e *ExpenseBuyService) ExpenseBuyDelete(memberID int64, id int64) error {
+	return e.ExpenseBuyRepository.ExpenseBuyDelete(memberID,id)
 }

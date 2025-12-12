@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
@@ -19,7 +18,6 @@ import (
 //	@Router			/api/v1/point_sale/get/{id} [get]
 func (p *PointSaleController) PointSaleGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	logging.INFO("Obtener punto de venta por ID: %s", id)
 	idint, err := validators.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
@@ -30,7 +28,6 @@ func (p *PointSaleController) PointSaleGetByID(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Punto de venta por ID obtenido con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    pointSale,
@@ -48,13 +45,11 @@ func (p *PointSaleController) PointSaleGetByID(c *fiber.Ctx) error {
 //	@Success		200	{object}	schemas.Response{body=[]schemas.PointSaleResponse}	"puntos de ventas obtenidos con éxito"
 //	@Router			/api/v1/point_sale/get_all [get]
 func (p *PointSaleController) PointSaleGetAll(c *fiber.Ctx) error {
-	logging.INFO("Obtener todos los puntos de ventas")
 	pointSale, err := p.PointSaleService.PointSaleGetAll()
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Puntos de ventas obtenidos con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    pointSale,
@@ -73,14 +68,12 @@ func (p *PointSaleController) PointSaleGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/point_sale/get_all_by_member [get]
 func (p *PointSaleController) PointSaleGetAllByMember(c *fiber.Ctx) error {
 	member := c.Locals("user").(*schemas.AuthenticatedUser)
-	logging.INFO("Obtener puntos de ventas asociados a miembro: %d", member.ID)
 
 	permissions, err := p.PointSaleService.PointSaleGetAllByMember(member.ID)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Puntos de ventas obtenidos con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    permissions,
@@ -99,7 +92,6 @@ func (p *PointSaleController) PointSaleGetAllByMember(c *fiber.Ctx) error {
 //	@Success		200		{object}	schemas.Response		"puntos de ventas creado con éxito"
 //	@Router			/api/v1/point_sale/create [post]
 func (p *PointSaleController) PointSaleCreate(c *fiber.Ctx) error {
-	logging.INFO("Crear punto de venta")
 	var pointSale schemas.PointSaleCreate
 	if err := c.BodyParser(&pointSale); err != nil {
 		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el modelo", err))
@@ -109,13 +101,12 @@ func (p *PointSaleController) PointSaleCreate(c *fiber.Ctx) error {
 	}
 
 	plan := c.Locals("current_plan").(*schemas.PlanResponseDTO)
-
-	id, err := p.PointSaleService.PointSaleCreate(&pointSale, plan)
+member := c.Locals("user").(*schemas.AuthenticatedUser)
+	id, err := p.PointSaleService.PointSaleCreate(member.ID, &pointSale, plan)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Puntos de ventas obtenidos con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    id,
@@ -134,7 +125,6 @@ func (p *PointSaleController) PointSaleCreate(c *fiber.Ctx) error {
 //	@Success		200		{object}	schemas.Response		"puntos de ventas editado con éxito"
 //	@Router			/api/v1/point_sale/update [put]
 func (p *PointSaleController) PointSaleUpdate(c *fiber.Ctx) error {
-	logging.INFO("Editar punto de venta")
 	var pointSale schemas.PointSaleUpdate
 	if err := c.BodyParser(&pointSale); err != nil {
 		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el modelo", err))
@@ -143,12 +133,12 @@ func (p *PointSaleController) PointSaleUpdate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	err := p.PointSaleService.PointSaleUpdate(&pointSale)
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	err := p.PointSaleService.PointSaleUpdate(member.ID, &pointSale)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Puntos de venta editado con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -167,7 +157,6 @@ func (p *PointSaleController) PointSaleUpdate(c *fiber.Ctx) error {
 //	@Success		200		{object}	schemas.Response			"puntos de venta principal editado con éxito"
 //	@Router			/api/v1/point_sale/update_main [put]
 func (p *PointSaleController) PointSaleUpdateMain(c *fiber.Ctx) error {
-	logging.INFO("Editar punto de venta principal")
 	var pointSale schemas.PointSaleUpdateMain
 	if err := c.BodyParser(&pointSale); err != nil {
 		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el modelo", err))
@@ -176,12 +165,12 @@ func (p *PointSaleController) PointSaleUpdateMain(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	err := p.PointSaleService.PointSaleUpdateMain(&pointSale)
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	err := p.PointSaleService.PointSaleUpdateMain(member.ID, &pointSale)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Puntos de venta principal editado con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,

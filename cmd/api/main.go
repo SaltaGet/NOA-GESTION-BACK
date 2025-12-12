@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -29,13 +27,14 @@ import (
 
 	// "github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	// "github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/swagger"
 	"github.com/joho/godotenv"
 
 	// "github.com/prometheus/client_golang/prometheus/promhttp"
 
 	_ "github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/docs"
+	"github.com/rs/zerolog/log"
 )
 
 // @title						APP NOA Gestion
@@ -51,38 +50,42 @@ import (
 func main() {
 	if _, err := os.Stat(".env"); err == nil {
 		if err := godotenv.Load(".env"); err != nil {
-			log.Fatalf("Error cargando .env local: %v", err)
+			log.Fatal().Err(err).Msg("Error cargando .env local")
 		}
 	}
+
+	logging.InitLogging()
 
 	path := os.Getenv("APP_ROOT")
 	if path != "" {
 		os.MkdirAll(path+"/backups", os.ModePerm)
 	} else {
-		log.Fatal("No está indicada la ruta raiz")
+		log.Fatal().Msg("No está indicada la ruta raiz")
 	}
 
 	local := os.Getenv("LOCAL")
 	if local == "true" {
 		if err := jobs.GenerateSwagger(); err != nil {
-			log.Fatalf("Error ejecutando swag init: %v", err)
+			log.Fatal().Err(err).Msg("Error ejecutando swag init",)
 		}
 	}
 
 	// 🔥 Inicializar Redis (opcional, falla gracefully)
 	if err := cache.InitRedis(); err != nil {
-		log.Printf("⚠️  Advertencia: Redis no disponible - %v", err)
+		log.Warn().Err(err).Msg("⚠️ Advertencia: Redis no disponible")
 	}
 
 	// Inicializar cache de tenant DBs
-	cacheSize := 100
+	cacheSize := 1000
 	if err := database.InitDBCache(cacheSize); err != nil {
-		log.Fatalf("Error al inicializar cache de DBs: %v", err)
+		log.Fatal().Err(err).Msg("Error al inicializar cache de DBs")
 	}
 
-	db, err := database.ConnectDB()
+	emailCfg := initial.InitEmail()
+
+	db, err := database.ConnectDB(emailCfg)
 	if err != nil {
-		log.Fatalf("Error al conectar con la base de datos: %v", err)
+		log.Fatal().Err(err).Msg("Error al conectar con la base de datos")
 	}
 
 	// Context para shutdown graceful
@@ -104,14 +107,12 @@ func main() {
 	// })
 	// defer s.Shutdown()
 
-	emailCfg := initial.InitEmail()
-
 	dep := dependencies.NewApplication(db, emailCfg)
 
 	err = jobs.Migrations(dep)
 	if err != nil {
 		// log.Fatalf("Error al aplicar migraciones: %v", err)
-		logging.ERROR("Error al aplicar migraciones: %v", err)
+		log.Err(err).Msg("Error al aplicar migraciones")
 	}
 
 	app := fiber.New(fiber.Config{
@@ -150,18 +151,18 @@ func main() {
 		MaxAge:           maxAge,
 	}))
 
-	// app.Use(limiter.New(limiter.Config{
-	// 	Max:        120,
-	// 	Expiration: 1 * time.Minute,
-	// 	KeyGenerator: func(c *fiber.Ctx) string {
-	// 		return c.IP()
-	// 	},
-	// 	LimitReached: func(c *fiber.Ctx) error {
-	// 		return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
-	// 			"error": "Demasiadas peticiones. Intentá más tarde.",
-	// 		})
-	// 	},
-	// }))
+	app.Use(limiter.New(limiter.Config{
+		Max:        250,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "Demasiadas peticiones. Intentá más tarde.",
+			})
+		},
+	}))
 
 	app.Get("/api/swagger/*", swagger.HandlerDefault)
 	app.Get("/api/health", healthCheck)
@@ -173,27 +174,19 @@ func main() {
 	initBackup := os.Getenv("INIT_BACKUP")
 	if initBackup == "true" {
 		c := cron.New()
-		env := os.Getenv("ENV")
-		if env == "prod" {
-			// _, err = c.AddFunc("0 4 * * *", func() {
-			_, err = c.AddFunc("@every 1m", func() {
-				logging.INFO("⏰ [CRON] Iniciando backup diario...")
-				cfg, err := jobs.LoadConfig(dep)
-				if err != nil {
-					logging.ERROR("❌ [CRON] error leyendo config: %s", err.Error())
-					return
-				}
-				// if err := jobs.ExampleRestore(cfg, "string_tenant2"); err != nil {
-				// 	// log.Fatal(err)
-				// 	logging.ERROR("❌ [CRON] error restaurando DB: %s", err.Error())
-				// }
-				fmt.Println("⏰ Iniciando backup:", cfg.Databases)
-				jobs.RunBackup(cfg)
-			})
+		_, err = c.AddFunc("0 4 * * *", func() {
+			log.Info().Msg("⏰ [CRON] Iniciando backup diario...")
+			cfg, err := jobs.LoadConfig(dep)
 			if err != nil {
-				logging.ERROR("❌ Error al crear cron job: %s", err.Error())
-				panic(err)
+				log.Err(err).Msg("❌ [CRON] error leyendo config")
+				return
 			}
+			log.Info().Strs("databases", cfg.Databases).Msg("⏰ Iniciando backup")
+			jobs.RunBackup(cfg)
+		})
+		if err != nil {
+			log.Err(err).Msg("❌ Error al crear cron job")
+			panic(err)
 		}
 
 		c.Start()
@@ -207,9 +200,9 @@ func main() {
 	// Iniciar servidor en goroutine
 	go func() {
 		port := getEnv("PORT", "3000")
-		log.Printf("🚀 Servidor iniciado en http://localhost:%s", port)
+		log.Info().Msgf("🚀 Servidor iniciado en http://localhost:%s", port)
 		if err := app.Listen(":" + port); err != nil {
-			log.Printf("Error al iniciar servidor: %v", err)
+			log.Err(err).Msg("Error al iniciar servidor")
 		}
 	}()
 
@@ -225,25 +218,25 @@ func main() {
 	defer shutdownCancel()
 
 	if err := app.ShutdownWithContext(shutdownCtx); err != nil {
-		log.Printf("Error durante shutdown: %v", err)
+		log.Err(err).Msg("Error durante shutdown")
 	}
 
 	// Cerrar todas las conexiones
-	log.Println("Cerrando conexiones...")
+	log.Debug().Msg("Cerrando conexiones...")
 
 	if err := database.CloseDB(db); err != nil {
-		log.Printf("Error al cerrar DB principal: %v", err)
+		log.Err(err).Msg("Error al cerrar DB principal")
 	}
 
 	if err := database.CloseAllTenantDBs(); err != nil {
-		log.Printf("Error al cerrar DBs de tenants: %v", err)
+		log.Err(err).Msg("Error al cerrar DBs de tenants")
 	}
 
 	if err := cache.CloseRedis(); err != nil {
-		log.Printf("Error al cerrar Redis: %v", err)
+		log.Err(err).Msg("Error al cerrar Redis")
 	}
 
-	log.Println("✅ Servidor apagado correctamente")
+	log.Info().Msg("✅ Servidor apagado correctamente")
 }
 
 // healthCheck endpoint de health check

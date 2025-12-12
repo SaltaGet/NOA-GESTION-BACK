@@ -3,10 +3,10 @@ package controllers
 import (
 	"strconv"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
+	"github.com/rs/zerolog/log"
 )
 
 // ClientGetByID godoc
@@ -21,7 +21,6 @@ import (
 //	@Success		200	{object}	schemas.Response{body=schemas.ClientResponse}
 //	@Router			/api/v1/client/get/{id} [get]
 func (cl *ClientController) ClientGetByID(c *fiber.Ctx) error {
-	logging.INFO("Obtener un cliente por ID")
 	id := c.Params("id")
 	idint, err := validators.IdValidate(id)
 	if err != nil {
@@ -33,7 +32,6 @@ func (cl *ClientController) ClientGetByID(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Cliente obtenido con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    client,
@@ -53,10 +51,9 @@ func (cl *ClientController) ClientGetByID(c *fiber.Ctx) error {
 //	@Success		200		{object}	schemas.Response{body=[]schemas.ClientResponseDTO}
 //	@Router			/api/v1/client [get]
 func (cl *ClientController) ClientGetByFilter(c *fiber.Ctx) error {
-	logging.INFO("Obtener clientes")
 	search := c.Query("search")
 	if len(search) < 3 {
-		logging.ERROR("Error: El valor no debe de ser vacio o menor a 3 caracteres")
+		log.Err(nil).Msg("Error: El valor no debe de ser vacio o menor a 3 caracteres")
 		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
@@ -69,7 +66,6 @@ func (cl *ClientController) ClientGetByFilter(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Clientes obtenidos con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    clients,
@@ -95,7 +91,6 @@ func (cl *ClientController) ClientGetByFilter(c *fiber.Ctx) error {
 //	@Success		200			{object}	schemas.Response{body=[]schemas.ClientResponseDTO}
 //	@Router			/api/v1/client/get_all [get]
 func (cl *ClientController) ClientGetAll(c *fiber.Ctx) error {
-	logging.INFO("Obtener todos los clientes")
 	limit, err := strconv.ParseInt(c.Query("limit"), 10, 64)
 	if err != nil {
 		limit = 10
@@ -132,7 +127,6 @@ func (cl *ClientController) ClientGetAll(c *fiber.Ctx) error {
 
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
-	logging.INFO("Clientes obtenidos con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    map[string]any{"data": clients, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
@@ -152,13 +146,11 @@ func (cl *ClientController) ClientGetAll(c *fiber.Ctx) error {
 //	@Success		200				{object}	schemas.Response
 //	@Router			/api/v1/client/create [post]
 func (cl *ClientController) ClientCreate(c *fiber.Ctx) error {
-	logging.INFO("Crear un cliente")
-
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
 
 	var clientCreate schemas.ClientCreate
 	if err := c.BodyParser(&clientCreate); err != nil {
-		logging.ERROR("Error: %s", err.Error())
+		log.Err(err).Msg("Error al parsear el body")
 		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
@@ -174,7 +166,6 @@ func (cl *ClientController) ClientCreate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Cliente creado con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    clientCreated,
@@ -194,10 +185,9 @@ func (cl *ClientController) ClientCreate(c *fiber.Ctx) error {
 //	@Success		200				{object}	schemas.Response
 //	@Router			/api/v1/client/update [put]
 func (cl *ClientController) ClientUpdate(c *fiber.Ctx) error {
-	logging.INFO("Actualizar un cliente")
 	var clientUpdate schemas.ClientUpdate
 	if err := c.BodyParser(&clientUpdate); err != nil {
-		logging.ERROR("Error: %s", err.Error())
+		log.Err(err).Msg("Error al parsear el body")
 		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
@@ -208,12 +198,12 @@ func (cl *ClientController) ClientUpdate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	err := cl.ClientService.ClientUpdate(&clientUpdate)
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	err := cl.ClientService.ClientUpdate(member.ID, &clientUpdate)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Cliente actualizado con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -233,10 +223,9 @@ func (cl *ClientController) ClientUpdate(c *fiber.Ctx) error {
 //	@Success		200					{object}	schemas.Response
 //	@Router			/api/v1/client/update_credit [put]
 func (cl *ClientController) ClientUpdateCredit(c *fiber.Ctx) error {
-	logging.INFO("Actualizar credito de un cliente")
 	var clientUpdate schemas.ClientUpdateCredit
 	if err := c.BodyParser(&clientUpdate); err != nil {
-		logging.ERROR("Error: %s", err.Error())
+		log.Err(err).Msg("Error al parsear el body")
 		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
@@ -248,13 +237,12 @@ func (cl *ClientController) ClientUpdateCredit(c *fiber.Ctx) error {
 	}
 
 	pointID := c.Locals("point_sale_id").(int64)
-
-	err := cl.ClientService.ClientUpdateCredit(pointID, &clientUpdate)
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	err := cl.ClientService.ClientUpdateCredit(member.ID, pointID, &clientUpdate)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Credito de un cliente actualizado con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -274,19 +262,18 @@ func (cl *ClientController) ClientUpdateCredit(c *fiber.Ctx) error {
 //	@Success		200	{object}	schemas.Response
 //	@Router			/api/v1/client/delete/{id} [delete]
 func (cl *ClientController) ClientDelete(c *fiber.Ctx) error {
-	logging.INFO("Eliminar un cliente")
 	id := c.Params("id")
 	idint, err := validators.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	err = cl.ClientService.ClientDelete(idint)
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	err = cl.ClientService.ClientDelete(member.ID, idint)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Cliente eliminado con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,

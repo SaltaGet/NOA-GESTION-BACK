@@ -202,18 +202,18 @@ func (p *ProductService) ProductGetAll(page, limit int) ([]*schemas.ProductFullR
 	return productsResponse, total, nil
 }
 
-func (p *ProductService) ProductCreate(productCreate *schemas.ProductCreate, plan *schemas.PlanResponseDTO) (int64, error) {
-	return p.ProductRepository.ProductCreate(productCreate, plan)
+func (p *ProductService) ProductCreate(memberID int64, productCreate *schemas.ProductCreate, plan *schemas.PlanResponseDTO) (int64, error) {
+	return p.ProductRepository.ProductCreate(memberID, productCreate, plan)
 }
 
-func (p *ProductService) ProductUpdate(productUpdate *schemas.ProductUpdate) error {
-	return p.ProductRepository.ProductUpdate(productUpdate)
+func (p *ProductService) ProductUpdate(memberID int64, productUpdate *schemas.ProductUpdate) error {
+	return p.ProductRepository.ProductUpdate(memberID, productUpdate)
 }
-func (p *ProductService) ProductPriceUpdate(productUpdate *schemas.ListPriceUpdate) error {
-	return p.ProductRepository.ProductPriceUpdate(productUpdate)
+func (p *ProductService) ProductPriceUpdate(memberID int64, productUpdate *schemas.ListPriceUpdate) error {
+	return p.ProductRepository.ProductPriceUpdate(memberID, productUpdate)
 }
 
-func (p *ProductService) ProductDelete(id int64) error {
-	return p.ProductRepository.ProductDelete(id)
+func (p *ProductService) ProductDelete(memberID int64, id int64) error {
+	return p.ProductRepository.ProductDelete(memberID, id)
 
 }

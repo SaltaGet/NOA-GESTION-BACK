@@ -1,9 +1,9 @@
 package controllers
 
 import (
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/gofiber/fiber/v2"
+	"github.com/rs/zerolog/log"
 )
 
 //	TypeMovementGetAll godoc
@@ -18,14 +18,13 @@ import (
 //	@Success		200				{object}	schemas.Response{body=[]schemas.TypeMovementResponse}	"Movimientos obtenidos con éxito"
 //	@Router			/api/v1/type_movement/get_all [get]
 func (t *TypeMovementController) TypeMovementGetAll(c *fiber.Ctx) error {
-	logging.INFO("Obtener todos los tipos de movimientos")
 	typeMovement := c.Query("type_movement")
 	if typeMovement != "income" && typeMovement != "expense" {
-		logging.ERROR("Error: type_movement es requerido")
+		log.Err(nil).Msg("Error: type_movement es requerido, tiene que ser income o expense")
 		return c.Status(400).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
-			Message: "Error: type_movement es requerido",
+			Message: "type_movement es requerido, tiene que ser income o expense",
 		})
 	}
 
@@ -34,7 +33,6 @@ func (t *TypeMovementController) TypeMovementGetAll(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Tipos de movimientos obtenidos con éxito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    movement,
@@ -62,7 +60,8 @@ func (t *TypeMovementController) TypeMovementCreate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	err := t.TypeMovementService.TypeMovementCreate(movementCreate)
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	err := t.TypeMovementService.TypeMovementCreate(member.ID, movementCreate)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -94,7 +93,8 @@ func (t *TypeMovementController) TypeMovementUpdate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	err := t.TypeMovementService.TypeMovementUpdate(movementUpdate)
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	err := t.TypeMovementService.TypeMovementUpdate(member.ID, movementUpdate)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}

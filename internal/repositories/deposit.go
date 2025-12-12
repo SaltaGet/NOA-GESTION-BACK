@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"gorm.io/gorm"
@@ -51,28 +52,79 @@ func (r *DepositRepository) DepositGetAll(page, limit int) ([]*models.Product, i
 	return products, total, nil
 }
 
-func (r *DepositRepository) DepositUpdateStock(updateStock schemas.DepositUpdateStock) error {
-	return r.DB.Transaction(func(tx *gorm.DB) error {
+// func (r *DepositRepository) DepositUpdateStock(updateStock schemas.DepositUpdateStock) error {
+// 	return r.DB.Transaction(func(tx *gorm.DB) error {
+// 		var product models.Product
+// 		if err := tx. Select("id").Where("id = ?", updateStock.ProductID).First(&product).Error; err != nil {
+// 			if errors.Is(err, gorm.ErrRecordNotFound) {
+// 				return schemas.ErrorResponse(404, "producto no encontrado", err)
+// 			}
+// 			return schemas.ErrorResponse(500, "error al obtener el producto", err)
+// 		}
+
+// 		var deposit models.Deposit
+
+// 		if err := tx.Where("product_id = ?", updateStock.ProductID).FirstOrCreate(&deposit, &models.Deposit{ProductID: updateStock.ProductID}).Error; err != nil {
+// 			return schemas.ErrorResponse(500, "error al actualizar el stock", err)
+// 		}
+
+// 		stock := *updateStock.Stock
+// 		switch updateStock.Method {
+// 		case "add":
+// 			deposit.Stock += stock
+// 		case "subtract":
+// 			if deposit.Stock < stock{
+// 				return schemas.ErrorResponse(400, "stock insuficiente", fmt.Errorf("stock insuficiente: %.2f", stock))
+// 			}
+// 			deposit.Stock -= stock
+// 		case "set":
+// 			deposit.Stock = stock
+// 		default:
+// 			return schemas.ErrorResponse(400, "metodo de actualizacion no valido", fmt.Errorf("metodo de actualizacion no valido"))
+// 		}
+
+// 		if err := tx.Save(&deposit).Error; err != nil {
+// 			return schemas.ErrorResponse(500, "error al actualizar el stock", err)
+// 		}
+
+// 		return nil
+// 	})
+// }
+
+func (r *DepositRepository) DepositUpdateStock(memberID int64, updateStock schemas.DepositUpdateStock) error {
+	var saveDeposit any
+	var finalDeposit any
+	var isNewRecord bool
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
 		var product models.Product
-		if err := tx. Select("id").Where("id = ?", updateStock.ProductID).First(&product).Error; err != nil {
+		if err := tx.Select("id").Where("id = ?", updateStock.ProductID).First(&product).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return schemas.ErrorResponse(404, "producto no encontrado", err)
 			}
 			return schemas.ErrorResponse(500, "error al obtener el producto", err)
-		}	
+		}
 
 		var deposit models.Deposit
-
-		if err := tx.Where("product_id = ?", updateStock.ProductID).FirstOrCreate(&deposit, &models.Deposit{ProductID: updateStock.ProductID}).Error; err != nil {
-			return schemas.ErrorResponse(500, "error al actualizar el stock", err)
+		// Verificar si el registro existe
+		if err := tx.Where("product_id = ?", updateStock.ProductID).First(&deposit).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				// Si no existe, crear uno nuevo
+				deposit = models.Deposit{ProductID: updateStock.ProductID, Stock: 0}
+				isNewRecord = true
+			} else {
+				return schemas.ErrorResponse(500, "error al obtener el stock", err)
+			}
 		}
+
+		// Guardar estado anterior para auditoría
+		saveDeposit = deposit
 
 		stock := *updateStock.Stock
 		switch updateStock.Method {
 		case "add":
 			deposit.Stock += stock
 		case "subtract":
-			if deposit.Stock < stock{
+			if deposit.Stock < stock {
 				return schemas.ErrorResponse(400, "stock insuficiente", fmt.Errorf("stock insuficiente: %.2f", stock))
 			}
 			deposit.Stock -= stock
@@ -86,6 +138,28 @@ func (r *DepositRepository) DepositUpdateStock(updateStock schemas.DepositUpdate
 			return schemas.ErrorResponse(500, "error al actualizar el stock", err)
 		}
 
+		// Guardar auditoría
+
+		finalDeposit = deposit
+
 		return nil
 	})
+
+	if err == nil {
+		method := "update"
+		path := "deposit"
+
+		if isNewRecord {
+			method = "create"
+			path = "deposit"
+		}
+
+		go database.SaveAuditAsync(r.DB, models.AuditLog{
+			MemberID: memberID,
+			Method:   method,
+			Path:     path,
+		}, saveDeposit, finalDeposit)
+	}
+
+	return err
 }

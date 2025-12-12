@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/jinzhu/copier"
@@ -31,8 +32,8 @@ func (r *CashRegisterRepository) CashRegisterExistOpen(pointSaleID int64) (bool,
 func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*schemas.CashRegisterFullResponse, error) {
 	var register models.CashRegister
 	if err := r.DB.
-		Preload("MemberOpen", func(db *gorm.DB) *gorm.DB { return db.Unscoped()}).
-		Preload("MemberClose", func(db *gorm.DB) *gorm.DB { return db.Unscoped()}).
+		Preload("MemberOpen", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
+		Preload("MemberClose", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
 		Where("id = ? AND point_sale_id = ?", id, pointSaleID).
 		First(&register).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -77,22 +78,6 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 
 	var incomeOther []*schemas.IncomeOtherResponse
 	_ = copier.Copy(&incomeOther, &incomeOtherModel)
-
-	// var expenseBuyModel []models.ExpenseBuy
-	// if err := r.DB.Select("id", "total", "details", "created_at").
-	// 	Preload("Supplier", func(db *gorm.DB) *gorm.DB {
-	// 		return db.Select("id", "name", "company_name")
-	// 	}).
-	// 	Preload("PayExpenseBuy", func(db *gorm.DB) *gorm.DB {
-	// 		return db.Select("id", "total", "method_pay")
-	// 	}).
-	// 	Where("point_sale_id = ?", pointSaleID).
-	// 	Find(&expenseBuyModel).Error; err != nil {
-	// 	return nil, schemas.ErrorResponse(500, "error al obtener egresos de compra de caja", err)
-	// }
-
-	// var expenseBuyResponseSimple []schemas.ExpenseBuyResponseSimple
-	// _ = copier.Copy(&expenseBuyResponseSimple, &expenseBuyModel)
 
 	var expensesOtherModel []models.ExpenseOther
 	if err := r.DB.Select("id", "total", "cash_register_id", "details", "pay_method", "created_at", "member_id").
@@ -141,6 +126,8 @@ func (r *CashRegisterRepository) CashRegisterOpen(pointSaleID int64, userID int6
 		return schemas.ErrorResponse(500, "error al registrar la apertura de caja", err)
 	}
 
+	go database.SaveAuditAsync(r.DB, models.AuditLog{MemberID: userID, Path: "cash_register", Method: "create"}, nil, registerOpen)
+
 	return nil
 }
 
@@ -156,14 +143,12 @@ func (r *CashRegisterRepository) CashRegisterClose(pointSaleID int64, userID int
 		return schemas.ErrorResponse(500, "error al obtener la apertura de caja", err)
 	}
 
+	oldRegister := register
+
 	var member models.Member
 	if err := r.DB.Preload("Role").First(&member, userID).Error; err != nil {
 		return schemas.ErrorResponse(404, "usuario no encontrado", err)
 	}
-
-	// if member.Role.Name != "admin" && member.ID != register.MemberOpenID {
-	// 	return schemas.ErrorResponse(403, "no tienes permiso para cerrar la caja, solo el creador o el admin", fmt.Errorf("no tienes permiso para cerrar la caja, solo el creador o el admin"))
-	// }
 
 	now := time.Now().UTC()
 	register.CloseAmount = &amountOpen.CloseAmount
@@ -175,14 +160,20 @@ func (r *CashRegisterRepository) CashRegisterClose(pointSaleID int64, userID int
 		return schemas.ErrorResponse(500, "error al cerrar la caja", err)
 	}
 
+	go database.SaveAuditAsync(r.DB, models.AuditLog{
+		MemberID: userID,
+		Method:   "update",
+		Path:     "cash_register",
+	}, oldRegister, register)
+
 	return nil
 }
 
 func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID int64, fromDate, toDate time.Time) ([]*schemas.CashRegisterInformResponse, error) {
 	var registers []*models.CashRegister
 	if err := r.DB.
-		Preload("MemberOpen", func(db *gorm.DB) *gorm.DB { return db.Unscoped()}).
-		Preload("MemberClose", func(db *gorm.DB) *gorm.DB { return db.Unscoped()}).
+		Preload("MemberOpen", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
+		Preload("MemberClose", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
 		Where("point_sale_id = ? AND created_at >= ? AND created_at <= ?", pointSaleID, fromDate, toDate).
 		Order("created_at DESC").
 		Find(&registers).Error; err != nil {

@@ -7,14 +7,14 @@ import (
 
 type TypeMovementRepository interface {
 	TypeMovementGetAll(typeMovement string) ([]*schemas.TypeMovementResponse, error)
-	TypeMovementCreate(movementCreate schemas.TypeMovementCreate) (error)
-	TypeMovementUpdate(movementUpdate schemas.TypeMovementUpdate) (error)
+	TypeMovementCreate(memberID int64, movementCreate schemas.TypeMovementCreate) (error)
+	TypeMovementUpdate(memberID int64, movementUpdate schemas.TypeMovementUpdate) (error)
 }
 
 type TypeMovementService interface {
 	TypeMovementGetAll(typeMovement string) ([]*schemas.TypeMovementResponse, error)
-	TypeMovementCreate(movementCreate schemas.TypeMovementCreate) (error)
-	TypeMovementUpdate(movementUpdate schemas.TypeMovementUpdate) (error)
+	TypeMovementCreate(memberID int64, movementCreate schemas.TypeMovementCreate) (error)
+	TypeMovementUpdate(memberID int64, movementUpdate schemas.TypeMovementUpdate) (error)
 }
 
 

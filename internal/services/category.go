@@ -29,14 +29,14 @@ func (s *CategoryService) CategoryGetAll() ([]*schemas.CategoryResponse, error) 
 	return categoriesResponse, nil
 }
 
-func (s *CategoryService) CategoryCreate(categoryCreate *schemas.CategoryCreate) (int64, error) {
-	return s.CategoryRepository.CategoryCreate(categoryCreate)
+func (s *CategoryService) CategoryCreate(memberID int64, categoryCreate *schemas.CategoryCreate) (int64, error) {
+	return s.CategoryRepository.CategoryCreate(memberID ,categoryCreate)
 }
 
-func (s *CategoryService) CategoryUpdate(categoryUpdate *schemas.CategoryUpdate) error {
-	return s.CategoryRepository.CategoryUpdate(categoryUpdate)
+func (s *CategoryService) CategoryUpdate(memberID int64, categoryUpdate *schemas.CategoryUpdate) error {
+	return s.CategoryRepository.CategoryUpdate(memberID ,categoryUpdate)
 }
 
-func (s *CategoryService) CategoryDelete(id int64) error {
-	return s.CategoryRepository.CategoryDelete(id)
+func (s *CategoryService) CategoryDelete(memberID, id int64) error {
+	return s.CategoryRepository.CategoryDelete(memberID ,id)
 }

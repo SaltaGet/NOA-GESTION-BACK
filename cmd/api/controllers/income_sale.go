@@ -3,10 +3,11 @@ package controllers
 import (
 	"strconv"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
+
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
+	"github.com/rs/zerolog/log"
 )
 
 // IncomeSaleGetByID godoc
@@ -20,7 +21,6 @@ import (
 //	@Success		200	{object}	schemas.Response{body=schemas.IncomeSaleResponse}	"IncomeSale details fetched successfully"
 //	@Router			/api/v1/income_sale/{id} [get]
 func (i *IncomeSaleController) IncomeSaleGetByID(c *fiber.Ctx) error {
-	logging.INFO("Obtener un ingreso por ID")
 	id := c.Params("id")
 	idint, err := validators.IdValidate(id)
 	if err != nil {
@@ -34,7 +34,6 @@ func (i *IncomeSaleController) IncomeSaleGetByID(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Ingreso obtenido con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    incomeSale,
@@ -55,8 +54,6 @@ func (i *IncomeSaleController) IncomeSaleGetByID(c *fiber.Ctx) error {
 //	@Success		200			{object}	schemas.Response{body=[]schemas.IncomeSaleResponseDTO}	"List of incomeSales"
 //	@Router			/api/v1/income_sale/get_by_date [get]
 func (i *IncomeSaleController) IncomeSaleGetByDate(c *fiber.Ctx) error {
-	logging.INFO("Obtener todos los ingresos")
-
 	formDate := &schemas.DateRangeRequest{}
 	formDate.FromDate = c.Query("from_date")
 	formDate.ToDate = c.Query("to_date")
@@ -87,7 +84,6 @@ func (i *IncomeSaleController) IncomeSaleGetByDate(c *fiber.Ctx) error {
 
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
-	logging.INFO("Ingresos obtenidos con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    map[string]any{"data": incomeSales, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
@@ -106,10 +102,9 @@ func (i *IncomeSaleController) IncomeSaleGetByDate(c *fiber.Ctx) error {
 //	@Success		200					{object}	schemas.Response			"IncomeSale created successfully"
 //	@Router			/api/v1/income_sale/create [post]
 func (i *IncomeSaleController) IncomeSaleCreate(c *fiber.Ctx) error {
-	logging.INFO("Crear ingreso")
 	var incomeSaleCreate schemas.IncomeSaleCreate
 	if err := c.BodyParser(&incomeSaleCreate); err != nil {
-		logging.ERROR("Error: %s", err.Error())
+		log.Err(err).Msg("Error al parsear el body")
 		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
@@ -128,7 +123,6 @@ func (i *IncomeSaleController) IncomeSaleCreate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Ingreso creado con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    id,
@@ -147,10 +141,9 @@ func (i *IncomeSaleController) IncomeSaleCreate(c *fiber.Ctx) error {
 //	@Success		200					{object}	schemas.Response			"IncomeSale updated successfully"
 //	@Router			/api/v1/income_sale/update [put]
 func (i *IncomeSaleController) IncomeSaleUpdate(c *fiber.Ctx) error {
-	logging.INFO("Actualizar ingreso")
 	var incomeSaleUpdate schemas.IncomeSaleUpdate
 	if err := c.BodyParser(&incomeSaleUpdate); err != nil {
-		logging.ERROR("Error: %s", err.Error())
+		log.Err(err).Msg("Error al parsear el body")
 		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
@@ -169,7 +162,6 @@ func (i *IncomeSaleController) IncomeSaleUpdate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Ingreso editado con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -188,7 +180,6 @@ func (i *IncomeSaleController) IncomeSaleUpdate(c *fiber.Ctx) error {
 //	@Success		200	{object}	schemas.Response	"IncomeSale deleted successfully"
 //	@Router			/api/v1/income_sale/delete/{id} [delete]
 func (i *IncomeSaleController) IncomeSaleDelete(c *fiber.Ctx) error {
-	logging.INFO("Eliminar ingreso")
 	id := c.Params("id")
 	idint, err := validators.IdValidate(id)
 	if err != nil {
@@ -196,13 +187,12 @@ func (i *IncomeSaleController) IncomeSaleDelete(c *fiber.Ctx) error {
 	}
 
 	pointID :=c.Locals("point_sale_id").(int64)
-
-	err = i.IncomeSaleService.IncomeSaleDelete(idint, pointID)
+member := c.Locals("user").(*schemas.AuthenticatedUser)
+	err = i.IncomeSaleService.IncomeSaleDelete(member.ID, idint, pointID)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Ingreso eliminado con éxito")
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,

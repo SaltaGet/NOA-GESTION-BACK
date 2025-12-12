@@ -123,6 +123,6 @@ func (s *DepositService) DepositGetAll(page, limit int) ([]*schemas.DepositRespo
 	return productsResponse, total, nil
 }
 
-func (s *DepositService) DepositUpdateStock(updateStock schemas.DepositUpdateStock) error {
-	return s.DepositRepository.DepositUpdateStock(updateStock)
+func (s *DepositService) DepositUpdateStock(memberID int64, updateStock schemas.DepositUpdateStock) error {
+	return s.DepositRepository.DepositUpdateStock(memberID, updateStock)
 }

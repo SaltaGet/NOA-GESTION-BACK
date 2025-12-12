@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/gofiber/fiber/v2"
 )
@@ -26,7 +25,6 @@ import (
 //	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/movement_stock/get/{id} [get]
 func (m *MovementStockController) MovementStockGet(c *fiber.Ctx) error {
-	logging.INFO("Inicio MovementStockGet")
 	id := c.Params("id")
 	if id == "" {
 		return schemas.HandleError(c, schemas.ErrorResponse(400, "Se necesita el id del movimiento de stock", fmt.Errorf("se necesita el id del movimiento de stock")))
@@ -42,7 +40,6 @@ func (m *MovementStockController) MovementStockGet(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Fin MovementStockGet")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    movementStock,
@@ -69,7 +66,6 @@ func (m *MovementStockController) MovementStockGet(c *fiber.Ctx) error {
 //	@Failure		500			{object}	schemas.Response
 //	@Router			/api/v1/movement_stock/get_by_date [get]
 func (m *MovementStockController) MovementStockGetByDate(c *fiber.Ctx) error {
-	logging.INFO("Inicio MovementStockGetByDate")
 	page, err := strconv.Atoi(c.Query("page", "1"))
 	if err != nil || page <= 0 {
 		page = 1
@@ -96,7 +92,6 @@ func (m *MovementStockController) MovementStockGetByDate(c *fiber.Ctx) error {
 
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
-	logging.INFO("Fin MovementStockGetByDate")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    map[string]interface{}{"data": movementsStock, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
@@ -121,9 +116,7 @@ func (m *MovementStockController) MovementStockGetByDate(c *fiber.Ctx) error {
 //	@Failure		500				{object}	schemas.Response
 //	@Router			/api/v1/movement_stock/move_list [post]
 func (m *MovementStockController) MoveStockList(c *fiber.Ctx) error {
-	logging.INFO("Inicio MoveStockList")
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
-
 	var movementStock []*schemas.MovementStockList
 	if err := c.BodyParser(&movementStock); err != nil {
 		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
@@ -180,7 +173,6 @@ func (m *MovementStockController) MoveStockList(c *fiber.Ctx) error {
 	// 	}()
 	// }
 
-	logging.INFO("Fin MoveStockList")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,

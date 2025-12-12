@@ -22,6 +22,6 @@ func (i *IncomeOtherService) IncomeOtherUpdate(memberID int64, pointSaleID *int6
 	return i.IncomeOtherRepository.IncomeOtherUpdate(memberID, pointSaleID, incomeUpdate)
 }
 
-func (i *IncomeOtherService) IncomeOtherDelete(incomeOtherID int64, pointSaleID *int64,) error {
-	return i.IncomeOtherRepository.IncomeOtherDelete(incomeOtherID, pointSaleID)
+func (i *IncomeOtherService) IncomeOtherDelete(memberID int64, incomeOtherID int64, pointSaleID *int64,) error {
+	return i.IncomeOtherRepository.IncomeOtherDelete(memberID, incomeOtherID, pointSaleID)
 }

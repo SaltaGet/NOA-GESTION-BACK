@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/gofiber/fiber/v2"
 )
@@ -21,7 +20,6 @@ import (
 //	@Failure		500			{object}	schemas.Response
 //	@Router			/user/create [post]
 func (u *UserController) CreateUser(c *fiber.Ctx) error {
-	logging.INFO("Crear usuario")
 	var userCreate schemas.UserCreate
 	if err := c.BodyParser(&userCreate); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
@@ -55,7 +53,6 @@ func (u *UserController) CreateUser(c *fiber.Ctx) error {
 	// 	})
 	// }
 	
-	logging.INFO("Usuario creado")
 	return c.Status(fiber.StatusCreated).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,

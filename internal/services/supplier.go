@@ -12,14 +12,14 @@ func (s *SupplierService) SupplierGetAll(limit, page int, search *map[string]str
 	return s.SupplierRepository.SupplierGetAll(limit, page, search)
 }
 
-func (s *SupplierService) SupplierCreate(supplierCreate *schemas.SupplierCreate) (int64, error) {
-	return s.SupplierRepository.SupplierCreate(supplierCreate)
+func (s *SupplierService) SupplierCreate(memberID int64, supplierCreate *schemas.SupplierCreate) (int64, error) {
+	return s.SupplierRepository.SupplierCreate(memberID, supplierCreate)
 }
 
-func (s *SupplierService) SupplierUpdate(supplierUpdate *schemas.SupplierUpdate) error {
-	return s.SupplierRepository.SupplierUpdate(supplierUpdate)
+func (s *SupplierService) SupplierUpdate(memberID int64, supplierUpdate *schemas.SupplierUpdate) error {
+	return s.SupplierRepository.SupplierUpdate(memberID, supplierUpdate)
 }
 
-func (s *SupplierService) SupplierDelete(id int64) error {
-	return s.SupplierRepository.SupplierDelete(id)
+func (s *SupplierService) SupplierDelete(memberID int64, id int64) error {
+	return s.SupplierRepository.SupplierDelete(memberID, id)
 }

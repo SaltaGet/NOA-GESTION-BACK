@@ -5,11 +5,11 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
+	"github.com/rs/zerolog/log"
 )
 
 func GenerateSwagger() error {
-	logging.INFO("Ejecutando swag init...")
+	log.Info().Msg("Ejecutando swag init...")
 
 	swagPath := "/home/daniel/go/bin/swag"
 
@@ -28,7 +28,7 @@ func GenerateSwagger() error {
 		return err
 	}
 
-	logging.INFO("Ejecutando swag fmt...")
+	log.Info().Msg("Ejecutando swag fmt...")
 
 	cmdFmt := exec.Command(swagPath, "fmt")
 	cmdFmt.Stdout = os.Stdout
@@ -38,7 +38,7 @@ func GenerateSwagger() error {
 		return fmt.Errorf("error al aplicar swag fmt: %w", err)
 	}
 
-	logging.INFO("Documentación Swagger generada y formateada correctamente.")
+	log.Info().Msg("Documentación Swagger generada y formateada correctamente.")
 	return nil
 }
 

@@ -30,8 +30,8 @@ func (c *ClientService) ClientCreate(memberID int64,clientCreate *schemas.Client
 	return client, nil
 }
 
-func (c *ClientService) ClientUpdate(clientUpdate *schemas.ClientUpdate) (error) {
-	err := c.ClientRepository.ClientUpdate(clientUpdate)
+func (c *ClientService) ClientUpdate(memberID int64, clientUpdate *schemas.ClientUpdate) (error) {
+	err := c.ClientRepository.ClientUpdate(memberID, clientUpdate)
 	if err != nil {
 		return err
 	}
@@ -39,8 +39,8 @@ func (c *ClientService) ClientUpdate(clientUpdate *schemas.ClientUpdate) (error)
 	return nil
 }
 
-func (c *ClientService) ClientUpdateCredit(pointSaleID int64, clientUpdate *schemas.ClientUpdateCredit) (error) {
-	err := c.ClientRepository.ClientUpdateCredit(pointSaleID, clientUpdate)
+func (c *ClientService) ClientUpdateCredit(memberID, pointSaleID int64, clientUpdate *schemas.ClientUpdateCredit) (error) {
+	err := c.ClientRepository.ClientUpdateCredit(memberID, pointSaleID, clientUpdate)
 	if err != nil {
 		return err
 	}
@@ -48,8 +48,8 @@ func (c *ClientService) ClientUpdateCredit(pointSaleID int64, clientUpdate *sche
 	return nil
 }
 
-func (c *ClientService) ClientDelete(id int64) (error) {
-	err := c.ClientRepository.ClientDelete(id)
+func (c *ClientService) ClientDelete(memberID, id int64) (error) {
+	err := c.ClientRepository.ClientDelete(memberID, id)
 	if err != nil {
 		return err
 	}

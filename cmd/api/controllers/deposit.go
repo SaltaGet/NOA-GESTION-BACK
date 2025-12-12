@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
@@ -27,7 +26,6 @@ import (
 //	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/deposit/get/{id} [get]
 func (d *DepositController) DepositGetByID(c *fiber.Ctx) error {
-	logging.INFO("Obtener producto del deposito")
 	id := c.Params("id")
 	idUint, err := validators.IdValidate(id)
 	if err != nil {
@@ -39,7 +37,6 @@ func (d *DepositController) DepositGetByID(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Producto del deposito obtenido con exito")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    product,
@@ -64,7 +61,6 @@ func (d *DepositController) DepositGetByID(c *fiber.Ctx) error {
 //	@Failure		500		{object}	schemas.Response
 //	@Router			/api/v1/deposit/get_by_code [get]
 func (d *DepositController) DepositGetByCode(c *fiber.Ctx) error {
-	logging.INFO("Obtener producto del deposito por codigo")
 	code := c.Query("code")
 	if code == "" {
 		return schemas.HandleError(c, schemas.ErrorResponse(400, "Se necesita el codigo del producto", fmt.Errorf("se necesita el codigo del producto")))
@@ -75,7 +71,6 @@ func (d *DepositController) DepositGetByCode(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Producto obtenido correctamente")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    product,
@@ -100,7 +95,6 @@ func (d *DepositController) DepositGetByCode(c *fiber.Ctx) error {
 //	@Failure		500		{object}	schemas.Response
 //	@Router			/api/v1/deposit/get_by_name [get]
 func (d *DepositController) DepositGetByName(c *fiber.Ctx) error {
-	logging.INFO("Obtener productos del deposito por nombre")
 	name := c.Query("name")
 	if len(name) < 3 {
 		return schemas.HandleError(c, schemas.ErrorResponse(400, "El nombre debe de tener al menos 3 caracteres", fmt.Errorf("el nombre debe de tener al menos 3 caracteres")))
@@ -111,7 +105,6 @@ func (d *DepositController) DepositGetByName(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Productos obtenidos correctamente")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    products,
@@ -137,7 +130,6 @@ func (d *DepositController) DepositGetByName(c *fiber.Ctx) error {
 //	@Failure		500		{object}	schemas.Response
 //	@Router			/api/v1/deposit/get_all [get]
 func (d *DepositController) DepositGetAll(c *fiber.Ctx) error {
-	logging.INFO("Obtener productos del deposito por paginacion")
 	page, err := strconv.Atoi(c.Query("page", "1"))
 	if err != nil || page <= 0 {
 		page = 1
@@ -155,7 +147,6 @@ func (d *DepositController) DepositGetAll(c *fiber.Ctx) error {
 
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
-	logging.INFO("Productos obtenidos correctamente")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    map[string]any{"data": products, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
@@ -180,7 +171,6 @@ func (d *DepositController) DepositGetAll(c *fiber.Ctx) error {
 //	@Failure		500				{object}	schemas.Response
 //	@Router			/api/v1/deposit/update_stock [put]
 func (d *DepositController) DepositUpdateStock(c *fiber.Ctx) error {
-	logging.INFO("Actualizar stock de un producto del deposito")
 	var stockUpdate schemas.DepositUpdateStock
 	if err := c.BodyParser(&stockUpdate); err != nil {
 		return schemas.HandleError(c, err)
@@ -190,12 +180,12 @@ func (d *DepositController) DepositUpdateStock(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	err := d.DepositService.DepositUpdateStock(stockUpdate)
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	err := d.DepositService.DepositUpdateStock(member.ID,stockUpdate)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
 
-	logging.INFO("Producto actualizado correctamente")
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,

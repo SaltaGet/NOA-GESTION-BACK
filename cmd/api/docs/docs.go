@@ -3890,30 +3890,6 @@ const docTemplate = `{
                                 }
                             ]
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
                     }
                 }
             }
@@ -3956,30 +3932,6 @@ const docTemplate = `{
                                     }
                                 }
                             ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Auth is required",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Not Authorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
                         }
                     }
                 }

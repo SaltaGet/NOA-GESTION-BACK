@@ -7,8 +7,9 @@ max_binlog_size = 100M
 
 # 🔥 Necesario para backup incremental
 # binlog_format = MIXED
-binlog_format = STATEMENT
+binlog_format = ROW
 # binlog_row_image = FULL
+innodb_file_per_table = 1
 
 # Character set
 character-set-server = utf8mb4

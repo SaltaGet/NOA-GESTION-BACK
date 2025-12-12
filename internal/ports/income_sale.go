@@ -12,7 +12,7 @@ type IncomeSaleRepository interface {
 	IncomeSaleGetByDate(pointSaleID int64, fromDate, toDate time.Time,page, limit int) ([]*schemas.IncomeSaleResponseDTO, int64, error)
 	IncomeSaleCreate(memberID, pointSaleID int64, incomeSaleCreate *schemas.IncomeSaleCreate) (int64, error)
 	IncomeSaleUpdate(memberID, pointSaleID int64, incomeSaleUpdate *schemas.IncomeSaleUpdate) (error)
-	IncomeSaleDelete(id, pointSaleID int64) error
+	IncomeSaleDelete(memberID int64, id, pointSaleID int64) error
 }
 
 type IncomeSaleService interface {
@@ -20,5 +20,5 @@ type IncomeSaleService interface {
 	IncomeSaleGetByDate(pointSaleID int64, fromDate, toDate time.Time,page, limit int) ([]*schemas.IncomeSaleResponseDTO, int64, error)
 	IncomeSaleCreate(memberID, pointSaleID int64, incomeSaleCreate *schemas.IncomeSaleCreate) (int64, error)
 	IncomeSaleUpdate(memberID, pointSaleID int64, incomeSaleUpdate *schemas.IncomeSaleUpdate) (error)
-	IncomeSaleDelete(id, pointSaleID int64) error
+	IncomeSaleDelete(memberID int64, id, pointSaleID int64) error
 }

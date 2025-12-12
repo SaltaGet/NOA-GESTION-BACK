@@ -3,7 +3,6 @@ package controllers
 import (
 	"strconv"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
@@ -26,7 +25,6 @@ import (
 //	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/product/get/{id} [get]
 func (p *ProductController) ProductGetByID(ctx *fiber.Ctx) error {
-	logging.INFO("Obtener un producto por ID")
 	productID := ctx.Params("id")
 	idint, err := validators.IdValidate(productID)
 	if err != nil {
@@ -38,7 +36,6 @@ func (p *ProductController) ProductGetByID(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Producto obtenido con éxito")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    product,
@@ -58,7 +55,6 @@ func (p *ProductController) ProductGetByID(ctx *fiber.Ctx) error {
 //	@Success		200		{object}	schemas.Response{body=schemas.ProductResponse}
 //	@Router			/api/v1/product/get_by_code [get]
 func (p *ProductController) ProductGetByCode(ctx *fiber.Ctx) error {
-	logging.INFO("Obtener un producto por Codigo")
 	code := ctx.Query("code")
 	if code == "" {
 		return ctx.Status(fiber.StatusBadRequest).JSON(schemas.Response{
@@ -73,7 +69,6 @@ func (p *ProductController) ProductGetByCode(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Producto obtenido con éxito")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    product,
@@ -98,7 +93,6 @@ func (p *ProductController) ProductGetByCode(ctx *fiber.Ctx) error {
 //	@Failure		500		{object}	schemas.Response
 //	@Router			/api/v1/product/get_by_name [get]
 func (p *ProductController) ProductGetByName(ctx *fiber.Ctx) error {
-	logging.INFO("Obtener un producto por nombre")
 	name := ctx.Query("name")
 	if len(name) < 3 {
 		return ctx.Status(fiber.StatusBadRequest).JSON(schemas.Response{
@@ -113,7 +107,6 @@ func (p *ProductController) ProductGetByName(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}	
 
-	logging.INFO("Productos obtenidos con éxito")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    products,
@@ -138,7 +131,6 @@ func (p *ProductController) ProductGetByName(ctx *fiber.Ctx) error {
 //	@Failure		500			{object}	schemas.Response
 //	@Router			/api/v1/product/get_by_category/{category_id} [get]
 func (p *ProductController) ProductGetByCategoryID(ctx *fiber.Ctx) error {
-	logging.INFO("Obtener un producto por categoria")
 	categoryID := ctx.Params("category_id")
 	idint, err := validators.IdValidate(categoryID)
 	if err != nil {
@@ -150,7 +142,6 @@ func (p *ProductController) ProductGetByCategoryID(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Productos obtenidos con éxito")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    products,
@@ -176,7 +167,6 @@ func (p *ProductController) ProductGetByCategoryID(ctx *fiber.Ctx) error {
 //	@Failure		500		{object}	schemas.Response
 //	@Router			/api/v1/product/get_all [get]
 func (p *ProductController) ProductGetAll(ctx *fiber.Ctx) error {
-	logging.INFO("Obtener todos los productos")
 	page, err := strconv.Atoi(ctx.Query("page", "1"))
 	if err != nil || page <= 0 {
 		page = 1
@@ -194,7 +184,6 @@ func (p *ProductController) ProductGetAll(ctx *fiber.Ctx) error {
 
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
-	logging.INFO("Productos obtenidos con éxito")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    map[string]any{"data": products, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
@@ -219,7 +208,6 @@ func (p *ProductController) ProductGetAll(ctx *fiber.Ctx) error {
 //	@Failure		500				{object}	schemas.Response
 //	@Router			/api/v1/product/create [post]
 func (p *ProductController) ProductCreate(ctx *fiber.Ctx) error {
-	logging.INFO("Crear nuevo producto")
 	var productCreate schemas.ProductCreate
 	if err := ctx.BodyParser(&productCreate); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(schemas.Response{
@@ -234,13 +222,12 @@ func (p *ProductController) ProductCreate(ctx *fiber.Ctx) error {
 	}
 
 	plan := ctx.Locals("current_plan").(*schemas.PlanResponseDTO)
-
-	productID, err := p.ProductService.ProductCreate(&productCreate, plan)
+member := ctx.Locals("user").(*schemas.AuthenticatedUser)
+	productID, err := p.ProductService.ProductCreate(member.ID, &productCreate, plan)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Producto creado con éxito")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    productID,
@@ -265,7 +252,6 @@ func (p *ProductController) ProductCreate(ctx *fiber.Ctx) error {
 //	@Failure		500				{object}	schemas.Response
 //	@Router			/api/v1/product/update [put]
 func (p *ProductController) ProductUpdate(ctx *fiber.Ctx) error {
-	logging.INFO("Editar un producto")
 	var productUpdate schemas.ProductUpdate
 	if err := ctx.BodyParser(&productUpdate); err != nil {
 		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
@@ -275,12 +261,12 @@ func (p *ProductController) ProductUpdate(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
-	err := p.ProductService.ProductUpdate(&productUpdate)
+	member := ctx.Locals("user").(*schemas.AuthenticatedUser)
+	err := p.ProductService.ProductUpdate(member.ID, &productUpdate)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Producto actualizado con éxito")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -305,7 +291,6 @@ func (p *ProductController) ProductUpdate(ctx *fiber.Ctx) error {
 //	@Failure		500					{object}	schemas.Response
 //	@Router			/api/v1/product/list_price [put]
 func (p *ProductController) ProductPriceUpdate(ctx *fiber.Ctx) error {
-	logging.INFO("Editar el precio de una lista de productos")
 	var productUpdate schemas.ListPriceUpdate
 	if err := ctx.BodyParser(&productUpdate); err != nil {
 		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
@@ -315,12 +300,12 @@ func (p *ProductController) ProductPriceUpdate(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
-	err := p.ProductService.ProductPriceUpdate(&productUpdate)
+	member := ctx.Locals("user").(*schemas.AuthenticatedUser)
+	err := p.ProductService.ProductPriceUpdate(member.ID, &productUpdate)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Productos actualizados con éxito")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -345,19 +330,18 @@ func (p *ProductController) ProductPriceUpdate(ctx *fiber.Ctx) error {
 //	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/product/delete/{id} [delete]
 func (p *ProductController) ProductDelete(ctx *fiber.Ctx) error {
-	logging.INFO("Eliminar un producto")
 	id := ctx.Params("id")
 	idint, err := validators.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
-	err = p.ProductService.ProductDelete(idint)
+	member := ctx.Locals("user").(*schemas.AuthenticatedUser)
+	err = p.ProductService.ProductDelete(member.ID, idint)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Producto eliminado con éxito")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,

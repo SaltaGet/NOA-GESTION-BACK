@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
@@ -24,7 +23,6 @@ import (
 // @Failure		500	{object}	schemas.Response
 // @Router			/api/v1/category/get/{id} [get]
 func (c *CategoryController) CategoryGet(ctx *fiber.Ctx) error {
-	logging.INFO("Obtener una categoria por ID")
 	id := ctx.Params("id")
 	idint, err := validators.IdValidate(id)
 	if err != nil {
@@ -36,7 +34,6 @@ func (c *CategoryController) CategoryGet(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Categoria obtenida con exito")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    category,
@@ -60,13 +57,11 @@ func (c *CategoryController) CategoryGet(ctx *fiber.Ctx) error {
 // @Failure		500	{object}	schemas.Response
 // @Router			/api/v1/category/get_all [get]
 func (c *CategoryController) CategoryGetAll(ctx *fiber.Ctx) error {
-	logging.INFO("Obtener todas las categorias")
 	categories, err := c.CategoryService.CategoryGetAll()
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Categorias obtenidas con exito")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    categories,
@@ -91,7 +86,6 @@ func (c *CategoryController) CategoryGetAll(ctx *fiber.Ctx) error {
 // @Failure		500				{object}	schemas.Response
 // @Router			/api/v1/category/create [post]
 func (c *CategoryController) CategoryCreate(ctx *fiber.Ctx) error {
-	logging.INFO("Crear una categoria")
 	var categoryCreate *schemas.CategoryCreate
 	if err := ctx.BodyParser(&categoryCreate); err != nil {
 		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
@@ -101,12 +95,13 @@ func (c *CategoryController) CategoryCreate(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
-	id, err := c.CategoryService.CategoryCreate(categoryCreate)
+	member := ctx.Locals("user").(*schemas.AuthenticatedUser)
+
+	id, err := c.CategoryService.CategoryCreate(member.ID,categoryCreate)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Categoria creada exitosamente")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    id,
@@ -131,7 +126,6 @@ func (c *CategoryController) CategoryCreate(ctx *fiber.Ctx) error {
 // @Failure		500				{object}	schemas.Response
 // @Router			/api/v1/category/update [put]
 func (c *CategoryController) CategoryUpdate(ctx *fiber.Ctx) error {
-	logging.INFO("Actualizar una categoria")
 	var categoryUpdate *schemas.CategoryUpdate
 	if err := ctx.BodyParser(&categoryUpdate); err != nil {
 		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
@@ -141,11 +135,11 @@ func (c *CategoryController) CategoryUpdate(ctx *fiber.Ctx) error {
 		return schemas.HandleError(ctx, err)
 	}
 
-	if err := c.CategoryService.CategoryUpdate(categoryUpdate); err != nil {
+	member := ctx.Locals("user").(*schemas.AuthenticatedUser)
+	if err := c.CategoryService.CategoryUpdate(member.ID, categoryUpdate); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Categoria actualizada exitosamente")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -170,18 +164,17 @@ func (c *CategoryController) CategoryUpdate(ctx *fiber.Ctx) error {
 // @Failure		500	{object}	schemas.Response
 // @Router			/api/v1/category/delete/{id} [delete]
 func (c *CategoryController) CategoryDelete(ctx *fiber.Ctx) error {
-	logging.INFO("Eliminar una categoria")
 	id := ctx.Params("id")
 	idint, err := validators.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
-	if err := c.CategoryService.CategoryDelete(idint); err != nil {
+	member := ctx.Locals("user").(*schemas.AuthenticatedUser)
+	if err := c.CategoryService.CategoryDelete(member.ID, idint); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
-	logging.INFO("Categoria eliminada exitosamente")
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,

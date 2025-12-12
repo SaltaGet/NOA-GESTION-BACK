@@ -2,8 +2,8 @@ package repositories
 
 import (
 	"errors"
-	"fmt"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"gorm.io/gorm"
@@ -32,7 +32,7 @@ func (r *CategoryRepository) CategoryGetAll() ([]*models.Category, error) {
 	return categories, nil
 }
 
-func (r *CategoryRepository) CategoryCreate(categoryCreate *schemas.CategoryCreate) (int64, error) {
+func (r *CategoryRepository) CategoryCreate(memberID int64, categoryCreate *schemas.CategoryCreate) (int64, error) {
 	var category models.Category
 
 	category.Name = categoryCreate.Name
@@ -44,23 +44,28 @@ func (r *CategoryRepository) CategoryCreate(categoryCreate *schemas.CategoryCrea
 		return 0, schemas.ErrorResponse(500, "error al crear la categoria", err)
 	}
 
+	go database.SaveAuditAsync(r.DB, models.AuditLog{
+		MemberID: memberID,
+		Method:   "create",
+		Path:     "category",
+	}, nil, category)
+
 	return category.ID, nil
 }
 
-func (r *CategoryRepository) CategoryUpdate(categoryUpdate *schemas.CategoryUpdate) error {
-	var exists bool
+func (r *CategoryRepository) CategoryUpdate(memberID int64, categoryUpdate *schemas.CategoryUpdate) error {
+	var oldCategory models.Category
 
-	if err := r.DB.Model(&models.Category{}).
-		Select("count(*) > 0").
-		Where("id = ?", categoryUpdate.ID).
-		Find(&exists).Error; err != nil {
+	// 1️⃣ obtener categoría antes de actualizar
+	if err := r.DB.First(&oldCategory, categoryUpdate.ID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return schemas.ErrorResponse(404, "categoria no encontrada", err)
+		}
 		return schemas.ErrorResponse(500, "error al obtener la categoria", err)
 	}
 
-	if !exists {
-		return schemas.ErrorResponse(404, "categoria no encontrada", fmt.Errorf("categoria no encontrada"))
-	}
-
+	// 2️⃣ actualizar
+	updatedCategory := oldCategory
 	if err := r.DB.Model(&models.Category{}).
 		Where("id = ?", categoryUpdate.ID).
 		Updates(map[string]any{
@@ -72,16 +77,37 @@ func (r *CategoryRepository) CategoryUpdate(categoryUpdate *schemas.CategoryUpda
 		return schemas.ErrorResponse(500, "error al actualizar la categoria", err)
 	}
 
+	go database.SaveAuditAsync(r.DB, models.AuditLog{
+		MemberID: memberID,
+		Method:   "update",
+		Path:     "category",
+	}, oldCategory, updatedCategory)
+
 	return nil
 }
 
-func (r *CategoryRepository) CategoryDelete(id int64) error {
-	if err := r.DB.Where("id = ?", id).Delete(&models.Category{}).Error; err != nil {
+
+func (r *CategoryRepository) CategoryDelete(memberID, id int64) error {
+	// obtener estado anterior
+	var oldCategory models.Category
+	if err := r.DB.First(&oldCategory, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return schemas.ErrorResponse(404, "categoria no encontrada", err)
 		}
+		return schemas.ErrorResponse(500, "error al obtener la categoria", err)
+	}
+
+	res := r.DB.Delete(&oldCategory)
+	if err := res.Error; err != nil {
 		return schemas.ErrorResponse(500, "error al eliminar la categoria", err)
 	}
 
+	go database.SaveAuditAsync(r.DB, models.AuditLog{
+		MemberID: memberID,
+		Method:   "delete",
+		Path:     "category",
+	}, oldCategory, nil)
+
 	return nil
 }
+

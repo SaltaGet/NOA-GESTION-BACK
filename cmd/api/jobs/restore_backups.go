@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"sort"
 	"time"
+	"github.com/rs/zerolog/log"
 )
 
 // BackupFile representa un archivo de backup con su tipo y fecha.
@@ -100,21 +101,21 @@ func GetRestoreChain(backupDir string, dbName string) (*RestoreChain, error) {
 
 // RestoreDatabase restaura una base de datos usando la cadena de backups
 func RestoreDatabase(cfg *Config, dbName string, chain *RestoreChain) error {
-	fmt.Printf("📦 Restaurando %s desde backup FULL: %s\n", dbName, chain.FullBackup.Path)
+	log.Info().Msgf("📦 Restaurando %s desde backup FULL: %s\n", dbName, chain.FullBackup.Path)
 	
 	// 1. Restaurar backup FULL (sin especificar DB, el SQL contiene CREATE DATABASE)
 	if err := executeSQLFile(cfg, dbName, chain.FullBackup.Path, true); err != nil {
 		return fmt.Errorf("error restaurando backup full: %w", err)
 	}
 	
-	fmt.Printf("✅ Backup FULL restaurado\n")
+	log.Info().Msgf("✅ Backup FULL restaurado\n")
 	
 	// 2. Aplicar backups incrementales en orden
 	if len(chain.IncrementalBackups) > 0 {
-		fmt.Printf("🔄 Aplicando %d backups incrementales...\n", len(chain.IncrementalBackups))
+		log.Info().Msgf("🔄 Aplicando %d backups incrementales...\n", len(chain.IncrementalBackups))
 		
 		for i, inc := range chain.IncrementalBackups {
-			fmt.Printf("   %d/%d: %s\n", i+1, len(chain.IncrementalBackups), filepath.Base(inc.Path))
+			log.Info().Msgf("   %d/%d: %s\n", i+1, len(chain.IncrementalBackups), filepath.Base(inc.Path))
 			
 			// Para incrementales sí especificamos la DB
 			if err := executeSQLFile(cfg, dbName, inc.Path, false); err != nil {
@@ -122,9 +123,9 @@ func RestoreDatabase(cfg *Config, dbName string, chain *RestoreChain) error {
 			}
 		}
 		
-		fmt.Printf("✅ Backups incrementales aplicados\n")
+		log.Info().Msgf("✅ Backups incrementales aplicados\n")
 	} else {
-		fmt.Printf("ℹ️  No hay backups incrementales posteriores al FULL\n")
+		log.Info().Msgf("ℹ️  No hay backups incrementales posteriores al FULL\n")
 	}
 	
 	return nil
@@ -239,30 +240,30 @@ func ExampleRestore(cfg *Config, dbName string) error {
 	}
 	
 	// 2. Mostrar información
-	fmt.Printf("═══════════════════════════════════════\n")
-	fmt.Printf("📋 Base de datos: %s\n", dbName)
-	fmt.Printf("📦 Backup FULL: %s (%s)\n", 
+	log.Info().Msgf("═══════════════════════════════════════\n")
+	log.Info().Msgf("📋 Base de datos: %s\n", dbName)
+	log.Info().Msgf("📦 Backup FULL: %s (%s)\n", 
 		filepath.Base(chain.FullBackup.Path), 
 		chain.FullBackup.Time.Format("2006-01-02 15:04:05"))
 	
 	if len(chain.IncrementalBackups) > 0 {
-		fmt.Printf("🔄 Incrementales: %d archivos\n", len(chain.IncrementalBackups))
+		log.Info().Msgf("🔄 Incrementales: %d archivos\n", len(chain.IncrementalBackups))
 		for _, inc := range chain.IncrementalBackups {
-			fmt.Printf("   - %s (%s)\n", 
+			log.Info().Msgf("   - %s (%s)\n", 
 				filepath.Base(inc.Path), 
 				inc.Time.Format("2006-01-02 15:04:05"))
 		}
 	}
-	fmt.Printf("═══════════════════════════════════════\n")
+	log.Info().Msgf("═══════════════════════════════════════\n")
 	
 	// 4. Ejecutar restauración
-	fmt.Println("🚀 Iniciando restauración...")
+	log.Info().Msgf("🚀 Iniciando restauración...")
 	
 	if err := RestoreDatabase(cfg, dbName, chain); err != nil {
 		return fmt.Errorf("error durante la restauración: %w", err)
 	}
 	
-	fmt.Printf("✅ Base de datos %s restaurada correctamente\n", dbName)
+	log.Info().Msgf("✅ Base de datos %s restaurada correctamente\n", dbName)
 	
 	return nil
 }

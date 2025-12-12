@@ -3,7 +3,6 @@ package controllers
 import (
 	"strconv"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
@@ -26,7 +25,6 @@ import (
 //	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/stock/get/{id} [get]
 func (p *StockController) StockGetByID(ctx *fiber.Ctx) error {
-	logging.INFO("Obtendiendo stock de productos por ID")
 	stockID := ctx.Params("id")
 	idint, err := validators.IdValidate(stockID)
 	if err != nil {
@@ -59,7 +57,6 @@ func (p *StockController) StockGetByID(ctx *fiber.Ctx) error {
 //	@Success		200		{object}	schemas.Response{body=schemas.ProductResponse}
 //	@Router			/api/v1/stock/get_by_code [get]
 func (p *StockController) StockGetByCode(ctx *fiber.Ctx) error {
-	logging.INFO("Obtendiendo stock de productos")
 	code := ctx.Query("code")
 	if code == "" {
 		return ctx.Status(fiber.StatusBadRequest).JSON(schemas.Response{
@@ -100,7 +97,6 @@ func (p *StockController) StockGetByCode(ctx *fiber.Ctx) error {
 //	@Failure		500		{object}	schemas.Response
 //	@Router			/api/v1/stock/get_by_name [get]
 func (p *StockController) StockGetByName(ctx *fiber.Ctx) error {
-	logging.INFO("Obtendiendo stock de productos por nombre")
 	name := ctx.Query("name")
 	if len(name) < 3 {
 		return ctx.Status(fiber.StatusBadRequest).JSON(schemas.Response{
@@ -141,7 +137,6 @@ func (p *StockController) StockGetByName(ctx *fiber.Ctx) error {
 //	@Failure		500			{object}	schemas.Response
 //	@Router			/api/v1/stock/get_by_category/{category_id} [get]
 func (p *StockController) StockGetByCategoryID(ctx *fiber.Ctx) error {
-	logging.INFO("Obtendiendo stock de productos por categoria")
 	categoryID := ctx.Params("category_id")
 	idint, err := validators.IdValidate(categoryID)
 	if err != nil {
