@@ -1,8 +1,11 @@
 package services
 
 import (
+	"fmt"
+
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 )
 
 func (t *TenantService) TenantGetByID(id int64) (*models.Tenant, error) {
@@ -46,10 +49,16 @@ func (t *TenantService) TenantCreateByUserID(adminID int64, tenantCreate *schema
 }
 
 func (t *TenantService) TenantUserCreate(adminID int64, tenantUserCreate *schemas.TenantUserCreate) (int64, error) {
+	oldPassword := tenantUserCreate.UserCreate.Password
 	id, err := t.TenantRepository.TenantUserCreate(adminID, tenantUserCreate)
 	if err != nil {
 		return 0, err
 	}
+
+	username := fmt.Sprintf("%s@%s", tenantUserCreate.UserCreate.Username, tenantUserCreate.TenantCreate.Identifier)
+	go t.EmailService.SendEmail(tenantUserCreate.UserCreate.Email, "Bienvenido a NOA-GESTION", utils.WelcomeUser(username, oldPassword))
+
+
 	return id, nil
 }
 

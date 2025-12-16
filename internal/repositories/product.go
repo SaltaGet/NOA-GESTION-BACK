@@ -208,6 +208,21 @@ func (r *ProductRepository) ProductGetAll(page, limit int) ([]*models.Product, i
 	return products, total, nil
 }
 
+func (r *ProductRepository) ProductGetByCodeToQR(code string) (*models.Product, error) {
+	var product *models.Product
+
+	if err := r.DB.
+		Select("code", "name").
+		Where("code = ?", code).First(&product).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, schemas.ErrorResponse(404, "producto no encontrado", err)
+		}
+		return nil, schemas.ErrorResponse(500, "error al obtener el producto", err)
+	}
+
+	return product, nil
+}
+
 // func (r *ProductRepository) ProductCreate(productCreate *schemas.ProductCreate, plan *schemas.PlanResponseDTO) (int64, error) {
 // 	var countTotal int64
 // 	if err := r.DB.Model(&models.Product{}).Count(&countTotal).Error; err != nil {
@@ -329,7 +344,7 @@ func (r *ProductRepository) ProductCreate(memberID int64, productCreate *schemas
 		}
 
 		if countTotal >= plan.AmountProduct {
-			return schemas.ErrorResponse(400, "el plan actual no permite crear más productos", nil)
+			return schemas.ErrorResponse(400, "el plan actual no permite crear más productos", fmt.Errorf("el plan actual no permite crear más productos"))
 		}
 
 		var category models.Category

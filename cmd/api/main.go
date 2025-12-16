@@ -25,13 +25,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/robfig/cron/v3"
 
-	// "github.com/gofiber/fiber/v2/middleware/adaptor"
+	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/limiter"
+	// "github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/swagger"
 	"github.com/joho/godotenv"
 
-	// "github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	_ "github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/docs"
 	"github.com/rs/zerolog/log"
@@ -123,6 +123,7 @@ func main() {
 		ProxyHeader:           "X-Forwarded-For",
 		DisableStartupMessage: false,
 		StreamRequestBody:     true,
+		// Prefork: true, 
 	})
 
 	app.Use(middleware.BlockAccess())
@@ -151,23 +152,23 @@ func main() {
 		MaxAge:           maxAge,
 	}))
 
-	app.Use(limiter.New(limiter.Config{
-		Max:        250,
-		Expiration: 1 * time.Minute,
-		KeyGenerator: func(c *fiber.Ctx) string {
-			return c.IP()
-		},
-		LimitReached: func(c *fiber.Ctx) error {
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
-				"error": "Demasiadas peticiones. Intentá más tarde.",
-			})
-		},
-	}))
+	// app.Use(limiter.New(limiter.Config{
+	// 	Max:        250,
+	// 	Expiration: 1 * time.Minute,
+	// 	KeyGenerator: func(c *fiber.Ctx) string {
+	// 		return c.IP()
+	// 	},
+	// 	LimitReached: func(c *fiber.Ctx) error {
+	// 		return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+	// 			"error": "Demasiadas peticiones. Intentá más tarde.",
+	// 		})
+	// 	},
+	// }))
 
 	app.Get("/api/swagger/*", swagger.HandlerDefault)
 	app.Get("/api/health", healthCheck)
 	// app.Get("/cache/stats", cacheStats)
-	// app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
+	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 
 	routes.SetupRoutes(app, dep)
 

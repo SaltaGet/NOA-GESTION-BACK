@@ -198,7 +198,7 @@ func (a *AuthService) AuthForgotPassword(forgotPassword *schemas.AuthForgotPassw
 
 	body := utils.ForgotPassword(member.Username, member.Email, token)
 
-	err = a.EmailService.SendEmail(member, "Restablecimiento de contraseña", body)
+	err = a.EmailService.SendEmail(member.Email, "Restablecimiento de contraseña", body)
 	if err != nil {
 		return err
 	}

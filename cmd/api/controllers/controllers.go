@@ -51,6 +51,10 @@ type MovementStockController struct {
 	NotificationController *NotificationController
 }
 
+type NewsController struct {
+	NewsService ports.NewsServices
+}
+
 type NotificationController struct {
 	NotificationService ports.NotificationService
 	SSEServer           *sse.Server

@@ -15,6 +15,7 @@ type MainContainer struct {
 	TenantController *controllers.TenantController
 	// NotificationController *controllers.NotificationController
 	PlanController *controllers.PlanController
+	NewsController *controllers.NewsController
 }
 
 func NewApplication(mainDB *gorm.DB, cfg *schemas.EmailConfig) *MainContainer {
@@ -25,9 +26,11 @@ func NewApplication(mainDB *gorm.DB, cfg *schemas.EmailConfig) *MainContainer {
 
 	authServ := &services.AuthService{AuthRepository: mainRepo, UserRepository: mainRepo, TenantService: mainRepo, EmailService: emailService, PlanRepository: mainRepo}
 	userServ := &services.UserService{UserRepository: mainRepo}
-	tenantServ := &services.TenantService{TenantRepository: mainRepo}
+	tenantServ := &services.TenantService{TenantRepository: mainRepo, EmailService: emailService}
 	// notificationServ := &services.NotificationService{NotificationRepository: mainRepo}
 	planServ := &services.PlanService{PlanRepository: mainRepo}
+	newsServ := &services.NewsService{NewsRepository: mainRepo}
+
 
 	return &MainContainer{
 		AuthController: &controllers.AuthController{AuthService: authServ, EmailService: emailService},
@@ -35,6 +38,7 @@ func NewApplication(mainDB *gorm.DB, cfg *schemas.EmailConfig) *MainContainer {
 		TenantController: &controllers.TenantController{TenantService: tenantServ},
 		// NotificationController: &controllers.NotificationController{SSEServer: sse, NotificationService: notificationServ},
 		PlanController: &controllers.PlanController{PlanService: planServ},
+		NewsController: &controllers.NewsController{NewsService: newsServ},
 	}
 }
 

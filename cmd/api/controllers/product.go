@@ -18,11 +18,6 @@ import (
 //	@Security		CookieAuth
 //	@Param			id	path		string	true	"Id del producto"
 //	@Success		200	{object}	schemas.Response{body=schemas.ProductFullResponse}
-//	@Failure		400	{object}	schemas.Response
-//	@Failure		401	{object}	schemas.Response
-//	@Failure		422	{object}	schemas.Response
-//	@Failure		404	{object}	schemas.Response
-//	@Failure		500	{object}	schemas.Response
 //	@Router			/api/v1/product/get/{id} [get]
 func (p *ProductController) ProductGetByID(ctx *fiber.Ctx) error {
 	productID := ctx.Params("id")
@@ -86,11 +81,6 @@ func (p *ProductController) ProductGetByCode(ctx *fiber.Ctx) error {
 //	@Security		CookieAuth
 //	@Param			name	query		string	true	"nombre del producto"
 //	@Success		200		{object}	schemas.Response{body=schemas.ProductFullResponse}
-//	@Failure		400		{object}	schemas.Response
-//	@Failure		401		{object}	schemas.Response
-//	@Failure		422		{object}	schemas.Response
-//	@Failure		404		{object}	schemas.Response
-//	@Failure		500		{object}	schemas.Response
 //	@Router			/api/v1/product/get_by_name [get]
 func (p *ProductController) ProductGetByName(ctx *fiber.Ctx) error {
 	name := ctx.Query("name")
@@ -105,7 +95,7 @@ func (p *ProductController) ProductGetByName(ctx *fiber.Ctx) error {
 	products, err := p.ProductService.ProductGetByName(name)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
-	}	
+	}
 
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
@@ -124,11 +114,6 @@ func (p *ProductController) ProductGetByName(ctx *fiber.Ctx) error {
 //	@Security		CookieAuth
 //	@Param			category_id	path		string	true	"ID de la categoria"
 //	@Success		200			{object}	schemas.Response{body=schemas.ProductFullResponse}
-//	@Failure		400			{object}	schemas.Response
-//	@Failure		401			{object}	schemas.Response
-//	@Failure		422			{object}	schemas.Response
-//	@Failure		404			{object}	schemas.Response
-//	@Failure		500			{object}	schemas.Response
 //	@Router			/api/v1/product/get_by_category/{category_id} [get]
 func (p *ProductController) ProductGetByCategoryID(ctx *fiber.Ctx) error {
 	categoryID := ctx.Params("category_id")
@@ -201,11 +186,6 @@ func (p *ProductController) ProductGetAll(ctx *fiber.Ctx) error {
 //	@Security		CookieAuth
 //	@Param			productCreate	body		schemas.ProductCreate	true	"Información del producto a crear"
 //	@Success		200				{object}	schemas.Response
-//	@Failure		400				{object}	schemas.Response
-//	@Failure		401				{object}	schemas.Response
-//	@Failure		422				{object}	schemas.Response
-//	@Failure		404				{object}	schemas.Response
-//	@Failure		500				{object}	schemas.Response
 //	@Router			/api/v1/product/create [post]
 func (p *ProductController) ProductCreate(ctx *fiber.Ctx) error {
 	var productCreate schemas.ProductCreate
@@ -222,7 +202,7 @@ func (p *ProductController) ProductCreate(ctx *fiber.Ctx) error {
 	}
 
 	plan := ctx.Locals("current_plan").(*schemas.PlanResponseDTO)
-member := ctx.Locals("user").(*schemas.AuthenticatedUser)
+	member := ctx.Locals("user").(*schemas.AuthenticatedUser)
 	productID, err := p.ProductService.ProductCreate(member.ID, &productCreate, plan)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
@@ -233,6 +213,41 @@ member := ctx.Locals("user").(*schemas.AuthenticatedUser)
 		Body:    productID,
 		Message: "Producto creado correctamente",
 	})
+}
+
+// ProductGenerateQR godoc
+//
+//	@Summary		ProductGenerateQR
+//	@Description	genarar nuevo QR para producto
+//	@Tags			Product
+//	@Accept			json
+//	@Produce		application/pdf
+//	@Security		CookieAuth
+//	@Param			code	path	string	true	"codigo del producto a generar"
+//	@Success		200		{file}	pdf
+//	@Router			/api/v1/product/generate_qr/{code} [get]
+func (p *ProductController) ProductGenerateQR(ctx *fiber.Ctx) error {
+	code := ctx.Params("code")
+	if code == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(schemas.Response{
+			Status:  false,
+			Body:    nil,
+			Message: "Se necesita el codigo del producto",
+		})
+	}
+
+	codeQRs, err := p.ProductService.ProductGenerateQR(code)
+	if err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	ctx.Set("Content-Type", "application/pdf")
+	ctx.Set(
+		"Content-Disposition",
+		`inline; filename="product_qr_labels.pdf"`,
+	)
+
+	return ctx.Send(codeQRs)
 }
 
 // ProductUpdate godoc

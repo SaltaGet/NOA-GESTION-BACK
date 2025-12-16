@@ -18,13 +18,12 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 0,
   "links": [],
   "panels": [
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "ef38n6pal95a8d"
+        "uid": "df6wbecmlhu68d"
       },
       "fieldConfig": {
         "defaults": {
@@ -70,12 +69,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "df6wbecmlhu68d"
+          },
           "editorMode": "code",
-          "expr": "sum(container_memory_usage_bytes{name=~\"noa-gestion|mariadb-noa|prometheus|grafana|noa_redis\"})",
-          "legendFormat": "__auto",
+          "expr": "sum(dockerstats_memory_usage_bytes{container_name=~\"noa-gestion|mariadb-noa|prometheus|grafana|noa_redis\"})\n",
           "range": true,
           "refId": "A"
         }
@@ -86,7 +88,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "ef38n6pal95a8d"
+        "uid": "df6wbecmlhu68d"
       },
       "fieldConfig": {
         "defaults": {
@@ -135,12 +137,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "df6wbecmlhu68d"
+          },
           "editorMode": "code",
-          "expr": "sum(\n  rate(container_cpu_usage_seconds_total{name=~\"noa-gestion|mariadb-noa|prometheus|grafana|noa_redis\"}[5m])\n) * 100",
-          "legendFormat": "__auto",
+          "expr": "sum(dockerstats_cpu_usage_ratio{name=~\"noa-gestion|mariadb-noa|prometheus|grafana|noa_redis\"})\n",
           "range": true,
           "refId": "A"
         }
@@ -151,7 +156,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "df38n7uhryolcb"
+        "uid": "df6wbd3amc1dsb"
       },
       "fieldConfig": {
         "defaults": {
@@ -202,7 +207,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -222,7 +227,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "df38n7uhryolcb"
+        "uid": "df6wbd3amc1dsb"
       },
       "fieldConfig": {
         "defaults": {
@@ -270,7 +275,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -290,7 +295,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "df38n7uhryolcb"
+        "uid": "df6wbd3amc1dsb"
       },
       "fieldConfig": {
         "defaults": {
@@ -357,7 +362,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -377,7 +382,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "df38n7uhryolcb"
+        "uid": "df6wbd3amc1dsb"
       },
       "fieldConfig": {
         "defaults": {
@@ -428,7 +433,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -448,7 +453,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "df38n7uhryolcb"
+        "uid": "df6wbd3amc1dsb"
       },
       "fieldConfig": {
         "defaults": {
@@ -497,7 +502,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -517,7 +522,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "ef38n6pal95a8d"
+        "uid": "df6wbecmlhu68d"
       },
       "fieldConfig": {
         "defaults": {
@@ -598,14 +603,15 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "df6wbecmlhu68d"
+          },
           "editorMode": "code",
-          "exemplar": false,
-          "expr": "rate(container_cpu_usage_seconds_total{name=~\"noa-gestion|mariadb-noa|prometheus|grafana|noa_redis\", cpu=\"total\"}[5m]) * 100",
-          "instant": false,
-          "legendFormat": "{{name}}",
+          "expr": "sum by (name) (dockerstats_cpu_usage_ratio{container_name=~\"noa-gestion|mariadb-noa|prometheus|grafana|noa_redis\"})",
           "range": true,
           "refId": "A"
         }
@@ -616,7 +622,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "df38n7uhryolcb"
+        "uid": "df6wbd3amc1dsb"
       },
       "fieldConfig": {
         "defaults": {
@@ -706,7 +712,7 @@
         "cellHeight": "sm",
         "showHeader": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -763,7 +769,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "ef38n6pal95a8d"
+        "uid": "df6wbecmlhu68d"
       },
       "fieldConfig": {
         "defaults": {
@@ -844,12 +850,15 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "df6wbecmlhu68d"
+          },
           "editorMode": "code",
-          "expr": "container_memory_working_set_bytes{name=~\"noa-gestion|mariadb-noa|prometheus|grafana|noa_redis\"} / 1024 / 1024",
-          "legendFormat": "{{name}}",
+          "expr": "sum by (name) (dockerstats_memory_usage_bytes{name=~\"noa-gestion|mariadb-noa|prometheus|grafana|noa_redis\"}) / 1024 / 1024",
           "range": true,
           "refId": "A"
         }
@@ -860,64 +869,24 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "df38n7uhryolcb"
+        "uid": "df6wbd3amc1dsb"
       },
       "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "light-yellow",
-            "mode": "shades"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "color-text"
-            },
-            "footer": {
-              "reducers": []
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "noValue": "No data",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
+        "defaults": {},
         "overrides": [
           {
             "matcher": {
               "id": "byName",
               "options": "id"
             },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 193
-              }
-            ]
+            "properties": []
           },
           {
             "matcher": {
               "id": "byName",
               "options": "Time"
             },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 222
-              }
-            ]
+            "properties": []
           }
         ]
       },
@@ -929,10 +898,15 @@
       },
       "id": 7,
       "options": {
-        "cellHeight": "sm",
-        "showHeader": true
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": true,
+        "showControls": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -941,7 +915,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "{container=\"/noa-gestion\"} \n  |= \"Request from\" \n  != \"/metrics\"\n  | regexp `took (?P<duration>[\\d.]+)ms` \n  | duration > 300",
+          "expr": "{container_name=\"noa-gestion\"} |= \"request completed\"",
           "queryType": "range",
           "refId": "A"
         }
@@ -969,76 +943,21 @@
           }
         }
       ],
-      "type": "table"
+      "type": "logs"
     },
     {
       "datasource": {
-        "type": "loki",
-        "uid": "df38n7uhryolcb"
+        "uid": "df6wbd3amc1dsb"
       },
       "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "footer": {
-              "reducers": []
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              }
-            ]
-          }
-        },
+        "defaults": {},
         "overrides": [
           {
             "matcher": {
               "id": "byName",
               "options": "status"
             },
-            "properties": [
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": 0
-                    },
-                    {
-                      "color": "red",
-                      "value": 400
-                    },
-                    {
-                      "color": "dark-red",
-                      "value": 500
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "applyToRow": false,
-                  "mode": "basic",
-                  "type": "color-background"
-                }
-              },
-              {
-                "id": "custom.width",
-                "value": 62
-              }
-            ]
+            "properties": []
           }
         ]
       },
@@ -1050,101 +969,31 @@
       },
       "id": 16,
       "options": {
-        "cellHeight": "sm",
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "datetime"
-          }
-        ]
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": true,
+        "showControls": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
-          "datasource": {
-            "type": "loki",
-            "uid": "df38n7uhryolcb"
-          },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "{container=\"/noa-gestion\"}\n  |= \"Request from\"\n  != \"/metrics\"\n  | regexp `^(?P<datetime>\\d{4}/\\d{2}/\\d{2}\\s\\d{2}:\\d{2}:\\d{2})\\sRequest from (?P<ip>.*?): \\w+ (?P<endpoint>/\\S+) (?P<status>\\d{3}) took (?P<duration>[\\d.]+)ms`",
+          "expr": "{container=\"noa-gestion\"} |= \"request completed\" != \"/metrics\"\n| regexp `^(?P<datetime>\\S+\\s+\\S+)\\s+INF\\s+request completed duration_ms=(?P<duration>[\\d.]+)\\s+ip=(?P<ip>\\S*)\\s+method=(?P<method>\\S+)\\s+path=(?P<path>\\S+)\\s+status=(?P<status>\\d+)`",
           "queryType": "range",
           "refId": "A"
         }
       ],
       "title": "Logs",
-      "transformations": [
-        {
-          "id": "extractFields",
-          "options": {
-            "delimiter": ",",
-            "format": "json",
-            "replace": true,
-            "source": "labels"
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "byVariable": false,
-            "include": {
-              "names": [
-                "datetime",
-                "duration",
-                "endpoint",
-                "ip",
-                "status"
-              ]
-            }
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {},
-            "includeByName": {},
-            "indexByName": {
-              "datetime": 0,
-              "duration": 4,
-              "endpoint": 2,
-              "ip": 1,
-              "status": 3
-            },
-            "renameByName": {}
-          }
-        },
-        {
-          "id": "sortBy",
-          "options": {
-            "fields": {},
-            "sort": [
-              {
-                "desc": true,
-                "field": "datetime"
-              }
-            ]
-          }
-        },
-        {
-          "id": "convertFieldType",
-          "options": {
-            "conversions": [
-              {
-                "destinationType": "number",
-                "targetField": "status"
-              }
-            ],
-            "fields": {}
-          }
-        }
-      ],
-      "type": "table"
+      "type": "logs"
     },
     {
       "datasource": {
         "type": "loki",
-        "uid": "df38n7uhryolcb"
+        "uid": "df6wbd3amc1dsb"
       },
       "fieldConfig": {
         "defaults": {
@@ -1196,7 +1045,7 @@
           }
         ]
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -1205,7 +1054,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "topk(10,\n  sum by (endpoint) (\n    count_over_time(\n      (\n        {container=\"/noa-gestion\"}\n        |= \"Request\"\n        != \"GET /metrics\"\n        | regexp `Request from .*?: \\w+ (?P<endpoint>/\\S+) (?P<status>\\d{3})`\n      ) [7d]\n    )\n  )\n)",
+          "expr": "topk(10,\n  sum by (path) (\n    count_over_time(\n      {container=\"noa-gestion\"}\n      |= \"request completed\"\n      != \"/metrics\"\n      | regexp `path=(?P<path>/\\S+)`\n      [7d]\n    )\n  )\n)\n",
           "queryType": "range",
           "refId": "A"
         }
@@ -1251,12 +1100,12 @@
     "list": []
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Logs Api",
   "uid": "add4c7p",
-  "version": 10
+  "version": 3
 }

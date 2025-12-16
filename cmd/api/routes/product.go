@@ -35,6 +35,13 @@ func ProductRoutes(app *fiber.App) {
 			return tenant.Controllers.ProductController.ProductCreate(c)
 		})
 
+	prod.Get("/generate_qr/:code",
+		middleware.RolePermissionMiddleware("PR04"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.ProductController.ProductGenerateQR(c)
+		})
+
 	prod.Put("/update",
 		middleware.RolePermissionMiddleware("PR02"),
 		func(c *fiber.Ctx) error {

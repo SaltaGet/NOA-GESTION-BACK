@@ -1112,6 +1112,51 @@ definitions:
       to_type:
         type: string
     type: object
+  schemas.NewsCreate:
+    properties:
+      content:
+        type: string
+      title:
+        type: string
+    required:
+    - content
+    - title
+    type: object
+  schemas.NewsResponse:
+    properties:
+      content:
+        type: string
+      created_at:
+        type: integer
+      id:
+        type: integer
+      title:
+        type: string
+      updated_at:
+        type: integer
+    type: object
+  schemas.NewsResponseDTO:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+    type: object
+  schemas.NewsUpdate:
+    properties:
+      content:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+    required:
+    - content
+    - id
+    - title
+    type: object
   schemas.PayCreate:
     properties:
       method_pay:
@@ -4177,6 +4222,131 @@ paths:
       summary: MovementStockList
       tags:
       - MovementStock
+  /api/v1/news/create:
+    post:
+      consumes:
+      - application/json
+      description: Crear Novedad
+      parameters:
+      - description: Crear novead
+        in: body
+        name: new_create
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.NewsCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: novedad creada con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: NewsCreate
+      tags:
+      - News
+  /api/v1/news/delete/{id}:
+    put:
+      consumes:
+      - application/json
+      description: eliminar novedad
+      parameters:
+      - description: id novedad
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: novedad eliminada con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: NewsDelete
+      tags:
+      - News
+  /api/v1/news/get/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Obtene novedad por id
+      parameters:
+      - description: News ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Novedad obtenida con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.NewsResponse'
+                  type: array
+              type: object
+      security:
+      - CookieAuth: []
+      summary: NewsGetByID
+      tags:
+      - News
+  /api/v1/news/get_all:
+    get:
+      consumes:
+      - application/json
+      description: Obtener todos los planes
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: novedades obtenidas con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.NewsResponseDTO'
+                  type: array
+              type: object
+      security:
+      - CookieAuth: []
+      summary: NewsGetAll
+      tags:
+      - News
+  /api/v1/news/update:
+    put:
+      consumes:
+      - application/json
+      description: Actualizar novedad
+      parameters:
+      - description: Editar novedad
+        in: body
+        name: new_update
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.NewsUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: novedad editada con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: NewsUpdate
+      tags:
+      - News
   /api/v1/permission/get_all:
     get:
       consumes:
@@ -4511,26 +4681,6 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/schemas.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/schemas.Response'
       security:
       - CookieAuth: []
       summary: ProductCreate
@@ -4579,6 +4729,29 @@ paths:
       summary: ProductDelete
       tags:
       - Product
+  /api/v1/product/generate_qr/{code}:
+    get:
+      consumes:
+      - application/json
+      description: genarar nuevo QR para producto
+      parameters:
+      - description: codigo del producto a generar
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/pdf
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      security:
+      - CookieAuth: []
+      summary: ProductGenerateQR
+      tags:
+      - Product
   /api/v1/product/get/{id}:
     get:
       consumes:
@@ -4602,26 +4775,6 @@ paths:
                 body:
                   $ref: '#/definitions/schemas.ProductFullResponse'
               type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/schemas.Response'
       security:
       - CookieAuth: []
       summary: ProductGet
@@ -4705,26 +4858,6 @@ paths:
                 body:
                   $ref: '#/definitions/schemas.ProductFullResponse'
               type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/schemas.Response'
       security:
       - CookieAuth: []
       summary: ProductGetByCategory
@@ -4781,26 +4914,6 @@ paths:
                 body:
                   $ref: '#/definitions/schemas.ProductFullResponse'
               type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/schemas.Response'
       security:
       - CookieAuth: []
       summary: ProductGetByName

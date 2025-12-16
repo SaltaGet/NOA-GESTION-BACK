@@ -4,15 +4,14 @@ import (
 	"io"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/assets"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"gopkg.in/gomail.v2"
 )
 
-func (es *EmailService) SendEmail(member *models.Member, subject, body string) error {
+func (es *EmailService) SendEmail(email, subject, body string) error {
 	msg := gomail.NewMessage()
 	msg.SetHeader("From", es.Dialer.Username)
-	msg.SetHeader("To", member.Email)
+	msg.SetHeader("To", email)
 	msg.SetHeader("Subject", subject)
 	msg.SetBody("text/html", body)
 

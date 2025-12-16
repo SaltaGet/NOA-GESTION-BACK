@@ -9,16 +9,16 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-//	Login godoc
+// Login godoc
 //
-//	@Summary		Login user
-//	@Description	Login user required identifier and password
-//	@Tags			Auth
-//	@Accept			json
-//	@Produce		json
-//	@Param			credentials	body		schemas.AuthLogin	true	"Credentials"
-//	@Success		200			{object}	schemas.Response
-//	@Router			/api/v1/auth/login [post]
+// @Summary		Login user
+// @Description	Login user required identifier and password
+// @Tags			Auth
+// @Accept			json
+// @Produce		json
+// @Param			credentials	body		schemas.AuthLogin	true	"Credentials"
+// @Success		200			{object}	schemas.Response
+// @Router			/api/v1/auth/login [post]
 func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
 	var loginRequest schemas.AuthLogin
 	if err := c.BodyParser(&loginRequest); err != nil {
@@ -38,8 +38,8 @@ func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
 		Name:     "access_token",
 		Value:    token,
 		HTTPOnly: true,
-		Secure:   false,  // poner en true para prod
-		SameSite: "None", // para prod : "Strict",
+		Secure:   true,     // poner en true para prod
+		SameSite: "Strict", // para prod : "Strict",
 	}
 
 	c.Cookie(cookie)
@@ -51,19 +51,19 @@ func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
 	})
 }
 
-//	LoginPointSale godoc
+// LoginPointSale godoc
 //
-//	@Summary		LoginPointSale
-//	@Description	Login al punto de venta
-//	@Tags			Auth
-//	@Accept			json
-//	@Produce		json
+// @Summary		LoginPointSale
+// @Description	Login al punto de venta
+// @Tags			Auth
+// @Accept			json
+// @Produce		json
 //
-//	@Security		CookieAuth
+// @Security		CookieAuth
 //
-//	@Param			point_sale_id	path		string	true	"id del punto de venta"
-//	@Success		200				{object}	schemas.Response
-//	@Router			/api/v1/auth/login_point_sale/{point_sale_id} [post]
+// @Param			point_sale_id	path		string	true	"id del punto de venta"
+// @Success		200				{object}	schemas.Response
+// @Router			/api/v1/auth/login_point_sale/{point_sale_id} [post]
 func (a *AuthController) AuthPointSale(c *fiber.Ctx) error {
 	id := c.Params("point_sale_id")
 	if id == "" {
@@ -91,8 +91,8 @@ func (a *AuthController) AuthPointSale(c *fiber.Ctx) error {
 		Name:     "access_token",
 		Value:    token,
 		HTTPOnly: true,
-		Secure:   false,  // poner en true para prod
-		SameSite: "None", // para prod : "Strict",
+		Secure:   true,     // poner en true para prod
+		SameSite: "Strict", // para prod : "Strict",
 		Expires:  time.Now().AddDate(1, 0, 0),
 	}
 
@@ -105,18 +105,18 @@ func (a *AuthController) AuthPointSale(c *fiber.Ctx) error {
 	})
 }
 
-//	LogoutPointSale godoc
+// LogoutPointSale godoc
 //
-//	@Summary		LogoutPointSale
-//	@Description	Logout del punto de venta
-//	@Tags			Auth
-//	@Accept			json
-//	@Produce		json
+// @Summary		LogoutPointSale
+// @Description	Logout del punto de venta
+// @Tags			Auth
+// @Accept			json
+// @Produce		json
 //
-//	@Security		CookieAuth
+// @Security		CookieAuth
 //
-//	@Success		200	{object}	schemas.Response
-//	@Router			/api/v1/auth/logout_point_sale [post]
+// @Success		200	{object}	schemas.Response
+// @Router			/api/v1/auth/logout_point_sale [post]
 func (a *AuthController) LogoutPointSale(c *fiber.Ctx) error {
 	member := c.Locals("user").(*schemas.AuthenticatedUser)
 
@@ -129,8 +129,8 @@ func (a *AuthController) LogoutPointSale(c *fiber.Ctx) error {
 		Name:     "access_token",
 		Value:    token,
 		HTTPOnly: true,
-		Secure:   false,  // poner en true para prod
-		SameSite: "None", // para prod : "Strict",
+		Secure:   true,     // poner en true para prod
+		SameSite: "Strict", // para prod : "Strict",
 		Expires:  time.Now().AddDate(1, 0, 0),
 	}
 
@@ -143,16 +143,16 @@ func (a *AuthController) LogoutPointSale(c *fiber.Ctx) error {
 	})
 }
 
-//	Logout godoc
+// Logout godoc
 //
-//	@Summary		Logout user
-//	@Description	Logout user
-//	@Tags			Auth
-//	@Accept			json
-//	@Produce		json
-//	@Security		CookieAuth
-//	@Success		200	{object}	schemas.Response
-//	@Router			/api/v1/auth/logout [post]
+// @Summary		Logout user
+// @Description	Logout user
+// @Tags			Auth
+// @Accept			json
+// @Produce		json
+// @Security		CookieAuth
+// @Success		200	{object}	schemas.Response
+// @Router			/api/v1/auth/logout [post]
 func (a *AuthController) Logout(ctx *fiber.Ctx) error {
 	ctx.Cookie(&fiber.Cookie{
 		Name:     "access_token",
@@ -169,16 +169,16 @@ func (a *AuthController) Logout(ctx *fiber.Ctx) error {
 	})
 }
 
-//	CurrentUser godoc
+// CurrentUser godoc
 //
-//	@Summary		CurrentUser user
-//	@Description	Obtener usuario actual
-//	@Tags			Auth
-//	@Accept			json
-//	@Produce		json
-//	@Security		CookieAuth
-//	@Success		200	{object}	schemas.Response{body=schemas.AuthenticatedUser}
-//	@Router			/api/v1/auth/current_user [get]
+// @Summary		CurrentUser user
+// @Description	Obtener usuario actual
+// @Tags			Auth
+// @Accept			json
+// @Produce		json
+// @Security		CookieAuth
+// @Success		200	{object}	schemas.Response{body=schemas.AuthenticatedUser}
+// @Router			/api/v1/auth/current_user [get]
 func (a *AuthController) CurrentUser(c *fiber.Ctx) error {
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
 
@@ -189,16 +189,16 @@ func (a *AuthController) CurrentUser(c *fiber.Ctx) error {
 	})
 }
 
-//	CurrentPlan godoc
+// CurrentPlan godoc
 //
-//	@Summary		CurrentPlan
-//	@Description	Obtener plan actual
-//	@Tags			Auth
-//	@Accept			json
-//	@Produce		json
-//	@Security		CookieAuth
-//	@Success		200	{object}	schemas.Response{body=schemas.PlanResponseDTO}
-//	@Router			/api/v1/auth/current_plan [get]
+// @Summary		CurrentPlan
+// @Description	Obtener plan actual
+// @Tags			Auth
+// @Accept			json
+// @Produce		json
+// @Security		CookieAuth
+// @Success		200	{object}	schemas.Response{body=schemas.PlanResponseDTO}
+// @Router			/api/v1/auth/current_plan [get]
 func (a *AuthController) CurrentPlan(c *fiber.Ctx) error {
 	plan := c.Locals("current_plan").(*schemas.PlanResponseDTO)
 
@@ -209,16 +209,16 @@ func (a *AuthController) CurrentPlan(c *fiber.Ctx) error {
 	})
 }
 
-//	CurrentTenant godoc
+// CurrentTenant godoc
 //
-//	@Summary		CurrentTenant 
-//	@Description	Obtener tenant actual
-//	@Tags			Auth
-//	@Accept			json
-//	@Produce		json
-//	@Security		CookieAuth
-//	@Success		200	{object}	schemas.Response{body=schemas.TenantResponse}
-//	@Router			/api/v1/auth/current_tenant [get]
+// @Summary		CurrentTenant
+// @Description	Obtener tenant actual
+// @Tags			Auth
+// @Accept			json
+// @Produce		json
+// @Security		CookieAuth
+// @Success		200	{object}	schemas.Response{body=schemas.TenantResponse}
+// @Router			/api/v1/auth/current_tenant [get]
 func (a *AuthController) CurrentTenant(c *fiber.Ctx) error {
 	user := c.Locals("current_tenant").(*schemas.TenantResponse)
 
@@ -229,16 +229,16 @@ func (a *AuthController) CurrentTenant(c *fiber.Ctx) error {
 	})
 }
 
-//	LoginAdmin godoc
+// LoginAdmin godoc
 //
-//	@Summary		Login Admin user
-//	@Description	Required identifier and password
-//	@Tags			Auth
-//	@Accept			json
-//	@Produce		json
-//	@Param			credentials	body		schemas.AuthLoginAdmin	true	"Credentials"
-//	@Success		200			{object}	schemas.Response
-//	@Router			/api/v1/auth/login_admin [post]
+// @Summary		Login Admin user
+// @Description	Required identifier and password
+// @Tags			Auth
+// @Accept			json
+// @Produce		json
+// @Param			credentials	body		schemas.AuthLoginAdmin	true	"Credentials"
+// @Success		200			{object}	schemas.Response
+// @Router			/api/v1/auth/login_admin [post]
 func (a *AuthController) AuthLoginAdmin(c *fiber.Ctx) error {
 	var loginRequest schemas.AuthLoginAdmin
 	if err := c.BodyParser(&loginRequest); err != nil {
@@ -258,8 +258,8 @@ func (a *AuthController) AuthLoginAdmin(c *fiber.Ctx) error {
 		Name:     "access_token_admin",
 		Value:    token,
 		HTTPOnly: true,
-		Secure:   false,  // poner en true para prod
-		SameSite: "None", // para prod : "Strict",
+		Secure:   true,  // poner en true para prod
+		SameSite: "Strict", // para prod : "Strict",
 	}
 
 	c.Cookie(cookie)
@@ -271,23 +271,23 @@ func (a *AuthController) AuthLoginAdmin(c *fiber.Ctx) error {
 	})
 }
 
-//	LogoutAdmin godoc
+// LogoutAdmin godoc
 //
-//	@Summary		Logout Admin user
-//	@Description	logout user admin
-//	@Tags			Auth
-//	@Accept			json
-//	@Produce		json
-//	@Security		CookieAuth
-//	@Success		200	{object}	schemas.Response
-//	@Router			/api/v1/auth/logout_admin [post]
+// @Summary		Logout Admin user
+// @Description	logout user admin
+// @Tags			Auth
+// @Accept			json
+// @Produce		json
+// @Security		CookieAuth
+// @Success		200	{object}	schemas.Response
+// @Router			/api/v1/auth/logout_admin [post]
 func (a *AuthController) LogoutAdmin(ctx *fiber.Ctx) error {
 	ctx.Cookie(&fiber.Cookie{
 		Name:     "access_token_admin",
 		Value:    "",
 		HTTPOnly: true,
-		Secure:   false,  // poner en true para prod
-		SameSite: "None", // para prod : "Strict",
+		Secure:   true,  // poner en true para prod
+		SameSite: "Strict", // para prod : "Strict",
 	})
 
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
@@ -297,16 +297,16 @@ func (a *AuthController) LogoutAdmin(ctx *fiber.Ctx) error {
 	})
 }
 
-//	ForgotPassword godoc
+// ForgotPassword godoc
 //
-//	@Summary		ForgotPassword
-//	@Description	recuperar contraseña por email
-//	@Tags			Auth
-//	@Accept			json
-//	@Produce		json
-//	@Param			forgot_password	body		schemas.AuthForgotPassword	true "field to send email"
-//	@Success		200				{object}	schemas.Response
-//	@Router			/api/v1/auth/forgot_password [post]
+// @Summary		ForgotPassword
+// @Description	recuperar contraseña por email
+// @Tags			Auth
+// @Accept			json
+// @Produce		json
+// @Param			forgot_password	body		schemas.AuthForgotPassword	true "field to send email"
+// @Success		200				{object}	schemas.Response
+// @Router			/api/v1/auth/forgot_password [post]
 func (a *AuthController) AuthForgotPassword(ctx *fiber.Ctx) error {
 	var authForgotPassword schemas.AuthForgotPassword
 	if err := ctx.BodyParser(&authForgotPassword); err != nil {
@@ -328,16 +328,16 @@ func (a *AuthController) AuthForgotPassword(ctx *fiber.Ctx) error {
 	})
 }
 
-//	ResetPassword godoc
+// ResetPassword godoc
 //
-//	@Summary		ResetPassword
-//	@Description	recuperar contraseña por email
-//	@Tags			Auth
-//	@Accept			json
-//	@Produce		json
-//	@Param			reset_password	body		schemas.AuthResetPassword	true "new password"
-//	@Success		200				{object}	schemas.Response
-//	@Router			/api/v1/auth/reset_password [post]
+// @Summary		ResetPassword
+// @Description	recuperar contraseña por email
+// @Tags			Auth
+// @Accept			json
+// @Produce		json
+// @Param			reset_password	body		schemas.AuthResetPassword	true "new password"
+// @Success		200				{object}	schemas.Response
+// @Router			/api/v1/auth/reset_password [post]
 func (a *AuthController) AuthResetPassword(ctx *fiber.Ctx) error {
 	var authResetPassword schemas.AuthResetPassword
 	if err := ctx.BodyParser(&authResetPassword); err != nil {
@@ -358,4 +358,3 @@ func (a *AuthController) AuthResetPassword(ctx *fiber.Ctx) error {
 		Message: "Contraseña actualizada con exito!",
 	})
 }
-

@@ -95,6 +95,29 @@ func WelcomeAdmin(email, username, pass string) string {
 				font-size: 15px;
 				color: #333;
 			}
+			.btn-login {
+				display: inline-block;
+				padding: 16px 40px;
+				background-color: #048bfa;
+				color: #ffffff !important;
+				text-decoration: none;
+				font-size: 18px;
+				font-weight: 600;
+				border-radius: 8px;
+				transition: all 0.3s ease;
+				box-shadow: 0 4px 6px rgba(4, 139, 250, 0.3);
+				margin: 20px 0;
+			}
+			.btn-login:hover {
+				background-color: #0370d1;
+				color: #ffffff !important;
+				transform: translateY(-2px);
+				box-shadow: 0 6px 12px rgba(4, 139, 250, 0.4);
+			}
+			.btn-container {
+				text-align: center;
+				margin: 25px 0;
+			}
 			.footer {
 				margin-top: 30px;
 				text-align: center;
@@ -117,6 +140,109 @@ func WelcomeAdmin(email, username, pass string) string {
 			</div>
 
 			<p>Te recomendamos iniciar sesión y cambiar tu contraseña por una más segura.</p>
+
+			<div class="btn-container">
+				<a href="https://noagestion.com.ar/login-admin" target="_blank" class="btn-login">Iniciar sesión</a>
+			</div>
+
+			<div style="text-align:center;">
+				<img src="cid:logo" style="width:200px; margin-top:20px;" />
+			</div>
+
+			<div class="footer">
+				© 2025 NOA-GESTION. Todos los derechos reservados.
+			</div>
+		</div>
+	</body>
+	</html>
+	`
+
+	return htmlBody
+}
+
+func WelcomeUser(username, pass string) string {
+	htmlBody := `
+	<!DOCTYPE html>
+	<html>
+	<head>
+		<style>
+			.container {
+				max-width: 600px;
+				margin: auto;
+				padding: 20px;
+				background: #ffffff;
+				border-radius: 10px;
+				font-family: Arial, sans-serif;
+			}
+			h1 {
+				color: #333;
+				text-align: center;
+			}
+			p {
+				font-size: 16px;
+				color: #555;
+				line-height: 1.5;
+			}
+			.credentials {
+				background: #f7f7f7;
+				padding: 15px;
+				border-radius: 8px;
+				margin-top: 20px;
+				font-size: 15px;
+				color: #333;
+			}
+			.btn-login {
+				display: inline-block;
+				padding: 16px 40px;
+				background-color: #048bfa;
+				color: #ffffff !important;
+				text-decoration: none;
+				font-size: 18px;
+				font-weight: 600;
+				border-radius: 8px;
+				transition: all 0.3s ease;
+				box-shadow: 0 4px 6px rgba(4, 139, 250, 0.3);
+				margin: 20px 0;
+			}
+			.btn-login:hover {
+				background-color: #0370d1;
+				color: #ffffff !important;
+				transform: translateY(-2px);
+				box-shadow: 0 6px 12px rgba(4, 139, 250, 0.4);
+			}
+			.btn-container {
+				text-align: center;
+				margin: 25px 0;
+			}
+			.footer {
+				margin-top: 30px;
+				text-align: center;
+				font-size: 12px;
+				color: #777;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<h1>Bienvenido a NOA-GESTION</h1>
+
+			<p>Hola <strong>` + username + `</strong>,</p>
+			<p>Tu cuenta de usuario ha sido creada exitosamente.</p>
+
+			<div class="credentials">
+				<p><strong>Usuario:</strong> ` + username + `</p>
+				<p><strong>Contraseña temporal:</strong> ` + pass + `</p>
+			</div>
+
+			<p>Recuerda que para ingresar al sistema el usuario debe tener el formato <strong>username@negocio</strong></p>
+			
+			<p>Te recomendamos iniciar sesión y cambiar tu contraseña por una más segura.</p>
+
+			<div class="btn-container">
+				<a href="https://noagestion.com.ar/login" target="_blank" class="btn-login">Iniciar sesión</a>
+			</div>
+
+			<p>¡Gracias por confiar en NOA-GESTION!</p>
 
 			<div style="text-align:center;">
 				<img src="cid:logo" style="width:200px; margin-top:20px;" />

@@ -35,7 +35,6 @@ require (
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/philhofer/fwd v1.1.3-0.20240916144458-20a13a1f6b7c // indirect
 	github.com/pingcap/errors v0.11.5-0.20250318082626-8f80e5cb09ec // indirect
 	github.com/pingcap/log v1.1.1-0.20241212030209-7e3ff8601a2a // indirect
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20250421232622-526b2c79173d // indirect
@@ -49,7 +48,6 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/swaggo/files/v2 v2.0.2 // indirect
 	github.com/tiendc/go-deepcopy v1.7.1 // indirect
-	github.com/tinylib/msgp v1.2.5 // indirect
 	github.com/xuri/efp v0.0.1 // indirect
 	github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
@@ -80,6 +78,7 @@ require (
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/jinzhu/copier v0.4.0
 	github.com/joho/godotenv v1.5.1
+	github.com/jung-kurt/gofpdf v1.16.2
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -89,6 +88,7 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/zerolog v1.34.0
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0
 	github.com/valyala/tcplisten v1.0.0 // indirect

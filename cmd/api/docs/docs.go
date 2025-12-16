@@ -3851,6 +3851,216 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/news/create": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Crear Novedad",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "News"
+                ],
+                "summary": "NewsCreate",
+                "parameters": [
+                    {
+                        "description": "Crear novead",
+                        "name": "new_create",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.NewsCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "novedad creada con éxito",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/news/delete/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "eliminar novedad",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "News"
+                ],
+                "summary": "NewsDelete",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id novedad",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "novedad eliminada con éxito",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/news/get/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtene novedad por id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "News"
+                ],
+                "summary": "NewsGetByID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "News ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Novedad obtenida con éxito",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schemas.NewsResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/news/get_all": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener todos los planes",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "News"
+                ],
+                "summary": "NewsGetAll",
+                "responses": {
+                    "200": {
+                        "description": "novedades obtenidas con éxito",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schemas.NewsResponseDTO"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/news/update": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Actualizar novedad",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "News"
+                ],
+                "summary": "NewsUpdate",
+                "parameters": [
+                    {
+                        "description": "Editar novedad",
+                        "name": "new_update",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.NewsUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "novedad editada con éxito",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/permission/get_all": {
             "get": {
                 "security": [
@@ -4425,36 +4635,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
                     }
                 }
             }
@@ -4526,6 +4706,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/product/generate_qr/{code}": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "genarar nuevo QR para producto",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/pdf"
+                ],
+                "tags": [
+                    "Product"
+                ],
+                "summary": "ProductGenerateQR",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "codigo del producto a generar",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/product/get/{id}": {
             "get": {
                 "security": [
@@ -4570,36 +4787,6 @@ const docTemplate = `{
                                     }
                                 }
                             ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
                         }
                     }
                 }
@@ -4739,36 +4926,6 @@ const docTemplate = `{
                                 }
                             ]
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
                     }
                 }
             }
@@ -4866,36 +5023,6 @@ const docTemplate = `{
                                     }
                                 }
                             ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
                         }
                     }
                 }
@@ -8237,6 +8364,74 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "to_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.NewsCreate": {
+            "type": "object",
+            "required": [
+                "content",
+                "title"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.NewsResponse": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "integer"
+                }
+            }
+        },
+        "schemas.NewsResponseDTO": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.NewsUpdate": {
+            "type": "object",
+            "required": [
+                "content",
+                "id",
+                "title"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "title": {
                     "type": "string"
                 }
             }

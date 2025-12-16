@@ -59,6 +59,10 @@ type MovementStockService struct {
 	NotifyService           ports.NotificationService
 }
 
+type NewsService struct {
+	NewsRepository ports.NewsRepository
+}
+
 type NotificationService struct {
 	NotificationRepository ports.NotificationRepository
 }
@@ -98,6 +102,7 @@ type SupplierService struct {
 type TenantService struct {
 	UserRepository   ports.UserRepository
 	TenantRepository ports.TenantRepository
+	EmailService   ports.EmailService
 }
 
 type TypeMovementService struct {
