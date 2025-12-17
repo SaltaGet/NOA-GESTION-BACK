@@ -7,6 +7,7 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 	"gorm.io/gorm"
 )
 
@@ -255,7 +256,6 @@ func (r *MainRepository) AuthResetPassword(memberID, tenantID int64, newPass str
 
 	var member models.Member
 	if err := db.
-		Select("id", "username", "email", "is_active").
 		First(&member, memberID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return schemas.ErrorResponse(401, "Credenciales incorrectas", err)
@@ -267,8 +267,12 @@ func (r *MainRepository) AuthResetPassword(memberID, tenantID int64, newPass str
 		return schemas.ErrorResponse(403, "Miembro inactivo", fmt.Errorf("miembro inactivo"))
 	}
 
-	member.Password = newPass
-	if err := db.Save(&member).Error; err != nil {
+	passHash, err := utils.HashPassword(newPass)
+	if err != nil {
+		return schemas.ErrorResponse(500, "Error al generar la contraseña", err)
+	}
+
+	if err := db.Model(&member).Update("Password", passHash).Error; err != nil {
 		return schemas.ErrorResponse(500, "Error al actualizar la contraseña", err)
 	}
 

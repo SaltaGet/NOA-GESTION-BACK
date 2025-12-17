@@ -8,7 +8,57 @@ docker system prune -a -f
 docker exec -it mariadb-noa mariadb -u root -p
 ~~~
 
-server
+docker exec -i mariadb-noa   mariadb -u root -p'SaltaGet25*' Yo_gustavo < categories_only.sql
+
+
+## Copiar DB
+
+### Una Sola
+
+~~~
+docker exec mariadb-noa \
+  mariadb-dump \
+  -u root -p'Qwer1234*' \
+  --databases NOMBRE_DB \
+  --single-transaction \
+  --routines --triggers \
+  > /home/ubuntu/backup.sql
+~~~
+
+### Todas
+
+~~~
+docker exec mariadb-noa \
+  mariadb-dump \
+  -u root -p'Qwer1234*' \
+  --databases gustavo_gustavo \
+  --single-transaction \
+  --routines --triggers \
+  > /home/ubuntu/backup.sql
+~~~
+
+### Filtrar por tabla
+
+~~~
+sed -n '/^-- Dumping data for table `categories`/,/^-- Dumping data for table `/p' \
+  /home/noagestion/backup.sql > categories.sql
+~~~
+
+### Limpiar datos
+
+~~~
+sed -n '/^-- Dumping data for table `categories`/,/^-- Dumping data for table `/p' \
+  /home/noagestion/backup.sql > categories.sql
+~~~
+
+### Importar tabla
+
+~~~
+sed -n '/^-- Dumping data for table `categories`/,/^-- Dumping data for table `/p' \
+  /home/noagestion/backup.sql > categories.sql
+~~~
+
+# server
 
 saltaget@gmail.com
 
@@ -170,15 +220,3 @@ volumes:
   redis_data:
     driver: local
 
-
-
-
-container_memory_usage_bytes{id="/system.slice/docker-b419fda228ba25cd56e6df44a4947d6041960ca47455a703d3a13fb2d8070869.scope", instance="cadvisor:8080", job="cadvisor"}
-container_memory_usage_bytes{id="/system.slice/docker-a4cfa9d4fa59c540cea451a8dbb3ece0c8ef41ffac9046422eec46627009c987.scope", instance="cadvisor:8080", job="cadvisor"}
-container_memory_usage_bytes{id="/system.slice/docker-1591309e3a4cb88f0fa08f8a29671a3ccc36daebf905772c603337f57a93ba7e.scope", instance="cadvisor:8080", job="cadvisor"}
-container_memory_usage_bytes{id="/system.slice/docker-318851d2c4c5c0a18110f5b436640b8aa5a404a1d37d67ae0794f6577bd96a4d.scope", instance="cadvisor:8080", job="cadvisor"}
-container_memory_usage_bytes{id="/system.slice/docker-5677f4ca667b21648512e95911c0b6a83fa360c0d81625ba1c6a5a87804583a7.scope", instance="cadvisor:8080", job="cadvisor"}
-container_memory_usage_bytes{id="/system.slice/docker-490f6d3ac492a0a00c2cdaed60c9d5f0de923d9f3fc219bfa115785cc7f6ca0d.scope", instance="cadvisor:8080", job="cadvisor"}
-container_memory_usage_bytes{id="/system.slice/docker-20d779c3453a1cc5f122125aea088c875ce3b21f7b8b44fde1b8ba06ffcc34d6.scope", instance="cadvisor:8080", job="cadvisor"}
-container_memory_usage_bytes{id="/system.slice/docker-8f1fa6be76baa544cfdd6867123792f22af330853f066b89e1bfe027a383afc5.scope", instance="cadvisor:8080", job="cadvisor"}
-container_memory_usage_bytes{id="/system.slice/docker-2cf38438df6c5c53cdf9f0ac7633a41d005f57772e1cdffbc99d1884274acdf5.scope", instance="cadvisor:8080", job="cadvisor"}

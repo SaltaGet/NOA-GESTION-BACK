@@ -2,12 +2,17 @@ package services
 
 import (
 	"bytes"
+	"fmt"
 	"math"
+	"mime/multipart"
+	"strconv"
 	"strings"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/jung-kurt/gofpdf"
 	"github.com/skip2/go-qrcode"
+	"github.com/xuri/excelize/v2"
 )
 
 func (p *ProductService) ProductGetByID(id int64) (*schemas.ProductFullResponse, error) {
@@ -331,19 +336,19 @@ func (p *ProductService) ProductGetAll(page, limit int) ([]*schemas.ProductFullR
 // 	}
 
 // 	pdf := gofpdf.New("P", "mm", "A4", "")
-	
+
 // 	// Configurar traductor UTF-8
 // 	tr := pdf.UnicodeTranslatorFromDescriptor("")
-	
+
 // 	pdf.AddPage()
 // 	pdf.SetAutoPageBreak(false, 0)
-	
+
 // 	const (
 // 		cols = 10
 // 		rows = 20
-		
+
 // 		margin = 5.0
-		
+
 // 		pageW = 210.0
 // 		pageH = 297.0
 // 	)
@@ -351,7 +356,7 @@ func (p *ProductService) ProductGetAll(page, limit int) ([]*schemas.ProductFullR
 // 	// Área útil (sin márgenes)
 // 	usableW := pageW - (margin * 2)
 // 	usableH := pageH - (margin * 2)
-	
+
 // 	cellW := usableW / cols
 // 	cellH := usableH / rows
 
@@ -389,24 +394,24 @@ func (p *ProductService) ProductGetAll(page, limit int) ([]*schemas.ProductFullR
 
 // 			// Posición del texto debajo del QR - ESPACIO MÍNIMO
 // 			textY := qrY + qrSize - 1.5 // Espacio reducido
-			
+
 // 			// Convertir texto a UTF-8
 // 			productName := tr(prod.Name)
-			
+
 // 			pdf.SetXY(x, textY)
-			
+
 // 			// Si el nombre es muy largo, usar dos líneas
 // 			textWidth := pdf.GetStringWidth(productName)
 // 			if textWidth > cellW-1 {
 // 				words := strings.Fields(prod.Name)
 // 				mid := (len(words) + 1) / 2 // Mejor división
-				
+
 // 				line1 := tr(strings.Join(words[:mid], " "))
 // 				line2 := tr(strings.Join(words[mid:], " "))
-				
+
 // 				pdf.SetXY(x+0.5, textY) // Pequeño margen lateral
 // 				pdf.CellFormat(cellW-1, 2.5, line1, "", 0, "C", false, 0, "")
-				
+
 // 				pdf.SetXY(x+0.5, textY+2.5)
 // 				pdf.CellFormat(cellW-1, 2.5, line2, "", 0, "C", false, 0, "")
 // 			} else {
@@ -423,38 +428,34 @@ func (p *ProductService) ProductGetAll(page, limit int) ([]*schemas.ProductFullR
 // 		return nil, err
 // 	}
 
-// 	return buf.Bytes(), nil
-// }
-func (p *ProductService) ProductGenerateQR(code string) ([]byte, error) {
+//		return buf.Bytes(), nil
+//	}
+func (p *ProductService) ProductGenerateQR(code string, rows, cols int) ([]byte, error) {
 	prod, err := p.ProductRepository.ProductGetByCodeToQR(code)
 	if err != nil {
 		return nil, err
 	}
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
-	
+
 	// Configurar traductor UTF-8
 	tr := pdf.UnicodeTranslatorFromDescriptor("")
-	
+
 	pdf.AddPage()
 	pdf.SetAutoPageBreak(false, 0)
-	
+
 	const (
-		cols = 10
-		rows = 20
-		
 		margin = 5.0
-		
-		pageW = 210.0
-		pageH = 297.0
+		pageW  = 210.0
+		pageH  = 297.0
 	)
 
 	// Área útil (sin márgenes)
 	usableW := pageW - (margin * 2)
 	usableH := pageH - (margin * 2)
-	
-	cellW := usableW / cols
-	cellH := usableH / rows
+
+	cellW := usableW / float64(cols)
+	cellH := usableH / float64(rows)
 
 	// QR ocupa 60% del ancho para dejar más espacio al texto
 	qrSize := cellW * 0.60
@@ -465,11 +466,11 @@ func (p *ProductService) ProductGenerateQR(code string) ([]byte, error) {
 	baseCols := 5.0
 	baseRows := 10.0
 	baseFontSize := 6.0
-	
+
 	// Factor de escala basado en densidad de celdas
-	scaleFactor := math.Sqrt((baseCols * baseRows) / (cols * rows))
+	scaleFactor := math.Sqrt((baseCols * baseRows) / float64(cols*rows))
 	fontSize := baseFontSize * scaleFactor
-	
+
 	// Limitar tamaño mínimo y máximo
 	if fontSize < 3 {
 		fontSize = 3
@@ -512,24 +513,24 @@ func (p *ProductService) ProductGenerateQR(code string) ([]byte, error) {
 
 			// Posición del texto debajo del QR - ESPACIO MÍNIMO
 			textY := qrY + qrSize - 1.5 // Espacio reducido
-			
+
 			// Convertir texto a UTF-8
 			productName := tr(prod.Name)
-			
+
 			pdf.SetXY(x, textY)
-			
+
 			// Si el nombre es muy largo, usar dos líneas
 			textWidth := pdf.GetStringWidth(productName)
 			if textWidth > cellW-1 {
 				words := strings.Fields(prod.Name)
 				mid := (len(words) + 1) / 2 // Mejor división
-				
+
 				line1 := tr(strings.Join(words[:mid], " "))
 				line2 := tr(strings.Join(words[mid:], " "))
-				
+
 				pdf.SetXY(x+0.5, textY) // Pequeño margen lateral
 				pdf.CellFormat(cellW-1, lineHeight, line1, "", 0, "C", false, 0, "")
-				
+
 				pdf.SetXY(x+0.5, textY+lineHeight)
 				pdf.CellFormat(cellW-1, lineHeight, line2, "", 0, "C", false, 0, "")
 			} else {
@@ -549,6 +550,115 @@ func (p *ProductService) ProductGenerateQR(code string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+func (p *ProductService) ProductUpload(memberID int64, file *multipart.FileHeader, plan *schemas.PlanResponseDTO) ([]map[string]string, error) {
+	if file.Size > 5*1024*1024 {
+		return nil, schemas.ErrorResponse(400, "El tamaño máximo permitido es de 5MB", fmt.Errorf("tamaño máximo permitido es de 5MB"))
+	}
+
+	src, err := file.Open()
+  if err != nil {
+    return nil, schemas.ErrorResponse(500, "No se pudo abrir el archivo temporal", err)
+  }
+  defer src.Close()
+
+  f, err := excelize.OpenReader(src)
+  if err != nil {
+    return nil, schemas.ErrorResponse(400, "El archivo no es un Excel válido o está corrupto", err)
+  }
+  defer f.Close()
+
+  rows, err := f.GetRows("PRODUCTOS")
+  if err != nil {
+    return nil, schemas.ErrorResponse(400, "No se encontró la hoja llamada 'PRODUCTOS'. Verifique el nombre.", err)
+  }
+
+	if len(rows) < 2 {
+			return nil, schemas.ErrorResponse(400, "El archivo Excel está vacío o solo contiene la cabecera", nil)
+	}
+
+	countProd, err := p.ProductRepository.ProductCount()
+	if err != nil {
+		return nil, err
+	}
+
+	rest := plan.AmountProduct - (countProd + int64(len(rows) - 1))
+	if rest <= 0 {
+		return nil, schemas.ErrorResponse(400, "el plan actual no permite crear más productos", nil)
+	}
+
+	// Validar y mapear columnas del encabezado
+	header := rows[0]
+	colIndex := make(map[string]int)
+	requiredCols := []string{"nombre", "descripcion", "categoria", "precio", "stock"}
+
+	for i, col := range header {
+		colLower := strings.ToLower(strings.TrimSpace(col))
+		colIndex[colLower] = i
+	}
+
+	// Verificar que existan todas las columnas requeridas
+	for _, reqCol := range requiredCols {
+		if _, exists := colIndex[reqCol]; !exists {
+			return nil, schemas.ErrorResponse(400, fmt.Sprintf("Falta la columna requerida: '%s'", reqCol), nil)
+		}
+	}
+
+	// Procesar filas y crear lista de productos
+	var products []models.Product
+
+	for i, row := range rows[1:] { // Saltar el encabezado
+		// Validar que la fila tenga suficientes columnas
+		if len(row) <= colIndex["nombre"] || len(row) <= colIndex["descripcion"] ||
+			len(row) <= colIndex["categoria"] || len(row) <= colIndex["precio"] ||
+			len(row) <= colIndex["stock"] {
+			return nil, schemas.ErrorResponse(400, fmt.Sprintf("Fila %d: datos incompletos", i+2), nil)
+		}
+
+		// Obtener valores
+		name := strings.TrimSpace(row[colIndex["nombre"]])
+		description := strings.TrimSpace(row[colIndex["descripcion"]])
+		categoryName := strings.TrimSpace(row[colIndex["categoria"]])
+		priceStr := strings.TrimSpace(row[colIndex["precio"]])
+		stockStr := strings.TrimSpace(row[colIndex["stock"]])
+
+		// Validar campos obligatorios
+		if name == "" {
+			return nil, schemas.ErrorResponse(400, fmt.Sprintf("Fila %d: el nombre no puede estar vacío", i+2), nil)
+		}
+		if categoryName == "" {
+			return nil, schemas.ErrorResponse(400, fmt.Sprintf("Fila %d: la categoría no puede estar vacía", i+2), nil)
+		}
+
+		// Convertir precio
+		price, err := strconv.ParseFloat(priceStr, 64)
+		if err != nil || price < 0 {
+			return nil, schemas.ErrorResponse(400, fmt.Sprintf("Fila %d: precio inválido '%s'", i+2, priceStr), nil)
+		}
+
+		// Convertir stock
+		stock, err := strconv.ParseFloat(stockStr, 64)
+		if err != nil || stock < 0 {
+			return nil, schemas.ErrorResponse(400, fmt.Sprintf("Fila %d: stock inválido '%s'", i+2, stockStr), nil)
+		}
+
+		// Crear producto
+		product := models.Product{
+			Name:        name,
+			Description: &description, // Puntero para campo opcional
+			Price:       price,
+			Category: models.Category{
+				Name: categoryName,
+			},
+			StockDeposit: &models.Deposit{
+				Stock: stock,
+			},
+		}
+
+		products = append(products, product)
+	}
+
+	return p.ProductRepository.ProductInsertToExcel(memberID, products)
+}
 
 func (p *ProductService) ProductCreate(memberID int64, productCreate *schemas.ProductCreate, plan *schemas.PlanResponseDTO) (int64, error) {
 	return p.ProductRepository.ProductCreate(memberID, productCreate, plan)

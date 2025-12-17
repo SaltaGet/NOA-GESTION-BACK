@@ -30,9 +30,49 @@ func ForgotPassword(username, email, token string) string {
 			p {
 				font-size: 16px;
 				color: #555;
+				line-height: 1.5;
+			}
+			.info-box {
+				background: #f7f7f7;
+				padding: 15px;
+				border-radius: 8px;
+				margin-top: 20px;
+				font-size: 15px;
+				color: #333;
+			}
+			.warning {
+				background: #fff3cd;
+				border-left: 4px solid #ffc107;
+				padding: 12px 15px;
+				margin: 20px 0;
+				border-radius: 4px;
+				color: #856404;
+			}
+			.btn-reset {
+				display: inline-block;
+				padding: 16px 40px;
+				background-color: #048bfa;
+				color: #ffffff !important;
+				text-decoration: none;
+				font-size: 18px;
+				font-weight: 600;
+				border-radius: 8px;
+				transition: all 0.3s ease;
+				box-shadow: 0 4px 6px rgba(4, 139, 250, 0.3);
+				margin: 20px 0;
+			}
+			.btn-reset:hover {
+				background-color: #0370d1;
+				color: #ffffff !important;
+				transform: translateY(-2px);
+				box-shadow: 0 6px 12px rgba(4, 139, 250, 0.4);
+			}
+			.btn-container {
+				text-align: center;
+				margin: 25px 0;
 			}
 			.footer {
-				margin-top: 20px;
+				margin-top: 30px;
 				text-align: center;
 				font-size: 12px;
 				color: #777;
@@ -41,20 +81,34 @@ func ForgotPassword(username, email, token string) string {
 	</head>
 	<body>
 		<div class="container">
-			<h1>Gil como vas a olvidar la contraseña !!! salame!  ` + email + ` : ` + username + `</h1>
-			<p>Este es un correo de prueba con HTML, estilos y una imagen incrustada.</p>
+			<h1>Recuperación de Contraseña</h1>
+
+			<p>Hola <strong>` + username + `</strong>,</p>
+			<p>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta.</p>
+
+			<div class="info-box">
+				<p><strong>Usuario:</strong> ` + username + `</p>
+				<p><strong>Email:</strong> ` + email + `</p>
+			</div>
+
+			<div class="warning">
+				<strong>⏱️ Importante:</strong> Este enlace tiene una validez de <strong>30 minutos</strong>. Después de este tiempo deberás solicitar un nuevo enlace.
+			</div>
+
+			<p>Para restablecer tu contraseña, haz clic en el siguiente botón:</p>
+
+			<div class="btn-container">
+				<a href="https://noagestion.com.ar/reset-password/` + token + `" target="_blank" class="btn-reset">Restablecer Contraseña</a>
+			</div>
+
+			<p>Si no solicitaste este cambio, puedes ignorar este correo. Tu contraseña permanecerá sin cambios.</p>
 
 			<div style="text-align:center;">
 				<img src="cid:logo" style="width:200px; margin-top:20px;" />
 			</div>
 
-			<p>¡Gracias por utilizar nuestro servicio!</p>
-			<p>Para restablecer tu contraseña, haz clic en el siguiente enlace y que sea la ultima vez no gil?:</p>
-			<p><a href="https://example.com/reset-password?token=` + token + `">Restablecer Contraseña</a></p>
-			<p>Si no solicitaste este cambio, puedes ignorar este correo.</p>
-
 			<div class="footer">
-				© 2025 Mi Empresa. Todos los derechos reservados.
+				© 2025 NOA-GESTION. Todos los derechos reservados.
 			</div>
 		</div>
 	</body>

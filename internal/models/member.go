@@ -50,13 +50,13 @@ func (u *Member) BeforeCreate(tx *gorm.DB) (err error) {
 	return
 }
 
-func (u *Member) BeforeUpdate(tx *gorm.DB) (err error) {
-	if tx.Statement.Changed("Password") {
-		hashedPassword, err := utils.HashPassword(u.Password)
-		if err != nil {
-			return err
-		}
-		u.Password = hashedPassword
-	}
-	return
-}
+// func (u *Member) BeforeUpdate(tx *gorm.DB) (err error) {
+// 	if tx.Statement.Changed("Password") {
+// 		hashedPassword, err := utils.HashPassword(u.Password)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		u.Password = hashedPassword
+// 	}
+// 	return
+// }

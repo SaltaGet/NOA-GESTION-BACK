@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 )
@@ -38,8 +40,8 @@ func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
 		Name:     "access_token",
 		Value:    token,
 		HTTPOnly: true,
-		Secure:   true,     // poner en true para prod
-		SameSite: "Strict", // para prod : "Strict",
+		Secure:   utils.Ternary(os.Getenv("ENV") == "dev", false, true),     // poner en true para prod
+		SameSite: utils.Ternary(os.Getenv("ENV") == "dev", "None", "Strict",), // para prod : "Strict",
 	}
 
 	c.Cookie(cookie)
@@ -91,8 +93,8 @@ func (a *AuthController) AuthPointSale(c *fiber.Ctx) error {
 		Name:     "access_token",
 		Value:    token,
 		HTTPOnly: true,
-		Secure:   true,     // poner en true para prod
-		SameSite: "Strict", // para prod : "Strict",
+		Secure:   utils.Ternary(os.Getenv("ENV") == "dev", false, true),     // poner en true para prod
+		SameSite: utils.Ternary(os.Getenv("ENV") == "dev", "None", "Strict",), // para prod : "Strict",
 		Expires:  time.Now().AddDate(1, 0, 0),
 	}
 
@@ -129,8 +131,8 @@ func (a *AuthController) LogoutPointSale(c *fiber.Ctx) error {
 		Name:     "access_token",
 		Value:    token,
 		HTTPOnly: true,
-		Secure:   true,     // poner en true para prod
-		SameSite: "Strict", // para prod : "Strict",
+		Secure:   utils.Ternary(os.Getenv("ENV") == "dev", false, true),     // poner en true para prod
+		SameSite: utils.Ternary(os.Getenv("ENV") == "dev", "None", "Strict",), // para prod : "Strict",
 		Expires:  time.Now().AddDate(1, 0, 0),
 	}
 
@@ -158,8 +160,8 @@ func (a *AuthController) Logout(ctx *fiber.Ctx) error {
 		Name:     "access_token",
 		Value:    "",
 		HTTPOnly: true,
-		Secure:   false,  // poner en true para prod
-		SameSite: "None", // para prod : "Strict",
+		Secure:   utils.Ternary(os.Getenv("ENV") == "dev", false, true),     // poner en true para prod
+		SameSite: utils.Ternary(os.Getenv("ENV") == "dev", "None", "Strict",), // para prod : "Strict",
 	})
 
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
@@ -258,8 +260,8 @@ func (a *AuthController) AuthLoginAdmin(c *fiber.Ctx) error {
 		Name:     "access_token_admin",
 		Value:    token,
 		HTTPOnly: true,
-		Secure:   true,  // poner en true para prod
-		SameSite: "Strict", // para prod : "Strict",
+		Secure:   utils.Ternary(os.Getenv("ENV") == "dev", false, true),     // poner en true para prod
+		SameSite: utils.Ternary(os.Getenv("ENV") == "dev", "None", "Strict",), // para prod : "Strict",
 	}
 
 	c.Cookie(cookie)
@@ -286,8 +288,8 @@ func (a *AuthController) LogoutAdmin(ctx *fiber.Ctx) error {
 		Name:     "access_token_admin",
 		Value:    "",
 		HTTPOnly: true,
-		Secure:   true,  // poner en true para prod
-		SameSite: "Strict", // para prod : "Strict",
+		Secure:   utils.Ternary(os.Getenv("ENV") == "dev", false, true),     // poner en true para prod
+		SameSite: utils.Ternary(os.Getenv("ENV") == "dev", "None", "Strict",), // para prod : "Strict",
 	})
 
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{

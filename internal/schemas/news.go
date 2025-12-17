@@ -8,16 +8,16 @@ import (
 )
 
 type NewsResponse struct {
-	ID        int64  `json:"id"`
-	Title     string `json:"title"`
-	Content   string `json:"content"`
-	CreatedAt int64  `json:"created_at"`
-	UpdatedAt int64  `json:"updated_at"`
+	ID        int64     `json:"id"`
+	Title     string    `json:"title"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type NewsResponseDTO struct {
-	ID        int64  `json:"id"`
-	Title     string `json:"title"`
+	ID        int64     `json:"id"`
+	Title     string    `json:"title"`
 	CreatedAt time.Time `json:"created_at"`
 }
 

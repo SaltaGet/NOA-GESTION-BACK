@@ -130,7 +130,7 @@ func PrepareDB(uri string, memberAdmin models.Member) error {
 		return fmt.Errorf("error al crear tipo de gasto sin tipo de gasto: %w", err)
 	}
 
-	description := "Mi primer putno de venta de NOA Gestión"
+	description := "Mi primer punto de venta de NOA Gestión"
 	pointSales := []models.PointSale{
 		{
 			ID:          1,

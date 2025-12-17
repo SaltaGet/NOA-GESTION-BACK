@@ -9,8 +9,8 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 	"github.com/jinzhu/copier"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -416,13 +416,16 @@ func (r *MemberRepository) MemberUpdatePassword(memberID int64, passwordUpdate *
 		}
 
 		// Verificar contraseña actual
-		if err := bcrypt.CompareHashAndPassword([]byte(member.Password), []byte(passwordUpdate.OldPassword)); err != nil {
-			return schemas.ErrorResponse(400, "La contraseña actual es incorrecta", err)
+		if !utils.CheckPasswordHash(passwordUpdate.OldPassword, member.Password) {
+			return schemas.ErrorResponse(400, "La contraseña actual es incorrecta", fmt.Errorf("la contraseña actual es incorrecta"))
 		}
 
-		// Actualizar contraseña
-		member.Password = passwordUpdate.NewPassword
-		if err := tx.Save(&member).Error; err != nil {
+		passHash, err := utils.HashPassword(passwordUpdate.NewPassword)
+		if err != nil {
+			return schemas.ErrorResponse(500, "Error al generar la contraseña", err)
+		}
+
+		if err := tx.Model(&member).Update("Password", passHash).Error; err != nil {
 			return schemas.ErrorResponse(500, "Error al actualizar la contraseña", err)
 		}
 

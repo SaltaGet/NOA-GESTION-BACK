@@ -3891,7 +3891,7 @@ const docTemplate = `{
             }
         },
         "/api/v1/news/delete/{id}": {
-            "put": {
+            "delete": {
                 "security": [
                     {
                         "CookieAuth": []
@@ -4731,6 +4731,18 @@ const docTemplate = `{
                         "name": "code",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "chico",
+                            "mediano",
+                            "grande"
+                        ],
+                        "type": "string",
+                        "description": "Tamaño del código QR",
+                        "name": "size",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -5159,6 +5171,43 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/product/upload": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "crear productos y stock desde excel",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Product"
+                ],
+                "summary": "ProductUpload",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Excel de los productos a crear",
+                        "name": "excel_products",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -8390,7 +8439,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "created_at": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "id": {
                     "type": "integer"
@@ -8399,7 +8448,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
-                    "type": "integer"
+                    "type": "string"
                 }
             }
         },

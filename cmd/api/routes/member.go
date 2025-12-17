@@ -31,6 +31,12 @@ func MemberRoutes(app *fiber.App){
 		return tenant.Controllers.MemberController.MemberUpdate(c)
 	})
 	
+	member.Put("/update_password", 
+	func(c *fiber.Ctx) error {
+		tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+		return tenant.Controllers.MemberController.MemberUpdatePassword(c)
+	})
+	
 	member.Delete("/delete/:id", 
 	middleware.RolePermissionMiddleware("MB03"),	
 	func(c *fiber.Ctx) error {

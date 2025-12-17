@@ -15,7 +15,6 @@ import (
 //	@Tags			News
 //	@Accept			json
 //	@Produce		json
-//	@Security		CookieAuth
 //	@Param			id	path		string											true	"News ID"
 //	@Success		200	{object}	schemas.Response{body=[]schemas.NewsResponse}	"Novedad obtenida con éxito"
 //	@Router			/api/v1/news/get/{id} [get]
@@ -45,7 +44,6 @@ func (t *NewsController) NewsGetByID(c *fiber.Ctx) error {
 //	@Tags			News
 //	@Accept			json
 //	@Produce		json
-//	@Security		CookieAuth
 //	@Success		200	{object}	schemas.Response{body=[]schemas.NewsResponseDTO}	"novedades obtenidas con éxito"
 //	@Router			/api/v1/news/get_all [get]
 func (t *NewsController) NewsGetAll(c *fiber.Ctx) error {
@@ -148,7 +146,7 @@ func (t *NewsController) NewsUpdate(c *fiber.Ctx) error {
 //	@Security		CookieAuth
 //	@Param			id	path		string				true	"id novedad"
 //	@Success		200	{object}	schemas.Response	"novedad eliminada con éxito"
-//	@Router			/api/v1/news/delete/{id} [put]
+//	@Router			/api/v1/news/delete/{id} [delete]
 func (t *NewsController) NewsDelete(c *fiber.Ctx) error {
 	id := c.Params("id")
 	idInt, err := validators.IdValidate(id)

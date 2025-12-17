@@ -9,13 +9,13 @@ import (
 func NewsRoutes(app *fiber.App, controllers *controllers.NewsController) {
 	news := app.Group("/api/v1/news")
 
-	news.Get("/get_all", middleware.AuthMiddleware(), controllers.NewsGetAll)
+	news.Get("/get_all", controllers.NewsGetAll)
 
-	news.Post("/create", middleware.AdminAuthMiddleware(), controllers.NewsGetByID)
+	news.Post("/create", middleware.AdminAuthMiddleware(), controllers.NewsCreate)
 
 	news.Put("/update", middleware.AdminAuthMiddleware(), controllers.NewsUpdate)
 
-	news.Get("/get/:id", middleware.AuthMiddleware(), controllers.NewsGetByID)
+	news.Get("/get/:id", controllers.NewsGetByID)
 	
-	news.Put("/delete/:id", middleware.AdminAuthMiddleware(), controllers.NewsDelete)
+	news.Delete("/delete/:id", middleware.AdminAuthMiddleware(), controllers.NewsDelete)
 }

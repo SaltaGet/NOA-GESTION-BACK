@@ -1127,13 +1127,13 @@ definitions:
       content:
         type: string
       created_at:
-        type: integer
+        type: string
       id:
         type: integer
       title:
         type: string
       updated_at:
-        type: integer
+        type: string
     type: object
   schemas.NewsResponseDTO:
     properties:
@@ -4247,7 +4247,7 @@ paths:
       tags:
       - News
   /api/v1/news/delete/{id}:
-    put:
+    delete:
       consumes:
       - application/json
       description: eliminar novedad
@@ -4740,6 +4740,15 @@ paths:
         name: code
         required: true
         type: string
+      - description: Tamaño del código QR
+        enum:
+        - chico
+        - mediano
+        - grande
+        in: query
+        name: size
+        required: true
+        type: string
       produces:
       - application/pdf
       responses:
@@ -5005,6 +5014,29 @@ paths:
       security:
       - CookieAuth: []
       summary: ProductUpdate
+      tags:
+      - Product
+  /api/v1/product/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: crear productos y stock desde excel
+      parameters:
+      - description: Excel de los productos a crear
+        in: formData
+        name: excel_products
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: ProductUpload
       tags:
       - Product
   /api/v1/report/get_by_date:

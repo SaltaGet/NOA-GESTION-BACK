@@ -106,73 +106,73 @@ func (r *ProductRepository) ProductGetByCategoryID(categoryID int64) ([]*models.
 // 		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
 // 	}
 
-// 	return products, nil
-// }
+//		return products, nil
+//	}
 func (r *ProductRepository) ProductGetByName(name string) ([]*models.Product, error) {
-    var allProducts []*models.Product
+	var allProducts []*models.Product
 
-    if err := r.DB.
-        Preload("Category", func(db *gorm.DB) *gorm.DB {
-            return db.Select("id", "name")
-        }).
-        Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-            return db.Select("product_id", "stock", "point_sale_id")
-        }).
-        Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
-            return db.Select("id", "name", "is_deposit")
-        }).
-        Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-            return db.Select("id", "product_id", "stock")
-        }).
-        Where("name LIKE ?", "%"+name+"%").
-        Find(&allProducts).Error; err != nil {
-        return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
-    }
+	if err := r.DB.
+		Preload("Category", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name")
+		}).
+		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
+			return db.Select("product_id", "stock", "point_sale_id")
+		}).
+		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name", "is_deposit")
+		}).
+		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "product_id", "stock")
+		}).
+		Where("name LIKE ?", "%"+name+"%").
+		Find(&allProducts).Error; err != nil {
+		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
+	}
 
-    if strings.TrimSpace(name) == "" {
-        if len(allProducts) > 10 {
-            return allProducts[:10], nil
-        }
-        return allProducts, nil
-    }
+	if strings.TrimSpace(name) == "" {
+		if len(allProducts) > 10 {
+			return allProducts[:10], nil
+		}
+		return allProducts, nil
+	}
 
-    scored := make([]models.ProductWithScore, 0)
-    lowerSearch := strings.ToLower(strings.TrimSpace(name))
+	scored := make([]models.ProductWithScore, 0)
+	lowerSearch := strings.ToLower(strings.TrimSpace(name))
 
-    for _, product := range allProducts {
-        lowerName := strings.ToLower(product.Name)
-        score := models.CalculateRelevance(lowerSearch, lowerName)
-        
-        if score > 0 {
-            scored = append(scored, models.ProductWithScore{
-                Product: product,
-                Score:   score,
-                Length:  len(product.Name),
-            })
-        }
-    }
+	for _, product := range allProducts {
+		lowerName := strings.ToLower(product.Name)
+		score := models.CalculateRelevance(lowerSearch, lowerName)
 
-    // Ordenar según los criterios especificados
-    sort.Slice(scored, func(i, j int) bool {
-        // Si los scores son diferentes, ordenar por score (descendente)
-        if scored[i].Score != scored[j].Score {
-            return scored[i].Score > scored[j].Score
-        }
-        // Si los scores son iguales, ordenar por longitud (ascendente - más corto primero)
-        return scored[i].Length < scored[j].Length
-    })
+		if score > 0 {
+			scored = append(scored, models.ProductWithScore{
+				Product: product,
+				Score:   score,
+				Length:  len(product.Name),
+			})
+		}
+	}
 
-    // Limitar a 10 resultados
-    limit := 10
-    products := make([]*models.Product, 0, limit)
-    for i, ps := range scored {
-        if i >= limit {
-            break
-        }
-        products = append(products, ps.Product)
-    }
+	// Ordenar según los criterios especificados
+	sort.Slice(scored, func(i, j int) bool {
+		// Si los scores son diferentes, ordenar por score (descendente)
+		if scored[i].Score != scored[j].Score {
+			return scored[i].Score > scored[j].Score
+		}
+		// Si los scores son iguales, ordenar por longitud (ascendente - más corto primero)
+		return scored[i].Length < scored[j].Length
+	})
 
-    return products, nil
+	// Limitar a 10 resultados
+	limit := 10
+	products := make([]*models.Product, 0, limit)
+	for i, ps := range scored {
+		if i >= limit {
+			break
+		}
+		products = append(products, ps.Product)
+	}
+
+	return products, nil
 }
 
 func (r *ProductRepository) ProductGetAll(page, limit int) ([]*models.Product, int64, error) {
@@ -221,6 +221,50 @@ func (r *ProductRepository) ProductGetByCodeToQR(code string) (*models.Product, 
 	}
 
 	return product, nil
+}
+
+func (r *ProductRepository) ProductCount() (int64, error) {
+	var count int64
+	if err := r.DB.Model(&models.Product{}).Count(&count).Error; err != nil {
+		return 0, schemas.ErrorResponse(500, "error al contar productos", err)
+	}
+	return count, nil
+}
+
+func (r *ProductRepository) ProductInsertToExcel(memberID int64, products []models.Product) ([]map[string]string, error) {
+	rejected := make([]map[string]string, 0)
+	for _, product := range products {
+		err := r.DB.Transaction(func(tx *gorm.DB) error {
+			if product.Category.Name != "" {
+				if err := tx.FirstOrCreate(&product.Category, models.Category{Name: product.Category.Name}).Error; err != nil {
+					return err
+				}
+				product.CategoryID = product.Category.ID
+			} else {
+				product.CategoryID = 1
+			}
+
+			if err := tx.Create(&product).Error; err != nil {
+				return err
+			}
+
+			if product.StockDeposit.Stock <= 0 {
+				return errors.New("stock no puede ser menor o igual a 0")
+			}
+
+			if err := tx.Create(&models.Deposit{ProductID: product.ID, Stock: product.StockDeposit.Stock}).Error; err != nil {
+				return err
+			}
+
+			return nil
+		})
+
+		if err != nil {
+			rejected = append(rejected, map[string]string{"code": product.Code, "name": product.Name})
+		}
+	}
+
+	return rejected, nil
 }
 
 // func (r *ProductRepository) ProductCreate(productCreate *schemas.ProductCreate, plan *schemas.PlanResponseDTO) (int64, error) {

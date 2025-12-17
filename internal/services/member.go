@@ -38,8 +38,8 @@ func (m *MemberService) MemberUpdate(memberID int64, memeberUpdate *schemas.Memb
 	return m.MemberRepository.MemberUpdate(memberID, memeberUpdate)
 }
 
-func (m *MemberService) MemberUpdatePassword(memberID int64, memeberCreate *schemas.MemberUpdatePassword) error {
-	return m.MemberRepository.MemberUpdatePassword(memberID, memeberCreate)
+func (m *MemberService) MemberUpdatePassword(memberID int64, memberUpdatePassword *schemas.MemberUpdatePassword) error {
+	return m.MemberRepository.MemberUpdatePassword(memberID, memberUpdatePassword)
 }
 
 func (m *MemberService) MemberDelete(memberID int64, id int64) (error) {

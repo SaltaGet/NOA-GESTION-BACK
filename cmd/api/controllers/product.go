@@ -1,9 +1,12 @@
 package controllers
 
 import (
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
 )
@@ -176,6 +179,65 @@ func (p *ProductController) ProductGetAll(ctx *fiber.Ctx) error {
 	})
 }
 
+// ProductGenerateQR godoc
+//
+//	@Summary		ProductGenerateQR
+//	@Description	genarar nuevo QR para producto
+//	@Tags			Product
+//	@Accept			json
+//	@Produce		application/pdf
+//	@Security		CookieAuth
+//	@Param			code	path	string	true	"codigo del producto a generar"
+//	@Param			size	query	string	true	"Tamaño del código QR"	Enums(chico, mediano, grande)
+//	@Success		200		{file}	pdf
+//	@Router			/api/v1/product/generate_qr/{code} [get]
+func (p *ProductController) ProductGenerateQR(ctx *fiber.Ctx) error {
+	code := ctx.Params("code")
+	if code == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(schemas.Response{
+			Status:  false,
+			Body:    nil,
+			Message: "Se necesita el codigo del producto",
+		})
+	}
+
+	size := ctx.Query("size", "mediano")
+	if size != "chico" && size != "mediano" && size != "grande" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(schemas.Response{
+			Status:  false,
+			Body:    nil,
+			Message: "Tamaño de QR invalido",
+		})
+	}
+
+	rows := 0
+	cols := 0
+	if size == "chico" {
+		rows = 20
+		cols = 10
+	} else if size == "mediano" {
+		rows = 16
+		cols = 8
+	} else if size == "grande" {
+		rows = 6
+		cols = 12
+	}
+
+	codeQRs, err := p.ProductService.ProductGenerateQR(code, rows, cols)
+	if err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	ctx.Set("Content-Type", "application/pdf")
+	ctx.Set(
+		"Content-Disposition",
+		`inline; filename="product_qr_labels.pdf"`,
+	)
+
+	return ctx.Send(codeQRs)
+}
+
+
 // ProductCreate godoc
 //
 //	@Summary		ProductCreate
@@ -215,39 +277,47 @@ func (p *ProductController) ProductCreate(ctx *fiber.Ctx) error {
 	})
 }
 
-// ProductGenerateQR godoc
+// ProductUpload godoc
 //
-//	@Summary		ProductGenerateQR
-//	@Description	genarar nuevo QR para producto
+//	@Summary		ProductUpload
+//	@Description	crear productos y stock desde excel
 //	@Tags			Product
-//	@Accept			json
-//	@Produce		application/pdf
+//	@Accept			multipart/form-data
+//	@Produce		json
 //	@Security		CookieAuth
-//	@Param			code	path	string	true	"codigo del producto a generar"
-//	@Success		200		{file}	pdf
-//	@Router			/api/v1/product/generate_qr/{code} [get]
-func (p *ProductController) ProductGenerateQR(ctx *fiber.Ctx) error {
-	code := ctx.Params("code")
-	if code == "" {
-		return ctx.Status(fiber.StatusBadRequest).JSON(schemas.Response{
+//	@Param			excel_products	formData	file	true	"Excel de los productos a crear"	<--	CAMBIO	2:	formData	+	file
+//	@Success		200				{object}	schemas.Response
+//	@Router			/api/v1/product/upload [post]
+func (p *ProductController) ProductUpload(ctx *fiber.Ctx) error {
+	fileExcel, err := ctx.FormFile("excel_products")
+	if err != nil {
+		return ctx.Status(400).JSON(schemas.Response{
 			Status:  false,
 			Body:    nil,
-			Message: "Se necesita el codigo del producto",
+			Message: "debe seleccionar un archivo excel",
 		})
 	}
+	ext := strings.ToLower(filepath.Ext(fileExcel.Filename))
+  if ext != ".xlsx" && ext != ".xls" {
+    return ctx.Status(400).JSON(schemas.Response{
+        Status:  false,
+        Body:    nil,
+        Message: "El archivo no tiene un formato válido. Solo se permiten .xlsx o .xls",
+    })
+  }
 
-	codeQRs, err := p.ProductService.ProductGenerateQR(code)
+	plan := ctx.Locals("current_plan").(*schemas.PlanResponseDTO)
+	member := ctx.Locals("user").(*schemas.AuthenticatedUser)
+	rejects, err := p.ProductService.ProductUpload(member.ID, fileExcel, plan)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
-	ctx.Set("Content-Type", "application/pdf")
-	ctx.Set(
-		"Content-Disposition",
-		`inline; filename="product_qr_labels.pdf"`,
-	)
-
-	return ctx.Send(codeQRs)
+	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    rejects,
+		Message: utils.Ternary(len(rejects) > 0, "Productos creados correctamente con errores", "Productos creados correctamente"),
+	})
 }
 
 // ProductUpdate godoc
