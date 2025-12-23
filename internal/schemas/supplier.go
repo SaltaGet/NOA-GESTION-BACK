@@ -41,13 +41,18 @@ type SupplierUpdate struct {
 	Identifier  *string  `json:"identifier"`
 	Address     *string  `json:"address"`
 	DebtLimit   *float64 `json:"debt_limit"`
-	Email       *string  `json:"email"`
+	Email       *string  `json:"email" validate:"omitempty,email"`
 	Phone       *string  `json:"phone"`
 }
 
 func (s *SupplierUpdate) Validate() error {
 	if s.ID == 1 {
 		return ErrorResponse(400, "no se puede editar el proveedor por defecto", fmt.Errorf("no se puede editar el proveedor por defecto"))
+	}
+
+	email := s.Email
+	if email != nil && *email == "" {
+		s.Email = nil
 	}
 
 	validate := validator.New()

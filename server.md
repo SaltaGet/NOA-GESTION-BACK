@@ -25,6 +25,16 @@ docker exec mariadb-noa \
   > /home/ubuntu/backup.sql
 ~~~
 
+~~~
+sudo docker exec mariadb-db \
+  mariadb-dump \
+  -u root -p'Qwer1234*' \
+  --databases club_norte \
+  --single-transaction \
+  --routines --triggers \
+  > /home/ubuntu/backup.sql
+~~~
+
 ### Todas
 
 ~~~

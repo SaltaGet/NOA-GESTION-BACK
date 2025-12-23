@@ -587,6 +587,40 @@ definitions:
     - total
     - type_expense_id
     type: object
+  schemas.FeedbackCreate:
+    properties:
+      content:
+        type: string
+      title:
+        type: string
+    required:
+    - content
+    - title
+    type: object
+  schemas.FeedbackResponse:
+    properties:
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  schemas.FeedbackResponseDTO:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_read:
+        type: boolean
+      title:
+        type: string
+    type: object
   schemas.GroupPermissions:
     properties:
       group:
@@ -3457,6 +3491,82 @@ paths:
       summary: ExpenseBuyDelete
       tags:
       - ExpenseBuy
+  /api/v1/feedback/create:
+    post:
+      consumes:
+      - application/json
+      description: Crear Feedback
+      parameters:
+      - description: Crear novead
+        in: body
+        name: new_create
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.FeedbackCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: feedback creada con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: FeedbackCreate
+      tags:
+      - Feedback
+  /api/v1/feedback/get/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Obtener feedback por id
+      parameters:
+      - description: Feedback ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Feedback obtenido con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.FeedbackResponse'
+              type: object
+      security:
+      - CookieAuth: []
+      summary: FeedbackGetByID
+      tags:
+      - Feedback
+  /api/v1/feedback/get_all:
+    get:
+      consumes:
+      - application/json
+      description: Obtener todos los feedbacks
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: feedbackes obtenidos con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.FeedbackResponseDTO'
+                  type: array
+              type: object
+      security:
+      - CookieAuth: []
+      summary: FeedbackGetAll
+      tags:
+      - Feedback
   /api/v1/income_other/create:
     post:
       consumes:
@@ -4290,12 +4400,8 @@ paths:
             - $ref: '#/definitions/schemas.Response'
             - properties:
                 body:
-                  items:
-                    $ref: '#/definitions/schemas.NewsResponse'
-                  type: array
+                  $ref: '#/definitions/schemas.NewsResponse'
               type: object
-      security:
-      - CookieAuth: []
       summary: NewsGetByID
       tags:
       - News
@@ -4318,8 +4424,6 @@ paths:
                     $ref: '#/definitions/schemas.NewsResponseDTO'
                   type: array
               type: object
-      security:
-      - CookieAuth: []
       summary: NewsGetAll
       tags:
       - News

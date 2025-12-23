@@ -13,6 +13,7 @@ func SetupRoutes(app *fiber.App, appDependencies *dependencies.MainContainer) {
 	DepositRoutes(app)
 	ExpenseBuyRoutes(app)
 	ExpenseOtherRoutes(app)
+	FeedbackRoutes(app, appDependencies.FeedbackController)
 	IncomeOtherRoutes(app)
 	IncomeSaleRoutes(app)
 	MemberRoutes(app)

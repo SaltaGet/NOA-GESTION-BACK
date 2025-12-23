@@ -34,6 +34,10 @@ type ExpenseOtherController struct {
 	ExpenseOtherService ports.ExpenseOtherService
 }
 
+type FeedbackController struct {
+	FeedbackService ports.FeedbackServices
+}
+
 type IncomeOtherController struct {
 	IncomeOtherService ports.IncomeOtherService
 }

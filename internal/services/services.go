@@ -41,6 +41,10 @@ type ExpenseOtherService struct {
 	ExpenseOtherRepository ports.ExpenseOtherRepository
 }
 
+type FeedbackService struct {
+	FeedbackRepository ports.FeedbackRepository
+}
+
 type IncomeSaleService struct {
 	IncomeSaleRepository ports.IncomeSaleRepository
 }

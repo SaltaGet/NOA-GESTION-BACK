@@ -15,8 +15,8 @@ import (
 //	@Tags			News
 //	@Accept			json
 //	@Produce		json
-//	@Param			id	path		string											true	"News ID"
-//	@Success		200	{object}	schemas.Response{body=[]schemas.NewsResponse}	"Novedad obtenida con éxito"
+//	@Param			id	path		string										true	"News ID"
+//	@Success		200	{object}	schemas.Response{body=schemas.NewsResponse}	"Novedad obtenida con éxito"
 //	@Router			/api/v1/news/get/{id} [get]
 func (t *NewsController) NewsGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")

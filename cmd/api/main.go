@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,7 +14,9 @@ import (
 	// "syscall"
 	"time"
 
+	"github.com/DanielChachagua/ecommerce-noagestion-protos/pb"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/initial"
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/interceptor"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/jobs"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/middleware"
@@ -22,11 +25,14 @@ import (
 	tenant_cache "github.com/SaltaGet/NOA-GESTION-BACK/internal/cache/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/services_grpc"
 	"github.com/gofiber/fiber/v2"
 	"github.com/robfig/cron/v3"
+	"google.golang.org/grpc"
 
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+
 	// "github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/swagger"
 	"github.com/joho/godotenv"
@@ -204,6 +210,27 @@ func main() {
 		log.Info().Msgf("🚀 Servidor iniciado en http://localhost:%s", port)
 		if err := app.Listen(":" + port); err != nil {
 			log.Err(err).Msg("Error al iniciar servidor")
+		}
+	}()
+
+	go func() {
+		log.Info().Msg("Iniciando servidor gRPC en :50051...")
+		lis, err := net.Listen("tcp", ":50051")
+		if err != nil {
+			log.Fatal().Msgf("falló al escuchar gRPC: %v", err)
+		}
+
+		// Usamos tu interceptor de seguridad
+		grpcServer := grpc.NewServer(
+			grpc.UnaryInterceptor(interceptor.AuthInterceptor),
+		)
+
+		// Registramos el servicio
+		tenantService := &services_grpc.TenantGRPCServer{} // Tu struct que cumple la interfaz
+		pb.RegisterTenantServiceServer(grpcServer, tenantService)
+
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatal().Msgf("falló al servir gRPC: %v", err)
 		}
 	}()
 

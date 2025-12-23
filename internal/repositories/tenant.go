@@ -413,12 +413,10 @@ func (r *MainRepository) TenantUserCreate(adminID int64, tenantUserCreate *schem
 
 		// CREAR TENANT
 		if err := tx.Create(tenant).Error; err != nil {
-
 			if errors.Is(err, gorm.ErrInvalidData) {
 				return schemas.ErrorResponse(400,
 					"Los campos email, cuit_pdv y identifier deben ser únicos. Algún campo ya existe", err)
 			}
-
 			if schemas.IsDuplicateError(err) {
 				switch {
 				case strings.Contains(err.Error(), "email"):
@@ -429,7 +427,9 @@ func (r *MainRepository) TenantUserCreate(adminID int64, tenantUserCreate *schem
 					return schemas.ErrorResponse(409, "El cuit del tenant ya existe", err)
 				}
 			}
-
+			if strings.Contains(err.Error(), "identifier invalid") {
+				return schemas.ErrorResponse(409, "el identificador solo puede contener letras minúsculas, números y guiones, no puede contener espacios", err)
+			}
 			return schemas.ErrorResponse(500, "Error interno creando tenant", err)
 		}
 
@@ -445,7 +445,6 @@ func (r *MainRepository) TenantUserCreate(adminID int64, tenantUserCreate *schem
 		}
 
 		if err := tx.Create(user).Error; err != nil {
-
 			if schemas.IsDuplicateError(err) {
 				switch {
 				case strings.Contains(err.Error(), "email"):
@@ -454,7 +453,6 @@ func (r *MainRepository) TenantUserCreate(adminID int64, tenantUserCreate *schem
 					return schemas.ErrorResponse(409, "El username del usuario ya existe", err)
 				}
 			}
-
 			return schemas.ErrorResponse(500, "Error interno creando usuario", err)
 		}
 

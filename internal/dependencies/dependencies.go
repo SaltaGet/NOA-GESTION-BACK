@@ -16,6 +16,7 @@ type MainContainer struct {
 	// NotificationController *controllers.NotificationController
 	PlanController *controllers.PlanController
 	NewsController *controllers.NewsController
+	FeedbackController *controllers.FeedbackController
 }
 
 func NewApplication(mainDB *gorm.DB, cfg *schemas.EmailConfig) *MainContainer {
@@ -30,6 +31,8 @@ func NewApplication(mainDB *gorm.DB, cfg *schemas.EmailConfig) *MainContainer {
 	// notificationServ := &services.NotificationService{NotificationRepository: mainRepo}
 	planServ := &services.PlanService{PlanRepository: mainRepo}
 	newsServ := &services.NewsService{NewsRepository: mainRepo}
+	feedbackServ := &services.FeedbackService{FeedbackRepository: mainRepo}
+
 
 
 	return &MainContainer{
@@ -39,6 +42,7 @@ func NewApplication(mainDB *gorm.DB, cfg *schemas.EmailConfig) *MainContainer {
 		// NotificationController: &controllers.NotificationController{SSEServer: sse, NotificationService: notificationServ},
 		PlanController: &controllers.PlanController{PlanService: planServ},
 		NewsController: &controllers.NewsController{NewsService: newsServ},
+		FeedbackController: &controllers.FeedbackController{FeedbackService: feedbackServ},
 	}
 }
 
