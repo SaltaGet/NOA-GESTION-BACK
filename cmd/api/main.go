@@ -14,18 +14,21 @@ import (
 	// "syscall"
 	"time"
 
+	// "github.com/DanielChachagua/ecommerce-noagestion-protos/pb"
 	"github.com/DanielChachagua/ecommerce-noagestion-protos/pb"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/initial"
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/interceptor"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/jobs"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/middleware"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/routes"
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/grpc/interceptor"
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/grpc/server"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
 	tenant_cache "github.com/SaltaGet/NOA-GESTION-BACK/internal/cache/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/services_grpc"
+
+	// "github.com/SaltaGet/NOA-GESTION-BACK/internal/services/grpc_serv"
 	"github.com/gofiber/fiber/v2"
 	"github.com/robfig/cron/v3"
 	"google.golang.org/grpc"
@@ -72,7 +75,7 @@ func main() {
 	local := os.Getenv("LOCAL")
 	if local == "true" {
 		if err := jobs.GenerateSwagger(); err != nil {
-			log.Fatal().Err(err).Msg("Error ejecutando swag init",)
+			log.Fatal().Err(err).Msg("Error ejecutando swag init")
 		}
 	}
 
@@ -129,7 +132,7 @@ func main() {
 		ProxyHeader:           "X-Forwarded-For",
 		DisableStartupMessage: false,
 		StreamRequestBody:     true,
-		// Prefork: true, 
+		// Prefork: true,
 	})
 
 	app.Use(middleware.BlockAccess())
@@ -178,6 +181,8 @@ func main() {
 
 	routes.SetupRoutes(app, dep)
 
+	depGrpc := dependencies.NewGrpcApplication(db)
+
 	initBackup := os.Getenv("INIT_BACKUP")
 	if initBackup == "true" {
 		c := cron.New()
@@ -222,12 +227,25 @@ func main() {
 
 		// Usamos tu interceptor de seguridad
 		grpcServer := grpc.NewServer(
-			grpc.UnaryInterceptor(interceptor.AuthInterceptor),
+			grpc.ChainUnaryInterceptor(
+				interceptor.LoggingInterceptor,
+				interceptor.AuthInterceptor,
+				interceptor.MultiTenantInterceptor(dep),
+			),
 		)
 
+		productServer := &server.GrpcProductServer{}
+    pb.RegisterProductServiceServer(grpcServer, productServer)
+
+		tenantServer := &server.GrpcTenantServer{
+			GrpcTenantService: depGrpc.TenantGrpcService,
+		}
+		pb.RegisterTenantServiceServer(grpcServer, tenantServer)
+
+		categoryServer := &server.GrpcCategoryServer{}
+		pb.RegisterCategoryServiceServer(grpcServer, categoryServer)
+
 		// Registramos el servicio
-		tenantService := &services_grpc.TenantGRPCServer{} // Tu struct que cumple la interfaz
-		pb.RegisterTenantServiceServer(grpcServer, tenantService)
 
 		if err := grpcServer.Serve(lis); err != nil {
 			log.Fatal().Msgf("falló al servir gRPC: %v", err)

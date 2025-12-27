@@ -32,6 +32,10 @@ func (t *TenantService) TenantGetAll() (*[]schemas.TenantResponse, error) {
 	return tenants, nil
 }
 
+func (t *TenantService) TenantGetConnectionByIdentifier(tenantIdentifier string) (*models.Tenant, error) {
+	return t.TenantRepository.TenantGetConnectionByIdentifier(tenantIdentifier)
+}
+
 func (t *TenantService) TenantGetConections() ([]*models.Tenant, error) {
 	conections, err := t.TenantRepository.TenantGetConections()
 	if err != nil {

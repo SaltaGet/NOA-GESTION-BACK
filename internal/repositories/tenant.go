@@ -88,6 +88,16 @@ func (r *MainRepository) TenantGetAll() (*[]schemas.TenantResponse, error) {
 	return &tenants, nil
 }
 
+func (r *MainRepository) TenantGetConnectionByIdentifier(tenantIdentifier string) (*models.Tenant, error) {
+	var tenant *models.Tenant
+	err := r.DB.Select("id", "connection").Where("identifier = ?", tenantIdentifier).First(&tenant).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return tenant, nil
+}
+
 func (r *MainRepository) TenantGetConections() ([]*models.Tenant, error) {
 	var tenants []*models.Tenant
 	if err := r.DB.Debug().
