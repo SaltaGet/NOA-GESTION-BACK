@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS tenant_modules;
+DROP TABLE IF EXISTS modules;

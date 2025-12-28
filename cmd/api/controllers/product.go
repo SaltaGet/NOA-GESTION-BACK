@@ -433,3 +433,29 @@ func (p *ProductController) ProductDelete(ctx *fiber.Ctx) error {
 		Message: "Producto eliminado correctamente",
 	})
 }
+
+// ProductPriceUpdate godoc
+//
+//	@Summary		ProductPriceUpdate
+//	@Description	ProductPriceUpdate edita el rpecio de una lista de productos
+//	@Tags			Product
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			listProductUpdate	body		schemas.ListPriceUpdate	true	"Información de los productos y los precios a editar"
+//	@Success		200					{object}	schemas.Response
+//	@Router			/api/v1/product/generate_token_to_image [post]
+func (p *ProductController) ProductGenerateTokenToImage(ctx *fiber.Ctx) error {
+	currentPlan := ctx.Locals("current_plan").(*schemas.PlanResponseDTO)
+
+	token, err := p.ProductService.ValidateAddImages(currentPlan)
+	if err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    token,
+		Message: "Token generado correctamente",
+	})
+}

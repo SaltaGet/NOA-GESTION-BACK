@@ -90,6 +90,10 @@ func ConnectDB(cfg *schemas.EmailConfig) (*gorm.DB, error) {
 		&models.Admin{}, 
 		&models.PayTenant{},
 		&models.PayDetail{},
+		&models.Module{},
+		&models.TenantModule{},
+		&models.Feedback{},
+		&models.News{},
 		&models.AuditLogAdmin{}); err != nil {
 		log.Fatal().Err(err).Msg("Error en migración")
 	}
@@ -359,7 +363,7 @@ func FilePathFromURI(uri string) string {
 }
 
 // StartDBJanitor limpia conexiones inactivas periódicamente
-func StartDBJanitor(ctx context.Context, tenants *sync.Map) {
+func StartDBJanitor(ctx context.Context, tenants, gprcCache *sync.Map) {
 	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
 
@@ -368,12 +372,12 @@ func StartDBJanitor(ctx context.Context, tenants *sync.Map) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			cleanupInactiveConnections(tenants)
+			cleanupInactiveConnections(tenants, gprcCache)
 		}
 	}
 }
 
-func cleanupInactiveConnections(tenants *sync.Map) {
+func cleanupInactiveConnections(tenants *sync.Map, gprcCache *sync.Map) {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -393,6 +397,8 @@ func cleanupInactiveConnections(tenants *sync.Map) {
 			log.Info().Msgf("Conexión de tenant %v cerrada por inactividad", key)
 			tenants.Delete(key.(int64))
 			log.Info().Msgf("Conexión de tenant cache %v cerrada por inactividad", key)
+			gprcCache.Delete(key.(int64))
+			log.Info().Msgf("Conexión de gRPC cache %v cerrada por inactividad", key)
 		}
 	}
 }

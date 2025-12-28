@@ -6,11 +6,12 @@ import (
 )
 
 type AuthService struct {
-	AuthRepository ports.AuthRepository
-	UserRepository ports.UserRepository
-	TenantService  ports.TenantService
-	EmailService   ports.EmailService
-	PlanRepository ports.PlanRepository
+	AuthRepository   ports.AuthRepository
+	UserRepository   ports.UserRepository
+	TenantService    ports.TenantService
+	EmailService     ports.EmailService
+	PlanRepository   ports.PlanRepository
+	ModuleRepository ports.ModuleRepository
 }
 
 type CashRegisterService struct {
@@ -56,6 +57,10 @@ type IncomeOtherService struct {
 type MemberService struct {
 	MemberRepository ports.MemberRepository
 	// UserRepository ports.UserRepository
+}
+
+type ModuleService struct {
+	ModuleRepository ports.ModuleRepository
 }
 
 type MovementStockService struct {
@@ -106,7 +111,7 @@ type SupplierService struct {
 type TenantService struct {
 	UserRepository   ports.UserRepository
 	TenantRepository ports.TenantRepository
-	EmailService   ports.EmailService
+	EmailService     ports.EmailService
 }
 
 type TypeMovementService struct {

@@ -120,9 +120,14 @@ func (a *AuthService) AuthCurrentPlan(tenantID int64) (*schemas.PlanResponseDTO,
 		return nil, err
 	}
 
+	modules, err := a.ModuleRepository.ModuleGetByTenantID(tenantID)
+	if err != nil {
+		return nil, err
+	}
+
 	var planResponse schemas.PlanResponseDTO
 	copier.Copy(&planResponse, &plan)
-	
+	planResponse.Modules = modules
 
 	return &planResponse, nil
 }

@@ -19,6 +19,7 @@ type ProductRepository interface {
 	ProductUpdate(memberID int64, productUpdate *schemas.ProductUpdate) error
 	ProductPriceUpdate(memberID int64, productUpdate *schemas.ListPriceUpdate) error
 	ProductDelete(memberID int64, id int64) error
+	ValidateAddImages(plan *schemas.PlanResponseDTO) (string, error)
 }
 
 type ProductService interface {

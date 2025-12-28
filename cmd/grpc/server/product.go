@@ -7,8 +7,6 @@ import (
 	grpc_cache "github.com/SaltaGet/NOA-GESTION-BACK/internal/cache/grpc"
 )
 
-
-
 func (s *GrpcProductServer) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.Product, error) {
 	deps := grpc_cache.GetGrpcContainerFromContext(ctx)
 	prod, err := deps.Services.GrpcProductService.ProductGetByCode(ctx, req)
@@ -22,4 +20,14 @@ func (s *GrpcProductServer) GetProduct(ctx context.Context, req *pb.GetProductRe
 func (s *GrpcProductServer) ListProducts(ctx context.Context, req *pb.ListProductsRequest) (*pb.ListProductsResponse, error) {
 	deps := grpc_cache.GetGrpcContainerFromContext(ctx)
 	return deps.Services.GrpcProductService.ProductList(ctx, req)
+}
+
+func (s *GrpcProductServer) SaveUrlImage(ctx context.Context, req *pb.SaveImageRequest) (*pb.SaveImageResponse, error) {
+	deps := grpc_cache.GetGrpcContainerFromContext(ctx)
+	result, err := deps.Services.GrpcProductService.SaveUrlImage(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

@@ -2,23 +2,28 @@ package grpc_repo
 
 import (
 	"errors"
+	"strings"
 
+	"github.com/DanielChachagua/ecommerce-noagestion-protos/pb"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func (r *GrpcProductRepository) ProductGetByCode(code string) (*models.Product, error) {
 	var product models.Product
-	
+
 	err := r.DB.Preload("StockDeposit").Preload("Category").Where("code = ?", code).First(&product).Error
-	
+
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("producto no encontrado")
 		}
 		return nil, err
 	}
-	
+
 	return &product, nil
 }
 
@@ -71,4 +76,26 @@ func (r *GrpcProductRepository) ProductList(
 	}
 
 	return products, total, nil
+}
+
+func (r *GrpcProductRepository) SaveUrlImage(req *pb.SaveImageRequest) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+
+		var prodExist models.Product
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&prodExist, req.ProdId).Error; err != nil {
+			return status.Error(codes.NotFound, "El producto no existe en la base de datos")
+		}
+
+		prodExist.PrimaryImage = &req.PrimaryImage
+		if len(req.SecondaryImages) > 0 {
+			images := strings.Join(req.SecondaryImages, ",")
+			prodExist.SecondaryImages = &images
+		}
+
+		if err := tx.Save(&prodExist).Error; err != nil {
+			return status.Errorf(codes.Internal, "error crítico de base de datos: %v", err)
+		}
+
+		return nil
+	})
 }

@@ -17,6 +17,7 @@ type MainContainer struct {
 	PlanController *controllers.PlanController
 	NewsController *controllers.NewsController
 	FeedbackController *controllers.FeedbackController
+	ModuleController *controllers.ModuleController
 }
 
 func NewApplication(mainDB *gorm.DB, cfg *schemas.EmailConfig) *MainContainer {
@@ -25,13 +26,14 @@ func NewApplication(mainDB *gorm.DB, cfg *schemas.EmailConfig) *MainContainer {
 	dialer := gomail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)
 	emailService := &services.EmailService{Dialer: dialer}
 
-	authServ := &services.AuthService{AuthRepository: mainRepo, UserRepository: mainRepo, TenantService: mainRepo, EmailService: emailService, PlanRepository: mainRepo}
+	authServ := &services.AuthService{AuthRepository: mainRepo, UserRepository: mainRepo, TenantService: mainRepo, EmailService: emailService, PlanRepository: mainRepo, ModuleRepository: mainRepo}
 	userServ := &services.UserService{UserRepository: mainRepo}
 	tenantServ := &services.TenantService{TenantRepository: mainRepo, EmailService: emailService}
 	// notificationServ := &services.NotificationService{NotificationRepository: mainRepo}
 	planServ := &services.PlanService{PlanRepository: mainRepo}
 	newsServ := &services.NewsService{NewsRepository: mainRepo}
 	feedbackServ := &services.FeedbackService{FeedbackRepository: mainRepo}
+	moduleServ := &services.ModuleService{ModuleRepository: mainRepo}
 
 
 
@@ -43,6 +45,7 @@ func NewApplication(mainDB *gorm.DB, cfg *schemas.EmailConfig) *MainContainer {
 		PlanController: &controllers.PlanController{PlanService: planServ},
 		NewsController: &controllers.NewsController{NewsService: newsServ},
 		FeedbackController: &controllers.FeedbackController{FeedbackService: feedbackServ},
+		ModuleController: &controllers.ModuleController{ModuleService: moduleServ},
 	}
 }
 

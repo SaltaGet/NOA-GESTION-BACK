@@ -95,5 +95,14 @@ func VerifyTokenEmail(tokenString string) (jwt.Claims, error) {
 	return claims, nil
 }
 
+func GenerateTokenToGrpc(tenantID, productID int64) (string, error) {
+	claims := jwt.MapClaims{
+		"tenant_identifier": tenantID,
+		"product_id":        productID,
+		"exp":       time.Now().Add(30 * time.Minute).Unix(),
+	}
 
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(os.Getenv("KEY_VALIDATOR")))
+}
 

@@ -24,6 +24,7 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/grpc/interceptor"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/grpc/server"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
+	grpc_cache "github.com/SaltaGet/NOA-GESTION-BACK/internal/cache/grpc"
 	tenant_cache "github.com/SaltaGet/NOA-GESTION-BACK/internal/cache/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
@@ -102,9 +103,10 @@ func main() {
 	defer cancel()
 
 	tenants := tenant_cache.GetContainerTenantsCache()
+	grpcCaches := grpc_cache.GetContainerGrpcCache()
 
 	// Iniciar janitor para limpiar conexiones inactivas
-	go database.StartDBJanitor(ctx, tenants)
+	go database.StartDBJanitor(ctx, tenants, grpcCaches)
 
 	// s := sse.NewServer(&sse.Options{
 	// 	Headers: map[string]string{

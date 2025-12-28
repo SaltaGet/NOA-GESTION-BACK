@@ -50,6 +50,10 @@ type MemberController struct {
 	MemberService ports.MemberService
 }
 
+type ModuleController struct {
+	ModuleService ports.ModuleService
+}
+
 type MovementStockController struct {
 	MovementStockService   ports.MovementStockService
 	NotificationController *NotificationController

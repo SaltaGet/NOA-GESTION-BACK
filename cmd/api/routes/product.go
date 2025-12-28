@@ -27,12 +27,6 @@ func ProductRoutes(app *fiber.App) {
 			return tenant.Controllers.ProductController.ProductGetByCode(c)
 		})
 
-	prod.Get("/generate_qr/:code",
-		func(c *fiber.Ctx) error {
-			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
-			return tenant.Controllers.ProductController.ProductGenerateQR(c)
-		})
-
 	prod.Post("/create",
 		middleware.RolePermissionMiddleware("PR01"),
 		middleware.CurrentPlan(),
@@ -61,6 +55,19 @@ func ProductRoutes(app *fiber.App) {
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.ProductController.ProductPriceUpdate(c)
+		})
+
+	prod.Post("/generate_token_to_image",
+		middleware.RolePermissionMiddleware("PR02"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.ProductController.ProductGenerateTokenToImage(c)
+	})
+
+	prod.Get("/generate_qr/:code",
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.ProductController.ProductGenerateQR(c)
 		})
 
 	prod.Delete("/delete/:id",

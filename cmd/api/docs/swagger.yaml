@@ -1078,6 +1078,17 @@ definitions:
     - new_password
     - old_password
     type: object
+  schemas.ModuleResponseDTO:
+    properties:
+      amount_images_per_product:
+        type: integer
+      expiration:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
   schemas.MovementStockItem:
     properties:
       amount:
@@ -1373,6 +1384,10 @@ definitions:
         type: string
       id:
         type: integer
+      modules:
+        items:
+          $ref: '#/definitions/schemas.ModuleResponseDTO'
+        type: array
       name:
         type: string
       price:
@@ -4863,6 +4878,50 @@ paths:
       security:
       - CookieAuth: []
       summary: ProductGenerateQR
+      tags:
+      - Product
+  /api/v1/product/generate_token_to_image:
+    post:
+      consumes:
+      - application/json
+      description: ProductPriceUpdate edita el rpecio de una lista de productos
+      parameters:
+      - description: Información de los productos y los precios a editar
+        in: body
+        name: listProductUpdate
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.ListPriceUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: ProductPriceUpdate
       tags:
       - Product
   /api/v1/product/get/{id}:

@@ -8,13 +8,16 @@ import (
 )
 
 type Product struct {
-	ID          int64    `gorm:"primaryKey;autoIncrement" json:"id"`
-	Code        string   `gorm:"size:50;not null;uniqueIndex" json:"code"`
-	Name        string   `gorm:"size:100;not null" json:"name"`
-	Description *string  `gorm:"size:200" json:"description"`
-	Price       float64  `gorm:"not null,default:0" json:"price"`
-	CategoryID  int64    `gorm:"not null" json:"category_id"`
-	Category    Category `gorm:"foreignKey:CategoryID;references:ID" json:"category"`
+	ID              int64    `gorm:"primaryKey;autoIncrement" json:"id"`
+	Code            string   `gorm:"size:50;not null;uniqueIndex" json:"code"`
+	Name            string   `gorm:"size:100;not null" json:"name"`
+	Description     *string  `gorm:"size:200" json:"description"`
+	Price           float64  `gorm:"not null,default:0" json:"price"`
+	CategoryID      int64    `gorm:"not null" json:"category_id"`
+	Category        Category `gorm:"foreignKey:CategoryID;references:ID" json:"category"`
+	PrimaryImage    *string  `gorm:"size:255;default:null" json:"primary_image"`
+	SecondaryImages *string  `gorm:"type:text;default:null" json:"secondary_images"`
+	IsVisible       bool     `gorm:"not null;default:false" json:"is_visible"`
 
 	Notifier  bool    `gorm:"not null;default:false" json:"notifier"`
 	MinAmount float64 `gorm:"not null;default:0" json:"min_amount"`

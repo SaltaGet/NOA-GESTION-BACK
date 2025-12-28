@@ -3,7 +3,7 @@ module github.com/SaltaGet/NOA-GESTION-BACK
 go 1.24.1
 
 require (
-	github.com/DanielChachagua/ecommerce-noagestion-protos v0.0.0-20251227054318-505da4f1acf9
+	github.com/DanielChachagua/ecommerce-noagestion-protos v0.0.0-20251228010527-025cfaba7f0e
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/stretchr/testify v1.11.1

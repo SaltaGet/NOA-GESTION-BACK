@@ -61,6 +61,16 @@ func (s *GrpcProductService) ProductList(ctx context.Context, req *pb.ListProduc
 	}, nil
 }
 
+func (s *GrpcProductService) SaveUrlImage(ctx context.Context, req *pb.SaveImageRequest) (*pb.SaveImageResponse, error) {
+		err := s.GrpcProductRepository.SaveUrlImage(req)
+		if err != nil {
+				return nil, status.Error(codes.Internal, "Error saving image")
+		}
+		return &pb.SaveImageResponse{
+				Success: true,
+		}, nil
+}
+
 // Helpers de mapeo (puedes moverlos a otro archivo)
 func mapModelToProto(m *models.Product) *pb.Product {
 	return &pb.Product{

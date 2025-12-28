@@ -20,15 +20,16 @@ type PlanResponse struct {
 }
 
 type PlanResponseDTO struct {
-	ID              int64   `json:"id"`
-	Name            string  `json:"name"`
-	PriceMounthly   float64 `json:"price"`
-	PriceYearly     float64 `json:"price_yearly"`
-	Description     string  `json:"description"`
-	Features        string  `json:"features,omitempty"`
-	AmountPointSale int64   `json:"amount_point_sale"`
-	AmountMember    int64   `json:"amount_member"`
-	AmountProduct   int64   `json:"amount_product"`
+	ID              int64               `json:"id"`
+	Name            string              `json:"name"`
+	PriceMounthly   float64             `json:"price"`
+	PriceYearly     float64             `json:"price_yearly"`
+	Description     string              `json:"description"`
+	Features        string              `json:"features,omitempty"`
+	AmountPointSale int64               `json:"amount_point_sale"`
+	AmountMember    int64               `json:"amount_member"`
+	AmountProduct   int64               `json:"amount_product"`
+	Modules         []ModuleResponseDTO `json:"modules,omitempty"`
 }
 
 type PlanCreate struct {

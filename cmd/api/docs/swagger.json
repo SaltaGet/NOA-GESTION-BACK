@@ -4865,6 +4865,75 @@
                 }
             }
         },
+        "/api/v1/product/generate_token_to_image": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "ProductPriceUpdate edita el rpecio de una lista de productos",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Product"
+                ],
+                "summary": "ProductPriceUpdate",
+                "parameters": [
+                    {
+                        "description": "Información de los productos y los precios a editar",
+                        "name": "listProductUpdate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.ListPriceUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/product/get/{id}": {
             "get": {
                 "security": [
@@ -8482,6 +8551,23 @@
                 }
             }
         },
+        "schemas.ModuleResponseDTO": {
+            "type": "object",
+            "properties": {
+                "amount_images_per_product": {
+                    "type": "integer"
+                },
+                "expiration": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "schemas.MovementStockItem": {
             "type": "object",
             "required": [
@@ -8909,6 +8995,12 @@
                 },
                 "id": {
                     "type": "integer"
+                },
+                "modules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.ModuleResponseDTO"
+                    }
                 },
                 "name": {
                     "type": "string"
