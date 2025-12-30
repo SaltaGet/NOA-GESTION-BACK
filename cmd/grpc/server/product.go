@@ -31,3 +31,8 @@ func (s *GrpcProductServer) SaveUrlImage(ctx context.Context, req *pb.SaveImageR
 
 	return result, nil
 }
+
+func (s *GrpcProductServer) GetProductByID(ctx context.Context, req *pb.ProductRequest) (*pb.Product, error) {
+	deps := grpc_cache.GetGrpcContainerFromContext(ctx)
+	return deps.Services.GrpcProductService.ProductGetByID(ctx, req)
+}

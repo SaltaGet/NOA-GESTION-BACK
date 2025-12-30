@@ -95,7 +95,7 @@ func VerifyTokenEmail(tokenString string) (jwt.Claims, error) {
 	return claims, nil
 }
 
-func GenerateTokenToGrpc(tenantID, productID int64) (string, error) {
+func GenerateTokenToGrpc(tenantID string, productID int64) (string, error) {
 	claims := jwt.MapClaims{
 		"tenant_identifier": tenantID,
 		"product_id":        productID,

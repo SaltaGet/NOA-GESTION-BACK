@@ -10,6 +10,7 @@ import (
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 	"github.com/jung-kurt/gofpdf"
 	"github.com/skip2/go-qrcode"
 	"github.com/xuri/excelize/v2"
@@ -673,5 +674,18 @@ func (p *ProductService) ProductPriceUpdate(memberID int64, productUpdate *schem
 
 func (p *ProductService) ProductDelete(memberID int64, id int64) error {
 	return p.ProductRepository.ProductDelete(memberID, id)
+}
 
+func (p *ProductService) ValidateProductImages(tenantIdentifier string, productValidateImage schemas.ProductValidateImage, plan *schemas.PlanResponseDTO) (string, error) {
+	err := p.ProductRepository.ValidateProductImages(productValidateImage, plan)
+	if err != nil {
+		return "", err
+	}
+
+	token, err := utils.GenerateTokenToGrpc(tenantIdentifier, productValidateImage.ProductID)
+	if err != nil {
+		return "", schemas.ErrorResponse(500, "Error interno al generar token", err)
+	}
+
+	return token, nil
 }

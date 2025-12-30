@@ -2,6 +2,7 @@ package grpc_serv
 
 import (
 	"context"
+	"strings"
 
 	pb "github.com/DanielChachagua/ecommerce-noagestion-protos/pb"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
@@ -71,8 +72,22 @@ func (s *GrpcProductService) SaveUrlImage(ctx context.Context, req *pb.SaveImage
 		}, nil
 }
 
+func (s *GrpcProductService) ProductGetByID(ctx context.Context, req *pb.ProductRequest) (*pb.Product, error) {
+	prod, err := s.GrpcProductRepository.ProductGetByID(req.ProductId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "Product not found")
+	}
+
+	return mapModelToProto(prod), nil
+}
+
 // Helpers de mapeo (puedes moverlos a otro archivo)
 func mapModelToProto(m *models.Product) *pb.Product {
+	var second []string = []string{}
+	if m.SecondaryImages != nil && *m.SecondaryImages != "" {
+        second = strings.Split(*m.SecondaryImages, ",")
+    }
+
 	return &pb.Product{
 		Id:          int64(m.ID),
 		Code:        m.Code,
@@ -80,7 +95,8 @@ func mapModelToProto(m *models.Product) *pb.Product {
 		Description: m.Description,
 		Price:       m.Price,
 		Stock:       float32(m.StockDeposit.Stock),
-		UrlImage: []string{"una imagen", "dos imagenes"}, // Ajusta según tu modelo
+		PrimaryImage: m.PrimaryImage, 
+		SecondaryImages: second,
 		Category: &pb.Category{
 			Id:   int64(m.Category.ID),
 			Name: m.Category.Name,
@@ -100,7 +116,7 @@ func mapModelToDTO(m *models.Product) *pb.ProductDTO {
 		Name:  m.Name,
 		Price: m.Price,
 		Stock: stock,
-		UrlImage: []string{"una imagen"}[0],
+		PrimaryImage: m.PrimaryImage,
 		Category: &pb.Category{
 			Id:   int64(m.Category.ID),
 			Name: m.Category.Name,

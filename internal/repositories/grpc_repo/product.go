@@ -2,6 +2,7 @@ package grpc_repo
 
 import (
 	"errors"
+	"slices"
 	"strings"
 
 	"github.com/DanielChachagua/ecommerce-noagestion-protos/pb"
@@ -11,6 +12,21 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+func (r *GrpcProductRepository) ProductGetByID(id int64) (*models.Product, error) {
+	var product models.Product
+
+	err := r.DB.Preload("StockDeposit").Preload("Category").Where("id = ?", id).First(&product).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("producto no encontrado")
+		}
+		return nil, err
+	}
+
+	return &product, nil
+}
 
 func (r *GrpcProductRepository) ProductGetByCode(code string) (*models.Product, error) {
 	var product models.Product
@@ -80,20 +96,46 @@ func (r *GrpcProductRepository) ProductList(
 
 func (r *GrpcProductRepository) SaveUrlImage(req *pb.SaveImageRequest) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
-
 		var prodExist models.Product
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&prodExist, req.ProdId).Error; err != nil {
-			return status.Error(codes.NotFound, "El producto no existe en la base de datos")
+			return status.Error(codes.NotFound, "El producto no existe")
 		}
 
-		prodExist.PrimaryImage = &req.PrimaryImage
+		// 1. Actualizar Imagen Principal
+		if req.PrimaryImage != nil {
+			prodExist.PrimaryImage = req.PrimaryImage
+		}
+
+		// 2. Lógica de Imágenes Secundarias (Delta Logic)
+		// Obtenemos las actuales de forma segura
+		var currentImages []string
+		if prodExist.SecondaryImages != nil && *prodExist.SecondaryImages != "" {
+			currentImages = strings.Split(*prodExist.SecondaryImages, ",")
+		}
+
+		// Creamos la nueva lista empezando por las que el cliente quiere MANTENER
+		var updatedList []string
+		for _, keep := range req.KeepSecondaries {
+			if slices.Contains(currentImages, keep) {
+				updatedList = append(updatedList, keep)
+			}
+		}
+
+		// Agregamos las NUEVAS imágenes subidas
 		if len(req.SecondaryImages) > 0 {
-			images := strings.Join(req.SecondaryImages, ",")
-			prodExist.SecondaryImages = &images
+			updatedList = append(updatedList, req.SecondaryImages...)
+		}
+
+		// 3. Guardar cambios en el campo de texto
+		if len(updatedList) == 0 {
+			prodExist.SecondaryImages = nil 
+		} else {
+			finalString := strings.Join(updatedList, ",")
+			prodExist.SecondaryImages = &finalString
 		}
 
 		if err := tx.Save(&prodExist).Error; err != nil {
-			return status.Errorf(codes.Internal, "error crítico de base de datos: %v", err)
+			return status.Errorf(codes.Internal, "error de base de datos: %v", err)
 		}
 
 		return nil

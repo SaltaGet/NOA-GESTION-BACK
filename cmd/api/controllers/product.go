@@ -442,13 +442,22 @@ func (p *ProductController) ProductDelete(ctx *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			listProductUpdate	body		schemas.ListPriceUpdate	true	"Información de los productos y los precios a editar"
+//	@Param			productValidateImage	body		schemas.ProductValidateImage	true	"Información de los productos y los precios a editar"
 //	@Success		200					{object}	schemas.Response
 //	@Router			/api/v1/product/generate_token_to_image [post]
 func (p *ProductController) ProductGenerateTokenToImage(ctx *fiber.Ctx) error {
+	var productValidateImage schemas.ProductValidateImage
+	if err := ctx.BodyParser(&productValidateImage); err != nil {
+		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
+	}
+	if err := productValidateImage.Validate(); err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	user := ctx.Locals("user").(*schemas.AuthenticatedUser)
 	currentPlan := ctx.Locals("current_plan").(*schemas.PlanResponseDTO)
 
-	token, err := p.ProductService.ValidateAddImages(currentPlan)
+	token, err := p.ProductService.ValidateProductImages(user.TenantIdentifier, productValidateImage, currentPlan)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}

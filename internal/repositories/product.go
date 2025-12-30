@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
@@ -86,28 +87,6 @@ func (r *ProductRepository) ProductGetByCategoryID(categoryID int64) ([]*models.
 	return products, nil
 }
 
-// func (r *ProductRepository) ProductGetByName(name string) ([]*models.Product, error) {
-// 	var products []*models.Product
-
-// 	if err := r.DB.
-// 		Preload("Category", func(db *gorm.DB) *gorm.DB {
-// 			return db.Select("id", "name")
-// 		}).
-// 		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-// 			return db.Select("product_id", "stock", "point_sale_id")
-// 		}).
-// 		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
-// 			return db.Select("id", "name", "is_deposit")
-// 		}).
-// 		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-// 			return db.Select("id", "product_id", "stock")
-// 		}).
-// 		Where("name LIKE ?", "%"+name+"%").Find(&products).Error; err != nil {
-// 		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
-// 	}
-
-//		return products, nil
-//	}
 func (r *ProductRepository) ProductGetByName(name string) ([]*models.Product, error) {
 	var allProducts []*models.Product
 
@@ -267,117 +246,6 @@ func (r *ProductRepository) ProductInsertToExcel(memberID int64, products []mode
 	return rejected, nil
 }
 
-// func (r *ProductRepository) ProductCreate(productCreate *schemas.ProductCreate, plan *schemas.PlanResponseDTO) (int64, error) {
-// 	var countTotal int64
-// 	if err := r.DB.Model(&models.Product{}).Count(&countTotal).Error; err != nil {
-// 		return 0, schemas.ErrorResponse(500, "error al contar productos", err)
-// 	}
-
-// 	if countTotal >= plan.AmountProduct {
-// 		return 0, schemas.ErrorResponse(400, "el plan actual no permite crear más productos", nil)
-// 	}
-
-// 	var product models.Product
-// 	var category models.Category
-// 	if err := r.DB.First(&category, productCreate.CategoryID).Error; err != nil {
-// 		if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			return 0, schemas.ErrorResponse(404, "categoria no encontrada", err)
-// 		}
-// 		return 0, schemas.ErrorResponse(500, "error al obtener la categoria", err)
-// 	}
-
-// 	product.Name = productCreate.Name
-// 	product.Code = productCreate.Code
-// 	product.Description = productCreate.Description
-// 	if productCreate.Price != nil {
-// 		product.Price = *productCreate.Price
-// 	}
-// 	product.CategoryID = productCreate.CategoryID
-// 	product.Notifier = productCreate.Notifier
-// 	product.MinAmount = productCreate.MinAmount
-
-// 	if err := r.DB.Create(&product).Error; err != nil {
-// 		if schemas.IsDuplicateError(err) {
-// 			return 0, schemas.ErrorResponse(400, "el producto de codigo "+product.Code+" ya existe", err)
-// 		}
-// 		return 0, schemas.ErrorResponse(500, "error al crear el producto", err)
-// 	}
-
-// 	return product.ID, nil
-// }
-
-// func (r *ProductRepository) ProductUpdate(product *schemas.ProductUpdate) error {
-// 	var p models.Product
-// 	if err := r.DB.First(&p, product.ID).Error; err != nil {
-// 		if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			return schemas.ErrorResponse(404, "producto no encontrado", err)
-// 		}
-// 		return schemas.ErrorResponse(500, "error al obtener el producto", err)
-// 	}
-
-// 	if product.Price != nil {
-// 		p.Price = *product.Price
-// 	}
-
-// 	updates := map[string]any{
-// 		"code":        product.Code,
-// 		"name":        product.Name,
-// 		"description": &product.Description,
-// 		"category_id": product.CategoryID,
-// 		"price":       p.Price,
-// 		"notifier":    product.Notifier,
-// 		"min_amount":  product.MinAmount,
-// 	}
-
-// 	if err := r.DB.Model(&p).Updates(updates).Error; err != nil {
-// 		if schemas.IsDuplicateError(err) {
-// 			return schemas.ErrorResponse(400, "el producto de código "+product.Code+" ya existe", err)
-// 		}
-// 		return schemas.ErrorResponse(500, "error al actualizar el producto", err)
-// 	}
-
-// 	return nil
-// }
-
-// func (r *ProductRepository) ProductPriceUpdate(product *schemas.ListPriceUpdate) error {
-// 	return r.DB.Transaction(func(tx *gorm.DB) error {
-// 		for _, p := range product.ListProductPriceUpdate {
-// 			res := tx.Model(&models.Product{}).
-// 				Where("id = ?", p.ID).
-// 				Update("price", p.Price)
-
-// 			if res.Error != nil {
-// 				return schemas.ErrorResponse(500, "error al actualizar el producto", res.Error)
-// 			}
-
-// 			if res.RowsAffected == 0 {
-// 				return schemas.ErrorResponse(404, fmt.Sprintf("producto %d no encontrado", p.ID), fmt.Errorf("producto %d no encontrado", p.ID))
-// 			}
-// 		}
-// 		return nil
-// 	})
-// }
-
-// func (r *ProductRepository) ProductDelete(id int64) error {
-// 	return r.DB.Transaction(func(tx *gorm.DB) error {
-// 		if err := tx.Where("product_id = ?", id).Delete(&models.StockPointSale{}).Error; err != nil {
-// 			if errors.Is(err, gorm.ErrRecordNotFound) {
-// 				return schemas.ErrorResponse(404, "producto no encontrado", err)
-// 			}
-// 			return schemas.ErrorResponse(500, "error al eliminar el producto", err)
-// 		}
-
-// 		if err := tx.Where("id = ?", id).Delete(&models.Product{}).Error; err != nil {
-// 			if errors.Is(err, gorm.ErrRecordNotFound) {
-// 				return schemas.ErrorResponse(404, "producto no encontrado", err)
-// 			}
-// 			return schemas.ErrorResponse(500, "error al eliminar el producto", err)
-// 		}
-// 		return nil
-// 	})
-// }
-
-// ProductCreate crea un nuevo producto con auditoría
 func (r *ProductRepository) ProductCreate(memberID int64, productCreate *schemas.ProductCreate, plan *schemas.PlanResponseDTO) (int64, error) {
 	var productSave models.Product
 
@@ -585,4 +453,38 @@ func (r *ProductRepository) ProductDelete(memberID int64, id int64) error {
 	}
 
 	return err
+}
+
+func (r *ProductRepository) ValidateProductImages(productValidateImage schemas.ProductValidateImage, plan *schemas.PlanResponseDTO) error {
+	var product models.Product
+	if err := r.DB.First(&product, productValidateImage.ProductID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return schemas.ErrorResponse(404, "producto no encontrado", err)
+		}
+		return schemas.ErrorResponse(500, "error al obtener productos", err)
+	}
+
+	var count int64 = 0
+	if product.SecondaryImages != nil {
+		var c int64 = int64(len(strings.Split(*product.SecondaryImages, ",")))
+		count += c
+	}
+
+	if *productValidateImage.SecondaryImage.Keep > count || *productValidateImage.SecondaryImage.Remove > int64(count) {
+		message := fmt.Sprintf("tienes %d imagenes secundarias, no puedes retener o eliminar mas de las que tienes", count)
+		return schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
+	}
+
+	var sum int64 = *productValidateImage.SecondaryImage.Add - *productValidateImage.SecondaryImage.Remove + *productValidateImage.SecondaryImage.Keep
+
+	for _, module := range plan.Modules {
+		if module.Name == "ecommerce" {
+			if (sum + 1) > int64(module.AmountImagesPerProduct) {
+				return schemas.ErrorResponse(400, "la cantidad máxima de imágenes por productos es de "+strconv.Itoa(int(plan.Modules[0].AmountImagesPerProduct))+"", fmt.Errorf("la cantidad máxima de imágenes por productos es de "+strconv.Itoa(int(plan.Modules[0].AmountImagesPerProduct))+""))
+			}
+			break
+		}
+	}
+
+	return nil
 }
