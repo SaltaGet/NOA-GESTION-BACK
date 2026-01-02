@@ -59,6 +59,7 @@ func ProductRoutes(app *fiber.App) {
 
 	prod.Post("/generate_token_to_image",
 		middleware.RolePermissionMiddleware("PR02"),
+		middleware.CurrentPlan(),
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.ProductController.ProductGenerateTokenToImage(c)

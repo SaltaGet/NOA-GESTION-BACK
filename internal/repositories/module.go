@@ -21,7 +21,7 @@ func (r *MainRepository) ModuleGet(id int64) (*schemas.ModuleResponse, error) {
 	}
 
 	var moduleResponse schemas.ModuleResponse
-	copier.Copy(&module, &moduleResponse)
+	copier.Copy(&moduleResponse, &module)
 
 	return &moduleResponse, nil
 }
@@ -33,7 +33,7 @@ func (r *MainRepository) ModuleGetAll() ([]schemas.ModuleResponse, error) {
 	}
 
 	var modulesResponse []schemas.ModuleResponse
-	copier.Copy(&modules, &modulesResponse)
+	copier.Copy(&modulesResponse, &modules)
 
 	return modulesResponse, nil
 }
@@ -50,14 +50,24 @@ func (r *MainRepository) ModuleCreate(moduleCreate *schemas.ModuleCreate) (int64
 
 	err := r.DB.Create(&newModule).Error
 	if err != nil {
-		return 0, err
+		if schemas.IsDuplicateError(err) {
+			return 0, schemas.ErrorResponse(409, "El modulo "+newModule.Name+" ya existe", err)
+		}
+		return 0, schemas.ErrorResponse(500, "Error al crear modulo", err)
 	}
 
 	return newModule.ID, nil
 }
 
 func (r *MainRepository) ModuleUpdate(moduleUpdate *schemas.ModuleUpdate) error {
-	return r.DB.Model(&models.Module{}).Where("id = ?", moduleUpdate.ID).Updates(moduleUpdate).Error
+	if err := r.DB.Model(&models.Module{}).Where("id = ?", moduleUpdate.ID).Updates(moduleUpdate).Error; err != nil {
+		if schemas.IsDuplicateError(err) {
+			return schemas.ErrorResponse(409, "El modulo "+moduleUpdate.Name+" ya existe", err)
+		}
+		return schemas.ErrorResponse(500, "Error al actualizar modulo", err)
+	}
+
+	return nil
 }
 
 func (r *MainRepository) ModuleDelete(id int64) error {

@@ -443,7 +443,7 @@ func (p *ProductController) ProductDelete(ctx *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		CookieAuth
 //	@Param			productValidateImage	body		schemas.ProductValidateImage	true	"Información de los productos y los precios a editar"
-//	@Success		200					{object}	schemas.Response
+//	@Success		200						{object}	schemas.Response
 //	@Router			/api/v1/product/generate_token_to_image [post]
 func (p *ProductController) ProductGenerateTokenToImage(ctx *fiber.Ctx) error {
 	var productValidateImage schemas.ProductValidateImage

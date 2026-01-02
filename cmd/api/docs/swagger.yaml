@@ -1078,6 +1078,67 @@ definitions:
     - new_password
     - old_password
     type: object
+  schemas.ModuleAddTenant:
+    properties:
+      expiration:
+        example: "2023-01-01"
+        type: string
+      module_id:
+        example: 1
+        type: integer
+      tenant_id:
+        example: 1
+        type: integer
+    required:
+    - expiration
+    - module_id
+    - tenant_id
+    type: object
+  schemas.ModuleCreate:
+    properties:
+      amount_images_per_product:
+        example: 1
+        type: integer
+      description:
+        example: description
+        type: string
+      features:
+        example: features
+        type: string
+      name:
+        example: Module1
+        type: string
+      price:
+        example: 100
+        minimum: 0
+        type: number
+      price_yearly:
+        example: 1000
+        minimum: 0
+        type: number
+    required:
+    - amount_images_per_product
+    - name
+    - price
+    - price_yearly
+    type: object
+  schemas.ModuleResponse:
+    properties:
+      amount_images_per_product:
+        type: integer
+      description:
+        type: string
+      features:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+      price_yearly:
+        type: number
+    type: object
   schemas.ModuleResponseDTO:
     properties:
       amount_images_per_product:
@@ -1088,6 +1149,38 @@ definitions:
         type: integer
       name:
         type: string
+    type: object
+  schemas.ModuleUpdate:
+    properties:
+      amount_images_per_product:
+        example: 1
+        type: integer
+      description:
+        example: description
+        type: string
+      features:
+        example: features
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Module1
+        type: string
+      price:
+        example: 100
+        minimum: 0
+        type: number
+      price_yearly:
+        example: 1000
+        minimum: 0
+        type: number
+    required:
+    - amount_images_per_product
+    - id
+    - name
+    - price
+    - price_yearly
     type: object
   schemas.MovementStockItem:
     properties:
@@ -1636,6 +1729,25 @@ definitions:
     - id
     - name
     type: object
+  schemas.ProductValidateImage:
+    properties:
+      primary_image:
+        enum:
+        - add
+        - update
+        - keep
+        example: add | update | keep
+        type: string
+      product_id:
+        example: 1
+        type: integer
+      secondary_image:
+        $ref: '#/definitions/schemas.ValidateSecondaryImage'
+    required:
+    - primary_image
+    - product_id
+    - secondary_image
+    type: object
   schemas.ReportProfitableProducts:
     properties:
       code:
@@ -1914,6 +2026,22 @@ definitions:
     - last_name
     - password
     - username
+    type: object
+  schemas.ValidateSecondaryImage:
+    properties:
+      add:
+        example: 1
+        type: integer
+      keep:
+        example: 1
+        type: integer
+      remove:
+        example: 1
+        type: integer
+    required:
+    - add
+    - keep
+    - remove
     type: object
 info:
   contact: {}
@@ -4188,6 +4316,128 @@ paths:
       summary: MemberUpdatePassword
       tags:
       - Member
+  /api/v1/module/add_tenant_expiration:
+    put:
+      consumes:
+      - application/json
+      description: Agregar un modulo a tenant
+      parameters:
+      - description: Modulo
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.ModuleAddTenant'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ExpenseOther obtained successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: ModuleAddTenant
+      tags:
+      - Module
+  /api/v1/module/create:
+    post:
+      consumes:
+      - application/json
+      description: Crear nuevo modulo
+      parameters:
+      - description: Modulo
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.ModuleCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ExpenseOther obtained successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: ModuleCreate
+      tags:
+      - Module
+  /api/v1/module/get/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Obtener un modulo por ID
+      parameters:
+      - description: ID of ExpenseOther
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ExpenseOther obtained successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.ModuleResponse'
+              type: object
+      security:
+      - CookieAuth: []
+      summary: ModuleGet
+      tags:
+      - Module
+  /api/v1/module/get_all:
+    get:
+      consumes:
+      - application/json
+      description: Obtener todos los modulos
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ExpenseOther obtained successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.ModuleResponse'
+                  type: array
+              type: object
+      summary: ModuleGetAll
+      tags:
+      - Module
+  /api/v1/module/update:
+    put:
+      consumes:
+      - application/json
+      description: Editar modulo
+      parameters:
+      - description: Modulo
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.ModuleUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ExpenseOther obtained successfully
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: ModuleUpdate
+      tags:
+      - Module
   /api/v1/movement_stock/get/{id}:
     get:
       consumes:
@@ -4888,35 +5138,15 @@ paths:
       parameters:
       - description: Información de los productos y los precios a editar
         in: body
-        name: listProductUpdate
+        name: productValidateImage
         required: true
         schema:
-          $ref: '#/definitions/schemas.ListPriceUpdate'
+          $ref: '#/definitions/schemas.ProductValidateImage'
       produces:
       - application/json
       responses:
         "200":
           description: OK
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/schemas.Response'
-        "500":
-          description: Internal Server Error
           schema:
             $ref: '#/definitions/schemas.Response'
       security:

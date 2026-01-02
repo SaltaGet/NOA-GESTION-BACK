@@ -147,7 +147,6 @@ type ProductValidateImage struct {
 	ProductID      int64                  `json:"product_id" validate:"required" example:"1"`
 	PrimaryImage   string                 `json:"primary_image" validate:"required,oneof=add update keep" example:"add | update | keep"`
 	SecondaryImage ValidateSecondaryImage `json:"secondary_image" validate:"required"`
-	AmountImages   int64                  `json:"amount_images" validate:"required" example:"1"`
 }
 
 type ValidateSecondaryImage struct {

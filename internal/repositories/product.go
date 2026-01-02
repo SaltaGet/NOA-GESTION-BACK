@@ -10,6 +10,7 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 	"gorm.io/gorm"
 )
 
@@ -476,15 +477,18 @@ func (r *ProductRepository) ValidateProductImages(productValidateImage schemas.P
 	}
 
 	var sum int64 = *productValidateImage.SecondaryImage.Add - *productValidateImage.SecondaryImage.Remove + *productValidateImage.SecondaryImage.Keep
+	var typePrimary string = productValidateImage.PrimaryImage
+	var existPrimary int64 = int64(utils.Ternary(typePrimary == "add", 1, 0))
 
 	for _, module := range plan.Modules {
 		if module.Name == "ecommerce" {
-			if (sum + 1) > int64(module.AmountImagesPerProduct) {
+			if (sum + existPrimary) <= int64(module.AmountImagesPerProduct) {
+				return nil
+			} else {
 				return schemas.ErrorResponse(400, "la cantidad máxima de imágenes por productos es de "+strconv.Itoa(int(plan.Modules[0].AmountImagesPerProduct))+"", fmt.Errorf("la cantidad máxima de imágenes por productos es de "+strconv.Itoa(int(plan.Modules[0].AmountImagesPerProduct))+""))
 			}
-			break
 		}
 	}
 
-	return nil
+	return schemas.ErrorResponse(400, "no existe módulo ecommerce para el tenant", errors.New("no existe módulo ecommerce para el tenant"))
 }

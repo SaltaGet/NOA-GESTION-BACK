@@ -3728,6 +3728,210 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/module/add_tenant_expiration": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Agregar un modulo a tenant",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Module"
+                ],
+                "summary": "ModuleAddTenant",
+                "parameters": [
+                    {
+                        "description": "Modulo",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.ModuleAddTenant"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ExpenseOther obtained successfully",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/module/create": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Crear nuevo modulo",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Module"
+                ],
+                "summary": "ModuleCreate",
+                "parameters": [
+                    {
+                        "description": "Modulo",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.ModuleCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ExpenseOther obtained successfully",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/module/get/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener un modulo por ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Module"
+                ],
+                "summary": "ModuleGet",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID of ExpenseOther",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ExpenseOther obtained successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.ModuleResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/module/get_all": {
+            "get": {
+                "description": "Obtener todos los modulos",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Module"
+                ],
+                "summary": "ModuleGetAll",
+                "responses": {
+                    "200": {
+                        "description": "ExpenseOther obtained successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schemas.ModuleResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/module/update": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Editar modulo",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Module"
+                ],
+                "summary": "ModuleUpdate",
+                "parameters": [
+                    {
+                        "description": "Modulo",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.ModuleUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ExpenseOther obtained successfully",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/movement_stock/get/{id}": {
             "get": {
                 "security": [
@@ -4894,47 +5098,17 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "Información de los productos y los precios a editar",
-                        "name": "listProductUpdate",
+                        "name": "productValidateImage",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/schemas.ListPriceUpdate"
+                            "$ref": "#/definitions/schemas.ProductValidateImage"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -8559,6 +8733,91 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.ModuleAddTenant": {
+            "type": "object",
+            "required": [
+                "expiration",
+                "module_id",
+                "tenant_id"
+            ],
+            "properties": {
+                "expiration": {
+                    "type": "string",
+                    "example": "2023-01-01"
+                },
+                "module_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "tenant_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "schemas.ModuleCreate": {
+            "type": "object",
+            "required": [
+                "amount_images_per_product",
+                "name",
+                "price",
+                "price_yearly"
+            ],
+            "properties": {
+                "amount_images_per_product": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "description": {
+                    "type": "string",
+                    "example": "description"
+                },
+                "features": {
+                    "type": "string",
+                    "example": "features"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Module1"
+                },
+                "price": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 100
+                },
+                "price_yearly": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 1000
+                }
+            }
+        },
+        "schemas.ModuleResponse": {
+            "type": "object",
+            "properties": {
+                "amount_images_per_product": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "features": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "price_yearly": {
+                    "type": "number"
+                }
+            }
+        },
         "schemas.ModuleResponseDTO": {
             "type": "object",
             "properties": {
@@ -8573,6 +8832,48 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.ModuleUpdate": {
+            "type": "object",
+            "required": [
+                "amount_images_per_product",
+                "id",
+                "name",
+                "price",
+                "price_yearly"
+            ],
+            "properties": {
+                "amount_images_per_product": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "description": {
+                    "type": "string",
+                    "example": "description"
+                },
+                "features": {
+                    "type": "string",
+                    "example": "features"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Module1"
+                },
+                "price": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 100
+                },
+                "price_yearly": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 1000
                 }
             }
         },
@@ -9369,6 +9670,32 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.ProductValidateImage": {
+            "type": "object",
+            "required": [
+                "primary_image",
+                "product_id",
+                "secondary_image"
+            ],
+            "properties": {
+                "primary_image": {
+                    "type": "string",
+                    "enum": [
+                        "add",
+                        "update",
+                        "keep"
+                    ],
+                    "example": "add | update | keep"
+                },
+                "product_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "secondary_image": {
+                    "$ref": "#/definitions/schemas.ValidateSecondaryImage"
+                }
+            }
+        },
         "schemas.ReportProfitableProducts": {
             "type": "object",
             "properties": {
@@ -9782,6 +10109,28 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.ValidateSecondaryImage": {
+            "type": "object",
+            "required": [
+                "add",
+                "keep",
+                "remove"
+            ],
+            "properties": {
+                "add": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "keep": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "remove": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         }
