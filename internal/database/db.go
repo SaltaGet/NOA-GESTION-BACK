@@ -94,6 +94,7 @@ func ConnectDB(cfg *schemas.EmailConfig) (*gorm.DB, error) {
 		&models.TenantModule{},
 		&models.Feedback{},
 		&models.News{},
+		&models.SettingTenant{},
 		&models.AuditLogAdmin{}); err != nil {
 		log.Fatal().Err(err).Msg("Error en migración")
 	}

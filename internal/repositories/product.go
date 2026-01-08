@@ -53,7 +53,7 @@ func (r *ProductRepository) ProductGetByCode(code string) (*models.Product, erro
 			return db.Select("id", "name", "is_deposit")
 		}).
 		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "product_id", "stock", "")
+			return db.Select("id", "product_id", "stock")
 		}).
 		Where("code = ?", code).First(&product).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -155,18 +155,60 @@ func (r *ProductRepository) ProductGetByName(name string) ([]*models.Product, er
 	return products, nil
 }
 
-func (r *ProductRepository) ProductGetAll(page, limit int) ([]*models.Product, int64, error) {
+// func (r *ProductRepository) ProductGetAll(page, limit int, isVisible bool) ([]*models.Product, int64, error) {
+// 	var products []*models.Product
+// 	var total int64
+// 	offset := (page - 1) * limit
+
+// 	if err := r.DB.
+// 		Model(&models.Product{}).
+// 		Count(&total).Error; err != nil {
+// 		return nil, 0, schemas.ErrorResponse(500, "error al contar productos", err)
+// 	}
+
+// 	if err := r.DB.
+// 		Preload("Category", func(db *gorm.DB) *gorm.DB {
+// 			return db.Select("id", "name")
+// 		}).
+// 		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
+// 			return db.Select("product_id", "stock", "point_sale_id")
+// 		}).
+// 		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
+// 			return db.Select("id", "name", "is_deposit")
+// 		}).
+// 		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
+// 			return db.Select("id", "product_id", "stock")
+// 		}).
+// 		Where("is_visible = ?", true).
+// 		Offset(offset).
+// 		Limit(limit).
+// 		Find(&products).Error; err != nil {
+// 		return nil, 0, schemas.ErrorResponse(500, "error al obtener productos", err)
+// 	}
+
+// 	return products, total, nil
+// }
+func (r *ProductRepository) ProductGetAll(page, limit int, isVisible *bool) ([]*models.Product, int64, error) {
 	var products []*models.Product
 	var total int64
 	offset := (page - 1) * limit
 
-	if err := r.DB.
-		Model(&models.Product{}).
-		Count(&total).Error; err != nil {
+	// 1. Iniciamos la query base
+	query := r.DB.Model(&models.Product{})
+
+	// 2. Filtro condicional: Si isVisible es true, aplicamos el filtro.
+	// Si es false, no entramos aquí y la query traerá visibles e invisibles.
+	if isVisible != nil {
+		query = query.Where("is_visible = ?", isVisible)
+	}
+
+	// 3. Contar el total basado en si se aplicó el filtro o no
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, schemas.ErrorResponse(500, "error al contar productos", err)
 	}
 
-	if err := r.DB.
+	// 4. Ejecutar la búsqueda con los Preloads
+	if err := query.
 		Preload("Category", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "name")
 		}).
@@ -465,30 +507,56 @@ func (r *ProductRepository) ValidateProductImages(productValidateImage schemas.P
 		return schemas.ErrorResponse(500, "error al obtener productos", err)
 	}
 
-	var count int64 = 0
-	if product.SecondaryImages != nil {
-		var c int64 = int64(len(strings.Split(*product.SecondaryImages, ",")))
-		count += c
+	if productValidateImage.PrimaryImage == "keep" && product.PrimaryImage == nil {
+		return schemas.ErrorResponse(400, "la imagen princial es obligatoria", nil)
 	}
 
-	if *productValidateImage.SecondaryImage.Keep > count || *productValidateImage.SecondaryImage.Remove > int64(count) {
+	var count int = 0
+	if product.SecondaryImages != nil {
+		count += len(strings.Split(*product.SecondaryImages, ","))
+	}
+
+	if len(productValidateImage.SecondaryImage.KeepUUIDs) > count || len(productValidateImage.SecondaryImage.RemoveUUIDs) > count {
 		message := fmt.Sprintf("tienes %d imagenes secundarias, no puedes retener o eliminar mas de las que tienes", count)
 		return schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
 	}
 
-	var sum int64 = *productValidateImage.SecondaryImage.Add - *productValidateImage.SecondaryImage.Remove + *productValidateImage.SecondaryImage.Keep
+	var sum = int(*productValidateImage.SecondaryImage.Add) - len(productValidateImage.SecondaryImage.RemoveUUIDs) + len(productValidateImage.SecondaryImage.KeepUUIDs)
 	var typePrimary string = productValidateImage.PrimaryImage
-	var existPrimary int64 = int64(utils.Ternary(typePrimary == "add", 1, 0))
+	var existPrimary int = utils.Ternary(typePrimary == "set", 1, 0)
 
 	for _, module := range plan.Modules {
 		if module.Name == "ecommerce" {
-			if (sum + existPrimary) <= int64(module.AmountImagesPerProduct) {
+			if (sum + existPrimary) <= int(module.AmountImagesPerProduct) {
 				return nil
 			} else {
-				return schemas.ErrorResponse(400, "la cantidad máxima de imágenes por productos es de "+strconv.Itoa(int(plan.Modules[0].AmountImagesPerProduct))+"", fmt.Errorf("la cantidad máxima de imágenes por productos es de "+strconv.Itoa(int(plan.Modules[0].AmountImagesPerProduct))+""))
+				return schemas.ErrorResponse(400, "la cantidad máxima de imágenes por productos es de "+strconv.Itoa(int(plan.Modules[0].AmountImagesPerProduct))+"", fmt.Errorf("la cantidad máxima de imágenes por productos es de %d", int(plan.Modules[0].AmountImagesPerProduct)))
 			}
 		}
 	}
 
 	return schemas.ErrorResponse(400, "no existe módulo ecommerce para el tenant", errors.New("no existe módulo ecommerce para el tenant"))
+}
+
+func (r *ProductRepository) ProductUpdateVisibility(productUpdate *schemas.ListVisibilityUpdate) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		for _, prod := range productUpdate.ListProductVisibilityUpdate {
+			// Ejecutamos el update
+			result := tx.Model(&models.Product{}).
+				Where("id = ?", prod.ProductID).
+				Update("is_visible", prod.Visibility) // Asegúrate que el nombre de la columna sea correcto
+
+			// 1. Verificar errores de base de datos (conexión, sintaxis, etc.)
+			if result.Error != nil {
+				return schemas.ErrorResponse(500, "error al editar el producto", result.Error)
+			}
+
+			// 2. Verificar si el producto realmente existía
+			if result.RowsAffected == 0 {
+				return schemas.ErrorResponse(404, fmt.Sprintf("producto con ID %d no encontrado", prod.ProductID), nil)
+			}
+		}
+
+		return nil
+	})
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // func (r *MainRepository) TenantGetByID(tenantID string) (*schemas.Tenant, error) {
@@ -291,7 +292,6 @@ func (r *MainRepository) TenantCreateByUserID(adminID int64, tenantCreate *schem
 	return tenantID, nil
 }
 
-
 // func (r *MainRepository) TenantUserCreate(tenantUserCreate *schemas.TenantUserCreate) (int64, error) {
 // 	tx := r.DB.Begin()
 // 	defer func() {
@@ -388,8 +388,8 @@ func (r *MainRepository) TenantCreateByUserID(adminID int64, tenantCreate *schem
 // 		return 0, schemas.ErrorResponse(500, "Error interno al crear user-tenant", err)
 // 	}
 
-// 	return tenant.ID, nil
-// }
+//		return tenant.ID, nil
+//	}
 func (r *MainRepository) TenantUserCreate(adminID int64, tenantUserCreate *schemas.TenantUserCreate) (int64, error) {
 	var tenantID int64
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
@@ -507,7 +507,6 @@ func (r *MainRepository) TenantUserCreate(adminID int64, tenantUserCreate *schem
 	return tenantID, nil
 }
 
-
 func (r *MainRepository) TenantUpdate(adminID, userID int64, tenant *schemas.TenantUpdate) error {
 	var userTenant models.UserTenant
 
@@ -546,34 +545,70 @@ func (r *MainRepository) TenantUpdate(adminID, userID int64, tenant *schemas.Ten
 }
 
 func (r *MainRepository) TenantUpdateExpiration(adminID int64, tenantUpdateExpiration *schemas.TenantUpdateExpiration) error {
-    loc, _ := time.LoadLocation("America/Argentina/Buenos_Aires")
-    exp, err := time.ParseInLocation("2006-01-02", tenantUpdateExpiration.Expiration, loc)
-    if err != nil {
-        return schemas.ErrorResponse(422, "Formato de fecha inválido, debe ser YYYY-MM-DD", err)
-    }
+	loc, _ := time.LoadLocation("America/Argentina/Buenos_Aires")
+	exp, err := time.ParseInLocation("2006-01-02", tenantUpdateExpiration.Expiration, loc)
+	if err != nil {
+		return schemas.ErrorResponse(422, "Formato de fecha inválido, debe ser YYYY-MM-DD", err)
+	}
 
-		var tenantExist models.Tenant
-		var tenantSave models.Tenant
-		err = r.DB.First(&tenantExist, tenantUpdateExpiration.ID).Error
-		if err != nil {
+	var tenantExist models.Tenant
+	var tenantSave models.Tenant
+	err = r.DB.First(&tenantExist, tenantUpdateExpiration.ID).Error
+	if err != nil {
+		return schemas.ErrorResponse(404, "Tenant not found", err)
+	}
+
+	tenantSave = tenantExist
+	tenantExist.Expiration = &exp
+
+	if err := r.DB.Save(&tenantSave).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return schemas.ErrorResponse(404, "Tenant not found", err)
 		}
+		return schemas.ErrorResponse(500, "Error interno updating tenant", err)
+	}
 
-		tenantSave = tenantExist
-		tenantExist.Expiration = &exp
-
-		if err := r.DB.Save(&tenantSave).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Tenant not found", err)
-			}
-			return schemas.ErrorResponse(500, "Error interno updating tenant", err)
-		}
-
-		go database.SaveAuditAdminAsync(r.DB, models.AuditLogAdmin{
+	go database.SaveAuditAdminAsync(r.DB, models.AuditLogAdmin{
 		AdminID: adminID,
 		Method:  "create",
 		Path:    "plan",
 	}, tenantSave, tenantExist)
 
-    return nil
+	return nil
+}
+
+func (r *MainRepository) TenantUpdateTerms(tenantID int64, tenantUpdateTerms *schemas.TenantUpdateTerms) error {
+	// Opción recomendada: Usar Select para forzar la actualización de estos campos específicos
+	err := r.DB.Model(&models.Tenant{}).
+		Where("id = ?", tenantID).
+		Select("AcceptedTerms", "IP", "DateAccepted"). // Asegúrate de que los nombres coincidan con el modelo Tenant
+		Updates(tenantUpdateTerms).Error
+	if err != nil {
+		return schemas.ErrorResponse(500, "Error interno al actualizar terminos tenant", err)
+	}
+
+	return nil
+}
+
+func (r *MainRepository) TenantUpdateSettings(tenantID int64, tenantUpdateSettings *schemas.TenantUpdateSettings) error {
+  // 1. Mapeamos al modelo real de la base de datos
+  settings := models.SettingTenant{
+    TenantID:       tenantID,
+    Title:          tenantUpdateSettings.Title,
+    Slogan:         tenantUpdateSettings.Slogan,
+    PrimaryColor:   tenantUpdateSettings.PrimaryColor,
+    SecondaryColor: tenantUpdateSettings.SecondaryColor,
+  }
+
+  // 2. Usamos Clauses para definir qué pasa si hay un conflicto en el tenant_id
+  err := r.DB.Clauses(clause.OnConflict{
+    Columns:   []clause.Column{{Name: "tenant_id"}},
+    DoUpdates: clause.AssignmentColumns([]string{"title", "slogan", "primary_color", "secondary_color", "updated_at"}),
+  }).Create(&settings).Error
+
+  if err != nil {
+    return schemas.ErrorResponse(500, "Error al crear/actualizar configuraciones", err)
+  }
+
+  return nil
 }

@@ -15,7 +15,7 @@ type AuthLogin struct {
 
 func validateUsername(fl validator.FieldLevel) bool {
 	username := fl.Field().String()
-	return regexp.MustCompile(`^[^@]+@[^.]+$`).MatchString(username) 
+	return regexp.MustCompile(`^[^@]+@[^.]+$`).MatchString(username)
 }
 
 func (a *AuthLogin) Validate() error {
@@ -72,6 +72,7 @@ type AuthenticatedUser struct {
 	TenantName       string                   `json:"tenant_name"`
 	TenantIdentifier string                   `json:"tenant_identifier"`
 	ListPermissions  []string                 `json:"list_permissions"`
+	AcceptedTerms    bool                     `json:"accepted_terms"`
 }
 
 type EnvironmentPermissions struct {

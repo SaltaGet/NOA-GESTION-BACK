@@ -145,14 +145,15 @@ func (p *ProductController) ProductGetByCategoryID(ctx *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		CookieAuth
-//	@Param			page	query		int	false	"Número de página"				default(1)
-//	@Param			limit	query		int	false	"Número de elementos por página"	default(10)
-//	@Success		200		{object}	schemas.Response{body=[]schemas.ProductFullResponse}
-//	@Failure		400		{object}	schemas.Response
-//	@Failure		401		{object}	schemas.Response
-//	@Failure		422		{object}	schemas.Response
-//	@Failure		404		{object}	schemas.Response
-//	@Failure		500		{object}	schemas.Response
+//	@Param			page		query		int		false	"Número de página"				default(1)
+//	@Param			limit		query		int		false	"Número de elementos por página"	default(10)
+//	@Param			is_visible	query		bool	false	"Mostrar solo productos visibles"
+//	@Success		200			{object}	schemas.Response{body=[]schemas.ProductFullResponse}
+//	@Failure		400			{object}	schemas.Response
+//	@Failure		401			{object}	schemas.Response
+//	@Failure		422			{object}	schemas.Response
+//	@Failure		404			{object}	schemas.Response
+//	@Failure		500			{object}	schemas.Response
 //	@Router			/api/v1/product/get_all [get]
 func (p *ProductController) ProductGetAll(ctx *fiber.Ctx) error {
 	page, err := strconv.Atoi(ctx.Query("page", "1"))
@@ -165,7 +166,17 @@ func (p *ProductController) ProductGetAll(ctx *fiber.Ctx) error {
 		limit = 10
 	}
 
-	products, total, err := p.ProductService.ProductGetAll(page, limit)
+	var isVisiblePtr *bool
+	val := ctx.Query("is_visible")
+	if val != "" {
+		// Convertimos el string "true"/"false" a booleano real
+		b, err := strconv.ParseBool(val)
+		if err == nil {
+			isVisiblePtr = &b
+		}
+	}
+
+	products, total, err := p.ProductService.ProductGetAll(page, limit, isVisiblePtr)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
@@ -237,7 +248,6 @@ func (p *ProductController) ProductGenerateQR(ctx *fiber.Ctx) error {
 	return ctx.Send(codeQRs)
 }
 
-
 // ProductCreate godoc
 //
 //	@Summary		ProductCreate
@@ -298,13 +308,13 @@ func (p *ProductController) ProductUpload(ctx *fiber.Ctx) error {
 		})
 	}
 	ext := strings.ToLower(filepath.Ext(fileExcel.Filename))
-  if ext != ".xlsx" && ext != ".xls" {
-    return ctx.Status(400).JSON(schemas.Response{
-        Status:  false,
-        Body:    nil,
-        Message: "El archivo no tiene un formato válido. Solo se permiten .xlsx o .xls",
-    })
-  }
+	if ext != ".xlsx" && ext != ".xls" {
+		return ctx.Status(400).JSON(schemas.Response{
+			Status:  false,
+			Body:    nil,
+			Message: "El archivo no tiene un formato válido. Solo se permiten .xlsx o .xls",
+		})
+	}
 
 	plan := ctx.Locals("current_plan").(*schemas.PlanResponseDTO)
 	member := ctx.Locals("user").(*schemas.AuthenticatedUser)
@@ -434,10 +444,24 @@ func (p *ProductController) ProductDelete(ctx *fiber.Ctx) error {
 	})
 }
 
-// ProductPriceUpdate godoc
+// ProductGenerateTokenToImage godoc
 //
-//	@Summary		ProductPriceUpdate
-//	@Description	ProductPriceUpdate edita el rpecio de una lista de productos
+//	@Summary		ProductGenerateTokenToImage
+//
+//	@Description	### Flujo de Carga de Imágenes
+//	@Description	Genera un token temporal para subir imágenes al microservicio.
+//	@Description
+//	@Description	**Pasos requeridos:**
+//	@Description	1. Llamar a este endpoint para obtener el token.
+//	@Description	2. Incluir el token en el header `x-token-tenant` del microservicio de imágenes.
+//	@Description
+//	@Description	**Formato del endpoint del microservicio:**
+//	@Description	~~~
+//	@Description	POST /ecommerce/{tenantIdentifier}/api/v1/product/upload_image
+//	@Description	~~~
+//	@Description
+//	@Description	> *Nota: El token tiene una validez limitada de 30 minutos.*
+//
 //	@Tags			Product
 //	@Accept			json
 //	@Produce		json
@@ -466,5 +490,39 @@ func (p *ProductController) ProductGenerateTokenToImage(ctx *fiber.Ctx) error {
 		Status:  true,
 		Body:    token,
 		Message: "Token generado correctamente",
+	})
+}
+
+// ProductUpdateVisibility godoc
+//
+//	@Summary		ProductUpdateVisibility
+//	@Description	Actualiza la visibilidad de un producto para el ecommerce
+//	@Tags			Product
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			updateVisibility	body		schemas.ListVisibilityUpdate	true	"Información de los productos y los precios a editar"
+//	@Success		200					{object}	schemas.Response
+//	@Router			/api/v1/product/update_visibility [put]
+func (p *ProductController) ProductUpdateVisibility(ctx *fiber.Ctx) error {
+	var productUpdate schemas.ListVisibilityUpdate
+	if err := ctx.BodyParser(&productUpdate); err != nil {
+		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
+	}
+
+	if err := productUpdate.Validate(); err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	// member := ctx.Locals("user").(*schemas.AuthenticatedUser)
+	err := p.ProductService.ProductUpdateVisibility(&productUpdate)
+	if err != nil {
+		return schemas.HandleError(ctx, err)
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
+		Message: "Visibilidad actualizada correctamente",
 	})
 }

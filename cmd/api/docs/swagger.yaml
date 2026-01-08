@@ -46,6 +46,8 @@ definitions:
     type: object
   schemas.AuthenticatedUser:
     properties:
+      accepted_terms:
+        type: boolean
       first_name:
         type: string
       id:
@@ -310,6 +312,12 @@ definitions:
         type: string
       price:
         type: number
+      primary_image:
+        type: string
+      secondary_image:
+        items:
+          type: string
+        type: array
       stock:
         type: number
     type: object
@@ -906,6 +914,16 @@ definitions:
       list:
         items:
           $ref: '#/definitions/schemas.ProductPriceUpdate'
+        minItems: 1
+        type: array
+    required:
+    - list
+    type: object
+  schemas.ListVisibilityUpdate:
+    properties:
+      list:
+        items:
+          $ref: '#/definitions/schemas.ProductVisibilityUpdate'
         minItems: 1
         type: array
     required:
@@ -1620,6 +1638,8 @@ definitions:
         type: string
       id:
         type: integer
+      is_visible:
+        type: boolean
       min_amount:
         type: number
       name:
@@ -1628,6 +1648,12 @@ definitions:
         type: boolean
       price:
         type: number
+      primary_image:
+        type: string
+      secondary_image:
+        items:
+          type: string
+        type: array
       stock_deposit:
         type: number
       stock_point_sales:
@@ -1666,6 +1692,12 @@ definitions:
         type: boolean
       price:
         type: number
+      primary_image:
+        type: string
+      secondary_image:
+        items:
+          type: string
+        type: array
       stock:
         type: number
     type: object
@@ -1694,6 +1726,12 @@ definitions:
         type: string
       price:
         type: number
+      primary_image:
+        type: string
+      secondary_image:
+        items:
+          type: string
+        type: array
       stock:
         type: number
     type: object
@@ -1733,10 +1771,9 @@ definitions:
     properties:
       primary_image:
         enum:
-        - add
-        - update
+        - set
         - keep
-        example: add | update | keep
+        example: set | keep
         type: string
       product_id:
         example: 1
@@ -1747,6 +1784,18 @@ definitions:
     - primary_image
     - product_id
     - secondary_image
+    type: object
+  schemas.ProductVisibilityUpdate:
+    properties:
+      product_id:
+        example: 1
+        type: integer
+      visibility:
+        example: true
+        type: boolean
+    required:
+    - product_id
+    - visibility
     type: object
   schemas.ReportProfitableProducts:
     properties:
@@ -1948,6 +1997,21 @@ definitions:
     - expiration
     - id
     type: object
+  schemas.TenantUpdateSettings:
+    properties:
+      primary_color:
+        example: '#FF0000'
+        type: string
+      secondary_color:
+        example: '#FF0000'
+        type: string
+      slogan:
+        example: Mi tienda
+        type: string
+      title:
+        example: Mi tienda
+        type: string
+    type: object
   schemas.TenantUserCreate:
     properties:
       tenant_create:
@@ -2032,16 +2096,24 @@ definitions:
       add:
         example: 1
         type: integer
-      keep:
-        example: 1
-        type: integer
-      remove:
-        example: 1
-        type: integer
+      keep_uuids:
+        example:
+        - uuid1
+        - uuid2
+        - uuid3
+        items:
+          type: string
+        type: array
+      remove_uuids:
+        example:
+        - uuid1
+        - uuid2
+        - uuid3
+        items:
+          type: string
+        type: array
     required:
-    - add
-    - keep
-    - remove
+    - keep_uuids
     type: object
 info:
   contact: {}
@@ -5134,7 +5206,20 @@ paths:
     post:
       consumes:
       - application/json
-      description: ProductPriceUpdate edita el rpecio de una lista de productos
+      description: |-
+        ### Flujo de Carga de Imágenes
+        Genera un token temporal para subir imágenes al microservicio.
+
+        **Pasos requeridos:**
+        1. Llamar a este endpoint para obtener el token.
+        2. Incluir el token en el header `x-token-tenant` del microservicio de imágenes.
+
+        **Formato del endpoint del microservicio:**
+        ~~~
+        POST /ecommerce/{tenantIdentifier}/api/v1/product/upload_image
+        ~~~
+
+        > *Nota: El token tiene una validez limitada de 30 minutos.*
       parameters:
       - description: Información de los productos y los precios a editar
         in: body
@@ -5151,7 +5236,7 @@ paths:
             $ref: '#/definitions/schemas.Response'
       security:
       - CookieAuth: []
-      summary: ProductPriceUpdate
+      summary: ProductGenerateTokenToImage
       tags:
       - Product
   /api/v1/product/get/{id}:
@@ -5198,6 +5283,10 @@ paths:
         in: query
         name: limit
         type: integer
+      - description: Mostrar solo productos visibles
+        in: query
+        name: is_visible
+        type: boolean
       produces:
       - application/json
       responses:
@@ -5407,6 +5496,30 @@ paths:
       security:
       - CookieAuth: []
       summary: ProductUpdate
+      tags:
+      - Product
+  /api/v1/product/update_visibility:
+    put:
+      consumes:
+      - application/json
+      description: Actualiza la visibilidad de un producto para el ecommerce
+      parameters:
+      - description: Información de los productos y los precios a editar
+        in: body
+        name: updateVisibility
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.ListVisibilityUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: ProductUpdateVisibility
       tags:
       - Product
   /api/v1/product/upload:
@@ -6228,6 +6341,36 @@ paths:
       summary: Tenant Create
       tags:
       - Tenant
+  /api/v1/tenant/generate_token_to_image_setting:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        ### Flujo de Carga de Imágenes
+        Genera un token temporal para subir imágenes al microservicio.
+
+        **Pasos requeridos:**
+        1. Llamar a este endpoint para obtener el token.
+        2. Incluir el token en el header `x-token-tenant` del microservicio de imágenes.
+
+        **Formato del endpoint del microservicio:**
+        ~~~
+        POST /ecommerce/{tenantIdentifier}/api/v1/tenant/upload_image
+        ~~~
+
+        > *Nota: El token tiene una validez limitada de 30 minutos.*
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: TenantGenerateTokenToImageSetting
+      tags:
+      - Tenant
   /api/v1/tenant/get_all:
     get:
       consumes:
@@ -6290,6 +6433,47 @@ paths:
       security:
       - CookieAuth: []
       summary: TenantUpdateExpiration
+      tags:
+      - Tenant
+  /api/v1/tenant/update_settings:
+    put:
+      consumes:
+      - application/json
+      description: Actualizar la configuración de un tenant
+      parameters:
+      - description: TenantUpdateSettings
+        in: body
+        name: TenantUpdateSettings
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.TenantUpdateSettings'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: actualizacion con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: TenantUpdateSettings
+      tags:
+      - Tenant
+  /api/v1/tenant/update_temrs:
+    put:
+      consumes:
+      - application/json
+      description: Actualizar la aceptación de los termninos y condiciones de un tenant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: actualizacion con éxito
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: TenantUpdateAcceptedTerms
       tags:
       - Tenant
   /api/v1/type_movement/create:

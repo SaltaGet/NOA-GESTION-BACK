@@ -18,6 +18,12 @@ github.com/DanielChachagua/ecommerce-noagestion-protos v0.0.0-20251230053517-772
 github.com/DanielChachagua/ecommerce-noagestion-protos v0.0.0-20251230053517-77237355c16c/go.mod h1:KGVULwc+GixaBIYxoohJ9ju5mbt8RdxJ+rCzyS5VQuo=
 github.com/DanielChachagua/ecommerce-noagestion-protos v0.0.0-20251230054926-77c2b3aaabc2 h1:kjtNKDF0kZ7dbNjsgHGuLsXYae45zVVeNoMr/2EtUVI=
 github.com/DanielChachagua/ecommerce-noagestion-protos v0.0.0-20251230054926-77c2b3aaabc2/go.mod h1:KGVULwc+GixaBIYxoohJ9ju5mbt8RdxJ+rCzyS5VQuo=
+github.com/DanielChachagua/ecommerce-noagestion-protos v0.0.0-20260106234244-6676287dcf4d h1:C5YGXwbY9RLKJqI/qYAskCaLRjB/gFLI4CdSxyxagRM=
+github.com/DanielChachagua/ecommerce-noagestion-protos v0.0.0-20260106234244-6676287dcf4d/go.mod h1:KGVULwc+GixaBIYxoohJ9ju5mbt8RdxJ+rCzyS5VQuo=
+github.com/DanielChachagua/ecommerce-noagestion-protos v0.0.0-20260107194656-7cf28f48f545 h1:Ch5LBr2dIPHBn1gl/GrPCHrIn8py8+5MNFfOdiWbarU=
+github.com/DanielChachagua/ecommerce-noagestion-protos v0.0.0-20260107194656-7cf28f48f545/go.mod h1:KGVULwc+GixaBIYxoohJ9ju5mbt8RdxJ+rCzyS5VQuo=
+github.com/DanielChachagua/ecommerce-noagestion-protos v0.0.0-20260108061903-9c0a465ab0d5 h1:Njn0yV6r2lgvmsT0WA3P9Lp3WOuRZn6UeyeZasduQys=
+github.com/DanielChachagua/ecommerce-noagestion-protos v0.0.0-20260108061903-9c0a465ab0d5/go.mod h1:KGVULwc+GixaBIYxoohJ9ju5mbt8RdxJ+rCzyS5VQuo=
 github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=
 github.com/KyleBanks/depth v1.2.1/go.mod h1:jzSb9d0L43HxTQfT+oSA1EEp2q+ne2uh6XgeJcm8brE=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=

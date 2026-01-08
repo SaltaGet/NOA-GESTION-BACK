@@ -31,7 +31,9 @@ func (r *GrpcProductRepository) ProductGetByID(id int64) (*models.Product, error
 func (r *GrpcProductRepository) ProductGetByCode(code string) (*models.Product, error) {
 	var product models.Product
 
-	err := r.DB.Preload("StockDeposit").Preload("Category").Where("code = ?", code).First(&product).Error
+	err := r.DB.Preload("StockDeposit").
+		Preload("Category").
+		Where("code = ? AND is_visible = ?", code, true).First(&product).Error
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -65,6 +67,8 @@ func (r *GrpcProductRepository) ProductList(
 		searchPattern := "%" + *search + "%"
 		query = query.Where("name ILIKE ? OR code ILIKE ?", searchPattern, searchPattern)
 	}
+
+	query = query.Where("is_visible = ?", true)
 
 	// Contar total antes de paginar
 	if err := query.Count(&total).Error; err != nil {
@@ -128,7 +132,7 @@ func (r *GrpcProductRepository) SaveUrlImage(req *pb.SaveImageRequest) error {
 
 		// 3. Guardar cambios en el campo de texto
 		if len(updatedList) == 0 {
-			prodExist.SecondaryImages = nil 
+			prodExist.SecondaryImages = nil
 		} else {
 			finalString := strings.Join(updatedList, ",")
 			prodExist.SecondaryImages = &finalString

@@ -60,15 +60,15 @@ func (t *TenantUpdate) Validate() error {
 }
 
 type TenantResponse struct {
-	ID        int64     `json:"id"`
-	Name      string    `json:"name"`
-	Address   string    `json:"address"`
-	Phone     string    `json:"phone"`
-	Email     string    `json:"email"`
-	IsActive  bool      `json:"is_active"`
-	Expiration  time.Time `json:"expiration"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID         int64     `json:"id"`
+	Name       string    `json:"name"`
+	Address    string    `json:"address"`
+	Phone      string    `json:"phone"`
+	Email      string    `json:"email"`
+	IsActive   bool      `json:"is_active"`
+	Expiration time.Time `json:"expiration"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 type TenantUserCreate struct {
@@ -94,7 +94,7 @@ func (t *TenantUserCreate) Validate() error {
 }
 
 type TenantUpdateExpiration struct {
-	ID         int64    `json:"id" validate:"required"`
+	ID         int64  `json:"id" validate:"required"`
 	Expiration string `json:"expiration" validate:"required,datetime=2006-01-02" example:"2023-01-01"`
 }
 
@@ -113,4 +113,59 @@ func (t *TenantUpdateExpiration) Validate() error {
 	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
 
 	return ErrorResponse(422, message, fmt.Errorf("%s", message))
+}
+
+type TenantUpdateTerms struct {
+	AcceptedTerms bool      `json:"accepted_terms" validate:"required"`
+	IP            string    `json:"ip" validate:"required"`
+	DateAccepted  time.Time `json:"date_aceept" validate:"required"`
+}
+
+func (t *TenantUpdateTerms) Validate() error {
+	validate := validator.New()
+	err := validate.Struct(t)
+	if err == nil {
+		return nil
+	}
+
+	validationErr := err.(validator.ValidationErrors)[0]
+	field := validationErr.Field()
+	tag := validationErr.Tag()
+	param := validationErr.Param()
+
+	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+
+	return ErrorResponse(422, message, fmt.Errorf("%s", message))
+}
+
+type TenantUpdateSettings struct {
+	Title          *string `json:"title,omitempty" example:"Mi tienda"`
+	Slogan         *string `json:"slogan,omitempty" example:"Mi tienda"`
+	PrimaryColor   *string `json:"primary_color,omitempty" example:"#FF0000"`
+	SecondaryColor *string `json:"secondary_color,omitempty" example:"#FF0000"`
+}
+
+func (t *TenantUpdateSettings) Validate() error {
+	validate := validator.New()
+	err := validate.Struct(t)
+	if err == nil {
+		return nil
+	}
+
+	validationErr := err.(validator.ValidationErrors)[0]
+	field := validationErr.Field()
+	tag := validationErr.Tag()
+	param := validationErr.Param()
+
+	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
+
+	return ErrorResponse(422, message, fmt.Errorf("%s", message))
+}
+
+type TenantUpdateSettingsWithTenant struct {
+	Title          *string `json:"title,omitempty" example:"Mi tienda"`
+	Slogan         *string `json:"slogan,omitempty" example:"Mi tienda"`
+	PrimaryColor   *string `json:"primary_color,omitempty" example:"#FF0000"`
+	SecondaryColor *string `json:"secondary_color,omitempty" example:"#FF0000"`
+	TenantID       int64   `json:"tenant_id" validate:"required"`
 }

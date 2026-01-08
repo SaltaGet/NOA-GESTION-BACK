@@ -33,6 +33,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/robfig/cron/v3"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -220,39 +221,52 @@ func main() {
 		}
 	}()
 
-	go func() {
-		log.Info().Msg("Iniciando servidor gRPC en :50051...")
-		lis, err := net.Listen("tcp", ":50051")
-		if err != nil {
-			log.Fatal().Msgf("falló al escuchar gRPC: %v", err)
-		}
+	var grpcServer *grpc.Server
 
-		// Usamos tu interceptor de seguridad
-		grpcServer := grpc.NewServer(
-			grpc.ChainUnaryInterceptor(
-				interceptor.LoggingInterceptor,
-				interceptor.AuthInterceptor,
-				interceptor.MultiTenantInterceptor(dep),
-			),
-		)
+    // --- SECCIÓN gRPC ACTUALIZADA ---
+    go func() {
+        portGrpc := getEnv("GRPC_PORT", "50051")
+        lis, err := net.Listen("tcp", ":"+portGrpc)
+        if err != nil {
+            log.Fatal().Msgf("falló al escuchar gRPC: %v", err)
+        }
 
-		productServer := &server.GrpcProductServer{}
-    pb.RegisterProductServiceServer(grpcServer, productServer)
+        // Configuramos Keepalive para el servidor
+        // Esto ayuda a detectar clientes muertos y mantener conexiones a través de Proxies/Load Balancers
+        ka := grpc.KeepaliveParams(keepalive.ServerParameters{
+            MaxConnectionIdle:     15 * time.Minute, // Tiempo max que una conexión puede estar ociosa
+            MaxConnectionAge:      30 * time.Minute, // Forzar reconexión para balanceo de carga
+            MaxConnectionAgeGrace: 5 * time.Minute,  // Tiempo extra para terminar llamadas antes de cerrar
+            Time:                  5 * time.Second,  // Ping al cliente cada 5s para ver si sigue vivo
+            Timeout:               1 * time.Second,  // Espera 1s por el pong
+        })
 
-		tenantServer := &server.GrpcTenantServer{
-			GrpcTenantService: depGrpc.TenantGrpcService,
-		}
-		pb.RegisterTenantServiceServer(grpcServer, tenantServer)
+        grpcServer = grpc.NewServer(
+            ka,
+            grpc.ChainUnaryInterceptor(
+                interceptor.LoggingInterceptor,
+                interceptor.AuthInterceptor,
+                interceptor.MultiTenantInterceptor(dep),
+            ),
+        )
 
-		categoryServer := &server.GrpcCategoryServer{}
-		pb.RegisterCategoryServiceServer(grpcServer, categoryServer)
+        // Registro de servicios
+        productServer := &server.GrpcProductServer{}
+        pb.RegisterProductServiceServer(grpcServer, productServer)
 
-		// Registramos el servicio
+        tenantServer := &server.GrpcTenantServer{
+            GrpcTenantService: depGrpc.TenantGrpcService,
+        }
+        pb.RegisterTenantServiceServer(grpcServer, tenantServer)
 
-		if err := grpcServer.Serve(lis); err != nil {
-			log.Fatal().Msgf("falló al servir gRPC: %v", err)
-		}
-	}()
+        categoryServer := &server.GrpcCategoryServer{}
+        pb.RegisterCategoryServiceServer(grpcServer, categoryServer)
+
+        log.Info().Msgf("🚀 Servidor gRPC iniciado en :%s", portGrpc)
+        if err := grpcServer.Serve(lis); err != nil {
+            log.Fatal().Msgf("falló al servir gRPC: %v", err)
+        }
+    }()
 
 	// Esperar señal de terminación
 	<-quit

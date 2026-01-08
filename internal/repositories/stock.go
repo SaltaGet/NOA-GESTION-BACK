@@ -7,6 +7,7 @@ import (
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
 )
@@ -57,6 +58,8 @@ func (r *StockRepository) StockGetByID(id, pointID int64) (*schemas.ProductStock
 		}
 	}
 
+	productSchema.SecondaryImage = utils.SplitStrings(*&product.SecondaryImages)
+
 	return &productSchema, nil
 }
 
@@ -106,6 +109,8 @@ func (r *StockRepository) StockGetByCode(code string, pointID int64) (*schemas.P
 		}
 	}
 
+	productSchema.SecondaryImage = utils.SplitStrings(*&product.SecondaryImages)
+
 	return &productSchema, nil
 }
 
@@ -129,6 +134,8 @@ func (r *StockRepository) StockGetByCategoryID(categoryID, pointID int64) ([]*sc
 		"s.stock",
 		"categories.id AS category_id",
 		"categories.name AS category_name",
+		"products.primary_image",
+		"products.secondary_images",
 	}
 
 	query := r.DB.Model(&models.Product{}).
@@ -148,12 +155,14 @@ func (r *StockRepository) StockGetByCategoryID(categoryID, pointID int64) ([]*sc
 	var result []*schemas.ProductStockFullResponse
 	for _, p := range products {
 		result = append(result, &schemas.ProductStockFullResponse{
-			ID:           p.ID,
-			Code:         p.Code,
-			Name:         p.Name,
-			Description:  p.Description,
-			Price:        p.Price,
-			Stock:        p.Stock,
+			ID:             p.ID,
+			Code:           p.Code,
+			Name:           p.Name,
+			Description:    p.Description,
+			Price:          p.Price,
+			Stock:          p.Stock,
+			PrimaryImage:   p.PrimaryImage,
+			SecondaryImage: utils.SplitStrings(*&p.SecondaryImages),
 			Category: schemas.CategoryResponseStock{
 				ID:   p.CategoryID,
 				Name: p.CategoryName,
@@ -220,114 +229,120 @@ func (r *StockRepository) StockGetByCategoryID(categoryID, pointID int64) ([]*sc
 // }
 
 func (r *StockRepository) StockGetByName(name string, pointID int64) ([]*schemas.ProductStockFullResponse, error) {
-    var pointSale models.PointSale
-    if err := r.DB.Select("id", "is_deposit").First(&pointSale, pointID).Error; err != nil {
-        if errors.Is(err, gorm.ErrRecordNotFound) {
-            return nil, schemas.ErrorResponse(404, "punto de venta no encontrado", err)
-        }
-        return nil, schemas.ErrorResponse(500, "error al obtener el punto de venta", err)
-    }
+	var pointSale models.PointSale
+	if err := r.DB.Select("id", "is_deposit").First(&pointSale, pointID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, schemas.ErrorResponse(404, "punto de venta no encontrado", err)
+		}
+		return nil, schemas.ErrorResponse(500, "error al obtener el punto de venta", err)
+	}
 
-    var products []*schemas.ProductStockFullResponseCategory
+	var products []*schemas.ProductStockFullResponseCategory
 
-    baseSelect := []string{
-        "products.id",
-        "products.code",
-        "products.name",
-        "products.description",
-        "products.price",
-        "s.stock",
-        "categories.id AS category_id",
-        "categories.name AS category_name",
-    }
+	baseSelect := []string{
+		"products.id",
+		"products.code",
+		"products.name",
+		"products.description",
+		"products.price",
+		"s.stock",
+		"categories.id AS category_id",
+		"categories.name AS category_name",
+		"products.primary_image",
+		"products.secondary_images",
+	}
 
-    query := r.DB.Model(&models.Product{}).
-        Select(baseSelect).
-        Joins("INNER JOIN categories ON categories.id = products.category_id")
+	query := r.DB.Model(&models.Product{}).
+		Select(baseSelect).
+		Joins("INNER JOIN categories ON categories.id = products.category_id")
 
-    if pointSale.IsDeposit {
-        query = query.Joins("INNER JOIN deposits s ON s.product_id = products.id")
-    } else {
-        query = query.Joins("INNER JOIN stock_point_sales s ON s.product_id = products.id AND s.point_sale_id = ?", pointID)
-    }
+	if pointSale.IsDeposit {
+		query = query.Joins("INNER JOIN deposits s ON s.product_id = products.id")
+	} else {
+		query = query.Joins("INNER JOIN stock_point_sales s ON s.product_id = products.id AND s.point_sale_id = ?", pointID)
+	}
 
-    // Traer más resultados para luego filtrar y ordenar
-    if err := query.Where("products.name LIKE ?", "%"+name+"%").Scan(&products).Error; err != nil {
-        return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
-    }
+	// Traer más resultados para luego filtrar y ordenar
+	if err := query.Where("products.name LIKE ?", "%"+name+"%").Scan(&products).Error; err != nil {
+		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
+	}
 
-    // Si no hay búsqueda, retornar los primeros 10
-    if strings.TrimSpace(name) == "" {
-        result := make([]*schemas.ProductStockFullResponse, 0, 10)
-        for i, p := range products {
-            if i >= 10 {
-                break
-            }
-            result = append(result, &schemas.ProductStockFullResponse{
-                ID:          p.ID,
-                Code:        p.Code,
-                Name:        p.Name,
-                Description: p.Description,
-                Price:       p.Price,
-                Stock:       p.Stock,
-                Category: schemas.CategoryResponseStock{
-                    ID:   p.CategoryID,
-                    Name: p.CategoryName,
-                },
-            })
-        }
-        return result, nil
-    }
+	// Si no hay búsqueda, retornar los primeros 10
+	if strings.TrimSpace(name) == "" {
+		result := make([]*schemas.ProductStockFullResponse, 0, 10)
+		for i, p := range products {
+			if i >= 10 {
+				break
+			}
+			result = append(result, &schemas.ProductStockFullResponse{
+				ID:             p.ID,
+				Code:           p.Code,
+				Name:           p.Name,
+				Description:    p.Description,
+				Price:          p.Price,
+				Stock:          p.Stock,
+				PrimaryImage:   p.PrimaryImage,
+				SecondaryImage: utils.SplitStrings(*&p.SecondaryImages),
+				Category: schemas.CategoryResponseStock{
+					ID:   p.CategoryID,
+					Name: p.CategoryName,
+				},
+			})
+		}
+		return result, nil
+	}
 
-    // Calcular relevancia para cada producto
-    scored := make([]schemas.ProductStockWithScore, 0)
-    lowerSearch := strings.ToLower(strings.TrimSpace(name))
+	// Calcular relevancia para cada producto
+	scored := make([]schemas.ProductStockWithScore, 0)
+	lowerSearch := strings.ToLower(strings.TrimSpace(name))
 
-    for _, p := range products {
-        lowerName := strings.ToLower(p.Name)
-        score := models.CalculateRelevance(lowerSearch, lowerName)
+	for _, p := range products {
+		lowerName := strings.ToLower(p.Name)
+		score := models.CalculateRelevance(lowerSearch, lowerName)
 
-        if score > 0 {
-            scored = append(scored, schemas.ProductStockWithScore{
-                Product: &schemas.ProductStockFullResponse{
-                    ID:          p.ID,
-                    Code:        p.Code,
-                    Name:        p.Name,
-                    Description: p.Description,
-                    Price:       p.Price,
-                    Stock:       p.Stock,
-                    Category: schemas.CategoryResponseStock{
-                        ID:   p.CategoryID,
-                        Name: p.CategoryName,
-                    },
-                },
-                Score:  score,
-                Length: len(p.Name),
-            })
-        }
-    }
+		if score > 0 {
+			scored = append(scored, schemas.ProductStockWithScore{
+				Product: &schemas.ProductStockFullResponse{
+					ID:             p.ID,
+					Code:           p.Code,
+					Name:           p.Name,
+					Description:    p.Description,
+					Price:          p.Price,
+					Stock:          p.Stock,
+					PrimaryImage:   p.PrimaryImage,
+					SecondaryImage: utils.SplitStrings(*&p.SecondaryImages),
+					Category: schemas.CategoryResponseStock{
+						ID:   p.CategoryID,
+						Name: p.CategoryName,
+					},
+				},
+				Score:  score,
+				Length: len(p.Name),
+			})
+		}
+	}
 
-    // Ordenar según los criterios especificados
-    sort.Slice(scored, func(i, j int) bool {
-        // Si los scores son diferentes, ordenar por score (descendente)
-        if scored[i].Score != scored[j].Score {
-            return scored[i].Score > scored[j].Score
-        }
-        // Si los scores son iguales, ordenar por longitud (ascendente - más corto primero)
-        return scored[i].Length < scored[j].Length
-    })
+	// Ordenar según los criterios especificados
+	sort.Slice(scored, func(i, j int) bool {
+		// Si los scores son diferentes, ordenar por score (descendente)
+		if scored[i].Score != scored[j].Score {
+			return scored[i].Score > scored[j].Score
+		}
+		// Si los scores son iguales, ordenar por longitud (ascendente - más corto primero)
+		return scored[i].Length < scored[j].Length
+	})
 
-    // Limitar a 10 resultados
-    limit := 10
-    result := make([]*schemas.ProductStockFullResponse, 0, limit)
-    for i, ps := range scored {
-        if i >= limit {
-            break
-        }
-        result = append(result, ps.Product)
-    }
+	// Limitar a 10 resultados
+	limit := 10
+	result := make([]*schemas.ProductStockFullResponse, 0, limit)
+	for i, ps := range scored {
+		if i >= limit {
+			break
+		}
+		result = append(result, ps.Product)
+	}
 
-    return result, nil
+	return result, nil
 }
 
 func (r *StockRepository) StockGetAll(page, limit int, pointID int64) ([]*schemas.ProductStockFullResponse, int64, error) {
@@ -354,6 +369,8 @@ func (r *StockRepository) StockGetAll(page, limit int, pointID int64) ([]*schema
 		"s.stock",
 		"categories.id AS category_id",
 		"categories.name AS category_name",
+		"products.primary_image",
+		"products.secondary_images",
 	}
 
 	// QUERY BASE (sin limit ni offset)
@@ -385,12 +402,14 @@ func (r *StockRepository) StockGetAll(page, limit int, pointID int64) ([]*schema
 	var result []*schemas.ProductStockFullResponse
 	for _, p := range products {
 		result = append(result, &schemas.ProductStockFullResponse{
-			ID:           p.ID,
-			Code:         p.Code,
-			Name:         p.Name,
-			Description:  p.Description,
-			Price:        p.Price,
-			Stock:        p.Stock,
+			ID:             p.ID,
+			Code:           p.Code,
+			Name:           p.Name,
+			Description:    p.Description,
+			Price:          p.Price,
+			Stock:          p.Stock,
+			PrimaryImage:   p.PrimaryImage,
+			SecondaryImage: utils.SplitStrings(*&p.SecondaryImages),
 			Category: schemas.CategoryResponseStock{
 				ID:   p.CategoryID,
 				Name: p.CategoryName,
@@ -400,4 +419,3 @@ func (r *StockRepository) StockGetAll(page, limit int, pointID int64) ([]*schema
 
 	return result, total, nil
 }
-

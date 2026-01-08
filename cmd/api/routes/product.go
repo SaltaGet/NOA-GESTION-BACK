@@ -57,13 +57,30 @@ func ProductRoutes(app *fiber.App) {
 			return tenant.Controllers.ProductController.ProductPriceUpdate(c)
 		})
 
+	prod.Put("/update_visibility",
+		middleware.RolePermissionMiddleware("PR02"),
+		middleware.CurrentPlan(),
+		middleware.AuthModule("ecommerce"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.ProductController.ProductUpdateVisibility(c)
+		})
+
+	prod.Put("/list_price",
+		middleware.RolePermissionMiddleware("PR02"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.ProductController.ProductPriceUpdate(c)
+		})
+
 	prod.Post("/generate_token_to_image",
 		middleware.RolePermissionMiddleware("PR02"),
 		middleware.CurrentPlan(),
+		middleware.AuthModule("ecommerce"),
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.ProductController.ProductGenerateTokenToImage(c)
-	})
+		})
 
 	prod.Get("/generate_qr/:code",
 		func(c *fiber.Ctx) error {

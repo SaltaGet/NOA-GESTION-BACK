@@ -14,6 +14,8 @@ type DepositResponse struct {
 	Category    CategoryResponse `json:"category"`
 	Price       float64 `json:"price"`
 	Stock       float64    `json:"stock"`
+	PrimaryImage *string `json:"primary_image"`
+	SecondaryImage []string `json:"secondary_image"`
 }
 
 type DepositResponseStock struct {

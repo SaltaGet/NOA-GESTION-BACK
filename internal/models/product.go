@@ -11,7 +11,7 @@ type Product struct {
 	ID              int64    `gorm:"primaryKey;autoIncrement" json:"id"`
 	Code            string   `gorm:"size:50;not null;uniqueIndex" json:"code"`
 	Name            string   `gorm:"size:100;not null" json:"name"`
-	Description     *string  `gorm:"size:200" json:"description"`
+	Description     *string  `gorm:"type:text" json:"description"`
 	Price           float64  `gorm:"not null,default:0" json:"price"`
 	CategoryID      int64    `gorm:"not null" json:"category_id"`
 	Category        Category `gorm:"foreignKey:CategoryID;references:ID" json:"category"`

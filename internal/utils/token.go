@@ -95,14 +95,27 @@ func VerifyTokenEmail(tokenString string) (jwt.Claims, error) {
 	return claims, nil
 }
 
-func GenerateTokenToGrpc(tenantID string, productID int64) (string, error) {
+func GenerateTokenToGrpcProductImage(tenantID string, validation schemas.ProductValidateImage) (string, error) {
 	claims := jwt.MapClaims{
 		"tenant_identifier": tenantID,
-		"product_id":        productID,
-		"exp":       time.Now().Add(30 * time.Minute).Unix(),
+		"product_id":        validation.ProductID,
+		"add":               validation.SecondaryImage.Add,
+		"keep":              strings.Join(validation.SecondaryImage.KeepUUIDs, ","),
+		"remove":            strings.Join(validation.SecondaryImage.RemoveUUIDs, ","),
+		"primary_image":     validation.PrimaryImage,
+		"exp":               time.Now().Add(30 * time.Minute).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(os.Getenv("KEY_VALIDATOR")))
 }
 
+func GenerateTokenToGrpcToSetting(tenantID string) (string, error) {
+	claims := jwt.MapClaims{
+		"tenant_identifier": tenantID,
+		"exp":               time.Now().Add(30 * time.Minute).Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(os.Getenv("KEY_VALIDATOR")))
+}

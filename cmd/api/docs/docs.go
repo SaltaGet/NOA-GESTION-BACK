@@ -5084,7 +5084,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "ProductPriceUpdate edita el rpecio de una lista de productos",
+                "description": "### Flujo de Carga de Imágenes\nGenera un token temporal para subir imágenes al microservicio.\n\n**Pasos requeridos:**\n1. Llamar a este endpoint para obtener el token.\n2. Incluir el token en el header ` + "`" + `x-token-tenant` + "`" + ` del microservicio de imágenes.\n\n**Formato del endpoint del microservicio:**\n~~~\nPOST /ecommerce/{tenantIdentifier}/api/v1/product/upload_image\n~~~\n\n\u003e *Nota: El token tiene una validez limitada de 30 minutos.*",
                 "consumes": [
                     "application/json"
                 ],
@@ -5094,7 +5094,7 @@ const docTemplate = `{
                 "tags": [
                     "Product"
                 ],
-                "summary": "ProductPriceUpdate",
+                "summary": "ProductGenerateTokenToImage",
                 "parameters": [
                     {
                         "description": "Información de los productos y los precios a editar",
@@ -5196,6 +5196,12 @@ const docTemplate = `{
                         "default": 10,
                         "description": "Número de elementos por página",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Mostrar solo productos visibles",
+                        "name": "is_visible",
                         "in": "query"
                     }
                 ],
@@ -5532,6 +5538,45 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/product/update_visibility": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Actualiza la visibilidad de un producto para el ecommerce",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Product"
+                ],
+                "summary": "ProductUpdateVisibility",
+                "parameters": [
+                    {
+                        "description": "Información de los productos y los precios a editar",
+                        "name": "updateVisibility",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.ListVisibilityUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -6861,6 +6906,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/tenant/generate_token_to_image_setting": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "### Flujo de Carga de Imágenes\nGenera un token temporal para subir imágenes al microservicio.\n\n**Pasos requeridos:**\n1. Llamar a este endpoint para obtener el token.\n2. Incluir el token en el header ` + "`" + `x-token-tenant` + "`" + ` del microservicio de imágenes.\n\n**Formato del endpoint del microservicio:**\n~~~\nPOST /ecommerce/{tenantIdentifier}/api/v1/tenant/upload_image\n~~~\n\n\u003e *Nota: El token tiene una validez limitada de 30 minutos.*",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tenant"
+                ],
+                "summary": "TenantGenerateTokenToImageSetting",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/tenant/get_all": {
             "get": {
                 "security": [
@@ -6960,6 +7033,73 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "Fecha de expiración actualizada con éxito",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tenant/update_settings": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Actualizar la configuración de un tenant",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tenant"
+                ],
+                "summary": "TenantUpdateSettings",
+                "parameters": [
+                    {
+                        "description": "TenantUpdateSettings",
+                        "name": "TenantUpdateSettings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.TenantUpdateSettings"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "actualizacion con éxito",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tenant/update_temrs": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Actualizar la aceptación de los termninos y condiciones de un tenant",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tenant"
+                ],
+                "summary": "TenantUpdateAcceptedTerms",
+                "responses": {
+                    "200": {
+                        "description": "actualizacion con éxito",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -7231,6 +7371,9 @@ const docTemplate = `{
         "schemas.AuthenticatedUser": {
             "type": "object",
             "properties": {
+                "accepted_terms": {
+                    "type": "boolean"
+                },
                 "first_name": {
                     "type": "string"
                 },
@@ -7618,6 +7761,15 @@ const docTemplate = `{
                 },
                 "price": {
                     "type": "number"
+                },
+                "primary_image": {
+                    "type": "string"
+                },
+                "secondary_image": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "stock": {
                     "type": "number"
@@ -8495,6 +8647,21 @@ const docTemplate = `{
                     "minItems": 1,
                     "items": {
                         "$ref": "#/definitions/schemas.ProductPriceUpdate"
+                    }
+                }
+            }
+        },
+        "schemas.ListVisibilityUpdate": {
+            "type": "object",
+            "required": [
+                "list"
+            ],
+            "properties": {
+                "list": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/schemas.ProductVisibilityUpdate"
                     }
                 }
             }
@@ -9511,6 +9678,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "is_visible": {
+                    "type": "boolean"
+                },
                 "min_amount": {
                     "type": "number"
                 },
@@ -9522,6 +9692,15 @@ const docTemplate = `{
                 },
                 "price": {
                     "type": "number"
+                },
+                "primary_image": {
+                    "type": "string"
+                },
+                "secondary_image": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "stock_deposit": {
                     "type": "number"
@@ -9579,6 +9758,15 @@ const docTemplate = `{
                 "price": {
                     "type": "number"
                 },
+                "primary_image": {
+                    "type": "string"
+                },
+                "secondary_image": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "stock": {
                     "type": "number"
                 }
@@ -9621,6 +9809,15 @@ const docTemplate = `{
                 },
                 "price": {
                     "type": "number"
+                },
+                "primary_image": {
+                    "type": "string"
+                },
+                "secondary_image": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "stock": {
                     "type": "number"
@@ -9681,11 +9878,10 @@ const docTemplate = `{
                 "primary_image": {
                     "type": "string",
                     "enum": [
-                        "add",
-                        "update",
+                        "set",
                         "keep"
                     ],
-                    "example": "add | update | keep"
+                    "example": "set | keep"
                 },
                 "product_id": {
                     "type": "integer",
@@ -9693,6 +9889,23 @@ const docTemplate = `{
                 },
                 "secondary_image": {
                     "$ref": "#/definitions/schemas.ValidateSecondaryImage"
+                }
+            }
+        },
+        "schemas.ProductVisibilityUpdate": {
+            "type": "object",
+            "required": [
+                "product_id",
+                "visibility"
+            ],
+            "properties": {
+                "product_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "visibility": {
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
@@ -9995,6 +10208,27 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.TenantUpdateSettings": {
+            "type": "object",
+            "properties": {
+                "primary_color": {
+                    "type": "string",
+                    "example": "#FF0000"
+                },
+                "secondary_color": {
+                    "type": "string",
+                    "example": "#FF0000"
+                },
+                "slogan": {
+                    "type": "string",
+                    "example": "Mi tienda"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Mi tienda"
+                }
+            }
+        },
         "schemas.TenantUserCreate": {
             "type": "object",
             "required": [
@@ -10115,22 +10349,34 @@ const docTemplate = `{
         "schemas.ValidateSecondaryImage": {
             "type": "object",
             "required": [
-                "add",
-                "keep",
-                "remove"
+                "keep_uuids"
             ],
             "properties": {
                 "add": {
                     "type": "integer",
                     "example": 1
                 },
-                "keep": {
-                    "type": "integer",
-                    "example": 1
+                "keep_uuids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "uuid1",
+                        "uuid2",
+                        "uuid3"
+                    ]
                 },
-                "remove": {
-                    "type": "integer",
-                    "example": 1
+                "remove_uuids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "uuid1",
+                        "uuid2",
+                        "uuid3"
+                    ]
                 }
             }
         }

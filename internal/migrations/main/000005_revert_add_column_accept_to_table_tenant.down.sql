@@ -1,0 +1,4 @@
+ALTER TABLE tenants
+DROP COLUMN IF EXISTS accepted_terms.
+DROP COLUMN IF EXISTS date_accepted,
+DROP COLUMN IF EXISTS ip;

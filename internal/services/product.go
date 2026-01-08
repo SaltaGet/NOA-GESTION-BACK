@@ -42,6 +42,9 @@ func (p *ProductService) ProductGetByID(id int64) (*schemas.ProductFullResponse,
 
 	productResponse.Notifier = product.Notifier
 	productResponse.MinAmount = product.MinAmount
+	productResponse.PrimaryImage = product.PrimaryImage
+	productResponse.SecondaryImage = utils.SplitStrings(*&product.SecondaryImages)
+	productResponse.IsVisible = product.IsVisible
 
 	for _, stock := range product.StockPointSales {
 		productResponse.StockPointSales = append(productResponse.StockPointSales, &schemas.PointSaleStockResponse{
@@ -81,6 +84,9 @@ func (p *ProductService) ProductGetByCode(code string) (*schemas.ProductFullResp
 
 	productResponse.Notifier = product.Notifier
 	productResponse.MinAmount = product.MinAmount
+	productResponse.PrimaryImage = product.PrimaryImage
+	productResponse.SecondaryImage = utils.SplitStrings(*&product.SecondaryImages)
+	productResponse.IsVisible = product.IsVisible
 
 	for _, stock := range product.StockPointSales {
 		productResponse.StockPointSales = append(productResponse.StockPointSales, &schemas.PointSaleStockResponse{
@@ -115,6 +121,9 @@ func (p *ProductService) ProductGetByName(name string) ([]*schemas.ProductFullRe
 			Price:     prod.Price,
 			Notifier:  prod.Notifier,
 			MinAmount: prod.MinAmount,
+			PrimaryImage:   prod.PrimaryImage,
+			SecondaryImage: utils.SplitStrings(*&prod.SecondaryImages),
+			IsVisible: prod.IsVisible,
 		}
 		if prod.StockDeposit != nil {
 			productsResponse[i].StockDeposit = prod.StockDeposit.Stock
@@ -155,6 +164,9 @@ func (p *ProductService) ProductGetByCategoryID(categoryID int64) ([]*schemas.Pr
 			Price:     prod.Price,
 			Notifier:  prod.Notifier,
 			MinAmount: prod.MinAmount,
+			PrimaryImage:   prod.PrimaryImage,
+			SecondaryImage: utils.SplitStrings(*&prod.SecondaryImages),
+			IsVisible: prod.IsVisible,
 		}
 		if prod.StockDeposit != nil {
 			productsResponse[i].StockDeposit = prod.StockDeposit.Stock
@@ -174,8 +186,8 @@ func (p *ProductService) ProductGetByCategoryID(categoryID int64) ([]*schemas.Pr
 	return productsResponse, nil
 }
 
-func (p *ProductService) ProductGetAll(page, limit int) ([]*schemas.ProductFullResponse, int64, error) {
-	products, total, err := p.ProductRepository.ProductGetAll(page, limit)
+func (p *ProductService) ProductGetAll(page, limit int, isVisible *bool) ([]*schemas.ProductFullResponse, int64, error) {
+	products, total, err := p.ProductRepository.ProductGetAll(page, limit, isVisible)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -195,6 +207,9 @@ func (p *ProductService) ProductGetAll(page, limit int) ([]*schemas.ProductFullR
 			Price:     prod.Price,
 			Notifier:  prod.Notifier,
 			MinAmount: prod.MinAmount,
+			PrimaryImage:   prod.PrimaryImage,
+			SecondaryImage: utils.SplitStrings(*&prod.SecondaryImages),
+			IsVisible: prod.IsVisible,
 		}
 		if prod.StockDeposit != nil {
 			productsResponse[i].StockDeposit = prod.StockDeposit.Stock
@@ -682,10 +697,14 @@ func (p *ProductService) ValidateProductImages(tenantIdentifier string, productV
 		return "", err
 	}
 
-	token, err := utils.GenerateTokenToGrpc(tenantIdentifier, productValidateImage.ProductID)
+	token, err := utils.GenerateTokenToGrpcProductImage(tenantIdentifier, productValidateImage)
 	if err != nil {
 		return "", schemas.ErrorResponse(500, "Error interno al generar token", err)
 	}
 
 	return token, nil
+}
+
+func (p *ProductService) ProductUpdateVisibility(productVisibilityUpdate *schemas.ListVisibilityUpdate) error {
+	return p.ProductRepository.ProductUpdateVisibility(productVisibilityUpdate)
 }

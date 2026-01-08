@@ -1,6 +1,9 @@
 package services
 
-import "github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+import (
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
+)
 
 func (s *DepositService) DepositGetByID(id int64) (*schemas.DepositResponse, error) {
 	product, err := s.DepositRepository.DepositGetByID(id)
@@ -10,10 +13,12 @@ func (s *DepositService) DepositGetByID(id int64) (*schemas.DepositResponse, err
 
 	desc := product.Description
 	productResponse := &schemas.DepositResponse{
-		ID:          product.ID,
-		Code:        product.Code,
-		Description: desc,
-		Name:        product.Name,
+		ID:             product.ID,
+		Code:           product.Code,
+		Description:    desc,
+		Name:           product.Name,
+		PrimaryImage:   product.PrimaryImage,
+		SecondaryImage: utils.SplitStrings(*&product.SecondaryImages),
 		Category: schemas.CategoryResponse{
 			ID:   product.Category.ID,
 			Name: product.Category.Name,
@@ -38,10 +43,12 @@ func (s *DepositService) DepositGetByCode(code string) (*schemas.DepositResponse
 
 	desc := product.Description
 	productResponse := &schemas.DepositResponse{
-		ID:          product.ID,
-		Code:        product.Code,
-		Description: desc,
-		Name:        product.Name,
+		ID:             product.ID,
+		Code:           product.Code,
+		Description:    desc,
+		Name:           product.Name,
+		PrimaryImage:   product.PrimaryImage,
+		SecondaryImage: utils.SplitStrings(*&product.SecondaryImages),
 		Category: schemas.CategoryResponse{
 			ID:   product.Category.ID,
 			Name: product.Category.Name,
@@ -69,10 +76,12 @@ func (s *DepositService) DepositGetByName(name string) ([]*schemas.DepositRespon
 	for i, prod := range products {
 		desc := prod.Description
 		productsResponse[i] = &schemas.DepositResponse{
-			ID:          prod.ID,
-			Code:        prod.Code,
-			Description: desc,
-			Name:        prod.Name,
+			ID:             prod.ID,
+			Code:           prod.Code,
+			Description:    desc,
+			Name:           prod.Name,
+			PrimaryImage:   prod.PrimaryImage,
+			SecondaryImage: utils.SplitStrings(*&prod.SecondaryImages),
 			Category: schemas.CategoryResponse{
 				ID:   prod.Category.ID,
 				Name: prod.Category.Name,
@@ -100,10 +109,12 @@ func (s *DepositService) DepositGetAll(page, limit int) ([]*schemas.DepositRespo
 	for i, prod := range products {
 		desc := prod.Description
 		productsResponse[i] = &schemas.DepositResponse{
-			ID:          prod.ID,
-			Code:        prod.Code,
-			Description: desc,
-			Name:        prod.Name,
+			ID:             prod.ID,
+			Code:           prod.Code,
+			Description:    desc,
+			Name:           prod.Name,
+			PrimaryImage:   prod.PrimaryImage,
+			SecondaryImage: utils.SplitStrings(*&prod.SecondaryImages),
 			Category: schemas.CategoryResponse{
 				ID:   prod.Category.ID,
 				Name: prod.Category.Name,

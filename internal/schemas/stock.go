@@ -8,6 +8,8 @@ type ProductStockFullResponse struct {
 	Category    CategoryResponseStock `json:"category"`
 	Price       float64               `json:"price"`
 	Stock       float64               `json:"stock"`
+	PrimaryImage *string `json:"primary_image"`
+	SecondaryImage []string `json:"secondary_image"`
 }
 
 type ProductStockFullResponseCategory struct {
@@ -19,4 +21,6 @@ type ProductStockFullResponseCategory struct {
 	CategoryName string  `json:"category_name"`
 	Price        float64 `json:"price"`
 	Stock        float64 `json:"stock"`
+	PrimaryImage *string `json:"primary_image"`
+	SecondaryImages *string `json:"secondary_images"`
 }

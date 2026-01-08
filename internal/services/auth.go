@@ -96,6 +96,7 @@ func (a *AuthService) AuthCurrentUser(tenantID, memberID, pointSaleID int64) (*s
 		TenantIdentifier: tenant.Identifier,
 		RoleID:           member.Role.ID,
 		RoleName:         member.Role.Name,
+		AcceptedTerms:    tenant.AcceptedTerms,
 	}
 
 	// if user.IsAdmin {
