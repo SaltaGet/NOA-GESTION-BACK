@@ -51,6 +51,8 @@ func PrepareDB(uri string, memberAdmin models.Member) error {
 
 		&models.IncomeSale{},
 		&models.IncomeSaleItem{},
+		&models.IncomeEcommerce{},
+		&models.IncomeEcommerceItem{},
 		&models.PayIncome{},
 		&models.IncomeOther{},
 		&models.TypeIncome{},
@@ -234,6 +236,8 @@ func UpdateModels(uri string) error {
 
 		&models.IncomeSale{},
 		&models.IncomeSaleItem{},
+		&models.IncomeEcommerce{},
+		&models.IncomeEcommerceItem{},
 		&models.PayIncome{},
 		&models.IncomeOther{},
 		&models.TypeIncome{},

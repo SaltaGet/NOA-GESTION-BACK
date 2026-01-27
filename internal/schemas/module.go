@@ -22,6 +22,7 @@ type ModuleResponseDTO struct {
 	Name                   string     `json:"name"`
 	AmountImagesPerProduct int32      `json:"amount_images_per_product"`
 	Expiration             *time.Time `json:"expiration"`
+	AcceptTerms            bool       `json:"accept_terms"`
 }
 
 type ModuleCreate struct {

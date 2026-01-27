@@ -20,6 +20,9 @@ type MainRepository struct {
 //	    return &TenantRepository{DB: db}
 //	}
 
+type ArcaRepository struct {
+	DB *gorm.DB
+}
 
 type CashRegisterRepository struct {
 	DB *gorm.DB
@@ -34,6 +37,10 @@ type ClientRepository struct {
 }
 
 type DepositRepository struct {
+	DB *gorm.DB
+}
+
+type EcommerceRepository struct {
 	DB *gorm.DB
 }
 

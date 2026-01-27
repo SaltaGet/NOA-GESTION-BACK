@@ -12,10 +12,12 @@ type GrpcContainer struct {
 	Services struct {
 		GrpcProductService *grpc_serv.GrpcProductService
 		GrpcCategoryService *grpc_serv.GrpcCategoryService
+		GrpcMPService *grpc_serv.GrpcMPService
 	}
 	Repositories struct {
 		GrpcProductRepository *grpc_repo.GrpcProductRepository
 		GrpcCategoryRepository *grpc_repo.GrpcCategoryRepository
+		GrpcMPRepository *grpc_repo.GrpcMPRepository
 	}
 }
 
@@ -25,6 +27,7 @@ func NewGrpcContainer(db *gorm.DB) *GrpcContainer {
 	// Inicializar repositorios
 	c.Repositories.GrpcProductRepository = &grpc_repo.GrpcProductRepository{DB: c.DB}
 	c.Repositories.GrpcCategoryRepository = &grpc_repo.GrpcCategoryRepository{DB: c.DB}
+	c.Repositories.GrpcMPRepository = &grpc_repo.GrpcMPRepository{DB: c.DB}
 	// Inicializar servicios
 
 	c.Services.GrpcProductService = &grpc_serv.GrpcProductService{
@@ -32,6 +35,9 @@ func NewGrpcContainer(db *gorm.DB) *GrpcContainer {
 	}
 	c.Services.GrpcCategoryService = &grpc_serv.GrpcCategoryService{
 		GrpcCategoryRepository: c.Repositories.GrpcCategoryRepository,
+	}
+	c.Services.GrpcMPService = &grpc_serv.GrpcMPService{
+		GrpcMPRepository: c.Repositories.GrpcMPRepository,
 	}
 
 	return c

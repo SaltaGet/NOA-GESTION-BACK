@@ -18,6 +18,7 @@ type MainContainer struct {
 	NewsController *controllers.NewsController
 	FeedbackController *controllers.FeedbackController
 	ModuleController *controllers.ModuleController
+	CredentialController *controllers.CredentialController
 }
 
 func NewApplication(mainDB *gorm.DB, cfg *schemas.EmailConfig) *MainContainer {
@@ -34,6 +35,7 @@ func NewApplication(mainDB *gorm.DB, cfg *schemas.EmailConfig) *MainContainer {
 	newsServ := &services.NewsService{NewsRepository: mainRepo}
 	feedbackServ := &services.FeedbackService{FeedbackRepository: mainRepo}
 	moduleServ := &services.ModuleService{ModuleRepository: mainRepo}
+	credentialServ := &services.CredentialService{CredentialRepository: mainRepo}
 
 
 
@@ -46,6 +48,7 @@ func NewApplication(mainDB *gorm.DB, cfg *schemas.EmailConfig) *MainContainer {
 		NewsController: &controllers.NewsController{NewsService: newsServ},
 		FeedbackController: &controllers.FeedbackController{FeedbackService: feedbackServ},
 		ModuleController: &controllers.ModuleController{ModuleService: moduleServ},
+		CredentialController: &controllers.CredentialController{CredentialService: credentialServ},
 	}
 }
 

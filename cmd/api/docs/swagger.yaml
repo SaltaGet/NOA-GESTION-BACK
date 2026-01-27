@@ -286,6 +286,83 @@ definitions:
     - pay_credit
     - total
     type: object
+  schemas.CredentialArcaRequest:
+    properties:
+      address:
+        type: string
+      arca_certificate:
+        type: string
+      arca_key:
+        type: string
+      business_name:
+        type: string
+      cuit:
+        type: string
+      gross_income:
+        type: string
+      responsibility_front_iva:
+        type: string
+      social_reason:
+        type: string
+      start_activities:
+        type: string
+    required:
+    - address
+    - arca_certificate
+    - arca_key
+    - business_name
+    - cuit
+    - gross_income
+    - responsibility_front_iva
+    - social_reason
+    - start_activities
+    type: object
+  schemas.CredentialArcaResponse:
+    properties:
+      arca_certificate:
+        example: key.pem
+        type: string
+      arca_certificate_test:
+        example: key.pem
+        type: string
+      arca_key:
+        example: key.pem
+        type: string
+      arca_key_test:
+        example: key.pem
+        type: string
+      cuit:
+        example: 20-12345678-9
+        type: string
+      responsibility_front_iva:
+        example: Responsibility Front IVA
+        type: string
+      social_reason:
+        example: My Company
+        type: string
+    type: object
+  schemas.CredentialMPTokenRequest:
+    properties:
+      access_token:
+        type: string
+      access_token_test:
+        type: string
+    required:
+    - access_token
+    - access_token_test
+    type: object
+  schemas.CredentialMPTokenResponse:
+    properties:
+      access_token:
+        example: token_1234567890
+        type: string
+      access_token_test:
+        example: token_1234567890
+        type: string
+      token_email:
+        example: token_1234567890
+        type: string
+    type: object
   schemas.DateRangeRequest:
     properties:
       from_date:
@@ -340,6 +417,81 @@ definitions:
     required:
     - product_id
     - stock
+    type: object
+  schemas.EcommerceItemResponse:
+    properties:
+      amount:
+        type: number
+      discount:
+        type: number
+      price:
+        type: number
+      price_cost:
+        type: number
+      product:
+        $ref: '#/definitions/schemas.ProductSimpleResponseDTO'
+      subtotal:
+        type: number
+      total:
+        type: number
+      type_discount:
+        type: string
+    type: object
+  schemas.EcommerceResponse:
+    properties:
+      date_approved:
+        type: string
+      date_created:
+        type: string
+      delivery_id:
+        type: string
+      delivery_status:
+        type: string
+      external_reference:
+        type: string
+      id:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/schemas.EcommerceItemResponse'
+        type: array
+      message:
+        type: string
+      net_received_amount:
+        type: number
+      operation_type:
+        type: string
+      pay_method:
+        type: string
+      payer_email:
+        type: string
+      payer_first_name:
+        type: string
+      payer_last_name:
+        type: string
+      payment_id:
+        type: string
+      status:
+        type: string
+      total:
+        type: number
+      transaction_amount:
+        type: number
+    type: object
+  schemas.EcommerceResponseDTO:
+    properties:
+      date_created:
+        type: string
+      external_reference:
+        type: string
+      id:
+        type: integer
+      payer_email:
+        type: string
+      status:
+        type: string
+      total:
+        type: number
     type: object
   schemas.EnvironmentPermissions:
     properties:
@@ -1159,6 +1311,8 @@ definitions:
     type: object
   schemas.ModuleResponseDTO:
     properties:
+      accept_terms:
+        type: boolean
       amount_images_per_product:
         type: integer
       expiration:
@@ -1986,6 +2140,30 @@ definitions:
       updated_at:
         type: string
     type: object
+  schemas.TenantSettingsResponse:
+    properties:
+      front_page:
+        example: front_page_uuid
+        type: string
+      logo:
+        example: logo_uuid
+        type: string
+      phone:
+        example: 555-5555
+        type: string
+      primary_color:
+        example: '#FF0000'
+        type: string
+      secondary_color:
+        example: '#FF0000'
+        type: string
+      slogan:
+        example: Mi tienda
+        type: string
+      title:
+        example: Mi tienda
+        type: string
+    type: object
   schemas.TenantUpdateExpiration:
     properties:
       expiration:
@@ -1999,6 +2177,9 @@ definitions:
     type: object
   schemas.TenantUpdateSettings:
     properties:
+      phone:
+        example: +54 11 1234-5678
+        type: string
       primary_color:
         example: '#FF0000'
         type: string
@@ -3006,6 +3187,98 @@ paths:
       summary: ClientUpdateCredit
       tags:
       - Client
+  /api/v1/credential/get_arca_token:
+    get:
+      consumes:
+      - application/json
+      description: Obtener credenciales de ARCA
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.CredentialArcaResponse'
+              type: object
+      security:
+      - CookieAuth: []
+      summary: CredentialGetArca
+      tags:
+      - Credential
+  /api/v1/credential/get_mercado_pago_token:
+    get:
+      consumes:
+      - application/json
+      description: Obtener tokens de mercado pago
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.CredentialMPTokenResponse'
+              type: object
+      security:
+      - CookieAuth: []
+      summary: CredentialGetMPToken
+      tags:
+      - Credential
+  /api/v1/credential/set_arca_token:
+    put:
+      consumes:
+      - application/json
+      description: Actualizar credenciales de ARCA
+      parameters:
+      - description: token de mercado pago
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CredentialArcaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: CredentialSetArca
+      tags:
+      - Credential
+  /api/v1/credential/set_mercado_pago_token:
+    put:
+      consumes:
+      - application/json
+      description: Actualizar token de mercado pago
+      parameters:
+      - description: token de mercado pago
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CredentialMPTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: CredentialSetMPToken
+      tags:
+      - Credential
   /api/v1/deposit/get/{id}:
     get:
       consumes:
@@ -3258,6 +3531,118 @@ paths:
       summary: DepositProductUpdateStock
       tags:
       - Deposit
+  /api/v1/ecommerce/get/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Obtener una compra electrónica por ID
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.EcommerceResponse'
+              type: object
+      security:
+      - CookieAuth: []
+      summary: EcommerceGetByID
+      tags:
+      - Ecommerce
+  /api/v1/ecommerce/get_all:
+    get:
+      consumes:
+      - application/json
+      description: Obtener todas las compras electrónicas
+      parameters:
+      - default: 1
+        description: pagina
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: limite
+        in: query
+        name: limit
+        type: integer
+      - description: estado
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.EcommerceResponseDTO'
+                  type: array
+              type: object
+      security:
+      - CookieAuth: []
+      summary: EcommerceGetAll
+      tags:
+      - Ecommerce
+  /api/v1/ecommerce/get_by_reference/{reference}:
+    get:
+      consumes:
+      - application/json
+      description: Obtener una compra electrónica por referencia
+      parameters:
+      - description: Referencia
+        in: path
+        name: reference
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.EcommerceResponse'
+              type: object
+      security:
+      - CookieAuth: []
+      summary: EcommerceGetByReference
+      tags:
+      - Ecommerce
+  /api/v1/ecommerce/update_status:
+    put:
+      consumes:
+      - application/json
+      description: Actualizar estado de una compra electrónica
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - CookieAuth: []
+      summary: EcommerceUpdateStatus
+      tags:
+      - Ecommerce
   /api/v1/expense_buy/{id}:
     get:
       consumes:
@@ -6409,6 +6794,28 @@ paths:
       security:
       - CookieAuth: []
       summary: Tenant GetAll
+      tags:
+      - Tenant
+  /api/v1/tenant/get_settings:
+    get:
+      consumes:
+      - application/json
+      description: Obtener la configuración de un tenant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: actualizacion con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.TenantSettingsResponse'
+              type: object
+      security:
+      - CookieAuth: []
+      summary: TenantGetSettings
       tags:
       - Tenant
   /api/v1/tenant/update_expiration:

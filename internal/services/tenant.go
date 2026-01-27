@@ -78,6 +78,10 @@ func (t *TenantService) TenantUpdateTerms(tenantID int64, tenantUpdateTerms *sch
 	return t.TenantRepository.TenantUpdateTerms(tenantID, tenantUpdateTerms)
 }
 
+func (t *TenantService) TenantGetSettings(tenantID int64) (setting *schemas.TenantSettingsResponse, err error) {
+	return t.TenantRepository.TenantGetSettings(tenantID)
+}
+
 func (t *TenantService) TenantUpdateSettings(tenantID int64, tenantUpdateSettings *schemas.TenantUpdateSettings) (err error) {
 	return t.TenantRepository.TenantUpdateSettings(tenantID, tenantUpdateSettings)
 }

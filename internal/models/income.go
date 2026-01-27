@@ -24,19 +24,19 @@ type IncomeSale struct {
 }
 
 type IncomeSaleItem struct {
-	ID           int64      `gorm:"primaryKey;autoIncrement" json:"id"`
-	IncomeSaleID int64      `gorm:"index" json:"sale_id"`
+	ID           int64       `gorm:"primaryKey;autoIncrement" json:"id"`
+	IncomeSaleID int64       `gorm:"index" json:"sale_id"`
 	IncomeSale   *IncomeSale `gorm:"foreignKey:IncomeSaleID" json:"sale_income"`
-	ProductID    int64      `gorm:"index" json:"product_id"`
-	Product      Product    `gorm:"foreignKey:ProductID" json:"product"`
-	Amount       float64    `gorm:"not null" json:"amount"`
-	Price_Cost   float64    `gorm:"not null" json:"price_cost"`
-	Price        float64    `gorm:"not null" json:"price"`
-	Discount     float64    `gorm:"not null;default:0" json:"discount"`
-	TypeDiscount string     `gorm:"not null;default:percent" json:"type_discount" validate:"oneof=amount percent"`
-	Subtotal     float64    `gorm:"not null" json:"subtotal"`
-	Total        float64    `gorm:"not null" json:"total"`
-	CreatedAt    time.Time  `gorm:"autoCreateTime" json:"created_at"`
+	ProductID    int64       `gorm:"index" json:"product_id"`
+	Product      Product     `gorm:"foreignKey:ProductID" json:"product"`
+	Amount       float64     `gorm:"not null" json:"amount"`
+	Price_Cost   float64     `gorm:"not null" json:"price_cost"`
+	Price        float64     `gorm:"not null" json:"price"`
+	Discount     float64     `gorm:"not null;default:0" json:"discount"`
+	TypeDiscount string      `gorm:"not null;default:percent" json:"type_discount" validate:"oneof=amount percent"`
+	Subtotal     float64     `gorm:"not null" json:"subtotal"`
+	Total        float64     `gorm:"not null" json:"total"`
+	CreatedAt    time.Time   `gorm:"autoCreateTime" json:"created_at"`
 }
 
 type IncomeOther struct {
@@ -56,4 +56,41 @@ type IncomeOther struct {
 	UpdatedAt      time.Time     `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
+type IncomeEcommerce struct {
+	ID                int64                 `gorm:"primaryKey;autoIncrement" json:"id"`
+	PaymentID         string                `gorm:"not null;index" json:"payment_id"`
+	ExternalReference string                `gorm:"not null;uniqueIndex" json:"external_reference"`
+	Status            string                `gorm:"not null" json:"status"`
+	Total             float64               `gorm:"not null" json:"total"`
+	DeliveryStatus    string                `gorm:"not null" json:"delivery_status"`
+	DeliveryID        *string               `gorm:"not null" json:"delivery_id"`
+	DateCreated       string                `gorm:"not null" json:"date_created"`
+	DateApproved      string                `gorm:"not null" json:"date_approved"`
+	TransactionAmount float64               `json:"transaction_amount"`
+	NetReceivedAmount float64               `gorm:"not null" json:"net_received_amount"`
+	PayerFirstName    string                `gorm:"not null" json:"payer_first_name"`
+	PayerLastName     string                `gorm:"not null" json:"payer_last_name"`
+	PayerEmail        string                `gorm:"not null" json:"payer_email"`
+	PayMethod         string                `gorm:"not null" json:"pay_method"`
+	OperationType     string                `gorm:"not null" json:"operation_type"`
+	Message           string                `json:"message,omitempty"`
+	CreatedAt         time.Time             `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt         time.Time             `gorm:"autoUpdateTime" json:"updated_at"`
+	Items             []IncomeEcommerceItem `gorm:"foreignKey:IncomeEcommerceID" json:"items"`
+}
 
+type IncomeEcommerceItem struct {
+	ID                int64            `gorm:"primaryKey;autoIncrement" json:"id"`
+	IncomeEcommerceID int64            `gorm:"index" json:"sale_id"`
+	IncomeEcommerce   *IncomeEcommerce `gorm:"foreignKey:IncomeEcommerceID" json:"income_ecommerce"`
+	ProductID         int64            `gorm:"index" json:"product_id"`
+	Product           Product          `gorm:"foreignKey:ProductID" json:"product"`
+	Amount            float64          `gorm:"not null" json:"amount"`
+	Price_Cost        float64          `gorm:"not null" json:"price_cost"`
+	Price             float64          `gorm:"not null" json:"price"`
+	Discount          float64          `gorm:"not null;default:0" json:"discount"`
+	TypeDiscount      string           `gorm:"not null;default:percent" json:"type_discount" validate:"oneof=amount percent"`
+	Subtotal          float64          `gorm:"not null" json:"subtotal"`
+	Total             float64          `gorm:"not null" json:"total"`
+	CreatedAt         time.Time        `gorm:"autoCreateTime" json:"created_at"`
+}

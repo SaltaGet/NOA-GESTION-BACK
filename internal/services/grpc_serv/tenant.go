@@ -4,7 +4,6 @@ import (
 	"context"
 
 	pb "github.com/DanielChachagua/ecommerce-noagestion-protos/pb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (s *GrpcTenantService) ListTenants(ctx context.Context) (*pb.ListTenantsResponse, error) {
@@ -15,20 +14,26 @@ func (s *GrpcTenantService) ListTenants(ctx context.Context) (*pb.ListTenantsRes
 
 	// Convertir a proto
 	// return &pb.ListTenantsResponse{Tenants: tenants}, nil
-	var protoTenants []*pb.Tenant
+	var protoTenants []*pb.TenantResponse
 	for _, tenant := range tenants {
-		var expirationProto *timestamppb.Timestamp
-
-    // 2. SOLO si la fecha en BD NO es nil, hacemos la conversión
-    if tenant.Expiration != nil {
-        expirationProto = timestamppb.New(*tenant.Expiration)
-    }
-
-    // 3. Construimos el mensaje Proto de forma segura
-    pbTenant := &pb.Tenant{
-        Identifier: tenant.Identifier,
-        IsActive:   tenant.IsActive,
-        Expiration: expirationProto, // Aquí pasamos el puntero (sea nil o tenga valor)
+    pbTenant := &pb.TenantResponse{
+			Id: tenant.ID,
+			Name: tenant.Name,
+			Identifier: tenant.Identifier,
+			Address: tenant.Address,
+			Phone: tenant.Phone,
+			Email: tenant.Email,
+			SettingTenant: &pb.SettingTenant{
+				Id: tenant.Setting.ID,
+				Logo: tenant.Setting.Logo,
+				FrontPage: tenant.Setting.FrontPage,
+				Title: tenant.Setting.Title,
+				Slogan: tenant.Setting.Slogan,
+				PrimaryColor: tenant.Setting.PrimaryColor,
+				SecondaryColor: tenant.Setting.SecondaryColor,
+			},
+			TokenMp: tenant.Credentials.AccessTokenMP,
+			TokenEmail: tenant.Credentials.TokenEmail,
     }
 		protoTenants = append(protoTenants, pbTenant)
 	}
@@ -51,12 +56,12 @@ func (s *GrpcTenantService) GetTenant(req *pb.TenantRequest) (*pb.TenantResponse
 		Email:      tenant.Email,
 		SettingTenant: &pb.SettingTenant{
 			Id: tenant.Setting.ID,
-			Logo: *tenant.Setting.Logo,
-			FrontPage: *tenant.Setting.FrontPage,
-			Title: *tenant.Setting.Title,
-			Slogan: *tenant.Setting.Slogan,
-			PrimaryColor: *tenant.Setting.PrimaryColor,
-			SecondaryColor: *tenant.Setting.SecondaryColor,
+			Logo: tenant.Setting.Logo,
+			FrontPage: tenant.Setting.FrontPage,
+			Title: tenant.Setting.Title,
+			Slogan: tenant.Setting.Slogan,
+			PrimaryColor: tenant.Setting.PrimaryColor,
+			SecondaryColor: tenant.Setting.SecondaryColor,
 		},
 	}
 

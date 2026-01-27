@@ -32,6 +32,7 @@ type Tenant struct {
 	UserTenants   []UserTenant   `gorm:"foreignKey:TenantID" json:"user_tenants"`
 	Plan          Plan           `gorm:"foreignKey:PlanID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"plan"`
 	Modules       []TenantModule `gorm:"foreignKey:TenantID" json:"modules"`
+	Credentials   Credential     `gorm:"foreignKey:TenantID" json:"credentials"`
 }
 
 func (t *Tenant) BeforeCreate(tx *gorm.DB) (err error) {

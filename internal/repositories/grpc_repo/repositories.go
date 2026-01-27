@@ -13,3 +13,7 @@ type GrpcProductRepository struct {
 type GrpcCategoryRepository struct {
 	DB *gorm.DB
 }
+
+type GrpcMPRepository struct {
+	DB *gorm.DB
+}

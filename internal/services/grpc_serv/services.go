@@ -17,3 +17,7 @@ type GrpcProductService struct {
 type GrpcCategoryService struct {
 	GrpcCategoryRepository grpc_ports.GrpcCategoryRepository
 }
+
+type GrpcMPService struct {
+	GrpcMPRepository grpc_ports.GrpcMPRepository
+}

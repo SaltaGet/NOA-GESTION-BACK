@@ -21,13 +21,14 @@ type Module struct {
 }
 
 type TenantModule struct {
-	ID         int64          `gorm:"primaryKey;autoIncrement" json:"id"`
-	ModuleID   int64          `gorm:"not null;uniqueIndex:idx_tenant_module"`
-	TenantID   int64          `gorm:"not null;uniqueIndex:idx_tenant_module"`
-	Module     Module         `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Tenant     Tenant         `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Expiration *time.Time     `gorm:"" json:"expiration"`
-	CreatedAt  time.Time      `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt  time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
-	DeletedAt  gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+	ID            int64          `gorm:"primaryKey;autoIncrement" json:"id"`
+	ModuleID      int64          `gorm:"not null;uniqueIndex:idx_tenant_module"`
+	TenantID      int64          `gorm:"not null;uniqueIndex:idx_tenant_module"`
+	Module        Module         `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Tenant        Tenant         `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Expiration    *time.Time     `gorm:"" json:"expiration"`
+	AcceptedTerms bool           `gorm:"not null;default:false" json:"accepted_terms"`
+	CreatedAt     time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt     time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt     gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }

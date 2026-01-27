@@ -22,8 +22,16 @@ type ClientController struct {
 	ClientService ports.ClientService
 }
 
+type CredentialController struct {
+	CredentialService ports.CredentialService
+}
+
 type DepositController struct {
 	DepositService ports.DepositService
+}
+
+type EcommerceController struct {
+	EcommerceService ports.EcommerceService
 }
 
 type ExpenseBuyController struct {

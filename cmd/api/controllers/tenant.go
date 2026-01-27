@@ -220,6 +220,30 @@ func (t *TenantController) TenantUpdateAcceptedTerms(c *fiber.Ctx) error {
 	})
 }
 
+// TenantGetSettings godoc
+//
+//	@Summary		TenantGetSettings
+//	@Description	Obtener la configuración de un tenant
+//	@Tags			Tenant
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Success		200	{object}	schemas.Response{body=schemas.TenantSettingsResponse}	"actualizacion con éxito"
+//	@Router			/api/v1/tenant/get_settings [get]
+func (t *TenantController) TenantGetSettings(c *fiber.Ctx) error {
+	user := c.Locals("user").(*schemas.AuthenticatedUser)
+	sett, err := t.TenantService.TenantGetSettings(user.TenantID)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	return c.Status(200).JSON(schemas.Response{
+		Status:  true,
+		Body:    sett,
+		Message: "Configuración del Tenant obtenida exitosamente",
+	})
+}
+
 // TenantUpdateSettings godoc
 //
 //	@Summary		TenantUpdateSettings

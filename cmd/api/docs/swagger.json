@@ -1446,6 +1446,164 @@
                 }
             }
         },
+        "/api/v1/credential/get_arca_token": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener credenciales de ARCA",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credential"
+                ],
+                "summary": "CredentialGetArca",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.CredentialArcaResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/credential/get_mercado_pago_token": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener tokens de mercado pago",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credential"
+                ],
+                "summary": "CredentialGetMPToken",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.CredentialMPTokenResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/credential/set_arca_token": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Actualizar credenciales de ARCA",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credential"
+                ],
+                "summary": "CredentialSetArca",
+                "parameters": [
+                    {
+                        "description": "token de mercado pago",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.CredentialArcaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/credential/set_mercado_pago_token": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Actualizar token de mercado pago",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credential"
+                ],
+                "summary": "CredentialSetMPToken",
+                "parameters": [
+                    {
+                        "description": "token de mercado pago",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.CredentialMPTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/deposit/get/{id}": {
             "get": {
                 "security": [
@@ -1849,6 +2007,197 @@
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/ecommerce/get/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener una compra electrónica por ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Ecommerce"
+                ],
+                "summary": "EcommerceGetByID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.EcommerceResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/ecommerce/get_all": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener todas las compras electrónicas",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Ecommerce"
+                ],
+                "summary": "EcommerceGetAll",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "pagina",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "limite",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "estado",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schemas.EcommerceResponseDTO"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/ecommerce/get_by_reference/{reference}": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener una compra electrónica por referencia",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Ecommerce"
+                ],
+                "summary": "EcommerceGetByReference",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Referencia",
+                        "name": "reference",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.EcommerceResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/ecommerce/update_status": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Actualizar estado de una compra electrónica",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Ecommerce"
+                ],
+                "summary": "EcommerceUpdateStatus",
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/schemas.Response"
                         }
@@ -6993,6 +7342,46 @@
                 }
             }
         },
+        "/api/v1/tenant/get_settings": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Obtener la configuración de un tenant",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tenant"
+                ],
+                "summary": "TenantGetSettings",
+                "responses": {
+                    "200": {
+                        "description": "actualizacion con éxito",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.TenantSettingsResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/tenant/update_expiration": {
             "put": {
                 "security": [
@@ -7716,6 +8105,114 @@
                 }
             }
         },
+        "schemas.CredentialArcaRequest": {
+            "type": "object",
+            "required": [
+                "address",
+                "arca_certificate",
+                "arca_key",
+                "business_name",
+                "cuit",
+                "gross_income",
+                "responsibility_front_iva",
+                "social_reason",
+                "start_activities"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "arca_certificate": {
+                    "type": "string"
+                },
+                "arca_key": {
+                    "type": "string"
+                },
+                "business_name": {
+                    "type": "string"
+                },
+                "cuit": {
+                    "type": "string"
+                },
+                "gross_income": {
+                    "type": "string"
+                },
+                "responsibility_front_iva": {
+                    "type": "string"
+                },
+                "social_reason": {
+                    "type": "string"
+                },
+                "start_activities": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.CredentialArcaResponse": {
+            "type": "object",
+            "properties": {
+                "arca_certificate": {
+                    "type": "string",
+                    "example": "key.pem"
+                },
+                "arca_certificate_test": {
+                    "type": "string",
+                    "example": "key.pem"
+                },
+                "arca_key": {
+                    "type": "string",
+                    "example": "key.pem"
+                },
+                "arca_key_test": {
+                    "type": "string",
+                    "example": "key.pem"
+                },
+                "cuit": {
+                    "type": "string",
+                    "example": "20-12345678-9"
+                },
+                "responsibility_front_iva": {
+                    "type": "string",
+                    "example": "Responsibility Front IVA"
+                },
+                "social_reason": {
+                    "type": "string",
+                    "example": "My Company"
+                }
+            }
+        },
+        "schemas.CredentialMPTokenRequest": {
+            "type": "object",
+            "required": [
+                "access_token",
+                "access_token_test"
+            ],
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "access_token_test": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.CredentialMPTokenResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string",
+                    "example": "token_1234567890"
+                },
+                "access_token_test": {
+                    "type": "string",
+                    "example": "token_1234567890"
+                },
+                "token_email": {
+                    "type": "string",
+                    "example": "token_1234567890"
+                }
+            }
+        },
         "schemas.DateRangeRequest": {
             "type": "object",
             "required": [
@@ -7792,6 +8289,120 @@
                     "type": "number",
                     "minimum": 0,
                     "example": 10
+                }
+            }
+        },
+        "schemas.EcommerceItemResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "discount": {
+                    "type": "number"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "price_cost": {
+                    "type": "number"
+                },
+                "product": {
+                    "$ref": "#/definitions/schemas.ProductSimpleResponseDTO"
+                },
+                "subtotal": {
+                    "type": "number"
+                },
+                "total": {
+                    "type": "number"
+                },
+                "type_discount": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.EcommerceResponse": {
+            "type": "object",
+            "properties": {
+                "date_approved": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "delivery_id": {
+                    "type": "string"
+                },
+                "delivery_status": {
+                    "type": "string"
+                },
+                "external_reference": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.EcommerceItemResponse"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "net_received_amount": {
+                    "type": "number"
+                },
+                "operation_type": {
+                    "type": "string"
+                },
+                "pay_method": {
+                    "type": "string"
+                },
+                "payer_email": {
+                    "type": "string"
+                },
+                "payer_first_name": {
+                    "type": "string"
+                },
+                "payer_last_name": {
+                    "type": "string"
+                },
+                "payment_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "number"
+                },
+                "transaction_amount": {
+                    "type": "number"
+                }
+            }
+        },
+        "schemas.EcommerceResponseDTO": {
+            "type": "object",
+            "properties": {
+                "date_created": {
+                    "type": "string"
+                },
+                "external_reference": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "payer_email": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "number"
                 }
             }
         },
@@ -8980,6 +9591,9 @@
         "schemas.ModuleResponseDTO": {
             "type": "object",
             "properties": {
+                "accept_terms": {
+                    "type": "boolean"
+                },
                 "amount_images_per_product": {
                     "type": "integer"
                 },
@@ -10184,6 +10798,39 @@
                 }
             }
         },
+        "schemas.TenantSettingsResponse": {
+            "type": "object",
+            "properties": {
+                "front_page": {
+                    "type": "string",
+                    "example": "front_page_uuid"
+                },
+                "logo": {
+                    "type": "string",
+                    "example": "logo_uuid"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "555-5555"
+                },
+                "primary_color": {
+                    "type": "string",
+                    "example": "#FF0000"
+                },
+                "secondary_color": {
+                    "type": "string",
+                    "example": "#FF0000"
+                },
+                "slogan": {
+                    "type": "string",
+                    "example": "Mi tienda"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Mi tienda"
+                }
+            }
+        },
         "schemas.TenantUpdateExpiration": {
             "type": "object",
             "required": [
@@ -10203,6 +10850,10 @@
         "schemas.TenantUpdateSettings": {
             "type": "object",
             "properties": {
+                "phone": {
+                    "type": "string",
+                    "example": "+54 11 1234-5678"
+                },
                 "primary_color": {
                     "type": "string",
                     "example": "#FF0000"

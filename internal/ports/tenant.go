@@ -17,6 +17,7 @@ type TenantRepository interface {
 	TenantUpdate(adminID int64, userID int64, tenant *schemas.TenantUpdate) (err error)
 	TenantUpdateExpiration(adminID int64, tenantUpdateExpiration *schemas.TenantUpdateExpiration) (err error)
 	TenantUpdateTerms(tenantID int64, tenantUpdateTerms *schemas.TenantUpdateTerms) (err error)
+	TenantGetSettings(tenantID int64) (setting *schemas.TenantSettingsResponse, err error)
 	TenantUpdateSettings(tenantID int64, tenantUpdateSettings *schemas.TenantUpdateSettings) (err error)
 }
 
@@ -31,5 +32,6 @@ type TenantService interface {
 	TenantUpdate(adminID int64, userID int64, tenant *schemas.TenantUpdate) (err error)
 	TenantUpdateExpiration(adminID int64, tenantUpdateExpiration *schemas.TenantUpdateExpiration) (err error)
 	TenantUpdateTerms(tenantID int64, tenantUpdateTerms *schemas.TenantUpdateTerms) (err error)
+	TenantGetSettings(tenantID int64) (setting *schemas.TenantSettingsResponse, err error)
 	TenantUpdateSettings(tenantID int64, tenantUpdateSettings *schemas.TenantUpdateSettings) (err error)
 }

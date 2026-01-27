@@ -29,19 +29,25 @@ func TenantRoutes(app *fiber.App, controllers *controllers.TenantController) {
 		controllers.TenantUpdateExpiration,
 	)
 
-	tenant.Put("update_temrs",
+	tenant.Put("/update_temrs",
 		middleware.AuthMiddleware(),
 		middleware.AdminTenantMiddleware(),
 		controllers.TenantUpdateAcceptedTerms,
 	)
 
-	tenant.Put("update_settings",
+	tenant.Get("/get_settings",
+		middleware.AuthMiddleware(),
+		middleware.AdminTenantMiddleware(),
+		controllers.TenantGetSettings,
+	)
+
+	tenant.Put("/update_settings",
 		middleware.AuthMiddleware(),
 		middleware.AdminTenantMiddleware(),
 		controllers.TenantUpdateSettings,
 	)
 
-	tenant.Post("generate_token_to_image_setting",
+	tenant.Post("/generate_token_to_image_setting",
 		middleware.AuthMiddleware(),
 		middleware.AdminTenantMiddleware(),
 		middleware.CurrentPlan(),

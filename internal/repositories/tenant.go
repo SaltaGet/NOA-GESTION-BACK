@@ -561,7 +561,7 @@ func (r *MainRepository) TenantUpdateExpiration(adminID int64, tenantUpdateExpir
 	tenantSave = tenantExist
 	tenantExist.Expiration = &exp
 
-	if err := r.DB.Save(&tenantSave).Error; err != nil {
+	if err := r.DB.Save(&tenantExist).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return schemas.ErrorResponse(404, "Tenant not found", err)
 		}
@@ -590,25 +590,48 @@ func (r *MainRepository) TenantUpdateTerms(tenantID int64, tenantUpdateTerms *sc
 	return nil
 }
 
+func (r *MainRepository) TenantGetSettings(tenantID int64) (*schemas.TenantSettingsResponse, error) {
+	var settings models.SettingTenant
+	if err := r.DB.Where("tenant_id = ?", tenantID).First(&settings).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, schemas.ErrorResponse(404, "Tenant not found", err)
+		}
+		return nil, schemas.ErrorResponse(500, "Error interno retrieving tenant", err)
+	}
+
+	response := schemas.TenantSettingsResponse{
+		Logo:           settings.Logo,
+		FrontPage:      settings.FrontPage,
+		Title:          settings.Title,
+		Slogan:         settings.Slogan,
+		PrimaryColor:   settings.PrimaryColor,
+		SecondaryColor: settings.SecondaryColor,
+		Phone:          settings.Phone,
+	}
+
+	return &response, nil
+}
+
 func (r *MainRepository) TenantUpdateSettings(tenantID int64, tenantUpdateSettings *schemas.TenantUpdateSettings) error {
-  // 1. Mapeamos al modelo real de la base de datos
-  settings := models.SettingTenant{
-    TenantID:       tenantID,
-    Title:          tenantUpdateSettings.Title,
-    Slogan:         tenantUpdateSettings.Slogan,
-    PrimaryColor:   tenantUpdateSettings.PrimaryColor,
-    SecondaryColor: tenantUpdateSettings.SecondaryColor,
-  }
+	// 1. Mapeamos al modelo real de la base de datos
+	settings := models.SettingTenant{
+		TenantID:       tenantID,
+		Title:          tenantUpdateSettings.Title,
+		Slogan:         tenantUpdateSettings.Slogan,
+		PrimaryColor:   tenantUpdateSettings.PrimaryColor,
+		SecondaryColor: tenantUpdateSettings.SecondaryColor,
+		Phone: tenantUpdateSettings.Phone,
+	}
 
-  // 2. Usamos Clauses para definir qué pasa si hay un conflicto en el tenant_id
-  err := r.DB.Clauses(clause.OnConflict{
-    Columns:   []clause.Column{{Name: "tenant_id"}},
-    DoUpdates: clause.AssignmentColumns([]string{"title", "slogan", "primary_color", "secondary_color", "updated_at"}),
-  }).Create(&settings).Error
+	// 2. Usamos Clauses para definir qué pasa si hay un conflicto en el tenant_id
+	err := r.DB.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "tenant_id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"title", "slogan", "primary_color", "secondary_color", "phone", "updated_at"}),
+	}).Create(&settings).Error
 
-  if err != nil {
-    return schemas.ErrorResponse(500, "Error al crear/actualizar configuraciones", err)
-  }
+	if err != nil {
+		return schemas.ErrorResponse(500, "Error al crear/actualizar configuraciones", err)
+	}
 
-  return nil
+	return nil
 }

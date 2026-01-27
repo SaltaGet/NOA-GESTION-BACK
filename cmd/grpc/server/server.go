@@ -17,3 +17,7 @@ type GrpcProductServer struct {
 type GrpcCategoryServer struct {
 	pb.UnimplementedCategoryServiceServer
 }
+
+type GrpcMPServer struct {
+	pb.UnimplementedMPServiceServer
+}

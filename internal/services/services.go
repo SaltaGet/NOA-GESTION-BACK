@@ -14,6 +14,11 @@ type AuthService struct {
 	ModuleRepository ports.ModuleRepository
 }
 
+type ArcaService struct {
+	ArcaRepository ports.ArcaRepository
+	PointSaleRepository ports.PointSaleRepository
+}
+
 type CashRegisterService struct {
 	CashRegisterRepository ports.CashRegisterRepository
 }
@@ -26,8 +31,16 @@ type ClientService struct {
 	ClientRepository ports.ClientRepository
 }
 
+type CredentialService struct {
+	CredentialRepository ports.CredentialRepository
+}
+
 type DepositService struct {
 	DepositRepository ports.DepositRepository
+}
+
+type EcommerceService struct {
+	EcommerceRepository ports.EcommerceRepository
 }
 
 type EmailService struct {

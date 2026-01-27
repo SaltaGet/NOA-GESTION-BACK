@@ -11,6 +11,7 @@ type SettingTenant struct {
 	Slogan         *string   `gorm:"type:text" json:"slogan"`
 	PrimaryColor   *string   `gorm:"type:varchar(255)" json:"primary_color"`
 	SecondaryColor *string   `gorm:"type:varchar(255)" json:"secondary_color"`
+	Phone          *string   `gorm:"type:varchar(255)" json:"phone"`
 	CreatedAt      time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt      time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }

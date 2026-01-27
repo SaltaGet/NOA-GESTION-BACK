@@ -1,0 +1,5 @@
+ALTER TABLE tenant_modules
+DROP COLUMN IF EXISTS accepted_terms;
+
+ALTER TABLE modules
+ADD COLUMN IF NOT EXISTS accepted_terms BOOLEAN DEFAULT FALSE;

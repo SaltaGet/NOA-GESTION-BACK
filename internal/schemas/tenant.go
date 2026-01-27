@@ -143,6 +143,7 @@ type TenantUpdateSettings struct {
 	Slogan         *string `json:"slogan,omitempty" example:"Mi tienda"`
 	PrimaryColor   *string `json:"primary_color,omitempty" example:"#FF0000"`
 	SecondaryColor *string `json:"secondary_color,omitempty" example:"#FF0000"`
+	Phone          *string `json:"phone,omitempty" example:"+54 11 1234-5678"`
 }
 
 func (t *TenantUpdateSettings) Validate() error {
@@ -168,4 +169,14 @@ type TenantUpdateSettingsWithTenant struct {
 	PrimaryColor   *string `json:"primary_color,omitempty" example:"#FF0000"`
 	SecondaryColor *string `json:"secondary_color,omitempty" example:"#FF0000"`
 	TenantID       int64   `json:"tenant_id" validate:"required"`
+}
+
+type TenantSettingsResponse struct {
+	Logo           *string `json:"logo" example:"logo_uuid"`
+	FrontPage      *string `json:"front_page" example:"front_page_uuid"`
+	Title          *string `json:"title" example:"Mi tienda"`
+	Slogan         *string `json:"slogan" example:"Mi tienda"`
+	PrimaryColor   *string `json:"primary_color" example:"#FF0000"`
+	SecondaryColor *string `json:"secondary_color" example:"#FF0000"`
+	Phone          *string `json:"phone" example:"555-5555"`
 }

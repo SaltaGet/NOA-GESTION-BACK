@@ -9,32 +9,34 @@ import (
 )
 
 type TenantContainer struct {
-	DB       *gorm.DB
+	DB          *gorm.DB
 	Controllers struct {
-		CashRegisterController *controllers.CashRegisterController
-		CategoryController     *controllers.CategoryController
-		ClientController       *controllers.ClientController
-		DepositController      *controllers.DepositController
-		ExpenseBuyController   *controllers.ExpenseBuyController
-		ExpenseOtherController *controllers.ExpenseOtherController
-		IncomeSaleController   *controllers.IncomeSaleController
-		IncomeOtherController  *controllers.IncomeOtherController
-		MemberController       *controllers.MemberController
+		CashRegisterController  *controllers.CashRegisterController
+		CategoryController      *controllers.CategoryController
+		ClientController        *controllers.ClientController
+		DepositController       *controllers.DepositController
+		EcommerceController     *controllers.EcommerceController
+		ExpenseBuyController    *controllers.ExpenseBuyController
+		ExpenseOtherController  *controllers.ExpenseOtherController
+		IncomeSaleController    *controllers.IncomeSaleController
+		IncomeOtherController   *controllers.IncomeOtherController
+		MemberController        *controllers.MemberController
 		MovementStockController *controllers.MovementStockController
-		PermissionController   *controllers.PermissionController
-		PointSaleController    *controllers.PointSaleController
-		ProductController      *controllers.ProductController
-		ReportController       *controllers.ReportController
-		RoleController         *controllers.RoleController
-		StockController        *controllers.StockController
-		SupplierController     *controllers.SupplierController
-		TypeMovementController *controllers.TypeMovementController
+		PermissionController    *controllers.PermissionController
+		PointSaleController     *controllers.PointSaleController
+		ProductController       *controllers.ProductController
+		ReportController        *controllers.ReportController
+		RoleController          *controllers.RoleController
+		StockController         *controllers.StockController
+		SupplierController      *controllers.SupplierController
+		TypeMovementController  *controllers.TypeMovementController
 	}
 	Services struct {
 		CashRegister  *services.CashRegisterService
 		Category      *services.CategoryService
 		Client        *services.ClientService
 		Deposit       *services.DepositService
+		Ecommerce     *services.EcommerceService
 		ExpenseBuy    *services.ExpenseBuyService
 		ExpenseOther  *services.ExpenseOtherService
 		IncomeSale    *services.IncomeSaleService
@@ -55,6 +57,7 @@ type TenantContainer struct {
 		Category      *repositories.CategoryRepository
 		Client        *repositories.ClientRepository
 		Deposit       *repositories.DepositRepository
+		Ecommerce     *repositories.EcommerceRepository
 		Employee      *repositories.EmployeeRepository
 		ExpenseBuy    *repositories.ExpenseBuyRepository
 		ExpenseOther  *repositories.ExpenseOtherRepository
@@ -82,6 +85,7 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 	c.Repositories.Category = &repositories.CategoryRepository{DB: db}
 	c.Repositories.Client = &repositories.ClientRepository{DB: db}
 	c.Repositories.Deposit = &repositories.DepositRepository{DB: db}
+	c.Repositories.Ecommerce = &repositories.EcommerceRepository{DB: db}
 	c.Repositories.Employee = &repositories.EmployeeRepository{DB: db}
 	c.Repositories.ExpenseBuy = &repositories.ExpenseBuyRepository{DB: db}
 	c.Repositories.ExpenseOther = &repositories.ExpenseOtherRepository{DB: db}
@@ -112,6 +116,9 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 	c.Services.Deposit = &services.DepositService{
 		DepositRepository: c.Repositories.Deposit,
 	}
+	c.Services.Ecommerce = &services.EcommerceService{
+		EcommerceRepository: c.Repositories.Ecommerce,
+	}
 	c.Services.ExpenseBuy = &services.ExpenseBuyService{
 		ExpenseBuyRepository: c.Repositories.ExpenseBuy,
 	}
@@ -129,7 +136,7 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 	}
 	c.Services.MovementStock = &services.MovementStockService{
 		MovementStockRepository: c.Repositories.MovementStock,
-		NotifyService:            nil,
+		NotifyService:           nil,
 	}
 	c.Services.Permission = &services.PermissionService{
 		PermissionRepository: c.Repositories.Permission,
@@ -168,6 +175,9 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 	}
 	c.Controllers.DepositController = &controllers.DepositController{
 		DepositService: c.Services.Deposit,
+	}
+	c.Controllers.EcommerceController = &controllers.EcommerceController{
+		EcommerceService: c.Services.Ecommerce,
 	}
 	c.Controllers.ExpenseBuyController = &controllers.ExpenseBuyController{
 		ExpenseBuyService: c.Services.ExpenseBuy,
@@ -214,5 +224,3 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 
 	return c
 }
-
-

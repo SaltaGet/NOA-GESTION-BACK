@@ -1,6 +1,7 @@
 package grpc_repo
 
 import (
+	"context"
 	"errors"
 	"slices"
 	"strings"
@@ -34,10 +35,9 @@ func (r *GrpcProductRepository) ProductGetByCode(code string) (*models.Product, 
 	err := r.DB.Preload("StockDeposit").
 		Preload("Category").
 		Where("code = ? AND is_visible = ?", code, true).First(&product).Error
-
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("producto no encontrado")
+			return nil, status.Error(codes.NotFound, "producto no encontrado")
 		}
 		return nil, err
 	}
@@ -46,26 +46,19 @@ func (r *GrpcProductRepository) ProductGetByCode(code string) (*models.Product, 
 }
 
 // ProductList obtiene productos con paginación, filtros y ordenamiento
-func (r *GrpcProductRepository) ProductList(
-	page, pageSize int32,
-	categoryID *int32,
-	search *string,
-	sortBy int32,
-) ([]*models.Product, int64, error) {
+func (r *GrpcProductRepository) ProductList(req *pb.ListProductsRequest) ([]*models.Product, int64, error) {
 	var products []*models.Product
 	var total int64
 
 	query := r.DB.Preload("StockDeposit").Preload("Category").Model(&models.Product{})
 
-	// Filtro por categoría
-	// if categoryID != nil {
-	// 	query = query.Where("category_id = ?", *categoryID)
-	// }
+	if req.CategoryId != nil {
+		query = query.Where("category_id = ?", *req.CategoryId)
+	}
 
-	// Búsqueda por nombre o código
-	if search != nil && *search != "" {
-		searchPattern := "%" + *search + "%"
-		query = query.Where("name ILIKE ? OR code ILIKE ?", searchPattern, searchPattern)
+	if req.Search != nil {
+		searchPattern := "%" + *req.Search + "%"
+		query = query.Where("name LIKE ?", searchPattern)
 	}
 
 	query = query.Where("is_visible = ?", true)
@@ -75,24 +68,26 @@ func (r *GrpcProductRepository) ProductList(
 		return nil, 0, err
 	}
 
-	// Ordenamiento
-	switch sortBy {
-	case 0: // PRICE_LOW_TO_HIGH
-		query = query.Order("price ASC")
-	case 1: // PRICE_HIGH_TO_LOW
-		query = query.Order("price DESC")
-	case 2: // NAME_A_Z
-		query = query.Order("name ASC")
-	case 3: // NAME_Z_A
-		query = query.Order("name DESC")
-	default:
-		query = query.Order("id DESC") // Por defecto
+	if req.Sort != nil {
+		sortValue := *req.Sort
+		switch sortValue {
+		case pb.ListProductsRequest_PRICE_LOW_TO_HIGH: // PRICE_LOW_TO_HIGH
+			query = query.Order("price ASC")
+		case pb.ListProductsRequest_PRICE_HIGH_TO_LOW: // PRICE_HIGH_TO_LOW
+			query = query.Order("price DESC")
+		case pb.ListProductsRequest_NAME_A_Z: // NAME_A_Z
+			query = query.Order("name ASC")
+		case pb.ListProductsRequest_NAME_Z_A: // NAME_Z_A
+			query = query.Order("name DESC")
+		default:
+			query = query.Order("id DESC") // Por defecto
+		}
 	}
 
 	// Paginación
-	offset := (page - 1) * pageSize
-	if err := query.Offset(int(offset)).Limit(int(pageSize)).Find(&products).Error; err != nil {
-		return nil, 0, err
+	offset := (req.Page - 1) * req.Limit
+	if err := query.Offset(int(offset)).Limit(int(req.Limit)).Find(&products).Error; err != nil {
+		return nil, 0, status.Error(codes.Internal, "error interno:"+err.Error())
 	}
 
 	return products, total, nil
@@ -144,4 +139,28 @@ func (r *GrpcProductRepository) SaveUrlImage(req *pb.SaveImageRequest) error {
 
 		return nil
 	})
+}
+
+func (r *GrpcProductRepository) ValidateProducts(ctx context.Context, req *pb.ProductValidateRequest) ([]models.Product, error) {
+	var products []models.Product
+
+	err := r.DB.Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
+		return db.Select("product_id", "stock")
+	}).Select("id", "price").
+		Where("id IN ?", req.ProductIds).
+		Find(&products).Error
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error al validar productos")
+	}
+
+	for i := range products {
+		if products[i].StockDeposit == nil {
+			products[i].StockDeposit = &models.Deposit{
+				ProductID: products[i].ID,
+				Stock:     0,
+			}
+		}
+	}
+
+	return products, nil
 }

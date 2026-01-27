@@ -435,9 +435,9 @@ func CloseAllTenantDBs() error {
 	return nil
 }
 
-// func GetMainDB() *gorm.DB {
-// 	return mainDB
-// }
+func GetMainDB() *gorm.DB {
+	return mainDB
+}
 
 func InitDBCache(maxEntries int) error {
 	var err error

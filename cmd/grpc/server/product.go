@@ -36,3 +36,8 @@ func (s *GrpcProductServer) GetProductByID(ctx context.Context, req *pb.ProductR
 	deps := grpc_cache.GetGrpcContainerFromContext(ctx)
 	return deps.Services.GrpcProductService.ProductGetByID(ctx, req)
 }
+
+func (s *GrpcProductServer) ValidateProducts(ctx context.Context, req *pb.ProductValidateRequest) (*pb.ProductValidateResponse, error) {
+	deps := grpc_cache.GetGrpcContainerFromContext(ctx)
+	return deps.Services.GrpcProductService.ValidateProducts(ctx, req)
+}

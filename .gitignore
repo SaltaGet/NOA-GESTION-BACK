@@ -12,3 +12,7 @@ backups/**
 databases/**
 
 server.md
+
+*.crt
+*.key
+*.env

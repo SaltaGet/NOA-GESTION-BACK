@@ -24,28 +24,7 @@ func (s *GrpcProductService) ProductGetByCode(ctx context.Context, req *pb.GetPr
 }
 
 func (s *GrpcProductService) ProductList(ctx context.Context, req *pb.ListProductsRequest) (*pb.ListProductsResponse, error) {
-	// Defaults
-	if req.Page <= 0 { req.Page = 1 }
-	if req.PageSize <= 0 { req.PageSize = 10 }
-
-    // Obtenemos categoryId de forma segura si es opcional
-    var catID int32 = 0
-    if req.CategoryId != nil {
-        catID = *req.CategoryId
-    }
-    
-    // Obtenemos search
-    search := ""
-    if req.Search != nil {
-        search = *req.Search
-    }
-    
-    sort := pb.ListProductsRequest_PRICE_LOW_TO_HIGH
-    if req.Sort != nil {
-        sort = *req.Sort
-    }
-
-	products, total, err := s.GrpcProductRepository.ProductList(int32(req.Page), int32(req.PageSize), &catID, &search, int32(sort))
+	products, total, err := s.GrpcProductRepository.ProductList(req)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Error listing products")
 	}
@@ -122,4 +101,52 @@ func mapModelToDTO(m *models.Product) *pb.ProductDTO {
 			Name: m.Category.Name,
 		},
 	}
+}
+
+// func (s *GrpcProductService) ValidateProducts(ctx context.Context, req *pb.ProductValidateRequest) (*pb.ProductValidateResponse, error) {
+// 	products, err := s.GrpcProductRepository.ValidateProducts(ctx, req)
+// 	if err != nil {
+// 		return nil, status.Error(codes.Internal, "Error validating products")
+// 	}
+
+// 	var dtos *pb.ProductValidateResponse
+// 	for _, p := range products {
+// 		var prod *pb.ProductValidate = &pb.ProductValidate{
+// 			Id:    p.ID,
+// 			Price: p.Price,
+// 			Stock: p.StockDeposit.Stock,
+// 		}
+// 		dtos.Products = append(dtos.Products, prod)
+// 	}
+
+// 	return dtos, nil
+// }
+func (s *GrpcProductService) ValidateProducts(ctx context.Context, req *pb.ProductValidateRequest) (*pb.ProductValidateResponse, error) {
+  products, err := s.GrpcProductRepository.ValidateProducts(ctx, req)
+  if err != nil {
+    return nil, status.Error(codes.Internal, "Error validating products")
+  }
+
+  // FIX 1: Initialize the struct pointer
+  res := &pb.ProductValidateResponse{
+    Products: make([]*pb.ProductValidate, 0, len(products)),
+  }
+
+  for _, p := range products {
+    // FIX 2: Defensive check for nested structs
+    var stock float64
+    if p.StockDeposit != nil {
+      stock = p.StockDeposit.Stock
+    } 
+
+    prod := &pb.ProductValidate{
+      Id:    p.ID,
+      Price: p.Price,
+      Stock: stock,
+    }
+    
+    res.Products = append(res.Products, prod)
+  }
+
+  return res, nil
 }

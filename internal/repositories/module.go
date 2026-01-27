@@ -157,7 +157,7 @@ func (r *MainRepository) ModuleGetByTenantID(tenantID int64) ([]schemas.ModuleRe
 		Find(&modules).Error
 
 	if err != nil {
-		return nil, err
+		return nil, schemas.ErrorResponse(500, "Error al procesar modulo", err)
 	}
 
 	modulesResponse := make([]schemas.ModuleResponseDTO, 0, len(modules))
@@ -171,6 +171,7 @@ func (r *MainRepository) ModuleGetByTenantID(tenantID int64) ([]schemas.ModuleRe
 			Name:                   module.Name,
 			AmountImagesPerProduct: module.AmountImagesPerProduct,
 			Expiration:             module.Tenants[0].Expiration,
+			AcceptTerms: module.Tenants[0].AcceptedTerms,
 		})
 	}
 
