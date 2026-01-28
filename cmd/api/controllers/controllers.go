@@ -10,6 +10,10 @@ type AuthController struct {
 	EmailService ports.EmailService
 }
 
+type ArcaController struct {
+	ArcaService ports.ArcaService
+}
+
 type CashRegisterController struct {
 	CashRegisterService ports.CashRegisterService
 }

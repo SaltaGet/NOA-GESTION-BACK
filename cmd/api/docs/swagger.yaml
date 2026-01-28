@@ -296,11 +296,22 @@ definitions:
         type: string
       business_name:
         type: string
+      concept:
+        enum:
+        - productos
+        - servicios
+        - productos_servicios
+        type: string
       cuit:
         type: string
       gross_income:
+        maxLength: 14
+        minLength: 7
         type: string
       responsibility_front_iva:
+        enum:
+        - responsable_inscripto
+        - monotributo
         type: string
       social_reason:
         type: string
@@ -311,6 +322,7 @@ definitions:
     - arca_certificate
     - arca_key
     - business_name
+    - concept
     - cuit
     - gross_income
     - responsibility_front_iva
@@ -319,26 +331,35 @@ definitions:
     type: object
   schemas.CredentialArcaResponse:
     properties:
-      arca_certificate:
-        example: key.pem
+      address:
+        example: Calle 123
         type: string
-      arca_certificate_test:
+      arca_certificate:
         example: key.pem
         type: string
       arca_key:
         example: key.pem
         type: string
-      arca_key_test:
-        example: key.pem
+      business_name:
+        example: My Company
+        type: string
+      concept:
+        example: productos
         type: string
       cuit:
         example: 20-12345678-9
+        type: string
+      gross_income:
+        example: "1000000"
         type: string
       responsibility_front_iva:
         example: Responsibility Front IVA
         type: string
       social_reason:
         example: My Company
+        type: string
+      start_activities:
+        example: "2022-01-01"
         type: string
     type: object
   schemas.CredentialMPTokenRequest:
@@ -747,6 +768,60 @@ definitions:
     - total
     - type_expense_id
     type: object
+  schemas.FacturaRequest:
+    properties:
+      condicion_iva:
+        enum:
+        - responsable_inscripto
+        - exento
+        - consumidor_final
+        - monotributo
+        type: string
+      domicilio:
+        example: Calle 123
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/schemas.ItemIVATotal'
+        type: array
+      nombre:
+        example: John Doe
+        type: string
+      numero_documento:
+        example: 12345678901
+        type: integer
+      razon_social:
+        example: Fantasy Company
+        type: string
+      tipo_comprobante:
+        description: PuntoVenta      int            `json:"punto_venta" validate:"required"`
+        enum:
+        - A
+        - B
+        - C
+        - NCA
+        - NCB
+        - NCC
+        example: A | B | C | NCA | NCB | NCC
+        type: string
+      tipo_documento:
+        enum:
+        - CUIT
+        - CUIL
+        - DNI
+        - SinIdentificar
+        example: CUIT | CUIL | DNI | SinIdentificar
+        type: string
+    required:
+    - condicion_iva
+    - domicilio
+    - items
+    - nombre
+    - numero_documento
+    - razon_social
+    - tipo_comprobante
+    - tipo_documento
+    type: object
   schemas.FeedbackCreate:
     properties:
       content:
@@ -1021,6 +1096,40 @@ definitions:
     - id
     - items
     - pay
+    type: object
+  schemas.ItemIVATotal:
+    properties:
+      base_imponible:
+        example: 100
+        minimum: 0
+        type: number
+      codigo_iva:
+        enum:
+        - IVA_0
+        - IVA_10_5
+        - IVA_21
+        - IVA_27
+        - IVA_5
+        - IVA_2_5
+        example: IVA_0 | IVA_10_5 | IVA_21 | IVA_27 | IVA_5 | IVA_2_5
+        type: string
+      importe:
+        example: 10
+        type: number
+      product:
+        example: Producto 1
+        type: string
+      product_id:
+        example: 1
+        type: integer
+      quantity:
+        example: 10
+        type: number
+    required:
+    - importe
+    - product
+    - product_id
+    - quantity
     type: object
   schemas.ItemIncomeSaleCreate:
     properties:
@@ -2303,6 +2412,28 @@ info:
   title: APP NOA Gestion
   version: "1.0"
 paths:
+  /api/v1/arca/emit_invoice:
+    post:
+      consumes:
+      - application/json
+      description: '### Emitir Factura'
+      parameters:
+      - description: datos de la factura
+        in: body
+        name: datos
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.FacturaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      summary: ArcaEmitInvoice
+      tags:
+      - Arca
   /api/v1/auth/current_plan:
     get:
       consumes:

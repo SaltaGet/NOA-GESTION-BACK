@@ -36,11 +36,11 @@ func (c *CredentialService) CredentialSetMPToken(tenantID int64, request *schema
 		return nil, schemas.ErrorResponse(resp.StatusCode, "error al leer respuesta", err)
 	}
 
-	var dataJson map[string]interface{}
-	if err := json.Unmarshal(body, &dataJson); err != nil {
-		return nil, schemas.ErrorResponse(500, "Error al leer respuesta", err)
-	}
-	fmt.Println(dataJson)
+	// var dataJson map[string]interface{}
+	// if err := json.Unmarshal(body, &dataJson); err != nil {
+	// 	return nil, schemas.ErrorResponse(500, "Error al leer respuesta", err)
+	// }
+	// fmt.Println(dataJson)
 
 	var data schemas.MPUserResponse
 	if err := json.Unmarshal(body, &data); err != nil {
@@ -60,9 +60,9 @@ func (c *CredentialService) CredentialSetMPToken(tenantID int64, request *schema
 		return nil, schemas.ErrorResponse(401, "el vendedor tiene una tasa de reclamos demasiado alta", fmt.Errorf("el vendedor tiene una tasa de reclamos demasiado alta (%.2f%%)", data.SellerReputation.Metrics.Claims.Rate*100))
 	}
 
-	if data.Status.Billing.Allow == false {
-		return nil, schemas.ErrorResponse(401, "la cuenta tiene restricciones de facturación", fmt.Errorf("la cuenta tiene restricciones de facturación"))
-	}
+	// if data.Status.Billing.Allow == false {
+	// 	return nil, schemas.ErrorResponse(401, "la cuenta tiene restricciones de facturación", fmt.Errorf("la cuenta tiene restricciones de facturación"))
+	// }
 
 	message := data.Recommendations() 
 

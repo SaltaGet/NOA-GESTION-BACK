@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog/log"
 )
 
@@ -23,14 +24,14 @@ import (
 type TipoComprobante int
 
 const (
-	FacturaA     TipoComprobante = 1
-	NotaDebitoA  TipoComprobante = 2
+	FacturaA TipoComprobante = 1
+	// NotaDebitoA  TipoComprobante = 2
 	NotaCreditoA TipoComprobante = 3
 	FacturaB     TipoComprobante = 6
-	NotaDebitoB  TipoComprobante = 7
+	// NotaDebitoB  TipoComprobante = 7
 	NotaCreditoB TipoComprobante = 8
 	FacturaC     TipoComprobante = 11
-	NotaDebitoC  TipoComprobante = 12
+	// NotaDebitoC  TipoComprobante = 12
 	NotaCreditoC TipoComprobante = 13
 	// FacturaCreditoA TipoComprobante = 201
 	// FacturaCreditoB TipoComprobante = 206
@@ -38,15 +39,15 @@ const (
 )
 
 var name_invoice_type = map[string]TipoComprobante{
-	"FacturaA":     FacturaA,
-	"FacturaB":     FacturaB,
-	"FacturaC":     FacturaC,
-	"NotaDebitoA":  NotaDebitoA,
-	"NotaDebitoB":  NotaDebitoB,
-	"NotaDebitoC":  NotaDebitoC,
-	"NotaCreditoA": NotaCreditoA,
-	"NotaCreditoB": NotaCreditoB,
-	"NotaCreditoC": NotaCreditoC,
+	"A": FacturaA,
+	"B": FacturaB,
+	"C": FacturaC,
+	// "NotaDebitoA":  NotaDebitoA,
+	// "NotaDebitoB":  NotaDebitoB,
+	// "NotaDebitoC":  NotaDebitoC,
+	"NCA": NotaCreditoA,
+	"NCB": NotaCreditoB,
+	"NCC": NotaCreditoC,
 }
 
 func GetCodeTipoComprobante(name string) (int, error) {
@@ -81,9 +82,9 @@ const (
 )
 
 var name_concept = map[string]TipoConcepto{
-	"Productos":           Productos,
-	"Servicios":           Servicios,
-	"ProductosYServicios": ProductosYServicios,
+	"productos":           Productos,
+	"servicios":           Servicios,
+	"productos_servicios": ProductosYServicios,
 }
 
 func GetCodeTipoConcepto(name string) (int, error) {
@@ -217,9 +218,9 @@ const (
 
 var name_condition = map[string]CondicionIVAReceptor{
 	"responsable_inscripto": IVAResponsableInscripto,
-	"exento":         IVASujetoExento,
-	"consumidor_final":         ConsumidorFinal,
-	"monotributista":  ResponsableMonotributo,
+	"exento":                IVASujetoExento,
+	"consumidor_final":      ConsumidorFinal,
+	"monotributo":           ResponsableMonotributo,
 	// "SujetoNoCategorizado":    SujetoNoCategorizado,
 	// "ProveedorExterior":       ProveedorExterior,
 	// "ClienteExterior":         ClienteExterior,
@@ -228,6 +229,7 @@ var name_condition = map[string]CondicionIVAReceptor{
 	// "IVANoAlcanzado":          IVANoAlcanzado,
 	// "MonotributoTrabajador":   MonotributoTrabajador,
 }
+
 func GetCodeConditionIVA(name string) (int, error) {
 	valor, ok := name_condition[name]
 	if !ok {
@@ -387,13 +389,31 @@ type WSFEClient struct {
 // ============================================
 
 type FacturaRequest struct {
-	TipoComprobante   int         `json:"tipo_comprobante"`
-	TipoDocumento     int         `json:"tipo_documento"`
-	NumeroDocumento   int64 		`json:"numero_documento"`
-	Domicilio         string      `json:"domicilio"`
-	CondicionIVA      string 			`json:"condicion_iva" validate:"required,oneof=responsable_inscripto exento consumidor_final monotributista"`
-	NombreRazonSocial string 		`json:"nombre_razon_social"`
-	Items         []ItemIVATotal `json:"items"`
+	// PuntoVenta      int            `json:"punto_venta" validate:"required"`
+	TipoComprobante string         `json:"tipo_comprobante" validate:"required,oneof=A B C NCA NCB NCC" example:"A | B | C | NCA | NCB | NCC"`
+	TipoDocumento   string            `json:"tipo_documento" validate:"required,oneof=CUIT CUIL DNI SinIdentificar" example:"CUIT | CUIL | DNI | SinIdentificar"`
+	NumeroDocumento int64          `json:"numero_documento" validate:"required,numeric" example:"12345678901"`
+	Domicilio       string         `json:"domicilio" validate:"required" example:"Calle 123"`
+	CondicionIVA    string         `json:"condicion_iva" validate:"required,oneof=responsable_inscripto exento consumidor_final monotributo"`
+	Nombre          string         `json:"nombre" validate:"required" example:"John Doe"`
+	RazonSocial     string         `json:"razon_social" validate:"required" example:"Fantasy Company"`
+	Items           []ItemIVATotal `json:"items" validate:"required,dive"`
+}
+
+func (f *FacturaRequest) Validate() error {
+	validate := validator.New()
+
+	err := validate.Struct(f)
+	if err == nil {
+		return nil
+	}
+
+	validationErr := err.(validator.ValidationErrors)[0]
+	field := validationErr.Field()
+	tag := validationErr.Tag()
+	param := validationErr.Param()
+
+	return ErrorResponse(422, fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param), err)
 }
 
 type Factura struct {
@@ -428,12 +448,12 @@ type ItemIVA struct {
 }
 
 type ItemIVATotal struct {
-	ProductID 	int64 `json:"product_id"`
-	Product string `json:"product"`
-	Quantity    float64 `json:"quantity"`
-	Codigo        string `json:"codigo_iva"`
-	BaseImponible float64 `json:"base_imponible"`
-	Importe       float64 `json:"importe_iva"`
+	ProductID     int64   `json:"product_id" validate:"required" example:"1"`
+	Product       string  `json:"product" validate:"required" example:"Producto 1"`
+	Quantity      float64 `json:"quantity" validate:"required,gt=0" example:"10"`
+	Codigo        string  `json:"codigo_iva" validate:"omitempty,oneof=IVA_0 IVA_10_5 IVA_21 IVA_27 IVA_5 IVA_2_5" example:"IVA_0 | IVA_10_5 | IVA_21 | IVA_27 | IVA_5 | IVA_2_5"`
+	BaseImponible float64 `json:"base_imponible" validate:"gte=0" example:"100.00"`
+	Importe       float64 `json:"importe" validate:"required,gt=0" example:"10.00"`
 }
 
 type ItemTributo struct {
@@ -587,83 +607,115 @@ func (w *WSAA) CreateTicketXML() ([]byte, error) {
 }
 
 func (w *WSAA) validateKeys() error {
-	keyData, err := os.ReadFile(w.Config.KeyFile)
-	if err != nil {
-		return fmt.Errorf("no se puede leer la clave privada: %v", err)
-	}
+    var keyData, certData []byte
+    var err error
 
-	certData, err := os.ReadFile(w.Config.CertFile)
-	if err != nil {
-		return fmt.Errorf("no se puede leer el certificado: %v", err)
-	}
+    // 1. Procesar Clave Privada
+    if strings.HasPrefix(w.Config.KeyFile, "-----BEGIN") {
+        // Es el contenido directo
+        keyData = []byte(w.Config.KeyFile)
+    } else {
+        // Es una ruta de archivo
+        keyData, err = os.ReadFile(w.Config.KeyFile)
+        if err != nil {
+            return fmt.Errorf("no se puede leer el archivo de clave privada: %v", err)
+        }
+    }
 
-	if !bytes.Contains(keyData, []byte("BEGIN")) {
-		return fmt.Errorf("la clave privada no está en formato PEM")
-	}
+    // 2. Procesar Certificado
+    if strings.HasPrefix(w.Config.CertFile, "-----BEGIN") {
+        // Es el contenido directo
+        certData = []byte(w.Config.CertFile)
+    } else {
+        // Es una ruta de archivo
+        certData, err = os.ReadFile(w.Config.CertFile)
+        if err != nil {
+            return fmt.Errorf("no se puede leer el archivo de certificado: %v", err)
+        }
+    }
 
-	if bytes.Contains(keyData, []byte("ENCRYPTED")) {
-		return fmt.Errorf("la clave privada está encriptada. Debe desencriptarla primero")
-	}
+    // 3. Validaciones de formato sobre los datos ya cargados
+    if !bytes.Contains(keyData, []byte("BEGIN")) {
+        return fmt.Errorf("la clave privada no está en formato PEM")
+    }
 
-	if !bytes.Contains(certData, []byte("BEGIN")) {
-		return fmt.Errorf("el certificado no está en formato PEM")
-	}
+    if bytes.Contains(keyData, []byte("ENCRYPTED")) {
+        return fmt.Errorf("la clave privada está encriptada. Debe desencriptarla primero")
+    }
 
-	return nil
+    if !bytes.Contains(certData, []byte("BEGIN")) {
+        return fmt.Errorf("el certificado no está en formato PEM")
+    }
+
+    return nil
 }
 
 func (w *WSAA) SignWithOpenSSL(data []byte) (string, error) {
-	// 1. Validaciones previas (sin cambios, son correctas)
-	if err := w.validateKeys(); err != nil {
-		return "", err
-	}
+  if err := w.validateKeys(); err != nil {
+    return "", err
+  }
 
-	// 2. Configurar el comando para usar STDIN y STDOUT
-	// Al usar "-" en -in y no poner -out, openssl usa los pipes de Go
-	cmd := exec.Command("openssl", "cms", "-sign",
-		"-in", "-", // Lee desde Stdin
-		"-signer", w.Config.CertFile,
-		"-inkey", w.Config.KeyFile,
-		"-outform", "DER",
-		"-nodetach",
-		"-binary",
-		"-md", "sha256",
-	)
+  // 1. Crear archivos temporales para el Certificado y la Clave
+  // Esto es necesario porque OpenSSL comando de consola NO acepta strings directos
+  tmpCert, err := os.CreateTemp("", "arca_cert_*.crt")
+  if err != nil {
+    return "", fmt.Errorf("error creando tmp cert: %v", err)
+  }
+  defer os.Remove(tmpCert.Name()) // Se borra al terminar la función
+  if _, err := tmpCert.WriteString(w.Config.CertFile); err != nil {
+    return "", err
+  }
+  tmpCert.Close()
 
-	// Inyectar los datos del XML directamente al proceso
-	cmd.Stdin = bytes.NewReader(data)
+  tmpKey, err := os.CreateTemp("", "arca_key_*.key")
+  if err != nil {
+    return "", fmt.Errorf("error creando tmp key: %v", err)
+  }
+  defer os.Remove(tmpKey.Name()) // Se borra al terminar la función
+  if _, err := tmpKey.WriteString(w.Config.KeyFile); err != nil {
+    return "", err
+  }
+  tmpKey.Close()
 
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+  // 2. Configurar el comando usando las RUTAS de los archivos temporales
+  cmd := exec.Command("openssl", "cms", "-sign",
+    "-in", "-", 
+    "-signer", tmpCert.Name(), // Pasamos la ruta del archivo temporal
+    "-inkey", tmpKey.Name(),   // Pasamos la ruta del archivo temporal
+    "-outform", "DER",
+    "-nodetach",
+    "-binary",
+    "-md", "sha256",
+  )
 
-	if err := cmd.Run(); err != nil {
-		log.Printf("⚠️ Fallo cms, reintentando con smime en memoria...")
+  cmd.Stdin = bytes.NewReader(data)
+  var stdout, stderr bytes.Buffer
+  cmd.Stdout = &stdout
+  cmd.Stderr = &stderr
 
-		// Fallback a smime
-		cmd = exec.Command("openssl", "smime", "-sign",
-			"-in", "-",
-			"-signer", w.Config.CertFile,
-			"-inkey", w.Config.KeyFile,
-			"-outform", "DER",
-			"-nodetach",
-			"-binary",
-		)
-		cmd.Stdin = bytes.NewReader(data)
-		stdout.Reset()
-		stderr.Reset()
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
+  if err := cmd.Run(); err != nil {
+    log.Printf("⚠️ Fallo cms, reintentando con smime...")
 
-		if err := cmd.Run(); err != nil {
-			return "", fmt.Errorf("error openssl: %v\nStderr: %s", err, stderr.String())
-		}
-	}
+    cmd = exec.Command("openssl", "smime", "-sign",
+      "-in", "-",
+      "-signer", tmpCert.Name(),
+      "-inkey", tmpKey.Name(),
+      "-outform", "DER",
+      "-nodetach",
+      "-binary",
+    )
+    cmd.Stdin = bytes.NewReader(data)
+    stdout.Reset()
+    stderr.Reset()
+    cmd.Stdout = &stdout
+    cmd.Stderr = &stderr
 
-	log.Info().Msgf("✅ CMS generado: %d bytes (en memoria)", stdout.Len())
+    if err := cmd.Run(); err != nil {
+      return "", fmt.Errorf("error openssl: %v\nStderr: %s", err, stderr.String())
+    }
+  }
 
-	// 3. Codificar directamente el buffer de salida
-	return base64.StdEncoding.EncodeToString(stdout.Bytes()), nil
+  return base64.StdEncoding.EncodeToString(stdout.Bytes()), nil
 }
 
 func (w *WSAA) ParseResponse(data []byte) (*CredentialsValidation, error) {
@@ -808,7 +860,7 @@ type FacturaElectronica struct {
 	// Datos del Comprobante
 	TipoComprobante int    `json:"tipo_comprobante"` // 1=A, 6=B, 11=C
 	PuntoVenta      int    `json:"punto_venta"`      //
-	Numero          int    `json:"numero"`           // Correlativo
+	Numero          int64  `json:"numero"`           // Correlativo
 	Fecha           string `json:"fecha"`            // YYYY-MM-DD
 	Concepto        int    `json:"concepto"`         // 1=Prod, 2=Serv, 3=Mixto
 
@@ -829,9 +881,11 @@ type FacturaElectronica struct {
 
 	// Totales y Desglose (Crítico para Factura A)
 	ImporteNeto   float64 `json:"importe_neto"`   // Base imponible
-	ImporteIVA    float64 `json:"importe_iva"`    // Total IVA
+	ImporteIVA    float64 `json:"importe_iva,omitempty"`    // Total IVA
 	ImporteExento float64 `json:"importe_exento"` // Para artículos que no pagan IVA
 	ImporteTotal  float64 `json:"importe_total"`  //
+
+	Items []ItemIVATotal `json:"items"`
 
 	// Datos de AFIP/ARCA
 	CAE            int64  `json:"cae"`             // Código de 14 dígitos

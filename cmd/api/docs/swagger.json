@@ -8,6 +8,40 @@
         "version": "1.0"
     },
     "paths": {
+        "/api/v1/arca/emit_invoice": {
+            "post": {
+                "description": "### Emitir Factura",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Arca"
+                ],
+                "summary": "ArcaEmitInvoice",
+                "parameters": [
+                    {
+                        "description": "datos de la factura",
+                        "name": "datos",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.FacturaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/current_plan": {
             "get": {
                 "security": [
@@ -8112,6 +8146,7 @@
                 "arca_certificate",
                 "arca_key",
                 "business_name",
+                "concept",
                 "cuit",
                 "gross_income",
                 "responsibility_front_iva",
@@ -8131,14 +8166,28 @@
                 "business_name": {
                     "type": "string"
                 },
+                "concept": {
+                    "type": "string",
+                    "enum": [
+                        "productos",
+                        "servicios",
+                        "productos_servicios"
+                    ]
+                },
                 "cuit": {
                     "type": "string"
                 },
                 "gross_income": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 14,
+                    "minLength": 7
                 },
                 "responsibility_front_iva": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "responsable_inscripto",
+                        "monotributo"
+                    ]
                 },
                 "social_reason": {
                     "type": "string"
@@ -8151,11 +8200,11 @@
         "schemas.CredentialArcaResponse": {
             "type": "object",
             "properties": {
-                "arca_certificate": {
+                "address": {
                     "type": "string",
-                    "example": "key.pem"
+                    "example": "Calle 123"
                 },
-                "arca_certificate_test": {
+                "arca_certificate": {
                     "type": "string",
                     "example": "key.pem"
                 },
@@ -8163,13 +8212,21 @@
                     "type": "string",
                     "example": "key.pem"
                 },
-                "arca_key_test": {
+                "business_name": {
                     "type": "string",
-                    "example": "key.pem"
+                    "example": "My Company"
+                },
+                "concept": {
+                    "type": "string",
+                    "example": "productos"
                 },
                 "cuit": {
                     "type": "string",
                     "example": "20-12345678-9"
+                },
+                "gross_income": {
+                    "type": "string",
+                    "example": "1000000"
                 },
                 "responsibility_front_iva": {
                     "type": "string",
@@ -8178,6 +8235,10 @@
                 "social_reason": {
                     "type": "string",
                     "example": "My Company"
+                },
+                "start_activities": {
+                    "type": "string",
+                    "example": "2022-01-01"
                 }
             }
         },
@@ -8779,6 +8840,75 @@
                 }
             }
         },
+        "schemas.FacturaRequest": {
+            "type": "object",
+            "required": [
+                "condicion_iva",
+                "domicilio",
+                "items",
+                "nombre",
+                "numero_documento",
+                "razon_social",
+                "tipo_comprobante",
+                "tipo_documento"
+            ],
+            "properties": {
+                "condicion_iva": {
+                    "type": "string",
+                    "enum": [
+                        "responsable_inscripto",
+                        "exento",
+                        "consumidor_final",
+                        "monotributo"
+                    ]
+                },
+                "domicilio": {
+                    "type": "string",
+                    "example": "Calle 123"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.ItemIVATotal"
+                    }
+                },
+                "nombre": {
+                    "type": "string",
+                    "example": "John Doe"
+                },
+                "numero_documento": {
+                    "type": "integer",
+                    "example": 12345678901
+                },
+                "razon_social": {
+                    "type": "string",
+                    "example": "Fantasy Company"
+                },
+                "tipo_comprobante": {
+                    "description": "PuntoVenta      int            `json:\"punto_venta\" validate:\"required\"`",
+                    "type": "string",
+                    "enum": [
+                        "A",
+                        "B",
+                        "C",
+                        "NCA",
+                        "NCB",
+                        "NCC"
+                    ],
+                    "example": "A | B | C | NCA | NCB | NCC"
+                },
+                "tipo_documento": {
+                    "type": "string",
+                    "enum": [
+                        "CUIT",
+                        "CUIL",
+                        "DNI",
+                        "SinIdentificar"
+                    ],
+                    "example": "CUIT | CUIL | DNI | SinIdentificar"
+                }
+            }
+        },
         "schemas.FeedbackCreate": {
             "type": "object",
             "required": [
@@ -9181,6 +9311,50 @@
                         "percent"
                     ],
                     "example": "amount percent"
+                }
+            }
+        },
+        "schemas.ItemIVATotal": {
+            "type": "object",
+            "required": [
+                "importe",
+                "product",
+                "product_id",
+                "quantity"
+            ],
+            "properties": {
+                "base_imponible": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 100
+                },
+                "codigo_iva": {
+                    "type": "string",
+                    "enum": [
+                        "IVA_0",
+                        "IVA_10_5",
+                        "IVA_21",
+                        "IVA_27",
+                        "IVA_5",
+                        "IVA_2_5"
+                    ],
+                    "example": "IVA_0 | IVA_10_5 | IVA_21 | IVA_27 | IVA_5 | IVA_2_5"
+                },
+                "importe": {
+                    "type": "number",
+                    "example": 10
+                },
+                "product": {
+                    "type": "string",
+                    "example": "Producto 1"
+                },
+                "product_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "quantity": {
+                    "type": "number",
+                    "example": 10
                 }
             }
         },

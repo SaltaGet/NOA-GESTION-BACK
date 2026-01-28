@@ -7,7 +7,7 @@ import (
 )
 
 func EcommerceRoutes(app *fiber.App) {
-	ecommerce := app.Group("/api/v1/ecommerce", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
+	ecommerce := app.Group("/api/v1/store", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
 	ecommerce.Get("/get_all",
 		// middleware.RolePermissionMiddleware("ECO04"),

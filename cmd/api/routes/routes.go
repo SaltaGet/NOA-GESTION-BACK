@@ -7,6 +7,7 @@ import (
 
 func SetupRoutes(app *fiber.App, appDependencies *dependencies.MainContainer) {
 	AuthRoutes(app, appDependencies.AuthController)
+	ArcaRoutes(app)
 	CashRegisterRoutes(app)
 	CategoryRoutes(app)
 	ClientRoutes(app)

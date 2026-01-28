@@ -17,12 +17,18 @@ import (
 func (r *ArcaRepository) GetCredentialsArca(tenantID int64) (*models.Credential, error) {
 	db := database.GetMainDB()
 	var credential models.Credential
-	err := db.Select("id", "social_reason", "business_name", "address", "responsibility_front_iva", "cuit", "gross_income", "start_activities", "arca_certificate", "arca_key", "token_arca", "sign_arca", "expire_token_arca").Where("tenant_id = ?", tenantID).First(&credential).Error
+	err := db.
+		Select("id", "social_reason", "business_name", "address", "responsibility_front_iva", "cuit", "gross_income", "start_activities", "arca_certificate", "arca_key", "token_arca", "sign_arca", "expire_token_arca", "concept").
+		Where("tenant_id = ?", tenantID).First(&credential).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, schemas.ErrorResponse(404, "Credenciales no encontradas", err)
 		}
 		return nil, schemas.ErrorResponse(500, "Error interno al obtener credenciales", err)
+	}
+
+	if credential.SocialReason == nil || credential.ResponsibilityFrontIVA == nil || credential.Cuit == nil || credential.ArcaCertificate == nil || credential.ArcaKey == nil {
+		return nil, schemas.ErrorResponse(422, "La entidad no se puede procesar por datos incompletos, revise y complete adecuadamente las credenciales", errors.New("La entidad no se puede procesar por datos incompletos."))
 	}
 
 	return &credential, nil

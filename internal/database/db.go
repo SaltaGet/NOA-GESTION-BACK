@@ -104,6 +104,8 @@ func ConnectDB(cfg *schemas.EmailConfig) (*gorm.DB, error) {
 		log.Fatal().Err(err).Msg("Error en migración de planes")
 	}
 
+	mainDB = db
+
 	return ensureAdmin(db, cfg)
 }
 

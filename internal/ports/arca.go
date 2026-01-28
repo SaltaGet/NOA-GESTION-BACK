@@ -15,5 +15,5 @@ type ArcaRepository interface {
 }
 
 type ArcaService interface {
-	EmitInvoice(factura *schemas.Factura) (*schemas.FECAEDetResponse, error)
+	EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID int64, req *schemas.FacturaRequest, isHomo bool) (*schemas.FacturaElectronica, error)
 }

@@ -5,18 +5,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"time"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	// "github.com/rs/zerolog/log"
 )
 
 func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID int64, req *schemas.FacturaRequest, isHomo bool) (*schemas.FacturaElectronica, error) {
+	isHomo = true
+	
 	credentials, err := s.ArcaRepository.GetCredentialsArca(user.TenantID)
 	if err != nil {
 		return nil, err
 	}
+
+	emisorResponsabilidad := *credentials.ResponsibilityFrontIVA
 
 	cuit, err := strconv.ParseInt(*credentials.Cuit, 10, 64)
 	if err != nil {
@@ -30,17 +34,25 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 		CUIT:         cuit,
 		Service:      "wsfe",
 	})
+	if err != nil {
+		return nil, schemas.ErrorResponse(500, "Error interno al crear cliente WSAA", err)
+	}
+
+	invalid := credentials.TokenArca == nil || credentials.SignArca == nil || credentials.ExpireTokenArca == nil
+	if invalid {
+		vacio := ""
+		old := time.Now().Add(-24 * time.Hour)
+		credentials.TokenArca = &vacio
+		credentials.SignArca = &vacio
+		credentials.ExpireTokenArca = &old
+	}
 
 	cred, err := schemas.LoadCredentials(*credentials.TokenArca, *credentials.SignArca, *credentials.Cuit, *credentials.ExpireTokenArca)
 	if err != nil {
 		return nil, schemas.ErrorResponse(500, "Error interno al cargar credenciales", err)
 	}
 
-	if time.Now().After(cred.Expiration) {
-
-		if err != nil {
-			return nil, schemas.ErrorResponse(500, "Error interno al crear cliente WSAA", err)
-		}
+	if time.Now().Add(5 * time.Minute).After(cred.Expiration) {
 
 		ticketXML, err := wsaa.CreateTicketXML()
 		if err != nil {
@@ -80,62 +92,87 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 	var wsfe *schemas.WSFEClient
 	wsfe = schemas.NewWSFEClient(cred.Token, cred.Sign, cuit, isHomo)
 
+	concept, err := schemas.GetCodeTipoConcepto(*credentials.Concept)
+	if err != nil {
+		return nil, schemas.ErrorResponse(400, "código de concepto inválido", errors.New("código de concepto inválido"))
+	}
+	fecha := time.Now().Format("20060102")
+
+	alicuotas := []schemas.ItemIVA{}
+	totalNeto := 0.0
+	totalIVA := 0.0
+	totalFinal := 0.0
+	if emisorResponsabilidad == "responsable_inscripto" {
+		for _, alicuota := range req.Items {
+			code, err := schemas.GetCodeAlicuotaIVA(alicuota.Codigo)
+			if err != nil {
+				return nil, schemas.ErrorResponse(400, "código de alicuta inválido", errors.New("código de alicuta inválido"))
+			}
+			alicuotas = append(alicuotas, schemas.ItemIVA{
+				Codigo:        code,
+				BaseImponible: alicuota.BaseImponible,
+				Importe:       alicuota.Importe,
+			})
+
+			totalNeto += alicuota.BaseImponible
+			totalIVA += alicuota.Importe
+		}
+		totalFinal = totalNeto + totalIVA
+	} else if emisorResponsabilidad == "monotributo" {
+		for _, alicuota := range req.Items {
+			totalNeto += alicuota.Importe
+		}
+		totalFinal = totalNeto + totalIVA
+	}
+
+	totalFinal = math.Round(totalFinal*100) / 100
+	totalNeto = math.Round(totalNeto*100) / 100
+	totalIVA = math.Round(totalIVA*100) / 100
+
+	tipoDoc, err := schemas.GetCodeTipoDocumento(req.TipoDocumento)
+	if err != nil {
+		return nil, schemas.ErrorResponse(400, "código de tipo de documento inválido", errors.New("código de tipo de documento inválido"))
+	}
+
+	condition, err := schemas.GetCodeConditionIVA(req.CondicionIVA)
+	if err != nil {
+		return nil, schemas.ErrorResponse(400, "código de condición fiscal inválido", errors.New("código de condición fiscal inválido"))
+	}
+
 	factura := &schemas.Factura{
-        PuntoVenta:       int(pointSaleID),
-        TipoDocumento:    req.TipoDocumento,
-        NumeroDocumento:  req.NumeroDocumento,
-        Concepto:         req.Concepto,
-        Fecha:            time.Now().Format("20060102"),
-        ImporteNeto:      req.ImporteNeto,
-        ImporteNoGravado: req.ImporteNoGravado,
-        ImporteExento:    req.ImporteExento,
-        ImporteIVA:       req.ImporteIVA,
-        ImporteTributos:  req.ImporteTributos,
-        ImporteTotal:     req.ImporteTotal,
-        Alicuotas:        req.Alicuotas,
-        Tributos:         req.Tributos,
-        MonedaId:         req.MonedaId,
-        MonedaCotiz:      req.MonedaCotiz,
-    }
+		PuntoVenta:      int(pointSaleID),
+		TipoDocumento:   tipoDoc,
+		NumeroDocumento: req.NumeroDocumento,
+		Concepto:        concept,
+		Fecha:           fecha,
+		ImporteNeto:     totalNeto,
+		CondicionIVA: condition,
+		ImporteIVA: totalIVA,
+		ImporteTotal: totalFinal,
+		Alicuotas:    alicuotas,
+		MonedaId:    "PES",
+		MonedaCotiz: 1,
+	}
 
-	// responsability := *credentials.ResponsibilityFrontIVA
-	// if responsability == "monotributo" {
-	// 	factura.TipoComprobante = 11 // Monotributo
-	// } else if responsability == "responsable_inscripto" {
-	// 	if factura.CondicionIVA == 5 {
-	// 		factura.TipoComprobante = 6 // Factura B
-	// 	} else {
-	// 		factura.TipoComprobante = 1 // Factura A
-	// 	}
-	// } else {
-	// 	return nil, schemas.ErrorResponse(400, "Responsabilidad frente al IVA no valida", errors.New("Responsabilidad frente al IVA no valida"))
-	// }
-	emisorResponsabilidad := *credentials.ResponsibilityFrontIVA // Debería venir de tu DB
-    
-    // Suponemos que req.CondicionIVA es la condición fiscal del RECEPTOR (Cliente)
-    // 1: RI, 4: Monotributista, 5: Consumidor Final, 6: Exento
-    switch emisorResponsabilidad {
-    case "monotributo":
-        // El Monotributista SIEMPRE emite Factura C
-        factura.TipoComprobante = 11 
-        // Limpieza de seguridad: El monotributista no debe enviar IVA
-        factura.ImporteIVA = 0
-        factura.Alicuotas = nil 
+	switch emisorResponsabilidad {
+	case "monotributo":
+		factura.TipoComprobante = 11
+		factura.ImporteIVA = 0
+		factura.Alicuotas = nil
 
-    case "responsable_inscripto":
-        if req.CondicionIVAReceptor == 1 || req.CondicionIVAReceptor == 4 {
-            // RI a RI o RI a Monotributista = Factura A
-            factura.TipoComprobante = 1
-        } else if req.CondicionIVAReceptor == 5 || req.CondicionIVAReceptor == 6 {
-            // RI a Consumidor Final o Exento = Factura B
-            factura.TipoComprobante = 6
-        } else {
-            return nil, schemas.ErrorResponse(400, "Condición de IVA del receptor no soportada", nil)
-        }
+	case "responsable_inscripto":
+		condition, _ := schemas.GetCodeConditionIVA(req.CondicionIVA)
+		if condition == 1 || condition == 4 {
+			factura.TipoComprobante = 1
+		} else if condition == 5 || condition == 6 {
+			factura.TipoComprobante = 6
+		} else {
+			return nil, schemas.ErrorResponse(400, "Condición de IVA del receptor no soportada", errors.New("Condición de IVA del receptor no soportada"))
+		}
 
-    default:
-        return nil, schemas.ErrorResponse(400, "Responsabilidad del emisor no válida", nil)
-    }
+	default:
+		return nil, schemas.ErrorResponse(400, "Responsabilidad del emisor no válida", errors.New("Responsabilidad del emisor no válida"))
+	}
 
 	lastInvoice, err := s.ArcaRepository.GetLastestInvoice(wsfe, int(pointSaleID), factura.TipoComprobante)
 	if err != nil {
@@ -150,7 +187,59 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 		return nil, err
 	}
 
-	return fecae, nil
+	cae, err := strconv.ParseInt(fecae.CAE, 10, 64)
+	urlQR := UrlQR(schemas.DatosQR{
+			Ver:        1,
+			Fecha:      time.Now().Format("2006-01-02"),
+			Cuit:       cuit,
+			PtoVta:     factura.PuntoVenta,
+			TipoCmp:    factura.TipoComprobante,
+			NroCmp:     int(factura.NumeroDesde),
+			Importe:    factura.ImporteTotal,
+			Moneda:     factura.MonedaId,
+			Ctz:        1,
+			TipoDocRec: factura.TipoDocumento,
+			NroDocRec:  factura.NumeroDocumento,
+			TipoCodAut: "E",
+			CodAut:     cae,
+		})
+	if urlQR == nil {
+		return nil, schemas.ErrorResponse(500, "Error al generar QR", errors.New("Error al generar QR"))
+	}
+
+	facturaResponse := &schemas.FacturaElectronica{
+		TipoComprobante: factura.TipoComprobante,
+		PuntoVenta:      factura.PuntoVenta,
+		Numero:          factura.NumeroDesde,
+		Fecha:           fecha,
+		Concepto:        concept,
+
+		EmisorCUIT:         cuit,
+		EmisorNombre:       *credentials.BusinessName,
+		RazonSocial:        *credentials.SocialReason,
+		IngresosBrutos:     *credentials.GrossIncome,
+		InicioActividades:  *credentials.StartActivities,
+		CondicionIVAEmisor: *credentials.ResponsibilityFrontIVA,
+		DomicilioEmisor:    *credentials.Address,
+
+		ReceptorCUIT:         req.NumeroDocumento,
+		ReceptorNombre:       req.Nombre,
+		CondicionIVAReceptor: req.CondicionIVA,
+		ReceptorDomicilio:    req.Domicilio,
+
+		ImporteNeto:   factura.ImporteNeto,
+		ImporteIVA:    factura.ImporteIVA,
+		ImporteExento: factura.ImporteExento,
+
+		Items: req.Items,
+
+		CAE:            cae,
+		CAEVencimiento: fecae.CAEFchVto,
+		ImporteTotal:   factura.ImporteTotal,
+		URL_QR: *urlQR,
+	}
+
+	return facturaResponse, nil
 }
 
 func UrlQR(data schemas.DatosQR) *string {
@@ -165,122 +254,5 @@ func UrlQR(data schemas.DatosQR) *string {
 	urlQR := "https://www.afip.gob.ar/fe/qr/?p=" + encodedData
 
 	return &urlQR
-	}
-	// data := DatosQR{
-	// 	Ver:        1,
-	// 	Fecha:      "2026-01-26",
-	// 	Cuit:       20233073572,
-	// 	PtoVta:     5,
-	// 	TipoCmp:    1,
-	// 	NroCmp:     147774,
-	// 	Importe:    4212.00,
-	// 	Moneda:     "PES",
-	// 	Ctz:        1,
-	// 	TipoDocRec: 80,
-	// 	NroDocRec:  30714150536,
-	// 	TipoCodAut: "E",
-	// 	CodAut:     74195192801456,
-	// }
+}
 
-	// // 2. Convertir a JSON
-	// jsonData, err := json.Marshal(data)
-	// if err != nil {
-	// 	fmt.Println("Error generando JSON:", err)
-	// 	return
-	// }
-
-	// // 3. Codificar en Base64
-	// encodedData := base64.StdEncoding.EncodeToString(jsonData)
-
-	// // 4. Armar la URL final
-	// urlQR := "https://www.afip.gob.ar/fe/qr/?p=" + encodedData
-
-	// fmt.Println("URL para el QR:")
-	// fmt.Println(urlQR)
-
-// 	factura := &schemas.Factura{
-// 		PuntoVenta:       1,
-// 		TipoComprobante:  6,
-// 		NumeroDesde:      5,
-// 		NumeroHasta:      5,
-// 		TipoDocumento:    99,
-// 		NumeroDocumento:  0,
-// 		CondicionIVA:     5, // Consumidor Final
-// 		Concepto:         1,
-// 		Fecha:            time.Now().Format("20060102"),
-// 		ImporteNeto:      1000.00,
-// 		ImporteNoGravado: 0.00,
-// 		ImporteExento:    0.00,
-// 		ImporteIVA:       210.00,
-// 		ImporteTributos:  0.00,
-// 		ImporteTotal:     1210.00,
-// 		Alicuotas: []schemas.ItemIVA{
-// 			{
-// 				Codigo:        5,
-// 				BaseImponible: 1000.00,
-// 				Importe:       210.00,
-// 			},
-// 		},
-// 		MonedaId:    "PES",
-// 		MonedaCotiz: 1,
-// 	}
-
-// 	fmt.Printf("📄 Factura B #%d-%08d\n", factura.PuntoVenta, factura.NumeroDesde)
-// 	fmt.Printf("   Cliente: Consumidor Final\n")
-// 	fmt.Printf("   Neto: $%.2f\n", factura.ImporteNeto)
-// 	fmt.Printf("   IVA 21%%: $%.2f\n", factura.ImporteIVA)
-// 	fmt.Printf("   Total: $%.2f\n\n", factura.ImporteTotal)
-
-// 	fmt.Println("PASO 3: Solicitando CAE a AFIP...")
-// 	fmt.Println(strings.Repeat("-", 60))
-
-// 	wsfe := NewWSFEClient(creds.Token, creds.Sign, config.CUIT, config.Homologacion)
-
-// 	resultado, err := wsfe.SolicitarCAE(factura)
-// 	if err != nil {
-// 		log.Fatalf("❌ Error: %v", err)
-// 	}
-
-// 	fmt.Println("\n" + strings.Repeat("=", 60))
-// 	fmt.Println("✅ FACTURA AUTORIZADA")
-// 	fmt.Println(strings.Repeat("=", 60))
-// 	fmt.Printf("\n🎫 CAE: %s\n", resultado.CAE)
-// 	fmt.Printf("📅 Vencimiento CAE: %s\n", resultado.CAEFchVto)
-// 	fmt.Printf("📋 Comprobante: %04d-%08d-%08d\n",
-// 		factura.PuntoVenta,
-// 		factura.TipoComprobante,
-// 		resultado.CbteDesde)
-// 	fmt.Printf("💰 Total: $%.2f\n", factura.ImporteTotal)
-
-// 	if len(resultado.Observaciones.Obs) > 0 {
-// 		fmt.Println("\n⚠️  Observaciones:")
-// 		for _, obs := range resultado.Observaciones.Obs {
-// 			fmt.Printf("   - [%d] %s\n", obs.Code, obs.Msg)
-// 		}
-// 	}
-
-// 	fmt.Println("\n" + strings.Repeat("=", 60))
-// 	fmt.Println("🎉 PROCESO COMPLETADO")
-// 	fmt.Println(strings.Repeat("=", 60))
-
-// 	fmt.Println("\n🔍 Consultando factura recién emitida...")
-// 	info, err := wsfe.ConsultarFactura(factura.TipoComprobante, factura.PuntoVenta, factura.NumeroDesde)
-// 	if err != nil {
-// 		log.Info().Msgf("❌ No se pudo consultar: %v", err)
-// 	} else {
-// 		res := info.Body.Response.Result.ResultGet
-// 		fmt.Printf("✅ Información recuperada:\n")
-// 		fmt.Printf("   CAE: %s\n", res.CodAut)
-// 		fmt.Printf("   Fecha: %s\n", res.CbteFch)
-// 		fmt.Printf("   Importe: $%.2f\n", res.ImpTotal)
-// 		fmt.Printf("   Resultado en AFIP: %s\n", res.Resultado)
-// 	}
-
-// 	fmt.Println("🔍 Consultando último número autorizado...")
-// 	ultimo, err := wsfe.GetUltimoComprobante(factura.PuntoVenta, factura.TipoComprobante)
-// 	if err != nil {
-// 		log.Fatalf("❌ Error consultando último número: %v", err)
-// 	}
-
-// 	fmt.Printf("✅ Último comprobante autorizado para PtoVta %d, Tipo %d: %d\n", factura.PuntoVenta, factura.TipoComprobante, ultimo)
-// }

@@ -22,7 +22,7 @@ func (r *MainRepository) CredentialGetMPToken(tenantID int64) (*schemas.Credenti
 	response := &schemas.CredentialMPTokenResponse{
 		AccessToken:     credential.AccessTokenMP,
 		AccessTokenTest: credential.AccessTokenTestMP,
-		TokenEmail: credential.TokenEmail,
+		TokenEmail:      credential.TokenEmail,
 	}
 
 	return response, nil
@@ -51,7 +51,7 @@ func (r *MainRepository) CredentialSetMPToken(tenantID int64, request *schemas.C
 
 func (r *MainRepository) CredentialGetArca(tenantID int64) (*schemas.CredentialArcaResponse, error) {
 	var credential models.Credential
-	if err := r.DB.Select("social_reason", "responsibility_front_iva", "cuit", "arca_certificate", "arca_key", "arca_certificate_test", "arca_key_test").
+	if err := r.DB.Select("social_reason", "business_name", "address", "responsibility_front_iva", "cuit", "gross_income", "start_activities", "arca_certificate", "arca_key").
 		Where("tenant_id = ?", tenantID).First(&credential).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, schemas.ErrorResponse(404, "Credenciales no encontradas", err)
@@ -61,8 +61,13 @@ func (r *MainRepository) CredentialGetArca(tenantID int64) (*schemas.CredentialA
 
 	response := &schemas.CredentialArcaResponse{
 		SocialReason:           credential.SocialReason,
+		BusinessName:           credential.BusinessName,
+		Address:                credential.Address,
 		ResponsibilityFrontIVA: credential.ResponsibilityFrontIVA,
+		GrossIncome:            credential.GrossIncome,
+		StartActivities:        credential.StartActivities,
 		Cuit:                   credential.Cuit,
+		Concept:                credential.Concept,
 		ArcaCertificate:        credential.ArcaCertificate,
 		ArcaKey:                credential.ArcaKey,
 	}
@@ -74,15 +79,20 @@ func (r *MainRepository) CredentialSetArca(tenantID int64, request *schemas.Cred
 	credential := models.Credential{
 		TenantID:               tenantID,
 		SocialReason:           &request.SocialReason,
+		BusinessName:           &request.BusinessName,
+		Address:                &request.Address,
 		ResponsibilityFrontIVA: &request.ResponsibilityFrontIVA,
+		GrossIncome:            &request.GrossIncome,
+		StartActivities:        &request.StartActivities,
 		Cuit:                   &request.Cuit,
+		Concept:                &request.Concept,
 		ArcaCertificate:        &request.ArcaCertificate,
 		ArcaKey:                &request.ArcaKey,
 	}
 
 	err := r.DB.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "tenant_id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"social_reason", "responsibility_front_iva", "cuit", "arca_certificate", "arca_key"}),
+		DoUpdates: clause.AssignmentColumns([]string{"social_reason", "business_name", "address", "responsibility_front_iva", "gross_income", "start_activities", "cuit", "concept", "arca_certificate", "arca_key"}),
 	}).Create(&credential).Error
 
 	if err != nil {

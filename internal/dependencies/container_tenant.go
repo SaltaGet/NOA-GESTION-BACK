@@ -11,6 +11,7 @@ import (
 type TenantContainer struct {
 	DB          *gorm.DB
 	Controllers struct {
+		ArcaController          *controllers.ArcaController
 		CashRegisterController  *controllers.CashRegisterController
 		CategoryController      *controllers.CategoryController
 		ClientController        *controllers.ClientController
@@ -32,6 +33,7 @@ type TenantContainer struct {
 		TypeMovementController  *controllers.TypeMovementController
 	}
 	Services struct {
+		Arca          *services.ArcaService
 		CashRegister  *services.CashRegisterService
 		Category      *services.CategoryService
 		Client        *services.ClientService
@@ -53,6 +55,7 @@ type TenantContainer struct {
 		TypeMovement  *services.TypeMovementService
 	}
 	Repositories struct {
+		Arca          *repositories.ArcaRepository
 		CashRegister  *repositories.CashRegisterRepository
 		Category      *repositories.CategoryRepository
 		Client        *repositories.ClientRepository
@@ -81,6 +84,7 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 	c := &TenantContainer{DB: db}
 
 	// Inicializar repositorios
+	c.Repositories.Arca = &repositories.ArcaRepository{DB: db}
 	c.Repositories.CashRegister = &repositories.CashRegisterRepository{DB: db}
 	c.Repositories.Category = &repositories.CategoryRepository{DB: db}
 	c.Repositories.Client = &repositories.ClientRepository{DB: db}
@@ -104,6 +108,9 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 	c.Repositories.TypeMovement = &repositories.TypeMovementRepository{DB: db}
 
 	// Inicializar servicios
+	c.Services.Arca = &services.ArcaService{
+		ArcaRepository: c.Repositories.Arca,
+	}
 	c.Services.CashRegister = &services.CashRegisterService{
 		CashRegisterRepository: c.Repositories.CashRegister,
 	}
@@ -164,6 +171,9 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 	}
 
 	// Inicializar controladores
+	c.Controllers.ArcaController = &controllers.ArcaController{
+		ArcaService: c.Services.Arca,
+	}
 	c.Controllers.CashRegisterController = &controllers.CashRegisterController{
 		CashRegisterService: c.Services.CashRegister,
 	}
