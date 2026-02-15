@@ -10,6 +10,15 @@ docker exec -it mariadb-noa mariadb -u root -p
 
 docker exec -i mariadb-noa   mariadb -u root -p'SaltaGet25*' Yo_gustavo < categories_only.sql
 
+### Crear backup comprimido
+docker exec {nombre_contenedor} mariadb-dump -u root -p {nombre de la db} | gzip > {nombre de salida}.sql.gz
+
+## Mover archivos entre servidores
+
+scp -P {puerto ssh} {nombre archivo} root@{ip servidor de destino}:{ruta ej /home/proyecto}
+
+### Restaurar en el destino
+zcat /home/{ruta}/{nombre archivo}.sql.gz | docker exec -i nombre_contenedor_nuevo mariadb -u root -p {mismo nombre de db}
 
 ## Copiar DB
 

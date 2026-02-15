@@ -53,16 +53,16 @@ func (c *CredentialMPTokenRequest) Validate() error {
 }
 
 type CredentialArcaRequest struct {
-	SocialReason           string `json:"social_reason" validate:"required"`
-	BusinessName           string `json:"business_name" validate:"required"`
-	Address                string `json:"address" validate:"required"`
-	ResponsibilityFrontIVA string `json:"responsibility_front_iva" validate:"required,oneof=responsable_inscripto monotributo"`
-	GrossIncome            string `json:"gross_income" validate:"required,numeric,min=7,max=14"`
-	StartActivities        string `json:"start_activities" validate:"required,datetime=2006-01-02"`
-	Cuit                   string `json:"cuit" validate:"required,numeric,len=11"`
-	Concept                string `json:"concept" validate:"required,oneof=productos servicios productos_servicios"`
-	ArcaCertificate        string `json:"arca_certificate" validate:"required"`
-	ArcaKey                string `json:"arca_key" validate:"required"`
+	SocialReason           string `json:"social_reason" validate:"required" example:"My Company"`
+	BusinessName           string `json:"business_name" validate:"required" example:"My Company"`
+	Address                string `json:"address" validate:"required" example:"Calle 123"`
+	ResponsibilityFrontIVA string `json:"responsibility_front_iva" validate:"required,oneof=responsable_inscripto monotributo" example:"responsable_inscripto | monotributo"`
+	GrossIncome            string `json:"gross_income" validate:"required,numeric,min=7,max=14" example:"1000000 (puede ser igual al cuit)"`
+	StartActivities        string `json:"start_activities" validate:"required,datetime=2006-01-02" example:"2022-01-01"`
+	Cuit                   string `json:"cuit" validate:"required,numeric,len=11" example:"20123456789 (sin guiones)"`
+	Concept                string `json:"concept" validate:"required,oneof=productos servicios productos_servicios" example:"productos | servicios | productos_servicios"`
+	ArcaCertificate        string `json:"arca_certificate" validate:"required" example:"crt (un string)"`
+	ArcaKey                string `json:"arca_key" validate:"required" example:"key (un string)"`
 }
 
 func (c *CredentialArcaRequest) Validate() error {

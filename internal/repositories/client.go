@@ -56,7 +56,7 @@ func (r *ClientRepository) ClientGetAll(limit, page int64, search *map[string]st
 	if filterDrbt {
 		query = query.
 			Select(`
-				c.id, c.first_name, c.last_name, c.company_name, c.identifier,
+				c.id, c.first_name, c.last_name, c.company_name, c.identifier, c.responsability_front_iva,
 				c.email, c.phone, c.address, c.member_create_id, c.created_at, c.updated_at,
 				COALESCE(SUM(CASE WHEN p.method_pay = 'credit' THEN p.total ELSE 0 END), 0) AS debt
 			`).
@@ -128,6 +128,7 @@ func (r *ClientRepository) ClientCreate(memberID int64, client *schemas.ClientCr
 		Phone:          client.Phone,
 		Address:        client.Address,
 		MemberCreateID: memberID,
+		ResponsabilityFrontIVA: client.ResponsabilityFrontIVA,
 	}
 	if err := r.DB.Create(&newClient).Error; err != nil {
 		if schemas.IsDuplicateError(err) {
@@ -172,6 +173,7 @@ func (r *ClientRepository) ClientUpdate(memberID int64, client *schemas.ClientUp
 	oldClient.Email = client.Email
 	oldClient.Phone = client.Phone
 	oldClient.Address = client.Address
+	oldClient.ResponsabilityFrontIVA = client.ResponsabilityFrontIVA
 
 	// ejecutar actualización
 	res := r.DB.Model(&models.Client{}).Where("id = ?", client.ID).Save(&oldClient)

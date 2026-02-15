@@ -180,6 +180,9 @@ definitions:
       phone:
         example: 1111111111 | null
         type: string
+      responsability_front_iva:
+        example: responsable_inscripto | monotributo | consumidor_final | null
+        type: string
     required:
     - first_name
     - last_name
@@ -208,6 +211,8 @@ definitions:
         type: array
       phone:
         type: string
+      responsability_front_iva:
+        type: string
     type: object
   schemas.ClientResponseDTO:
     properties:
@@ -226,6 +231,8 @@ definitions:
       last_name:
         type: string
       phone:
+        type: string
+      responsability_front_iva:
         type: string
     type: object
   schemas.ClientSimpleDTO:
@@ -264,6 +271,9 @@ definitions:
       phone:
         example: 1111111111 | null
         type: string
+      responsability_front_iva:
+        example: responsable_inscripto | monotributo | consumidor_final | null
+        type: string
     required:
     - first_name
     - id
@@ -289,22 +299,29 @@ definitions:
   schemas.CredentialArcaRequest:
     properties:
       address:
+        example: Calle 123
         type: string
       arca_certificate:
+        example: crt (un string)
         type: string
       arca_key:
+        example: key (un string)
         type: string
       business_name:
+        example: My Company
         type: string
       concept:
         enum:
         - productos
         - servicios
         - productos_servicios
+        example: productos | servicios | productos_servicios
         type: string
       cuit:
+        example: 20123456789 (sin guiones)
         type: string
       gross_income:
+        example: 1000000 (puede ser igual al cuit)
         maxLength: 14
         minLength: 7
         type: string
@@ -312,10 +329,13 @@ definitions:
         enum:
         - responsable_inscripto
         - monotributo
+        example: responsable_inscripto | monotributo
         type: string
       social_reason:
+        example: My Company
         type: string
       start_activities:
+        example: "2022-01-01"
         type: string
     required:
     - address
@@ -768,6 +788,71 @@ definitions:
     - total
     - type_expense_id
     type: object
+  schemas.FacturaElectronica:
+    properties:
+      cae:
+        description: Datos de AFIP/ARCA
+        type: integer
+      cae_vencimiento:
+        type: string
+      concepto:
+        description: 1=Prod, 2=Serv, 3=Mixto
+        type: integer
+      condicion_iva_emisor:
+        description: RI o Monotributo
+        type: string
+      condicion_iva_receptor:
+        type: string
+      domicilio_emisor:
+        type: string
+      emisor_cuit:
+        description: Emisor (Tenant)
+        type: integer
+      emisor_nombre:
+        type: string
+      fecha:
+        description: YYYY-MM-DD
+        type: string
+      importe_exento:
+        description: Para artículos que no pagan IVA
+        type: number
+      importe_iva:
+        description: Total IVA
+        type: number
+      importe_neto:
+        description: Totales y Desglose (Crítico para Factura A)
+        type: number
+      importe_total:
+        type: number
+      ingresos_brutos:
+        type: string
+      inicio_actividades:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/schemas.ItemIVATotal'
+        type: array
+      numero:
+        description: Correlativo
+        type: integer
+      punto_venta:
+        type: integer
+      razon_social:
+        type: string
+      receptor_cuit:
+        description: Receptor (Cliente)
+        type: integer
+      receptor_domicilio:
+        type: string
+      receptor_nombre:
+        type: string
+      tipo_comprobante:
+        description: Datos del Comprobante
+        type: integer
+      url_qr:
+        description: URL con Base64
+        type: string
+    type: object
   schemas.FacturaRequest:
     properties:
       condicion_iva:
@@ -1169,6 +1254,25 @@ definitions:
     required:
     - amount
     - product_id
+    type: object
+  schemas.KeyRequest:
+    properties:
+      business_name:
+        example: My Company
+        type: string
+      cuit:
+        example: "12345678901"
+        type: string
+    required:
+    - business_name
+    - cuit
+    type: object
+  schemas.KeyResponse:
+    properties:
+      certificate:
+        type: string
+      key:
+        type: string
     type: object
   schemas.ListPriceUpdate:
     properties:
@@ -2246,6 +2350,8 @@ definitions:
         type: string
       phone:
         type: string
+      responsability_front_iva:
+        type: string
       updated_at:
         type: string
     type: object
@@ -2430,8 +2536,40 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/schemas.Response'
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.FacturaElectronica'
+              type: object
       summary: ArcaEmitInvoice
+      tags:
+      - Arca
+  /api/v1/arca/generate_key:
+    post:
+      consumes:
+      - application/json
+      description: Generar Key para arca
+      parameters:
+      - description: datos de la factura
+        in: body
+        name: datos
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.KeyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.KeyResponse'
+              type: object
+      summary: ArcaGenerateKey
       tags:
       - Arca
   /api/v1/auth/current_plan:

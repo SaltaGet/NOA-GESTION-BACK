@@ -44,7 +44,65 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/schemas.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.FacturaElectronica"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/arca/generate_key": {
+            "post": {
+                "description": "Generar Key para arca",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Arca"
+                ],
+                "summary": "ArcaGenerateKey",
+                "parameters": [
+                    {
+                        "description": "datos de la factura",
+                        "name": "datos",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.KeyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.KeyResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -7995,6 +8053,10 @@ const docTemplate = `{
                 "phone": {
                     "type": "string",
                     "example": "1111111111 | null"
+                },
+                "responsability_front_iva": {
+                    "type": "string",
+                    "example": "responsable_inscripto | monotributo | consumidor_final | null"
                 }
             }
         },
@@ -8033,6 +8095,9 @@ const docTemplate = `{
                 },
                 "phone": {
                     "type": "string"
+                },
+                "responsability_front_iva": {
+                    "type": "string"
                 }
             }
         },
@@ -8061,6 +8126,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "phone": {
+                    "type": "string"
+                },
+                "responsability_front_iva": {
                     "type": "string"
                 }
             }
@@ -8120,6 +8188,10 @@ const docTemplate = `{
                 "phone": {
                     "type": "string",
                     "example": "1111111111 | null"
+                },
+                "responsability_front_iva": {
+                    "type": "string",
+                    "example": "responsable_inscripto | monotributo | consumidor_final | null"
                 }
             }
         },
@@ -8163,16 +8235,20 @@ const docTemplate = `{
             ],
             "properties": {
                 "address": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Calle 123"
                 },
                 "arca_certificate": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "crt (un string)"
                 },
                 "arca_key": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "key (un string)"
                 },
                 "business_name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "My Company"
                 },
                 "concept": {
                     "type": "string",
@@ -8180,28 +8256,34 @@ const docTemplate = `{
                         "productos",
                         "servicios",
                         "productos_servicios"
-                    ]
+                    ],
+                    "example": "productos | servicios | productos_servicios"
                 },
                 "cuit": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "20123456789 (sin guiones)"
                 },
                 "gross_income": {
                     "type": "string",
                     "maxLength": 14,
-                    "minLength": 7
+                    "minLength": 7,
+                    "example": "1000000 (puede ser igual al cuit)"
                 },
                 "responsibility_front_iva": {
                     "type": "string",
                     "enum": [
                         "responsable_inscripto",
                         "monotributo"
-                    ]
+                    ],
+                    "example": "responsable_inscripto | monotributo"
                 },
                 "social_reason": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "My Company"
                 },
                 "start_activities": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2022-01-01"
                 }
             }
         },
@@ -8848,6 +8930,98 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.FacturaElectronica": {
+            "type": "object",
+            "properties": {
+                "cae": {
+                    "description": "Datos de AFIP/ARCA",
+                    "type": "integer"
+                },
+                "cae_vencimiento": {
+                    "type": "string"
+                },
+                "concepto": {
+                    "description": "1=Prod, 2=Serv, 3=Mixto",
+                    "type": "integer"
+                },
+                "condicion_iva_emisor": {
+                    "description": "RI o Monotributo",
+                    "type": "string"
+                },
+                "condicion_iva_receptor": {
+                    "type": "string"
+                },
+                "domicilio_emisor": {
+                    "type": "string"
+                },
+                "emisor_cuit": {
+                    "description": "Emisor (Tenant)",
+                    "type": "integer"
+                },
+                "emisor_nombre": {
+                    "type": "string"
+                },
+                "fecha": {
+                    "description": "YYYY-MM-DD",
+                    "type": "string"
+                },
+                "importe_exento": {
+                    "description": "Para artículos que no pagan IVA",
+                    "type": "number"
+                },
+                "importe_iva": {
+                    "description": "Total IVA",
+                    "type": "number"
+                },
+                "importe_neto": {
+                    "description": "Totales y Desglose (Crítico para Factura A)",
+                    "type": "number"
+                },
+                "importe_total": {
+                    "type": "number"
+                },
+                "ingresos_brutos": {
+                    "type": "string"
+                },
+                "inicio_actividades": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.ItemIVATotal"
+                    }
+                },
+                "numero": {
+                    "description": "Correlativo",
+                    "type": "integer"
+                },
+                "punto_venta": {
+                    "type": "integer"
+                },
+                "razon_social": {
+                    "type": "string"
+                },
+                "receptor_cuit": {
+                    "description": "Receptor (Cliente)",
+                    "type": "integer"
+                },
+                "receptor_domicilio": {
+                    "type": "string"
+                },
+                "receptor_nombre": {
+                    "type": "string"
+                },
+                "tipo_comprobante": {
+                    "description": "Datos del Comprobante",
+                    "type": "integer"
+                },
+                "url_qr": {
+                    "description": "URL con Base64",
+                    "type": "string"
+                }
+            }
+        },
         "schemas.FacturaRequest": {
             "type": "object",
             "required": [
@@ -9418,6 +9592,34 @@ const docTemplate = `{
                         "amount",
                         "percent"
                     ]
+                }
+            }
+        },
+        "schemas.KeyRequest": {
+            "type": "object",
+            "required": [
+                "business_name",
+                "cuit"
+            ],
+            "properties": {
+                "business_name": {
+                    "type": "string",
+                    "example": "My Company"
+                },
+                "cuit": {
+                    "type": "string",
+                    "example": "12345678901"
+                }
+            }
+        },
+        "schemas.KeyResponse": {
+            "type": "object",
+            "properties": {
+                "certificate": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
                 }
             }
         },
@@ -10973,6 +11175,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "phone": {
+                    "type": "string"
+                },
+                "responsability_front_iva": {
                     "type": "string"
                 },
                 "updated_at": {

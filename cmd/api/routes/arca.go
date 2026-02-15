@@ -15,6 +15,12 @@ func ArcaRoutes(app *fiber.App) {
 			return tenant.Controllers.ArcaController.ArcaEmitInvoice(c)
 		})
 
+		arca.Post("/generate_key",
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.ArcaController.ArcaGenerateKey(c)
+		})
+
 	// arca.Post("/open",
 	// 	middleware.RolePermissionMiddleware("CR01"),
 	// 	func(c *fiber.Ctx) error {

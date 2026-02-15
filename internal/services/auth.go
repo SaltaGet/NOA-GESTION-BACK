@@ -142,6 +142,8 @@ func (a *AuthService) AuthCurrentTenant(tenantID int64) (*schemas.TenantResponse
 	var tenantResponse schemas.TenantResponse
 	copier.Copy(&tenantResponse, &tenant)
 
+	tenantResponse.ResponsabilityFrontIVA = tenant.Credentials.ResponsibilityFrontIVA
+
 	return &tenantResponse, nil
 }
 

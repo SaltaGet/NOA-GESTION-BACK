@@ -60,15 +60,16 @@ func (t *TenantUpdate) Validate() error {
 }
 
 type TenantResponse struct {
-	ID         int64     `json:"id"`
-	Name       string    `json:"name"`
-	Address    string    `json:"address"`
-	Phone      string    `json:"phone"`
-	Email      string    `json:"email"`
-	IsActive   bool      `json:"is_active"`
-	Expiration time.Time `json:"expiration"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID                     int64     `json:"id"`
+	Name                   string    `json:"name"`
+	Address                string    `json:"address"`
+	Phone                  string    `json:"phone"`
+	Email                  string    `json:"email"`
+	IsActive               bool      `json:"is_active"`
+	Expiration             time.Time `json:"expiration"`
+	ResponsabilityFrontIVA *string   `json:"responsability_front_iva"`
+	CreatedAt              time.Time `json:"created_at"`
+	UpdatedAt              time.Time `json:"updated_at"`
 }
 
 type TenantUserCreate struct {

@@ -14,6 +14,7 @@ type ClientCreate struct {
 	Email       *string `json:"email" validate:"omitempty,email" example:"john@example.com | null"`
 	Phone       *string `json:"phone" example:"1111111111 | null"`
 	Address     *string `json:"address" example:" Calle 123 | null"`
+	ResponsabilityFrontIVA *string `json:"responsability_front_iva" example:"responsable_inscripto | monotributo | consumidor_final | null"`
 }
 
 func (c *ClientCreate) Validate() error {
@@ -42,6 +43,7 @@ type ClientUpdate struct {
 	Email       *string `json:"email" validate:"omitempty,email" example:"john@example.com | null"`
 	Phone       *string `json:"phone" example:"1111111111 | null"`
 	Address     *string `json:"address" example:" Calle 123 | null"`
+	ResponsabilityFrontIVA *string `json:"responsability_front_iva" example:"responsable_inscripto | monotributo | consumidor_final | null"`
 }
 
 func (c *ClientUpdate) Validate() error {
@@ -121,6 +123,7 @@ type ClientResponseDTO struct {
 	Email       *string  `json:"email,omitempty"`
 	Phone       *string  `json:"phone,omitempty"`
 	Debt      *float64 `json:"debt,omitempty"`
+	ResponsabilityFrontIVA *string `json:"responsability_front_iva,omitempty"`
 }
 
 type ClientResponse struct {
@@ -133,6 +136,7 @@ type ClientResponse struct {
 	Phone        *string           `json:"phone,omitempty"`
 	Address      *string           `json:"address,omitempty"`
 	MemberCreate *MemberSimpleDTO  `json:"member,omitempty"`
+	ResponsabilityFrontIVA *string `json:"responsability_front_iva,omitempty"`
 	Pay          []PayDebtResponse `json:"pay"`
 }
 

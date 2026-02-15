@@ -23,7 +23,7 @@ var (
 	mainDB            *gorm.DB
 	tenantDBs         *lru.Cache
 	mu                sync.RWMutex
-	dbExpiration      = 2 * time.Minute
+	dbExpiration      = 30 * time.Minute
 	tenantConnections sync.Map // Cache de connection strings desencriptadas
 	tenantLocks       sync.Map // Locks por tenant para evitar conexiones duplicadas
 )

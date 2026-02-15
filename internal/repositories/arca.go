@@ -55,28 +55,6 @@ func (r *ArcaRepository) SetTokenSignArca(v *schemas.CredentialsValidation) erro
 
 	return nil
 }
-	// creds, err := loadCredentials()
-	// if err != nil || time.Now().After(creds.Expiration) {
-	// 	fmt.Println("📡 Solicitando nuevas credenciales al WSAA...")
-
-	// 	wsaa, err := schemas.NewWSAA(config)
-	// 	if err != nil {
-	// 		log.Fatalf("❌ Error creando cliente WSAA: %v", err)
-	// 	}
-
-	// 	creds, err = wsaa.GetCredentials()
-	// 	if err != nil {
-	// 		log.Fatalf("❌ Error obteniendo credenciales: %v", err)
-	// 	}
-
-	// 	if err := saveCredentials(creds); err != nil {
-	// 		log.Printf("⚠️  No se pudieron guardar las credenciales: %v", err)
-	// 	} else {
-	// 		fmt.Println("💾 Credenciales guardadas en credentials.env")
-	// 	}
-	// } else {
-	// 	fmt.Println("✅ Usando credenciales existentes de credentials.env")
-	// }
 
 func (r *ArcaRepository) GetLastestInvoice(w *schemas.WSFEClient, pointSale, TypeInvoice int) (int64, error) {
 	req := schemas.FECompUltimoAutorizadoRequest{

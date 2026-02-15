@@ -49,6 +49,16 @@ func (r *MainRepository) AuthTenantGetByID(tenantID int64) (*models.Tenant, erro
 		return nil, schemas.ErrorResponse(403, "Tenant esta inactivo", fmt.Errorf("credenciales incorrectas"))
 	}
 
+	var credentials models.Credential
+	if err := r.DB.Select("responsibility_front_iva").Where("tenant_id = ?", tenantID).First(&credentials).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+		}
+		return nil, schemas.ErrorResponse(500, "Error interno al obtener las credenciales", err)
+	}
+
+	tenant.Credentials = credentials
+
 	// if len(tenant.UserTenants) == 0 {
 	// 	return nil, schemas.ErrorResponse(403, "No tienes permiso para acceder al tenant", fmt.Errorf("sin permiso para acceder al tenant"))
 	// }
@@ -120,7 +130,7 @@ func (r *MainRepository) AuthMemberGetByID(id int64, connection string, tenantID
 	if !member.IsActive {
 		return nil, nil, schemas.ErrorResponse(403, "Miembro inactivo", fmt.Errorf("miembro inactivo"))
 	}
-	
+
 	var permissions []models.Permission
 	if member.Role.Name == "admin" {
 		if err := db.Find(&permissions).Error; err != nil {
@@ -237,7 +247,7 @@ func (r *MainRepository) AuthForgotPassword(forgotPassword *schemas.AuthForgotPa
 	return &member, &tenant, nil
 }
 
-func (r *MainRepository) AuthResetPassword(memberID, tenantID int64, newPass string) (error) {
+func (r *MainRepository) AuthResetPassword(memberID, tenantID int64, newPass string) error {
 	var tenant models.Tenant
 	err := r.DB.
 		Select("id", "connection").

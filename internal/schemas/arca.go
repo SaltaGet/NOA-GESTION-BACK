@@ -391,7 +391,7 @@ type WSFEClient struct {
 type FacturaRequest struct {
 	// PuntoVenta      int            `json:"punto_venta" validate:"required"`
 	TipoComprobante string         `json:"tipo_comprobante" validate:"required,oneof=A B C NCA NCB NCC" example:"A | B | C | NCA | NCB | NCC"`
-	TipoDocumento   string            `json:"tipo_documento" validate:"required,oneof=CUIT CUIL DNI SinIdentificar" example:"CUIT | CUIL | DNI | SinIdentificar"`
+	TipoDocumento   string         `json:"tipo_documento" validate:"required,oneof=CUIT CUIL DNI SinIdentificar" example:"CUIT | CUIL | DNI | SinIdentificar"`
 	NumeroDocumento int64          `json:"numero_documento" validate:"required,numeric" example:"12345678901"`
 	Domicilio       string         `json:"domicilio" validate:"required" example:"Calle 123"`
 	CondicionIVA    string         `json:"condicion_iva" validate:"required,oneof=responsable_inscripto exento consumidor_final monotributo"`
@@ -439,6 +439,16 @@ type Factura struct {
 	Tributos         []ItemTributo
 	MonedaId         string
 	MonedaCotiz      float64
+
+	CbtesAsoc *[]ComprobanteAsociado
+}
+
+
+type ComprobanteAsociado struct {
+	Tipo   int    `xml:"Tipo"`   // 1=Factura A, 6=Factura B, etc.
+	PtoVta int    `xml:"PtoVta"`
+	Nro    int64  `xml:"Nro"`
+	Cuit   string `xml:"Cuit,omitempty"`
 }
 
 type ItemIVA struct {
@@ -607,115 +617,115 @@ func (w *WSAA) CreateTicketXML() ([]byte, error) {
 }
 
 func (w *WSAA) validateKeys() error {
-    var keyData, certData []byte
-    var err error
+	var keyData, certData []byte
+	var err error
 
-    // 1. Procesar Clave Privada
-    if strings.HasPrefix(w.Config.KeyFile, "-----BEGIN") {
-        // Es el contenido directo
-        keyData = []byte(w.Config.KeyFile)
-    } else {
-        // Es una ruta de archivo
-        keyData, err = os.ReadFile(w.Config.KeyFile)
-        if err != nil {
-            return fmt.Errorf("no se puede leer el archivo de clave privada: %v", err)
-        }
-    }
+	// 1. Procesar Clave Privada
+	if strings.HasPrefix(w.Config.KeyFile, "-----BEGIN") {
+		// Es el contenido directo
+		keyData = []byte(w.Config.KeyFile)
+	} else {
+		// Es una ruta de archivo
+		keyData, err = os.ReadFile(w.Config.KeyFile)
+		if err != nil {
+			return fmt.Errorf("no se puede leer el archivo de clave privada: %v", err)
+		}
+	}
 
-    // 2. Procesar Certificado
-    if strings.HasPrefix(w.Config.CertFile, "-----BEGIN") {
-        // Es el contenido directo
-        certData = []byte(w.Config.CertFile)
-    } else {
-        // Es una ruta de archivo
-        certData, err = os.ReadFile(w.Config.CertFile)
-        if err != nil {
-            return fmt.Errorf("no se puede leer el archivo de certificado: %v", err)
-        }
-    }
+	// 2. Procesar Certificado
+	if strings.HasPrefix(w.Config.CertFile, "-----BEGIN") {
+		// Es el contenido directo
+		certData = []byte(w.Config.CertFile)
+	} else {
+		// Es una ruta de archivo
+		certData, err = os.ReadFile(w.Config.CertFile)
+		if err != nil {
+			return fmt.Errorf("no se puede leer el archivo de certificado: %v", err)
+		}
+	}
 
-    // 3. Validaciones de formato sobre los datos ya cargados
-    if !bytes.Contains(keyData, []byte("BEGIN")) {
-        return fmt.Errorf("la clave privada no está en formato PEM")
-    }
+	// 3. Validaciones de formato sobre los datos ya cargados
+	if !bytes.Contains(keyData, []byte("BEGIN")) {
+		return fmt.Errorf("la clave privada no está en formato PEM")
+	}
 
-    if bytes.Contains(keyData, []byte("ENCRYPTED")) {
-        return fmt.Errorf("la clave privada está encriptada. Debe desencriptarla primero")
-    }
+	if bytes.Contains(keyData, []byte("ENCRYPTED")) {
+		return fmt.Errorf("la clave privada está encriptada. Debe desencriptarla primero")
+	}
 
-    if !bytes.Contains(certData, []byte("BEGIN")) {
-        return fmt.Errorf("el certificado no está en formato PEM")
-    }
+	if !bytes.Contains(certData, []byte("BEGIN")) {
+		return fmt.Errorf("el certificado no está en formato PEM")
+	}
 
-    return nil
+	return nil
 }
 
 func (w *WSAA) SignWithOpenSSL(data []byte) (string, error) {
-  if err := w.validateKeys(); err != nil {
-    return "", err
-  }
+	if err := w.validateKeys(); err != nil {
+		return "", err
+	}
 
-  // 1. Crear archivos temporales para el Certificado y la Clave
-  // Esto es necesario porque OpenSSL comando de consola NO acepta strings directos
-  tmpCert, err := os.CreateTemp("", "arca_cert_*.crt")
-  if err != nil {
-    return "", fmt.Errorf("error creando tmp cert: %v", err)
-  }
-  defer os.Remove(tmpCert.Name()) // Se borra al terminar la función
-  if _, err := tmpCert.WriteString(w.Config.CertFile); err != nil {
-    return "", err
-  }
-  tmpCert.Close()
+	// 1. Crear archivos temporales para el Certificado y la Clave
+	// Esto es necesario porque OpenSSL comando de consola NO acepta strings directos
+	tmpCert, err := os.CreateTemp("", "arca_cert_*.crt")
+	if err != nil {
+		return "", fmt.Errorf("error creando tmp cert: %v", err)
+	}
+	defer os.Remove(tmpCert.Name()) // Se borra al terminar la función
+	if _, err := tmpCert.WriteString(w.Config.CertFile); err != nil {
+		return "", err
+	}
+	tmpCert.Close()
 
-  tmpKey, err := os.CreateTemp("", "arca_key_*.key")
-  if err != nil {
-    return "", fmt.Errorf("error creando tmp key: %v", err)
-  }
-  defer os.Remove(tmpKey.Name()) // Se borra al terminar la función
-  if _, err := tmpKey.WriteString(w.Config.KeyFile); err != nil {
-    return "", err
-  }
-  tmpKey.Close()
+	tmpKey, err := os.CreateTemp("", "arca_key_*.key")
+	if err != nil {
+		return "", fmt.Errorf("error creando tmp key: %v", err)
+	}
+	defer os.Remove(tmpKey.Name()) // Se borra al terminar la función
+	if _, err := tmpKey.WriteString(w.Config.KeyFile); err != nil {
+		return "", err
+	}
+	tmpKey.Close()
 
-  // 2. Configurar el comando usando las RUTAS de los archivos temporales
-  cmd := exec.Command("openssl", "cms", "-sign",
-    "-in", "-", 
-    "-signer", tmpCert.Name(), // Pasamos la ruta del archivo temporal
-    "-inkey", tmpKey.Name(),   // Pasamos la ruta del archivo temporal
-    "-outform", "DER",
-    "-nodetach",
-    "-binary",
-    "-md", "sha256",
-  )
+	// 2. Configurar el comando usando las RUTAS de los archivos temporales
+	cmd := exec.Command("openssl", "cms", "-sign",
+		"-in", "-",
+		"-signer", tmpCert.Name(), // Pasamos la ruta del archivo temporal
+		"-inkey", tmpKey.Name(), // Pasamos la ruta del archivo temporal
+		"-outform", "DER",
+		"-nodetach",
+		"-binary",
+		"-md", "sha256",
+	)
 
-  cmd.Stdin = bytes.NewReader(data)
-  var stdout, stderr bytes.Buffer
-  cmd.Stdout = &stdout
-  cmd.Stderr = &stderr
+	cmd.Stdin = bytes.NewReader(data)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
-  if err := cmd.Run(); err != nil {
-    log.Printf("⚠️ Fallo cms, reintentando con smime...")
+	if err := cmd.Run(); err != nil {
+		log.Printf("⚠️ Fallo cms, reintentando con smime...")
 
-    cmd = exec.Command("openssl", "smime", "-sign",
-      "-in", "-",
-      "-signer", tmpCert.Name(),
-      "-inkey", tmpKey.Name(),
-      "-outform", "DER",
-      "-nodetach",
-      "-binary",
-    )
-    cmd.Stdin = bytes.NewReader(data)
-    stdout.Reset()
-    stderr.Reset()
-    cmd.Stdout = &stdout
-    cmd.Stderr = &stderr
+		cmd = exec.Command("openssl", "smime", "-sign",
+			"-in", "-",
+			"-signer", tmpCert.Name(),
+			"-inkey", tmpKey.Name(),
+			"-outform", "DER",
+			"-nodetach",
+			"-binary",
+		)
+		cmd.Stdin = bytes.NewReader(data)
+		stdout.Reset()
+		stderr.Reset()
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
 
-    if err := cmd.Run(); err != nil {
-      return "", fmt.Errorf("error openssl: %v\nStderr: %s", err, stderr.String())
-    }
-  }
+		if err := cmd.Run(); err != nil {
+			return "", fmt.Errorf("error openssl: %v\nStderr: %s", err, stderr.String())
+		}
+	}
 
-  return base64.StdEncoding.EncodeToString(stdout.Bytes()), nil
+	return base64.StdEncoding.EncodeToString(stdout.Bytes()), nil
 }
 
 func (w *WSAA) ParseResponse(data []byte) (*CredentialsValidation, error) {
@@ -880,10 +890,10 @@ type FacturaElectronica struct {
 	ReceptorDomicilio    string `json:"receptor_domicilio"`     //
 
 	// Totales y Desglose (Crítico para Factura A)
-	ImporteNeto   float64 `json:"importe_neto"`   // Base imponible
-	ImporteIVA    float64 `json:"importe_iva,omitempty"`    // Total IVA
-	ImporteExento float64 `json:"importe_exento"` // Para artículos que no pagan IVA
-	ImporteTotal  float64 `json:"importe_total"`  //
+	ImporteNeto   float64 `json:"importe_neto"`          // Base imponible
+	ImporteIVA    float64 `json:"importe_iva,omitempty"` // Total IVA
+	ImporteExento float64 `json:"importe_exento"`        // Para artículos que no pagan IVA
+	ImporteTotal  float64 `json:"importe_total"`         //
 
 	Items []ItemIVATotal `json:"items"`
 
@@ -907,4 +917,31 @@ type DatosQR struct {
 	NroDocRec  int64   `json:"nroDocRec"`  // Número de documento receptor
 	TipoCodAut string  `json:"tipoCodAut"` // Tipo de autorización ("E" para CAE)
 	CodAut     int64   `json:"codAut"`     // El número de CAE
+}
+
+type KeyRequest struct {
+	BusinessName string `json:"business_name" validate:"required" example:"My Company"`
+	Cuit         string `json:"cuit" validate:"required,numeric,len=11" example:"12345678901"`
+}
+
+func (k *KeyRequest) Validate() error {
+	validate := validator.New()
+
+	err := validate.Struct(k)
+	if err == nil {
+		return nil
+	}
+
+	validatorErr := err.(validator.ValidationErrors)[0]
+	field := validatorErr.Field()
+	tag := validatorErr.Tag()
+	params := validatorErr.Param()
+
+	errorMessage := field + " " + tag + " " + params
+	return ErrorResponse(422, fmt.Sprintf("error al validar campo(s): %s", errorMessage), err)
+}
+
+type KeyResponse struct {
+	Key         string `json:"key"`
+	Certificate string `json:"certificate"`
 }
