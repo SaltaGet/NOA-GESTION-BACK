@@ -9,6 +9,7 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 	"gorm.io/gorm"
+	"github.com/rs/zerolog/log"
 )
 
 // func (r *MainRepository) AuthUserGetByID(userID int64) (*models.User, error) {
@@ -52,9 +53,11 @@ func (r *MainRepository) AuthTenantGetByID(tenantID int64) (*models.Tenant, erro
 	var credentials models.Credential
 	if err := r.DB.Select("responsibility_front_iva").Where("tenant_id = ?", tenantID).First(&credentials).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+			log.Warn().Msgf("Tenant %d no tiene credenciales configuradas, usando valor por defecto", tenantID)
+      credentials.ResponsibilityFrontIVA = nil
+		} else {
+			return nil, schemas.ErrorResponse(500, "Error interno al obtener las credenciales", err)
 		}
-		return nil, schemas.ErrorResponse(500, "Error interno al obtener las credenciales", err)
 	}
 
 	tenant.Credentials = credentials
