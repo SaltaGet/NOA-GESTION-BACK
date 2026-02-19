@@ -10,9 +10,9 @@ type MovementStock struct {
 	Product     Product   `gorm:"foreignKey:ProductID;references:ID" json:"product"`
 	Amount      float64   `gorm:"not null" json:"amount"`
 	FromID      int64      `gorm:"not null" json:"from_id"`
-	FromType    string    `gorm:"not null" json:"from_type" validate:"oneof=deposit point_sale"`
+	FromType    string    `gorm:"type:varchar(20);not null" json:"from_type" validate:"oneof=deposit point_sale"`
 	ToID        int64      `gorm:"not null" json:"to_id"`
-	ToType      string    `gorm:"not null" json:"to_type" validate:"oneof=deposit point_sale"`
+	ToType      string    `gorm:"type:varchar(20);not null" json:"to_type" validate:"oneof=deposit point_sale"`
 	IgnoreStock bool      `gorm:"not null;default:false" json:"ignore_stock"`
 	CreatedAt   time.Time `gorm:"autoCreateTime:milli" json:"created_at"`
 }

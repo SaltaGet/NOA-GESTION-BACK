@@ -17,9 +17,9 @@ type PayTenant struct {
 type PayDetail struct {
 	ID          int64     `gorm:"primaryKey;autoIncrement" json:"id"`
 	PayTenantID int64     `gorm:"not null" json:"pay_tenant_id"`
-	PayID       *string   `json:"pay_id"`
+	PayID       *string   `gorm:"type:varchar(255)" json:"pay_id"`
 	Amount      float64   `gorm:"not null" json:"amount"`
-	MethodPay   string    `gorm:"not null;default:cash" json:"method_pay"`
-	StatePay    string    `gorm:"not null;default:pending" json:"state_pay"`
+	MethodPay   string    `gorm:"type:varchar(30);not null;default:cash" json:"method_pay"`
+	StatePay    string    `gorm:"type:varchar(30);not null;default:pending" json:"state_pay"`
 	CreatedAt   time.Time `gorm:"autoCreateTime" json:"created_at"`
 }

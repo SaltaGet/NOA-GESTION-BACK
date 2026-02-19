@@ -14,7 +14,7 @@ import (
 
 func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID int64, req *schemas.FacturaRequest, isHomo bool) (*schemas.FacturaElectronica, error) {
 	isHomo = true
-	
+
 	credentials, err := s.ArcaRepository.GetCredentialsArca(user.TenantID)
 	if err != nil {
 		return nil, err
@@ -146,12 +146,12 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 		Concepto:        concept,
 		Fecha:           fecha,
 		ImporteNeto:     totalNeto,
-		CondicionIVA: condition,
-		ImporteIVA: totalIVA,
-		ImporteTotal: totalFinal,
-		Alicuotas:    alicuotas,
-		MonedaId:    "PES",
-		MonedaCotiz: 1,
+		CondicionIVA:    condition,
+		ImporteIVA:      totalIVA,
+		ImporteTotal:    totalFinal,
+		Alicuotas:       alicuotas,
+		MonedaId:        "PES",
+		MonedaCotiz:     1,
 	}
 
 	switch emisorResponsabilidad {
@@ -189,20 +189,20 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 
 	cae, err := strconv.ParseInt(fecae.CAE, 10, 64)
 	urlQR := UrlQR(schemas.DatosQR{
-			Ver:        1,
-			Fecha:      time.Now().Format("2006-01-02"),
-			Cuit:       cuit,
-			PtoVta:     factura.PuntoVenta,
-			TipoCmp:    factura.TipoComprobante,
-			NroCmp:     int(factura.NumeroDesde),
-			Importe:    factura.ImporteTotal,
-			Moneda:     factura.MonedaId,
-			Ctz:        1,
-			TipoDocRec: factura.TipoDocumento,
-			NroDocRec:  factura.NumeroDocumento,
-			TipoCodAut: "E",
-			CodAut:     cae,
-		})
+		Ver:        1,
+		Fecha:      time.Now().Format("2006-01-02"),
+		Cuit:       cuit,
+		PtoVta:     factura.PuntoVenta,
+		TipoCmp:    factura.TipoComprobante,
+		NroCmp:     int(factura.NumeroDesde),
+		Importe:    factura.ImporteTotal,
+		Moneda:     factura.MonedaId,
+		Ctz:        1,
+		TipoDocRec: factura.TipoDocumento,
+		NroDocRec:  factura.NumeroDocumento,
+		TipoCodAut: "E",
+		CodAut:     cae,
+	})
 	if urlQR == nil {
 		return nil, schemas.ErrorResponse(500, "Error al generar QR", errors.New("Error al generar QR"))
 	}
@@ -236,7 +236,7 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 		CAE:            cae,
 		CAEVencimiento: fecae.CAEFchVto,
 		ImporteTotal:   factura.ImporteTotal,
-		URL_QR: *urlQR,
+		URL_QR:         *urlQR,
 	}
 
 	return facturaResponse, nil
@@ -255,4 +255,3 @@ func UrlQR(data schemas.DatosQR) *string {
 
 	return &urlQR
 }
-

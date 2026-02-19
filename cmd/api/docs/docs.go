@@ -10533,7 +10533,9 @@ const docTemplate = `{
         "schemas.PointSaleCreate": {
             "type": "object",
             "required": [
-                "is_deposit"
+                "is_deposit",
+                "name",
+                "number"
             ],
             "properties": {
                 "description": {
@@ -10544,6 +10546,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "number": {
+                    "type": "integer"
                 }
             }
         },
@@ -10587,7 +10592,10 @@ const docTemplate = `{
         "schemas.PointSaleUpdate": {
             "type": "object",
             "required": [
-                "is_deposit"
+                "id",
+                "is_deposit",
+                "name",
+                "number"
             ],
             "properties": {
                 "description": {
@@ -10601,6 +10609,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "number": {
+                    "type": "integer"
                 }
             }
         },

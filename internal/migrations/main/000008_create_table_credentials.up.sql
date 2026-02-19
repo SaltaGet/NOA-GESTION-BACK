@@ -6,10 +6,10 @@ CREATE TABLE IF NOT EXISTS `credentials` (
   `social_reason`                VARCHAR(255),
   `responsibility_front_iva`  VARCHAR(255),
   `cuit`                        VARCHAR(255),
-  `arca_certificate`            LONGTEXT,
-  `arca_key`                    LONGTEXT,
-  `arca_certificate_test`       LONGTEXT,
-  `arca_key_test`               LONGTEXT,
+  `arca_certificate`            TEXT,
+  `arca_key`                    TEXT,
+  `arca_certificate_test`       TEXT,
+  `arca_key_test`               TEXT,
   
   PRIMARY KEY (`id`),
   UNIQUE INDEX `idx_credentials_tenant_id` (`tenant_id`)

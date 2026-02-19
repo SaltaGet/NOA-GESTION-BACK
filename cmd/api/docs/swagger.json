@@ -10525,7 +10525,9 @@
         "schemas.PointSaleCreate": {
             "type": "object",
             "required": [
-                "is_deposit"
+                "is_deposit",
+                "name",
+                "number"
             ],
             "properties": {
                 "description": {
@@ -10536,6 +10538,9 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "number": {
+                    "type": "integer"
                 }
             }
         },
@@ -10579,7 +10584,10 @@
         "schemas.PointSaleUpdate": {
             "type": "object",
             "required": [
-                "is_deposit"
+                "id",
+                "is_deposit",
+                "name",
+                "number"
             ],
             "properties": {
                 "description": {
@@ -10593,6 +10601,9 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "number": {
+                    "type": "integer"
                 }
             }
         },

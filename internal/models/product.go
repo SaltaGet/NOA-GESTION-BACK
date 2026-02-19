@@ -9,13 +9,13 @@ import (
 
 type Product struct {
 	ID              int64    `gorm:"primaryKey;autoIncrement" json:"id"`
-	Code            string   `gorm:"size:50;not null;uniqueIndex" json:"code"`
-	Name            string   `gorm:"size:100;not null" json:"name"`
+	Code            string   `gorm:"type:varchar(50);not null;uniqueIndex" json:"code"`
+	Name            string   `gorm:"type:varchar(100);not null" json:"name"`
 	Description     *string  `gorm:"type:text" json:"description"`
 	Price           float64  `gorm:"not null,default:0" json:"price"`
 	CategoryID      int64    `gorm:"not null" json:"category_id"`
 	Category        Category `gorm:"foreignKey:CategoryID;references:ID" json:"category"`
-	PrimaryImage    *string  `gorm:"size:255;default:null" json:"primary_image"`
+	PrimaryImage    *string  `gorm:"type:varchar(255);default:null" json:"primary_image"`
 	SecondaryImages *string  `gorm:"type:text;default:null" json:"secondary_images"`
 	IsVisible       bool     `gorm:"not null;default:false" json:"is_visible"`
 

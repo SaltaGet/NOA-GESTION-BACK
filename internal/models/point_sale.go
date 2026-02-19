@@ -9,8 +9,9 @@ import (
 
 type PointSale struct {
 	ID          int64          `gorm:"primaryKey;autoIncrement" json:"id"`
-	Name        string         `gorm:"size:100;not null;uniqueIndex" json:"name"`
-	Description *string        `gorm:"size:200" json:"description"`
+	Name        string         `gorm:"type:varchar(100);not null;uniqueIndex" json:"name"`
+	Description *string        `gorm:"type:varchar(200)" json:"description"`
+	Number      int64          `gorm:"not null" json:"number"`
 	IsDeposit   bool           `gorm:"not null;default:false" json:"is_deposit"`
 	IsMain      bool           `gorm:"not null;default:false" json:"is_main"`
 	CreatedAt   time.Time      `gorm:"autoCreateTime:milli" json:"created_at"`

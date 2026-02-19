@@ -53,7 +53,7 @@ func (p *PointSaleRepository) PointSaleGetAllByMember(memberID int64) ([]schemas
 	var pointSales []schemas.PointSaleResponse
 	err := p.DB.
 		Model(&models.PointSale{}).
-		Select("point_sales.id", "point_sales.name", "point_sales.description", "point_sales.is_deposit", "point_sales.is_main").
+		Select("point_sales.id", "point_sales.name", "point_sales.description", "point_sales.is_deposit", "point_sales.is_main", "point_sales.number").
 		Joins("JOIN member_point_sales mp ON mp.point_sale_id = point_sales.id").
 		Where("mp.member_id = ?", memberID).
 		Scan(&pointSales).Error
@@ -66,7 +66,7 @@ func (p *PointSaleRepository) PointSaleGetAllByMember(memberID int64) ([]schemas
 
 func (p *PointSaleRepository) PointSaleGetAll() ([]schemas.PointSaleResponse, error) {
 	var pointSales []schemas.PointSaleResponse
-	err := p.DB.Model(&models.PointSale{}).Select("id", "name", "description", "is_deposit", "is_main").Scan(&pointSales).Error
+	err := p.DB.Model(&models.PointSale{}).Select("id", "name", "description", "is_deposit", "is_main", "number").Scan(&pointSales).Error
 	if err != nil {
 		return nil, schemas.ErrorResponse(500, "Error al obtener los puntos de venta", err)
 	}
@@ -76,7 +76,7 @@ func (p *PointSaleRepository) PointSaleGetAll() ([]schemas.PointSaleResponse, er
 
 func (p *PointSaleRepository) PointSaleGetByID(id int64) (*schemas.PointSaleResponse, error) {
 	var pointSales models.PointSale
-	err := p.DB.Select("id", "name", "description", "is_deposit", "is_main").First(&pointSales, id).Error
+	err := p.DB.Select("id", "name", "description", "is_deposit", "is_main", "number").First(&pointSales, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, schemas.ErrorResponse(404, "Punto de venta no encontrado", err)
@@ -209,6 +209,7 @@ func (p *PointSaleRepository) PointSaleCreate(memberID int64, pointSaleCreate *s
 			Name:        pointSaleCreate.Name,
 			Description: pointSaleCreate.Description,
 			IsDeposit:   *pointSaleCreate.IsDeposit,
+			Number:      pointSaleCreate.Number,
 		}
 
 		if len(pointSaleGet) == 0 {
@@ -269,6 +270,7 @@ func (p *PointSaleRepository) PointSaleUpdate(memberID int64, pointSaleUpdate *s
 
 		pointSale.Name = pointSaleUpdate.Name
 		pointSale.Description = pointSaleUpdate.Description
+		pointSale.Number = pointSaleUpdate.Number
 
 		// Si se convierte a depósito, mover el stock
 		if !pointSale.IsDeposit && *pointSaleUpdate.IsDeposit {

@@ -11,7 +11,7 @@ type PayIncome struct {
 	ClientID       *int64        `gorm:"index" json:"client_id"`
 	Client         *Client       `gorm:"foreignKey:ClientID" json:"client"`
 	Total         float64       `gorm:"not null" json:"total"`
-	MethodPay      string        `gorm:"not null;default:cash" json:"method_pay" validate:"oneof=cash credit card transfer"`
+	MethodPay      string        `gorm:"type:varchar(30);not null;default:cash" json:"method_pay" validate:"oneof=cash credit card transfer"`
 	CreatedAt      time.Time     `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt      time.Time     `gorm:"autoUpdateTime" json:"updated_at"`
 }
@@ -23,7 +23,7 @@ type PayExpenseBuy struct {
 	CashRegisterID *int64        `gorm:"index" json:"cash_register_id"`
 	CashRegister   *CashRegister `gorm:"foreignKey:CashRegisterID" json:"cash_register"`
 	Total         float64       `gorm:"not null" json:"total"`
-	MethodPay      string        `gorm:"not null;default:cash" json:"method_pay" validate:"oneof=cash credit card transfer"`
+	MethodPay      string        `gorm:"type:varchar(30);not null;default:cash" json:"method_pay" validate:"oneof=cash credit card transfer"`
 	CreatedAt      time.Time     `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt      time.Time     `gorm:"autoUpdateTime" json:"updated_at"`
 }
@@ -35,7 +35,7 @@ type PayExpenseOther struct {
 	CashRegisterID *int64        `gorm:"index" json:"cash_register_id"`
 	CashRegister   *CashRegister `gorm:"foreignKey:CashRegisterID" json:"cash_register"`
 	Total         float64       `gorm:"not null" json:"total"`
-	MethodPay      string        `gorm:"not null;default:cash" json:"method_pay" validate:"oneof=cash credit card transfer"`
+	MethodPay      string        `gorm:"type:varchar(30);not null;default:cash" json:"method_pay" validate:"oneof=cash credit card transfer"`
 	CreatedAt      time.Time     `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt      time.Time     `gorm:"autoUpdateTime" json:"updated_at"`
 }

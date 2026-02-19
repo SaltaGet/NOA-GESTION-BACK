@@ -10,11 +10,11 @@ import (
 
 type Admin struct {
 	ID           int64          `gorm:"primaryKey;autoIncrement" json:"id"`
-	FirstName    string         `gorm:"not null;size:30" json:"first_name"`
-	LastName     string         `gorm:"not null;size:30" json:"last_name"`
-	Username     string         `gorm:"size:30;not null;uniqueIndex" json:"username"`
-	Email        string         `gorm:"unique;not null" json:"email"`
-	Password     string         `gorm:"not null" json:"password"`
+	FirstName    string         `gorm:"not null;type:varchar(30)" json:"first_name"`
+	LastName     string         `gorm:"not null;type:varchar(30)" json:"last_name"`
+	Username     string         `gorm:"type:varchar(30);not null;uniqueIndex" json:"username"`
+	Email        string         `gorm:"unique;not null;type:varchar(50)" json:"email"`
+	Password     string         `gorm:"not null;type:varchar(255)" json:"password"`
 	IsSuperAdmin bool           `gorm:"not null;default:false" json:"is_admin"`
 	CreatedAt    time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt    time.Time      `gorm:"autoUpdateTime" json:"updated_at"`

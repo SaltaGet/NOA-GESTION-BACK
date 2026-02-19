@@ -11,18 +11,18 @@ import (
 
 type Tenant struct {
 	ID            int64          `gorm:"primaryKey;autoIncrement" json:"id"`
-	Name          string         `gorm:"not null" json:"name"`
-	Identifier    string         `gorm:"not null;unique" json:"identifier"`
-	Address       string         `gorm:"not null" json:"address"`
-	Phone         string         `gorm:"not null" json:"phone"`
-	Email         string         `gorm:"uniqueIndex;not null" json:"email"`
-	CuitPdv       string         `gorm:"size:50;uniqueIndex;not null" json:"cuit_pdv"`
+	Name          string         `gorm:"type:varchar(100);not null" json:"name"`
+	Identifier    string         `gorm:"type:varchar(50);not null;unique" json:"identifier"`
+	Address       string         `gorm:"type:varchar(255);not null" json:"address"`
+	Phone         string         `gorm:"type:varchar(20);not null" json:"phone"`
+	Email         string         `gorm:"type:varchar(100);uniqueIndex;not null" json:"email"`
+	CuitPdv       string         `gorm:"type:varchar(50);uniqueIndex;not null" json:"cuit_pdv"`
 	IsActive      bool           `gorm:"not null;default:true" json:"is_active"`
 	PlanID        int64          `gorm:"not null" json:"plan_id"`
-	Connection    string         `gorm:"not null" json:"connection"`
+	Connection    string         `gorm:"type:varchar(255);not null" json:"connection"`
 	Expiration    *time.Time     `gorm:"" json:"expiration"`
 	AcceptedTerms bool           `gorm:"not null;default:false" json:"accepted_terms"`
-	IP            *string        `gorm:"size:255;default:null" json:"ip"`
+	IP            *string        `gorm:"type:varchar(255);default:null" json:"ip"`
 	DateAccepted  *time.Time     `gorm:"" json:"date_accepted"`
 	CreatedAt     time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt     time.Time      `gorm:"autoUpdateTime" json:"updated_at"`

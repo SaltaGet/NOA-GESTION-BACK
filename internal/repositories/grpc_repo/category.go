@@ -6,17 +6,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// func (r *GrpcCategoryRepository) CategoryGetAll() ([]*models.Category, error) {
-// 	var categories []*models.Category
-
-// 	err := r.DB.Find(&categories).Error
-// 	if err != nil {
-// 		return nil,  status.Errorf(codes.Internal, "error de base de datos: %v", err)
-// 	}
-
-// 	return categories, nil
-// }
-
 func (r *GrpcCategoryRepository) CategoryGetAll() ([]*models.Category, error) {
 	var categories []*models.Category
 

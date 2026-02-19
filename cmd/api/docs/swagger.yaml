@@ -1920,8 +1920,12 @@ definitions:
         type: boolean
       name:
         type: string
+      number:
+        type: integer
     required:
     - is_deposit
+    - name
+    - number
     type: object
   schemas.PointSaleResponse:
     properties:
@@ -1957,8 +1961,13 @@ definitions:
         type: boolean
       name:
         type: string
+      number:
+        type: integer
     required:
+    - id
     - is_deposit
+    - name
+    - number
     type: object
   schemas.PointSaleUpdateMain:
     properties:

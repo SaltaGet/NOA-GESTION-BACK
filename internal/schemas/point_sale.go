@@ -7,8 +7,9 @@ import (
 )
 
 type PointSaleCreate struct {
-	Name        string  `json:"name"`
+	Name        string  `json:"name" validate:"required"`
 	Description *string `json:"description"`
+	Number			int64   `json:"number" validate:"required"`
 	IsDeposit   *bool   `json:"is_deposit" validate:"required"`
 }
 
@@ -30,9 +31,10 @@ func (p *PointSaleCreate) Validate() error {
 }
 
 type PointSaleUpdate struct {
-	ID          int64   `json:"id"`
-	Name        string  `json:"name"`
+	ID          int64   `json:"id" validate:"required"`
+	Name        string  `json:"name" validate:"required"`
 	Description *string `json:"description"`
+	Number			int64   `json:"number" validate:"required"`
 	IsDeposit   *bool   `json:"is_deposit" validate:"required"`
 }
 

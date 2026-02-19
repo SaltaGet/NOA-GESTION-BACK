@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -14,8 +15,9 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 	lru "github.com/hashicorp/golang-lru"
+	_ "github.com/jackc/pgx/v5/stdlib" // Driver para sql.Open
 	"github.com/rs/zerolog/log"
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -75,7 +77,7 @@ func ConnectDB(cfg *schemas.EmailConfig) (*gorm.DB, error) {
 		log.Fatal().Err(err).Msg("No se pudo crear la base")
 	}
 
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
@@ -83,19 +85,20 @@ func ConnectDB(cfg *schemas.EmailConfig) (*gorm.DB, error) {
 	setupDBConnection(db, mainDBConfig)
 
 	if err := db.AutoMigrate(
-		&models.Tenant{}, 
-		&models.User{}, 
-		&models.UserTenant{}, 
-		&models.Plan{}, 
-		&models.Admin{}, 
-		&models.PayTenant{},
-		&models.PayDetail{},
-		&models.Module{},
-		&models.TenantModule{},
+		&models.Admin{},
+		&models.AuditLogAdmin{},
 		&models.Feedback{},
+		&models.Module{},
 		&models.News{},
+		&models.PayDetail{},
+		&models.PayTenant{},
+		&models.Plan{},
 		&models.SettingTenant{},
-		&models.AuditLogAdmin{}); err != nil {
+		&models.Tenant{},
+		&models.Credential{},
+		&models.TenantModule{},
+		&models.User{},
+		&models.UserTenant{}); err != nil {
 		log.Fatal().Err(err).Msg("Error en migración")
 	}
 
@@ -183,8 +186,6 @@ func ensureAdmin(db *gorm.DB, cfg *schemas.EmailConfig) (*gorm.DB, error) {
 	return db, nil
 }
 
-
-
 func ensurePlans(db *gorm.DB) error {
 	plan := models.Plan{
 		Name:            "Básico",
@@ -194,7 +195,7 @@ func ensurePlans(db *gorm.DB) error {
 		Features:        "emmmm, nada es básico, asi que no esperes mucho",
 		AmountPointSale: 1,
 		AmountMember:    5,
-		AmountProduct: 1000,
+		AmountProduct:   1000,
 	}
 
 	err := db.Create(&plan).Error
@@ -328,7 +329,7 @@ func InvalidateTenantConnection(tenantID int64) {
 }
 
 func openTenantDB(connStr string) (*gorm.DB, error) {
-	db, err := gorm.Open(mysql.Open(connStr), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("error al abrir DB de tenant: %w", err)
 	}
@@ -338,23 +339,48 @@ func openTenantDB(connStr string) (*gorm.DB, error) {
 }
 
 func EnsureDatabaseExists(dsn string) error {
-	parts := strings.Split(dsn, "/")
-	if len(parts) < 2 {
-		return fmt.Errorf("DSN inválido: %s", dsn)
-	}
-	dbNameAndParams := parts[1]
-	dbName := strings.Split(dbNameAndParams, "?")[0]
-
-	dsnWithoutDB := strings.Split(dsn, "/")[0] + "/?charset=utf8mb4&parseTime=True&loc=Local"
-
-	db, err := sql.Open("mysql", dsnWithoutDB)
+	u, err := url.Parse(dsn)
 	if err != nil {
-		return fmt.Errorf("error al conectar sin base: %w", err)
+		return fmt.Errorf("error al parsear DSN: %w", err)
+	}
+
+	// Extract database name from path (e.g., /ospam -> ospam)
+	dbName := strings.TrimPrefix(u.Path, "/")
+	if dbName == "" {
+		// If DSN doesn't have a path, maybe it is just the host?
+		// Postgres DSNs usually have the DB name in the path.
+		return fmt.Errorf("nombre de base de datos no encontrado en DSN")
+	}
+
+	// Connect to 'postgres' database to check existence/create new DB
+	// We modify the path to point to 'postgres'
+	u.Path = "/postgres"
+	dsnWithoutDB := u.String()
+
+	db, err := sql.Open("pgx", dsnWithoutDB)
+	if err != nil {
+		return fmt.Errorf("error al conectar a postgres default db: %w", err)
 	}
 	defer db.Close()
 
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", dbName))
-	return err
+	// Check if DB exists
+	var exists bool
+	query := `SELECT EXISTS(SELECT datname FROM pg_catalog.pg_database WHERE datname = $1)`
+	err = db.QueryRow(query, dbName).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("error verificando existencia de DB: %w", err)
+	}
+
+	if !exists {
+		log.Info().Msgf("La base de datos %s no existe, creándola...", dbName)
+		_, err = db.Exec(fmt.Sprintf(`CREATE DATABASE "%s"`, dbName))
+		if err != nil {
+			return fmt.Errorf("error creando base de datos: %w", err)
+		}
+		log.Info().Msg("Base de datos creada exitosamente")
+	}
+
+	return nil
 }
 
 func FilePathFromURI(uri string) string {
@@ -449,3 +475,4 @@ func InitDBCache(maxEntries int) error {
 	}
 	return nil
 }
+

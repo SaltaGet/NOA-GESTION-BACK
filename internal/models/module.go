@@ -8,7 +8,7 @@ import (
 
 type Module struct {
 	ID                     int64          `gorm:"primaryKey;autoIncrement" json:"id"`
-	Name                   string         `gorm:"not null;uniqueIndex" json:"name"`
+	Name                   string         `gorm:"type:varchar(100);not null;uniqueIndex" json:"name"`
 	PriceMonthly           float64        `gorm:"type:decimal(10,2)" json:"price"`
 	PriceYearly            float64        `gorm:"type:decimal(10,2)" json:"price_yearly"`
 	Description            string         `gorm:"type:text" json:"description"`
