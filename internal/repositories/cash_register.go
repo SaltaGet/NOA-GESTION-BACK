@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -19,7 +18,7 @@ func (r *CashRegisterRepository) CashRegisterExistOpen(pointSaleID int64) (bool,
 		Select("count(*)").
 		Where("is_close = ? AND point_sale_id = ?", false, pointSaleID).
 		Scan(&existCashRegisterOpen).Error; err != nil {
-		return false, schemas.ErrorResponse(500, "error al contar aperturas de caja", err)
+		return false, schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
 	}
 
 	if existCashRegisterOpen > 0 {
@@ -36,10 +35,7 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 		Preload("MemberClose", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
 		Where("id = ? AND point_sale_id = ?", id, pointSaleID).
 		First(&register).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "caja no encontrada", err)
-		}
-		return nil, schemas.ErrorResponse(500, "error obtener caja", err)
+		return nil, schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
 	}
 
 	var cashRegisterResponse schemas.CashRegisterFullResponse
@@ -58,7 +54,7 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 		}).
 		Where("cash_register_id = ? AND point_sale_id = ?", id, pointSaleID).
 		Find(&incomesModel).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "error al obtener ingresos de caja", err)
+		return nil, schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
 	}
 	var incomes []*schemas.IncomeSaleSimpleResponse
 	_ = copier.Copy(&incomes, &incomesModel)
@@ -73,7 +69,7 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 		}).
 		Where("cash_register_id = ? AND point_sale_id = ?", id, pointSaleID).
 		Find(&incomeOtherModel).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "error al obtener ingresos de cancha de caja", err)
+		return nil, schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
 	}
 
 	var incomeOther []*schemas.IncomeOtherResponse
@@ -87,7 +83,7 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 		Preload("TypeExpense").
 		Where("cash_register_id = ? AND point_sale_id = ?", id, pointSaleID).
 		Find(&expensesOtherModel).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "error al obtener egresos de caja", err)
+		return nil, schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
 	}
 	var expenseOtherResponse []*schemas.ExpenseOtherResponse
 	_ = copier.Copy(&expenseOtherResponse, &expensesOtherModel)
@@ -108,7 +104,7 @@ func (r *CashRegisterRepository) CashRegisterOpen(pointSaleID int64, userID int6
 		Select("count(*)").
 		Where("is_close = ? AND point_sale_id = ?", false, pointSaleID).
 		Scan(&existRegisterOpen).Error; err != nil {
-		return schemas.ErrorResponse(500, "error al contar aperturas de caja", err)
+		return schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
 	}
 
 	if existRegisterOpen > 0 {
@@ -123,7 +119,7 @@ func (r *CashRegisterRepository) CashRegisterOpen(pointSaleID int64, userID int6
 	}
 
 	if err := r.DB.Create(&registerOpen).Error; err != nil {
-		return schemas.ErrorResponse(500, "error al registrar la apertura de caja", err)
+		return schemas.HandlerErrorGorm(err, "Caja", schemas.Create)
 	}
 
 	go database.SaveAuditAsync(r.DB, models.AuditLog{MemberID: userID, Path: "cash_register", Method: "create"}, nil, registerOpen)
@@ -137,17 +133,14 @@ func (r *CashRegisterRepository) CashRegisterClose(pointSaleID int64, userID int
 		Where("is_close = ? AND point_sale_id = ?", false, pointSaleID).
 		Order("hour_open DESC").
 		First(&register).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return schemas.ErrorResponse(404, "No se encontraron aperturas de caja", err)
-		}
-		return schemas.ErrorResponse(500, "error al obtener la apertura de caja", err)
+		return schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
 	}
 
 	oldRegister := register
 
 	var member models.Member
 	if err := r.DB.Preload("Role").First(&member, userID).Error; err != nil {
-		return schemas.ErrorResponse(404, "usuario no encontrado", err)
+		return schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
 	}
 
 	now := time.Now().UTC()
@@ -157,7 +150,7 @@ func (r *CashRegisterRepository) CashRegisterClose(pointSaleID int64, userID int
 	register.MemberCloseID = &userID
 
 	if err := r.DB.Save(&register).Error; err != nil {
-		return schemas.ErrorResponse(500, "error al cerrar la caja", err)
+		return schemas.HandlerErrorGorm(err, "Caja", schemas.Update)
 	}
 
 	go database.SaveAuditAsync(r.DB, models.AuditLog{
@@ -177,7 +170,7 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 		Where("point_sale_id = ? AND created_at >= ? AND created_at <= ?", pointSaleID, fromDate, toDate).
 		Order("created_at DESC").
 		Find(&registers).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "error al obtener aperturas de caja", err)
+		return nil, schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
 	}
 
 	var cashRegisterInformResponse []*schemas.CashRegisterInformResponse
@@ -197,7 +190,7 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 		`).
 			Where("cash_register_id = ?", register.ID).
 			Scan(&incomes).Error; err != nil {
-			return nil, schemas.ErrorResponse(500, "error al obtener ingresos por ventas", err)
+			return nil, schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
 		}
 
 		var incomeOther total
@@ -208,7 +201,7 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 		`).
 			Where("cash_register_id = ?", register.ID).
 			Find(&incomeOther).Error; err != nil {
-			return nil, schemas.ErrorResponse(500, "error al obtener otros ingresos", err)
+			return nil, schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
 		}
 
 		var expenseBuy total
@@ -219,7 +212,7 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 		`).
 			Where("cash_register_id = ?", register.ID).
 			Scan(&expenseBuy).Error; err != nil {
-			return nil, schemas.ErrorResponse(500, "error al obtener egresos por compras", err)
+			return nil, schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
 		}
 
 		var expenseOther total
@@ -230,7 +223,7 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 		`).
 			Where("cash_register_id = ?", register.ID).
 			Scan(&expenseOther).Error; err != nil {
-			return nil, schemas.ErrorResponse(500, "error al obtener otros egresos", err)
+			return nil, schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
 		}
 
 		totalIncomesCash := incomes.Cash + incomeOther.Cash

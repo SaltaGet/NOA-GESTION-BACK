@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -18,10 +17,7 @@ func (r *RoleRepository) RoleGetByID(id int64) (*schemas.RoleResponse, error) {
 		Preload("Permissions"). // ← Agregar esto
 		Where("roles.id = ?", id).
 		First(&role).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "Rol no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "Error interno al obtener rol", err)
+		return nil, schemas.HandlerErrorGorm(err, "Rol", schemas.Read)
 	}
 
 	var roleResponse schemas.RoleResponse
@@ -37,7 +33,7 @@ func (r *RoleRepository) RoleGetAll() (*[]schemas.RoleResponse, error) {
 		Joins("left join role_permissions on roles.id = role_permissions.role_id").
 		Joins("left join permissions on permissions.id = role_permissions.permission_id").
 		Find(&rows).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "Error interno al obtener roles", err)
+		return nil, schemas.HandlerErrorGorm(err, "Rol", schemas.Read)
 	}
 
 	roleMap := make(map[string]*schemas.RoleResponse)
@@ -138,7 +134,7 @@ func expandPermissions(db *gorm.DB, permissionIDs []int64) ([]models.Permission,
 	// Obtener los permisos solicitados
 	var requestedPermissions []models.Permission
 	if err := db.Where("id IN ?", permissionIDs).Find(&requestedPermissions).Error; err != nil {
-		return nil, err
+		return nil, schemas.HandlerErrorGorm(err, "Rol", schemas.Read)
 	}
 
 	// Mapa para evitar duplicados
@@ -161,7 +157,7 @@ func expandPermissions(db *gorm.DB, permissionIDs []int64) ([]models.Permission,
 		var readPermissions []models.Permission
 		// Buscar permisos que terminen en 04 y pertenezcan a los grupos relevantes
 		if err := db.Where("code LIKE ? AND `group` IN ?", "%04", groupsToExpand).Find(&readPermissions).Error; err != nil {
-			return nil, err
+			return nil, schemas.HandlerErrorGorm(err, "Rol", schemas.Read)
 		}
 
 		// Agregar los permisos de lectura al mapa (evita duplicados automáticamente)
@@ -186,7 +182,7 @@ func (t *RoleRepository) RoleCreate(memberID int64, roleCreate *schemas.RoleCrea
 		// Expandir permisos automáticamente
 		permissions, err := expandPermissions(tx, roleCreate.PermissionsID)
 		if err != nil {
-			return schemas.ErrorResponse(500, "Error interno al buscar permisos", err)
+			return err
 		}
 		
 		// Validar que al menos los permisos solicitados existan
@@ -199,7 +195,7 @@ func (t *RoleRepository) RoleCreate(memberID int64, roleCreate *schemas.RoleCrea
 		newRole := &models.Role{Name: roleCreate.Name, Permissions: permissions}
 
 		if err := tx.Create(&newRole).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error interno al crear el rol", err)
+			return schemas.HandlerErrorGorm(err, "Rol", schemas.Create)
 		}
 
 		newRoleSave = newRole
@@ -226,10 +222,7 @@ func (t *RoleRepository) RoleUpdate(memberID int64, roleUpdate *schemas.RoleUpda
 		// Verificar que el rol existe
 		var existingRole models.Role
 		if err := tx.Preload("Permissions").First(&existingRole, roleUpdate.ID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Rol no encontrado", err)
-			}
-			return schemas.ErrorResponse(500, "Error interno al buscar rol", err)
+			return schemas.HandlerErrorGorm(err, "Rol", schemas.Read)
 		}
 
 		oldRole = existingRole
@@ -237,7 +230,7 @@ func (t *RoleRepository) RoleUpdate(memberID int64, roleUpdate *schemas.RoleUpda
 		// Expandir permisos automáticamente
 		permissions, err := expandPermissions(tx, roleUpdate.PermissionsID)
 		if err != nil {
-			return schemas.ErrorResponse(500, "Error interno al buscar permisos", err)
+			return err
 		}
 		
 		// Validar que al menos los permisos solicitados existan
@@ -249,12 +242,12 @@ func (t *RoleRepository) RoleUpdate(memberID int64, roleUpdate *schemas.RoleUpda
 
 		// Actualizar el nombre del rol
 		if err := tx.Model(&existingRole).Update("name", roleUpdate.Name).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error interno al actualizar el nombre del rol", err)
+			return schemas.HandlerErrorGorm(err, "Rol", schemas.Update)
 		}
 
 		// Reemplazar las asociaciones de permisos
 		if err := tx.Model(&existingRole).Association("Permissions").Replace(permissions); err != nil {
-			return schemas.ErrorResponse(500, "Error interno al actualizar los permisos del rol", err)
+			return schemas.HandlerErrorGorm(err, "Rol", schemas.Update)
 		}
 
 		// Recargar el rol con los permisos actualizados

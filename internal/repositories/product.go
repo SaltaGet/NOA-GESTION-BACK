@@ -30,10 +30,7 @@ func (r *ProductRepository) ProductGetByID(id int64) (*models.Product, error) {
 			return db.Select("id", "product_id", "stock")
 		}).
 		First(&product, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "producto no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "error al obtener el producto", err)
+		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 
 	return &product, nil
@@ -56,10 +53,7 @@ func (r *ProductRepository) ProductGetByCode(code string) (*models.Product, erro
 			return db.Select("id", "product_id", "stock")
 		}).
 		Where("code = ?", code).First(&product).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "producto no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "error al obtener el producto", err)
+		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 
 	return product, nil
@@ -82,7 +76,7 @@ func (r *ProductRepository) ProductGetByCategoryID(categoryID int64) ([]*models.
 			return db.Select("id", "product_id", "stock")
 		}).
 		Where("category_id = ?", categoryID).Find(&products).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
+		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 
 	return products, nil
@@ -106,7 +100,7 @@ func (r *ProductRepository) ProductGetByName(name string) ([]*models.Product, er
 		}).
 		Where("name LIKE ?", "%"+name+"%").
 		Find(&allProducts).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
+		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 
 	if strings.TrimSpace(name) == "" {
@@ -204,7 +198,7 @@ func (r *ProductRepository) ProductGetAll(page, limit int, isVisible *bool) ([]*
 
 	// 3. Contar el total basado en si se aplicó el filtro o no
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "error al contar productos", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 
 	// 4. Ejecutar la búsqueda con los Preloads
@@ -224,7 +218,7 @@ func (r *ProductRepository) ProductGetAll(page, limit int, isVisible *bool) ([]*
 		Offset(offset).
 		Limit(limit).
 		Find(&products).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "error al obtener productos", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 
 	return products, total, nil
@@ -236,10 +230,7 @@ func (r *ProductRepository) ProductGetByCodeToQR(code string) (*models.Product, 
 	if err := r.DB.
 		Select("code", "name").
 		Where("code = ?", code).First(&product).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "producto no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "error al obtener el producto", err)
+		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 
 	return product, nil
@@ -248,7 +239,7 @@ func (r *ProductRepository) ProductGetByCodeToQR(code string) (*models.Product, 
 func (r *ProductRepository) ProductCount() (int64, error) {
 	var count int64
 	if err := r.DB.Model(&models.Product{}).Count(&count).Error; err != nil {
-		return 0, schemas.ErrorResponse(500, "error al contar productos", err)
+		return 0, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 	return count, nil
 }
@@ -267,15 +258,15 @@ func (r *ProductRepository) ProductInsertToExcel(memberID int64, products []mode
 			}
 
 			if err := tx.Create(&product).Error; err != nil {
-				return err
+				return schemas.HandlerErrorGorm(err, "Producto", schemas.Create)
 			}
 
 			if product.StockDeposit.Stock <= 0 {
-				return errors.New("stock no puede ser menor o igual a 0")
+				return schemas.ErrorResponse(400, "stock no puede ser menor o igual a 0", fmt.Errorf("stock no puede ser menor o igual a 0"))
 			}
 
 			if err := tx.Create(&models.Deposit{ProductID: product.ID, Stock: product.StockDeposit.Stock}).Error; err != nil {
-				return err
+				return schemas.HandlerErrorGorm(err, "Producto", schemas.Create)
 			}
 
 			return nil
@@ -295,7 +286,7 @@ func (r *ProductRepository) ProductCreate(memberID int64, productCreate *schemas
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
 		var countTotal int64
 		if err := tx.Model(&models.Product{}).Count(&countTotal).Error; err != nil {
-			return schemas.ErrorResponse(500, "error al contar productos", err)
+			return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 		}
 
 		if countTotal >= plan.AmountProduct {
@@ -304,10 +295,7 @@ func (r *ProductRepository) ProductCreate(memberID int64, productCreate *schemas
 
 		var category models.Category
 		if err := tx.First(&category, productCreate.CategoryID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "categoria no encontrada", err)
-			}
-			return schemas.ErrorResponse(500, "error al obtener la categoria", err)
+			return schemas.HandlerErrorGorm(err, "Categoria", schemas.Read)
 		}
 
 		product := models.Product{
@@ -324,10 +312,7 @@ func (r *ProductRepository) ProductCreate(memberID int64, productCreate *schemas
 		}
 
 		if err := tx.Create(&product).Error; err != nil {
-			if schemas.IsDuplicateError(err) {
-				return schemas.ErrorResponse(400, "el producto de codigo "+product.Code+" ya existe", err)
-			}
-			return schemas.ErrorResponse(500, "error al crear el producto", err)
+			return schemas.HandlerErrorGorm(err, "Producto", schemas.Create)
 		}
 
 		productSave = product
@@ -356,10 +341,7 @@ func (r *ProductRepository) ProductUpdate(memberID int64, product *schemas.Produ
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
 		var p models.Product
 		if err := tx.First(&p, product.ID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "producto no encontrado", err)
-			}
-			return schemas.ErrorResponse(500, "error al obtener el producto", err)
+			return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 		}
 
 		// Guardar estado anterior
@@ -380,10 +362,7 @@ func (r *ProductRepository) ProductUpdate(memberID int64, product *schemas.Produ
 		}
 
 		if err := tx.Model(&p).Updates(updates).Error; err != nil {
-			if schemas.IsDuplicateError(err) {
-				return schemas.ErrorResponse(400, "el producto de código "+product.Code+" ya existe", err)
-			}
-			return schemas.ErrorResponse(500, "error al actualizar el producto", err)
+			return schemas.HandlerErrorGorm(err, "Producto", schemas.Update)
 		}
 
 		tx.First(&updatedProduct, p.ID)
@@ -410,10 +389,7 @@ func (r *ProductRepository) ProductPriceUpdate(memberID int64, product *schemas.
 			// Obtener el estado anterior del producto
 			var oldProduct models.Product
 			if err := tx.First(&oldProduct, p.ID).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return schemas.ErrorResponse(404, fmt.Sprintf("producto %d no encontrado", p.ID), err)
-				}
-				return schemas.ErrorResponse(500, fmt.Sprintf("error al obtener el producto %d", p.ID), err)
+				return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 			}
 
 			// Guardar estado anterior
@@ -424,7 +400,7 @@ func (r *ProductRepository) ProductPriceUpdate(memberID int64, product *schemas.
 				Update("price", p.Price)
 
 			if res.Error != nil {
-				return schemas.ErrorResponse(500, "error al actualizar el producto", res.Error)
+				return schemas.HandlerErrorGorm(res.Error, "Producto", schemas.Update)
 			}
 
 			if res.RowsAffected == 0 {
@@ -454,10 +430,7 @@ func (r *ProductRepository) ProductDelete(memberID int64, id int64) error {
 		// Obtener el producto antes de eliminarlo
 		var product models.Product
 		if err := tx.First(&product, id).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "producto no encontrado", err)
-			}
-			return schemas.ErrorResponse(500, "error al obtener el producto", err)
+			return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 		}
 
 		// Guardar estado del producto
@@ -467,20 +440,17 @@ func (r *ProductRepository) ProductDelete(memberID int64, id int64) error {
 		// Obtener los stocks del punto de venta asociados
 		var stockPointSales []models.StockPointSale
 		if err := tx.Where("product_id = ?", id).Find(&stockPointSales).Error; err != nil {
-			return schemas.ErrorResponse(500, "error al obtener stocks del producto", err)
+			return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 		}
 
 		// Eliminar stocks del punto de venta
 		if err := tx.Where("product_id = ?", id).Delete(&models.StockPointSale{}).Error; err != nil {
-			return schemas.ErrorResponse(500, "error al eliminar stocks del producto", err)
+			return schemas.HandlerErrorGorm(err, "Producto", schemas.Delete)
 		}
 
 		// Eliminar el producto
 		if err := tx.Where("id = ?", id).Delete(&models.Product{}).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "producto no encontrado", err)
-			}
-			return schemas.ErrorResponse(500, "error al eliminar el producto", err)
+			return schemas.HandlerErrorGorm(err, "Producto", schemas.Delete)
 		}
 
 		return nil
@@ -501,14 +471,11 @@ func (r *ProductRepository) ProductDelete(memberID int64, id int64) error {
 func (r *ProductRepository) ValidateProductImages(productValidateImage schemas.ProductValidateImage, plan *schemas.PlanResponseDTO) error {
 	var product models.Product
 	if err := r.DB.First(&product, productValidateImage.ProductID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return schemas.ErrorResponse(404, "producto no encontrado", err)
-		}
-		return schemas.ErrorResponse(500, "error al obtener productos", err)
+		return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 
 	if productValidateImage.PrimaryImage == "keep" && product.PrimaryImage == nil {
-		return schemas.ErrorResponse(400, "la imagen princial es obligatoria", nil)
+		return schemas.ErrorResponse(400, "la imagen princial es obligatoria", fmt.Errorf("la imagen princial es obligatoria"))
 	}
 
 	var count int = 0
@@ -548,12 +515,12 @@ func (r *ProductRepository) ProductUpdateVisibility(productUpdate *schemas.ListV
 
 			// 1. Verificar errores de base de datos (conexión, sintaxis, etc.)
 			if result.Error != nil {
-				return schemas.ErrorResponse(500, "error al editar el producto", result.Error)
+				return schemas.HandlerErrorGorm(result.Error, "Producto", schemas.Update)
 			}
 
 			// 2. Verificar si el producto realmente existía
 			if result.RowsAffected == 0 {
-				return schemas.ErrorResponse(404, fmt.Sprintf("producto con ID %d no encontrado", prod.ProductID), nil)
+				return schemas.ErrorResponse(404, fmt.Sprintf("producto con ID %d no encontrado", prod.ProductID), fmt.Errorf("producto con ID %d no encontrado", prod.ProductID))
 			}
 		}
 

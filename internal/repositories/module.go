@@ -1,23 +1,18 @@
 package repositories
 
 import (
-	"errors"
 	"time"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/jinzhu/copier"
-	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 func (r *MainRepository) ModuleGet(id int64) (*schemas.ModuleResponse, error) {
 	var module models.Module
 	if err := r.DB.First(&module, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "Modulo no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "Error al buscar modulo", err)
+		return nil, schemas.HandlerErrorGorm(err, "Modulo", schemas.Read)
 	}
 
 	var moduleResponse schemas.ModuleResponse
@@ -29,7 +24,7 @@ func (r *MainRepository) ModuleGet(id int64) (*schemas.ModuleResponse, error) {
 func (r *MainRepository) ModuleGetAll() ([]schemas.ModuleResponse, error) {
 	var modules []models.Module
 	if err := r.DB.Find(&modules).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "Error al obtener modulos", err)
+		return nil, schemas.HandlerErrorGorm(err, "Modulo", schemas.Read)
 	}
 
 	var modulesResponse []schemas.ModuleResponse
@@ -50,10 +45,7 @@ func (r *MainRepository) ModuleCreate(moduleCreate *schemas.ModuleCreate) (int64
 
 	err := r.DB.Create(&newModule).Error
 	if err != nil {
-		if schemas.IsDuplicateError(err) {
-			return 0, schemas.ErrorResponse(409, "El modulo "+newModule.Name+" ya existe", err)
-		}
-		return 0, schemas.ErrorResponse(500, "Error al crear modulo", err)
+		return 0, schemas.HandlerErrorGorm(err, "Modulo", schemas.Create)
 	}
 
 	return newModule.ID, nil
@@ -61,10 +53,7 @@ func (r *MainRepository) ModuleCreate(moduleCreate *schemas.ModuleCreate) (int64
 
 func (r *MainRepository) ModuleUpdate(moduleUpdate *schemas.ModuleUpdate) error {
 	if err := r.DB.Model(&models.Module{}).Where("id = ?", moduleUpdate.ID).Updates(moduleUpdate).Error; err != nil {
-		if schemas.IsDuplicateError(err) {
-			return schemas.ErrorResponse(409, "El modulo "+moduleUpdate.Name+" ya existe", err)
-		}
-		return schemas.ErrorResponse(500, "Error al actualizar modulo", err)
+		return schemas.HandlerErrorGorm(err, "Modulo", schemas.Update)
 	}
 
 	return nil
@@ -103,17 +92,11 @@ func (r *MainRepository) ModuleDelete(id int64) error {
 //	}
 func (r *MainRepository) ModuleAddTenant(moduleAddTenant *schemas.ModuleAddTenant) error {
 	if err := r.DB.First(&models.Tenant{}, moduleAddTenant.TenantID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return schemas.ErrorResponse(404, "Tenant no encontrado", err)
-		}
-		return schemas.ErrorResponse(500, "Error al buscar tenant", err)
+		return schemas.HandlerErrorGorm(err, "Tenant", schemas.Read)
 	}
 
 	if err := r.DB.Where("id = ?", moduleAddTenant.ModuleID).First(&models.Module{}).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return schemas.ErrorResponse(404, "El Módulo especificado no existe", err)
-		}
-		return schemas.ErrorResponse(500, "Error interno al validar el Módulo", err)
+		return schemas.HandlerErrorGorm(err, "Modulo", schemas.Read)
 	}
 
 	loc, err := time.LoadLocation("America/Argentina/Buenos_Aires")
@@ -140,7 +123,7 @@ func (r *MainRepository) ModuleAddTenant(moduleAddTenant *schemas.ModuleAddTenan
 	}).Create(&newModuleAdd).Error
 
 	if err != nil {
-		return schemas.ErrorResponse(500, "Error al procesar el módulo", err)
+		return schemas.HandlerErrorGorm(err, "Modulo", schemas.Create)
 	}
 
 	return nil
@@ -157,7 +140,7 @@ func (r *MainRepository) ModuleGetByTenantID(tenantID int64) ([]schemas.ModuleRe
 		Find(&modules).Error
 
 	if err != nil {
-		return nil, schemas.ErrorResponse(500, "Error al procesar modulo", err)
+		return nil, schemas.HandlerErrorGorm(err, "Modulo", schemas.Read)
 	}
 
 	modulesResponse := make([]schemas.ModuleResponseDTO, 0, len(modules))

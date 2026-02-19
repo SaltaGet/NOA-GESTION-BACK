@@ -58,7 +58,7 @@ func (p *PointSaleRepository) PointSaleGetAllByMember(memberID int64) ([]schemas
 		Where("mp.member_id = ?", memberID).
 		Scan(&pointSales).Error
 	if err != nil {
-		return nil, schemas.ErrorResponse(500, "Error al obtener los puntos de venta", err)
+		return nil, schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
 	}
 
 	return pointSales, nil
@@ -68,7 +68,7 @@ func (p *PointSaleRepository) PointSaleGetAll() ([]schemas.PointSaleResponse, er
 	var pointSales []schemas.PointSaleResponse
 	err := p.DB.Model(&models.PointSale{}).Select("id", "name", "description", "is_deposit", "is_main", "number").Scan(&pointSales).Error
 	if err != nil {
-		return nil, schemas.ErrorResponse(500, "Error al obtener los puntos de venta", err)
+		return nil, schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
 	}
 
 	return pointSales, nil
@@ -78,10 +78,7 @@ func (p *PointSaleRepository) PointSaleGetByID(id int64) (*schemas.PointSaleResp
 	var pointSales models.PointSale
 	err := p.DB.Select("id", "name", "description", "is_deposit", "is_main", "number").First(&pointSales, id).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "Punto de venta no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "Error al obtener los puntos de venta", err)
+		return nil, schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
 	}
 
 	var pointSaleResponse schemas.PointSaleResponse
@@ -150,7 +147,7 @@ func (p *PointSaleRepository) PointSaleGetByID(id int64) (*schemas.PointSaleResp
 func (p *PointSaleRepository) PointSaleCount() (int64, error) {
 	var pointSales int64
 	if err := p.DB.Model(&models.PointSale{}).Count(&pointSales).Error; err != nil {
-		return 0, schemas.ErrorResponse(500, "error al obtner la cantidad de puntos de ventas", err)
+		return 0, schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
 	}
 
 	return pointSales, nil
@@ -202,7 +199,7 @@ func (p *PointSaleRepository) PointSaleCreate(memberID int64, pointSaleCreate *s
 	err := p.DB.Transaction(func(tx *gorm.DB) error {
 		var pointSaleGet []models.PointSale
 		if err := tx.Where("is_main = ?", true).Find(&pointSaleGet).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al obtener el punto de venta principal", err)
+			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
 		}
 
 		pointSale := models.PointSale{
@@ -217,22 +214,19 @@ func (p *PointSaleRepository) PointSaleCreate(memberID int64, pointSaleCreate *s
 		}
 
 		if err := tx.Create(&pointSale).Error; err != nil {
-			if schemas.IsDuplicateError(err) {
-				return schemas.ErrorResponse(409, "El punto de venta "+pointSale.Name+" ya existe", err)
-			}
-			return schemas.ErrorResponse(500, "Error al crear punto de venta", err)
+			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Create)
 		}
 
 		pointSaleSave = pointSale
 
 		var membersAdmin []models.Member
 		if err := tx.Where("is_admin = ?", true).Find(&membersAdmin).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al obtener los administradores", err)
+			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
 		}
 
 		if len(membersAdmin) > 0 {
 			if err := tx.Model(&pointSale).Association("Members").Append(&membersAdmin); err != nil {
-				return schemas.ErrorResponse(500, "Error al asignar punto de venta a administradores", err)
+				return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Update)
 			}
 		}
 
@@ -259,10 +253,7 @@ func (p *PointSaleRepository) PointSaleUpdate(memberID int64, pointSaleUpdate *s
 	err := p.DB.Transaction(func(tx *gorm.DB) error {
 		var pointSale models.PointSale
 		if err := tx.First(&pointSale, pointSaleUpdate.ID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Punto de venta no encontrado", err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener el punto de venta", err)
+			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
 		}
 
 		// Guardar estado anterior
@@ -276,7 +267,7 @@ func (p *PointSaleRepository) PointSaleUpdate(memberID int64, pointSaleUpdate *s
 		if !pointSale.IsDeposit && *pointSaleUpdate.IsDeposit {
 			var stockList []models.StockPointSale
 			if err := tx.Where("point_sale_id = ?", pointSale.ID).Find(&stockList).Error; err != nil {
-				return schemas.ErrorResponse(500, "Error obteniendo el stock del punto de venta", err)
+				return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
 			}
 
 			for _, s := range stockList {
@@ -289,22 +280,22 @@ func (p *PointSaleRepository) PointSaleUpdate(memberID int64, pointSaleUpdate *s
 						Stock:     s.Stock,
 					}
 					if err := tx.Create(&deposit).Error; err != nil {
-						return schemas.ErrorResponse(500, "Error creando registro en depósito", err)
+						return schemas.HandlerErrorGorm(err, "Déposito", schemas.Create)
 					}
 
 				} else if err == nil {
 					deposit.Stock += s.Stock
 					if err := tx.Save(&deposit).Error; err != nil {
-						return schemas.ErrorResponse(500, "Error actualizando stock en depósito", err)
+						return schemas.HandlerErrorGorm(err, "Déposito", schemas.Update)
 					}
 
 				} else {
-					return schemas.ErrorResponse(500, "Error validando stock en depósito", err)
+					return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
 				}
 
 				s.Stock = 0
 				if err := tx.Save(&s).Error; err != nil {
-					return schemas.ErrorResponse(500, "Error limpiando stock de punto de venta", err)
+					return schemas.HandlerErrorGorm(err, "Stock punto de venta", schemas.Update)
 				}
 			}
 		}
@@ -312,7 +303,7 @@ func (p *PointSaleRepository) PointSaleUpdate(memberID int64, pointSaleUpdate *s
 		pointSale.IsDeposit = *pointSaleUpdate.IsDeposit
 
 		if err := tx.Save(&pointSale).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error actualizando punto de venta", err)
+			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Update)
 		}
 
 		newPointSale = pointSale
@@ -340,11 +331,7 @@ func (p *PointSaleRepository) PointSaleUpdateMain(memberID int64, pointSaleUpdat
 		if err := tx.
 			Clauses(clause.Locking{Strength: "UPDATE"}).
 			First(&pointSaleOld, pointSaleUpdateMain.ID).Error; err != nil {
-
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Punto de venta no encontrado", err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener el punto de venta", err)
+			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
 		}
 
 		savePointSaleOld = pointSaleOld
@@ -353,11 +340,7 @@ func (p *PointSaleRepository) PointSaleUpdateMain(memberID int64, pointSaleUpdat
 		if err := tx.
 			Clauses(clause.Locking{Strength: "UPDATE"}).
 			First(&pointSaleNew, pointSaleUpdateMain.NewMain).Error; err != nil {
-
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Nuevo punto de venta no encontrado", err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener el nuevo punto de venta", err)
+			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
 		}
 
 		if !pointSaleOld.IsMain {
@@ -370,20 +353,20 @@ func (p *PointSaleRepository) PointSaleUpdateMain(memberID int64, pointSaleUpdat
 
 		// Actualizar
 		if err := tx.Model(&pointSaleOld).Update("is_main", false).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error actualizando el punto principal", err)
+			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Update)
 		}
 
 		if err := tx.Model(&pointSaleNew).Update("is_main", true).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error actualizando el nuevo punto principal", err)
+			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Update)
 		}
 
 		// Recargar actualizados
 		if err := tx.First(&savePointSaleOld, pointSaleOld.ID).Error; err != nil {
-			return err
+			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
 		}
 
 		if err := tx.First(&savePointSaleNew, pointSaleNew.ID).Error; err != nil {
-			return err
+			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
 		}
 
 		return nil

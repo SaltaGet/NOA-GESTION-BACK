@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -23,10 +22,7 @@ func (r *ClientRepository) ClientGetByID(id int64) (*schemas.ClientResponse, err
 			return db.Select("id", "income_sale_id", "client_id", "total", "method_pay", "created_at").Where("method_pay = ?", "credit")
 		}).
 		Where("id = ?", id).First(&client).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "Client no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "Error al buscar el cliente", err)
+		return nil, schemas.HandlerErrorGorm(err, "Cliente", schemas.Read)
 	}
 
 	var clientResponse schemas.ClientResponse
@@ -38,7 +34,7 @@ func (r *ClientRepository) ClientGetByID(id int64) (*schemas.ClientResponse, err
 func (r *ClientRepository) ClientGetByFilter(search string) (*[]schemas.ClientResponseDTO, error) {
 	var client []models.Client
 	if err := r.DB.Limit(10).Where("last_name LIKE ? OR first_name LIKE ? OR identifier LIKE ?", "%"+search+"%", "%"+search+"%", "%"+search+"%").Find(&client).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "Error al buscar el cliente", err)
+		return nil, schemas.HandlerErrorGorm(err, "Cliente", schemas.Read)
 	}
 
 	var clientResponse []schemas.ClientResponseDTO
@@ -95,7 +91,7 @@ func (r *ClientRepository) ClientGetAll(limit, page int64, search *map[string]st
 
 	// Ejecutar consulta
 	if err := query.Scan(&clients).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "Error al buscar los clientes", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Cliente", schemas.Read)
 	}
 
 	// Contar total
@@ -112,7 +108,7 @@ func (r *ClientRepository) ClientGetAll(limit, page int64, search *map[string]st
 	}
 
 	if err := countQuery.Count(&total).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "Error al contar los clientes", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Cliente", schemas.Read)
 	}
 
 	return &clients, total, nil
@@ -131,18 +127,7 @@ func (r *ClientRepository) ClientCreate(memberID int64, client *schemas.ClientCr
 		ResponsabilityFrontIVA: client.ResponsabilityFrontIVA,
 	}
 	if err := r.DB.Create(&newClient).Error; err != nil {
-		if schemas.IsDuplicateError(err) {
-			msg := err.Error()
-			switch {
-			case strings.Contains(msg, "email"):
-				return 0, schemas.ErrorResponse(409, fmt.Sprintf("Ya existe un cliente con el email %s", *client.Email), err)
-			case strings.Contains(msg, "identifier"):
-				return 0, schemas.ErrorResponse(409, fmt.Sprintf("Ya existe un cliente con el identificador %s", *client.Identifier), err)
-			default:
-				return 0, schemas.ErrorResponse(409, "El cliente ya existe", err)
-			}
-		}
-		return 0, schemas.ErrorResponse(500, "Error al crear el cliente", err)
+		return 0, schemas.HandlerErrorGorm(err, "Cliente", schemas.Create)
 	}
 
 	go database.SaveAuditAsync(r.DB, models.AuditLog{
@@ -158,10 +143,7 @@ func (r *ClientRepository) ClientUpdate(memberID int64, client *schemas.ClientUp
 	// obtener estado anterior
 	var oldClient models.Client
 	if err := r.DB.First(&oldClient, client.ID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return schemas.ErrorResponse(404, "Cliente no encontrado", err)
-		}
-		return schemas.ErrorResponse(500, "Error al obtener el cliente", err)
+		return schemas.HandlerErrorGorm(err, "Cliente", schemas.Read)
 	}
 
 	saveClient := oldClient
@@ -179,18 +161,7 @@ func (r *ClientRepository) ClientUpdate(memberID int64, client *schemas.ClientUp
 	res := r.DB.Model(&models.Client{}).Where("id = ?", client.ID).Save(&oldClient)
 
 	if res.Error != nil {
-		if schemas.IsDuplicateError(res.Error) {
-			msg := res.Error.Error()
-			switch {
-			case strings.Contains(msg, "email"):
-				return schemas.ErrorResponse(409, fmt.Sprintf("Ya existe un cliente con el email %s", *client.Email), res.Error)
-			case strings.Contains(msg, "identifier"):
-				return schemas.ErrorResponse(409, fmt.Sprintf("Ya existe un cliente con el identificador %s", *client.Identifier), res.Error)
-			default:
-				return schemas.ErrorResponse(409, "El cliente ya existe", res.Error)
-			}
-		}
-		return schemas.ErrorResponse(500, "Error al actualizar el cliente", res.Error)
+		return schemas.HandlerErrorGorm(res.Error, "Cliente", schemas.Update)
 	}
 
 	if res.RowsAffected == 0 {
@@ -209,14 +180,11 @@ func (r *ClientRepository) ClientUpdate(memberID int64, client *schemas.ClientUp
 func (r *ClientRepository) ClientDelete(memberID, id int64) error {
 	var client models.Client
 	if err := r.DB.First(&client, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return schemas.ErrorResponse(404, "Cliente no encontrado", err)
-		}
-		return schemas.ErrorResponse(500, "Error al obtener el cliente", err)
+		return schemas.HandlerErrorGorm(err, "Cliente", schemas.Read)
 	}
 
 	if err := r.DB.Delete(&client).Error; err != nil {
-		return schemas.ErrorResponse(500, "Error al eliminar el cliente", err)
+		return schemas.HandlerErrorGorm(err, "Cliente", schemas.Delete)
 	}
 
 	go database.SaveAuditAsync(r.DB, models.AuditLog{
@@ -293,20 +261,13 @@ func (r *ClientRepository) ClientUpdateCredit(memberID, pointSaleID int64, clien
 			Where("is_close = ? AND point_sale_id = ?", false, pointSaleID).
 			Order("hour_open DESC").
 			First(&register).Error; err != nil {
-
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(400, "No hay caja abierta para este punto de venta", err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener la apertura de caja", err)
+			return schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
 		}
 
 		// Obtener cliente
 		var client models.Client
 		if err := tx.Select("id").First(&client, clientUpdateCredit.ID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Cliente no encontrado", err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener el cliente", err)
+			return schemas.HandlerErrorGorm(err, "Cliente", schemas.Read)
 		}
 
 		total := 0.0
@@ -316,10 +277,7 @@ func (r *ClientRepository) ClientUpdateCredit(memberID, pointSaleID int64, clien
 			// Obtener crédito
 			var payCredit models.PayIncome
 			if err := tx.Where("client_id = ?", client.ID).First(&payCredit, p.CreditID).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return schemas.ErrorResponse(404, "Credito no encontrado", err)
-				}
-				return schemas.ErrorResponse(500, "Error al obtener el credito", err)
+				return schemas.HandlerErrorGorm(err, "Credito", schemas.Read)
 			}
 
 			// Copia para auditoría (estado ANTERIOR)
@@ -330,7 +288,7 @@ func (r *ClientRepository) ClientUpdateCredit(memberID, pointSaleID int64, clien
 			payCredit.CashRegisterID = &register.ID
 
 			if err := tx.Save(&payCredit).Error; err != nil {
-				return schemas.ErrorResponse(500, "Error al actualizar el credito", err)
+				return schemas.HandlerErrorGorm(err, "Credito", schemas.Update)
 			}
 
 			// Copia para auditoría (estado NUEVO)

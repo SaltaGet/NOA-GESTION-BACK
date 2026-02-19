@@ -14,10 +14,7 @@ import (
 func (r *MovementStockRepository) MovementStockGetByID(id int64) (*models.MovementStock, error) {
 	var movement *models.MovementStock
 	if err := r.DB.Preload("Member", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).Preload("Product").Preload("Product.Category").First(&movement, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "movimiento no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "error al obtener el movimiento", err)
+		return nil, schemas.HandlerErrorGorm(err, "Movimiento de stock", schemas.Read)
 	}
 	return movement, nil
 }
@@ -34,11 +31,11 @@ func (r *MovementStockRepository) MovementStockGetByDate(page, limit int, fromDa
 		Limit(limit).
 		Order("created_at desc").
 		Find(&movements).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "error al obtener movimientos", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Movimiento de stock", schemas.Read)
 	}
 
 	if err := r.DB.Model(&models.MovementStock{}).Count(&total).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "error al contar movimientos", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Movimiento de stock", schemas.Read)
 	}
 
 	return movements, total, nil
@@ -57,10 +54,7 @@ func (r *MovementStockRepository) MoveStockList(memberID int64, input []*schemas
 			// Validar producto
 			var product models.Product
 			if err := tx.First(&product, movementList.ProductID).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return schemas.ErrorResponse(404, fmt.Sprintf("producto %d no encontrado", movementList.ProductID), err)
-				}
-				return schemas.ErrorResponse(500, fmt.Sprintf("error al obtener el producto %d", movementList.ProductID), err)
+				return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 			}
 
 			if product.Price <= 0.0 {
@@ -383,7 +377,7 @@ func (r *MovementStockRepository) processSingleMovement(
 		// asegurar existencia
 		if err := tx.Where("product_id = ?", productID).
 			FirstOrCreate(&models.Deposit{ProductID: productID}).Error; err != nil {
-			return schemas.ErrorResponse(500, fmt.Sprintf("error inicializando depósito origen (%d)", index+1), err),
+			return schemas.HandlerErrorGorm(err, "Deposito", schemas.Create),
 				nil, nil, nil, nil, nil
 		}
 
@@ -393,7 +387,7 @@ func (r *MovementStockRepository) processSingleMovement(
 				Where("product_id = ?", productID).
 				Select("stock").
 				Scan(&current).Error; err != nil {
-				return schemas.ErrorResponse(500, fmt.Sprintf("error verificando stock origen (%d)", index+1), err),
+				return schemas.HandlerErrorGorm(err, "Deposito", schemas.Read),
 					nil, nil, nil, nil, nil
 			}
 
@@ -410,8 +404,7 @@ func (r *MovementStockRepository) processSingleMovement(
 			UpdateColumn("stock", gorm.Expr("stock - ?", item.Amount))
 
 		if result.Error != nil {
-			return schemas.ErrorResponse(500,
-				fmt.Sprintf("error actualizando depósito origen (%d)", index+1), result.Error),
+			return schemas.HandlerErrorGorm(result.Error, "Deposito", schemas.Update),
 				nil, nil, nil, nil, nil
 		}
 
@@ -433,8 +426,7 @@ func (r *MovementStockRepository) processSingleMovement(
 					fmt.Sprintf("punto de venta %d no encontrado (%d)", item.FromID, index+1), err),
 					nil, nil, nil, nil, nil
 			}
-			return schemas.ErrorResponse(500,
-				fmt.Sprintf("error obteniendo punto de venta origen (%d)", index+1), err),
+			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read),
 				nil, nil, nil, nil, nil
 		}
 
@@ -457,8 +449,7 @@ func (r *MovementStockRepository) processSingleMovement(
 				ProductID:   productID,
 				PointSaleID: item.FromID,
 			}).Error; err != nil {
-			return schemas.ErrorResponse(500,
-				fmt.Sprintf("error inicializando stock origen point_sale (%d)", index+1), err),
+			return schemas.HandlerErrorGorm(err, "Stock Punto de venta", schemas.Create),
 				nil, nil, nil, nil, nil
 		}
 
@@ -468,8 +459,7 @@ func (r *MovementStockRepository) processSingleMovement(
 				Where("product_id = ? AND point_sale_id = ?", productID, item.FromID).
 				Select("stock").
 				Scan(&current).Error; err != nil {
-				return schemas.ErrorResponse(500,
-					fmt.Sprintf("error verificando stock origen (%d)", index+1), err),
+				return schemas.HandlerErrorGorm(err, "Stock Punto de venta", schemas.Read),
 					nil, nil, nil, nil, nil
 			}
 
@@ -486,8 +476,7 @@ func (r *MovementStockRepository) processSingleMovement(
 			UpdateColumn("stock", gorm.Expr("stock - ?", item.Amount))
 
 		if result.Error != nil {
-			return schemas.ErrorResponse(500,
-				fmt.Sprintf("error actualizando point_sale origen (%d)", index+1), result.Error),
+			return schemas.HandlerErrorGorm(result.Error, "Stock Punto de venta", schemas.Update),
 				nil, nil, nil, nil, nil
 		}
 
@@ -520,8 +509,7 @@ func (r *MovementStockRepository) processSingleMovement(
 
 		if err := tx.Where("product_id = ?", productID).
 			FirstOrCreate(&models.Deposit{ProductID: productID}).Error; err != nil {
-			return schemas.ErrorResponse(500,
-				fmt.Sprintf("error inicializando depósito destino (%d)", index+1), err),
+			return schemas.HandlerErrorGorm(err, "Deposito", schemas.Create),
 				nil, nil, nil, nil, nil
 		}
 
@@ -530,8 +518,7 @@ func (r *MovementStockRepository) processSingleMovement(
 			UpdateColumn("stock", gorm.Expr("stock + ?", item.Amount))
 
 		if result.Error != nil {
-			return schemas.ErrorResponse(500,
-				fmt.Sprintf("error actualizando depósito destino (%d)", index+1), result.Error),
+			return schemas.HandlerErrorGorm(result.Error, "Deposito", schemas.Update),
 				nil, nil, nil, nil, nil
 		}
 
@@ -546,8 +533,7 @@ func (r *MovementStockRepository) processSingleMovement(
 					fmt.Sprintf("punto de venta %d no encontrado (%d)", item.ToID, index+1), err),
 					nil, nil, nil, nil, nil
 			}
-			return schemas.ErrorResponse(500,
-				fmt.Sprintf("error obteniendo punto de venta destino (%d)", index+1), err),
+			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read),
 				nil, nil, nil, nil, nil
 		}
 
@@ -570,8 +556,7 @@ func (r *MovementStockRepository) processSingleMovement(
 				ProductID:   productID,
 				PointSaleID: item.ToID,
 			}).Error; err != nil {
-			return schemas.ErrorResponse(500,
-				fmt.Sprintf("error inicializando stock destino point_sale (%d)", index+1), err),
+			return schemas.HandlerErrorGorm(err, "Stock Punto de venta", schemas.Create),
 				nil, nil, nil, nil, nil
 		}
 
@@ -580,8 +565,7 @@ func (r *MovementStockRepository) processSingleMovement(
 			UpdateColumn("stock", gorm.Expr("stock + ?", item.Amount))
 
 		if result.Error != nil {
-			return schemas.ErrorResponse(500,
-				fmt.Sprintf("error actualizando destino point_sale (%d)", index+1), result.Error),
+			return schemas.HandlerErrorGorm(result.Error, "Stock Punto de venta", schemas.Update),
 				nil, nil, nil, nil, nil
 		}
 
@@ -607,8 +591,7 @@ func (r *MovementStockRepository) processSingleMovement(
 	}
 
 	if err := tx.Create(&movement).Error; err != nil {
-		return schemas.ErrorResponse(500,
-			fmt.Sprintf("error registrando movimiento (%d)", index+1), err),
+		return schemas.HandlerErrorGorm(err, "Movimiento", schemas.Create),
 			nil, nil, nil, nil, nil
 	}
 

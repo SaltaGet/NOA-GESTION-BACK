@@ -1,11 +1,8 @@
 package repositories
 
 import (
-	"errors"
-
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -13,10 +10,7 @@ func (r *MainRepository) CredentialGetMPToken(tenantID int64) (*schemas.Credenti
 	var credential models.Credential
 	err := r.DB.Select("access_token_mp", "access_token_test_mp", "token_email").Where("tenant_id = ?", tenantID).First(&credential).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "Credenciales no encontradas", err)
-		}
-		return nil, schemas.ErrorResponse(500, "Error interno al obtener las credenciales", err)
+		return nil, schemas.HandlerErrorGorm(err, "Credencial", schemas.Read)
 	}
 
 	response := &schemas.CredentialMPTokenResponse{
@@ -43,7 +37,7 @@ func (r *MainRepository) CredentialSetMPToken(tenantID int64, request *schemas.C
 	}).Create(&credential).Error
 
 	if err != nil {
-		return schemas.ErrorResponse(500, "Error al actualizar credenciales", err)
+		return schemas.HandlerErrorGorm(err, "Credencial", schemas.Update)
 	}
 
 	return nil
@@ -53,10 +47,7 @@ func (r *MainRepository) CredentialGetArca(tenantID int64) (*schemas.CredentialA
 	var credential models.Credential
 	if err := r.DB.Select("social_reason", "business_name", "address", "responsibility_front_iva", "cuit", "gross_income", "start_activities", "arca_certificate", "arca_key").
 		Where("tenant_id = ?", tenantID).First(&credential).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "Credenciales no encontradas", err)
-		}
-		return nil, schemas.ErrorResponse(500, "Error interno al obtener las credenciales", err)
+		return nil, schemas.HandlerErrorGorm(err, "Credencial", schemas.Read)
 	}
 
 	response := &schemas.CredentialArcaResponse{
@@ -96,7 +87,7 @@ func (r *MainRepository) CredentialSetArca(tenantID int64, request *schemas.Cred
 	}).Create(&credential).Error
 
 	if err != nil {
-		return schemas.ErrorResponse(500, "Error al actualizar credenciales", err)
+		return schemas.HandlerErrorGorm(err, "Credencial", schemas.Update)
 	}
 
 	return nil

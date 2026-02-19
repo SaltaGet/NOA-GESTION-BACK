@@ -11,7 +11,6 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"gorm.io/gorm"
 )
 
 func (r *ArcaRepository) GetCredentialsArca(tenantID int64) (*models.Credential, error) {
@@ -21,10 +20,7 @@ func (r *ArcaRepository) GetCredentialsArca(tenantID int64) (*models.Credential,
 		Select("id", "social_reason", "business_name", "address", "responsibility_front_iva", "cuit", "gross_income", "start_activities", "arca_certificate", "arca_key", "token_arca", "sign_arca", "expire_token_arca", "concept").
 		Where("tenant_id = ?", tenantID).First(&credential).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "Credenciales no encontradas", err)
-		}
-		return nil, schemas.ErrorResponse(500, "Error interno al obtener credenciales", err)
+		return nil, schemas.HandlerErrorGorm(err, "Credenciales", schemas.Read)
 	}
 
 	if credential.SocialReason == nil || credential.ResponsibilityFrontIVA == nil || credential.Cuit == nil || credential.ArcaCertificate == nil || credential.ArcaKey == nil {
@@ -46,11 +42,11 @@ func (r *ArcaRepository) SetTokenSignArca(v *schemas.CredentialsValidation) erro
 		})
 
 	if result.Error != nil {
-		return schemas.ErrorResponse(500, "Error interno al actualizar credenciales", result.Error)
+		return schemas.HandlerErrorGorm(result.Error, "Credenciales", schemas.Update)
 	}
 
 	if result.RowsAffected == 0 {
-		return schemas.ErrorResponse(404, "Credenciales no encontradas para actualizar", errors.New("Credencial no encontrada"))
+		return schemas.ErrorResponse(404, "Credencial no encontrada", errors.New("Credencial no encontrada"))
 	}
 
 	return nil

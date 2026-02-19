@@ -16,7 +16,7 @@ func (t *PermissionRepository) PermissionByRoleID(roleID int64) (*[]string, erro
 		Where("role_permissions.role_id = ?", roleID).
 		Pluck("permissions.code", &permission).Error
 	if err != nil {
-		return nil, schemas.ErrorResponse(500, "Error interno al obtener permisos", err)
+		return nil, schemas.HandlerErrorGorm(err, "Permiso", schemas.Read)
 	}
 	return &permission, nil
 }
@@ -25,7 +25,7 @@ func (t *PermissionRepository) PermissionGetAll() (*[]schemas.PermissionResponse
 	var permission *[]schemas.PermissionResponse
 	err := t.DB.Model(&models.Permission{}).Select("id", "code", "details", "group", "environment").Scan(&permission).Error
 	if err != nil {
-		return nil, schemas.ErrorResponse(500, "Error interno al obtener permisos", err)
+		return nil, schemas.HandlerErrorGorm(err, "Permiso", schemas.Read)
 	}
 	return permission, nil
 }
@@ -38,7 +38,7 @@ func (t *PermissionRepository) PermissionGetToMe(roleID int64) (*[]schemas.Permi
 		Where("role_permissions.role_id = ?", roleID).
 		Scan(&permissions).Error
 	if err != nil {
-		return nil, schemas.ErrorResponse(500, "Error interno al obtener permisos", err)
+		return nil, schemas.HandlerErrorGorm(err, "Permiso", schemas.Read)
 	}
 	return &permissions, nil
 }
@@ -48,7 +48,7 @@ func (t *PermissionRepository) PermissionUpdateAll() error {
 		// Obtener todos los permisos existentes en la BD
 		var permissionsAll []models.Permission
 		if err := tx.Find(&permissionsAll).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error interno al obtener permisos", err)
+			return schemas.HandlerErrorGorm(err, "Permiso", schemas.Read)
 		}
 
 		// Crear mapas para búsqueda eficiente
@@ -74,13 +74,13 @@ func (t *PermissionRepository) PermissionUpdateAll() error {
 					// Actualizar manteniendo el ID
 					definedPerm.ID = existingPerm.ID
 					if err := tx.Save(&definedPerm).Error; err != nil {
-						return schemas.ErrorResponse(500, "Error al actualizar permiso: "+definedPerm.Code, err)
+						return schemas.HandlerErrorGorm(err, "Permiso", schemas.Update)
 					}
 				}
 			} else {
 				// No existe: crear
 				if err := tx.Create(&definedPerm).Error; err != nil {
-					return schemas.ErrorResponse(500, "Error al crear permiso: "+definedPerm.Code, err)
+					return schemas.HandlerErrorGorm(err, "Permiso", schemas.Create)
 				}
 			}
 		}
@@ -90,7 +90,7 @@ func (t *PermissionRepository) PermissionUpdateAll() error {
 			if _, stillDefined := definedMap[existingPerm.Code]; !stillDefined {
 				// No está en la lista definida: eliminar
 				if err := tx.Delete(&existingPerm).Error; err != nil {
-					return schemas.ErrorResponse(500, "Error al eliminar permiso: "+existingPerm.Code, err)
+					return schemas.HandlerErrorGorm(err, "Permiso", schemas.Delete)
 				}
 			}
 		}

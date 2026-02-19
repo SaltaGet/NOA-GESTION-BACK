@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
@@ -16,10 +15,7 @@ func (r *SupplierRepository) SupplierGetByID(id int64) (*schemas.SupplierRespons
 	var supplier models.Supplier
 
 	if err := r.DB.First(&supplier, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "Proveedor no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "Error al obtener el proveedor", err)
+		return nil, schemas.HandlerErrorGorm(err, "Proveedor", schemas.Read)
 	}
 
 	var supplierSchema schemas.SupplierResponse
@@ -55,7 +51,7 @@ func (r *SupplierRepository) SupplierGetAll(limit, page int, search *map[string]
 
 	// Contar total de registros
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "Error al contar los proveedores", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Proveedor", schemas.Read)
 	}
 
 	// Obtener registros con paginación
@@ -64,7 +60,7 @@ func (r *SupplierRepository) SupplierGetAll(limit, page int, search *map[string]
 		Offset(int(offset)).
 		Limit(int(limit)).
 		Find(&suppliers).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "Error al obtener los proveedores", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Proveedor", schemas.Read)
 	}
 
 	var suppliersSchema []*schemas.SupplierResponseDTO
@@ -198,16 +194,7 @@ func (r *SupplierRepository) SupplierCreate(memberID int64, supplierCreate *sche
 		}
 
 		if err := tx.Create(&supplier).Error; err != nil {
-			if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
-				if strings.Contains(err.Error(), "identifier") {
-					return schemas.ErrorResponse(400, "El CUIT ya existe", err)
-				}
-				if strings.Contains(err.Error(), "email") {
-					return schemas.ErrorResponse(400, "El email ya existe", err)
-				}
-				return schemas.ErrorResponse(400, "El proveedor ya existe", err)
-			}
-			return schemas.ErrorResponse(500, "Error al crear el proveedor", err)
+			return schemas.HandlerErrorGorm(err, "Proveedor", schemas.Create)
 		}
 
 		supplierSave = supplier
@@ -234,10 +221,7 @@ func (r *SupplierRepository) SupplierUpdate(memberID int64, supplierUpdate *sche
 		// Verificar que el proveedor existe
 		var existingSupplier models.Supplier
 		if err := tx.First(&existingSupplier, supplierUpdate.ID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Proveedor no encontrado", err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener el proveedor", err)
+			return schemas.HandlerErrorGorm(err, "Proveedor", schemas.Read)
 		}
 
 		// Guardar estado anterior
@@ -255,16 +239,7 @@ func (r *SupplierRepository) SupplierUpdate(memberID int64, supplierUpdate *sche
 		newSupplier = existingSupplier
 
 		if err := tx.Save(&existingSupplier).Error; err != nil {
-			if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
-				if strings.Contains(err.Error(), "identifier") {
-					return schemas.ErrorResponse(400, "El CUIT ya existe", err)
-				}
-				if strings.Contains(err.Error(), "email") {
-					return schemas.ErrorResponse(400, "El email ya existe", err)
-				}
-				return schemas.ErrorResponse(400, "Error de duplicación", err)
-			}
-			return schemas.ErrorResponse(500, "Error al actualizar el proveedor", err)
+			return schemas.HandlerErrorGorm(err, "Proveedor", schemas.Update)
 		}
 
 		return nil
@@ -289,10 +264,7 @@ func (r *SupplierRepository) SupplierDelete(memberID int64, id int64) error {
 		// Verificar que el proveedor existe
 		var supplier models.Supplier
 		if err := tx.First(&supplier, id).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Proveedor no encontrado", err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener el proveedor", err)
+			return schemas.HandlerErrorGorm(err, "Proveedor", schemas.Read)
 		}
 
 		// Guardar estado anterior
@@ -301,16 +273,16 @@ func (r *SupplierRepository) SupplierDelete(memberID int64, id int64) error {
 		// Verificar si el proveedor tiene compras asociadas
 		var expenseCount int64
 		if err := tx.Model(&models.ExpenseBuy{}).Where("supplier_id = ?", id).Count(&expenseCount).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al verificar compras asociadas", err)
+			return schemas.HandlerErrorGorm(err, "Egreso de compra", schemas.Read)
 		}
 
 		if expenseCount > 0 {
-			return schemas.ErrorResponse(400, "No se puede eliminar el proveedor porque tiene compras asociadas", nil)
+			return schemas.ErrorResponse(400, "No se puede eliminar el proveedor porque tiene compras asociadas", errors.New("No se puede eliminar el proveedor porque tiene compras asociadas"))
 		}
 
 		// Soft delete
 		if err := tx.Delete(&supplier).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al eliminar el proveedor", err)
+			return schemas.HandlerErrorGorm(err, "Proveedor", schemas.Delete)
 		}
 		return nil
 	})

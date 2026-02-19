@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
@@ -23,10 +22,7 @@ func (r *MemberRepository) MemberGetByID(id int64) (*schemas.MemberResponse, err
 		Preload("Role.Permissions").
 		Preload("PointSales").
 		First(&member, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "Miembro no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "Error al obtener el miembro", err)
+		return nil, schemas.HandlerErrorGorm(err, "Miembro", schemas.Read)
 	}
 
 	var memberSchema schemas.MemberResponse
@@ -43,10 +39,7 @@ func (r *MemberRepository) MemberGetPermissionByUserID(userID int64) (*schemas.M
 		Preload("Role.Permissions").
 		Preload("PointSales").
 		First(&member, userID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "Miembro no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "Error al obtener el miembro", err)
+		return nil, schemas.HandlerErrorGorm(err, "Miembro", schemas.Read)
 	}
 
 	var memberSchema schemas.MemberResponse
@@ -88,7 +81,7 @@ func (r *MemberRepository) MemberGetAll(limit, page int, search *map[string]stri
 
 	// Contar total de registros
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "Error al contar los miembros", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Miembro", schemas.Read)
 	}
 
 	// Obtener registros con paginación
@@ -98,7 +91,7 @@ func (r *MemberRepository) MemberGetAll(limit, page int, search *map[string]stri
 		Offset(int(offset)).
 		Limit(int(limit)).
 		Find(&members).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "Error al obtener los miembros", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Miembro", schemas.Read)
 	}
 
 	var membersSchema []*schemas.MemberResponseDTO
@@ -113,16 +106,13 @@ func (r *MemberRepository) MemberCreate(memberID int64, memberCreate *schemas.Me
 		// Verificar que el rol existe
 		var role models.Role
 		if err := tx.First(&role, memberCreate.RoleID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(400, fmt.Sprintf("El rol %d no existe", memberCreate.RoleID), err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener el rol", err)
+			return schemas.HandlerErrorGorm(err, "Rol", schemas.Read)
 		}
 
 		// Verificar que los puntos de venta existen
 		var pointSales []models.PointSale
 		if err := tx.Where("id IN ?", memberCreate.PointSaleIDs).Find(&pointSales).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al obtener los puntos de venta", err)
+			return schemas.HandlerErrorGorm(err, "Punto de Venta", schemas.Read)
 		}
 
 		if len(pointSales) != len(memberCreate.PointSaleIDs) {
@@ -144,23 +134,14 @@ func (r *MemberRepository) MemberCreate(memberID int64, memberCreate *schemas.Me
 		}
 
 		if err := tx.Create(&member).Error; err != nil {
-			if schemas.IsDuplicateError(err) {
-				if strings.Contains(err.Error(), "username") {
-					return schemas.ErrorResponse(400, "El nombre de usuario ya existe", err)
-				}
-				if strings.Contains(err.Error(), "email") {
-					return schemas.ErrorResponse(400, "El email ya existe", err)
-				}
-				return schemas.ErrorResponse(400, "El miembro ya existe", err)
-			}
-			return schemas.ErrorResponse(500, "Error al crear el miembro", err)
+			return schemas.HandlerErrorGorm(err, "Miembro", schemas.Create)
 		}
 
 		memberSave = member
 
 		// Asociar puntos de venta
 		if err := tx.Model(&member).Association("PointSales").Append(&pointSales); err != nil {
-			return schemas.ErrorResponse(500, "Error al asociar puntos de venta", err)
+			return schemas.HandlerErrorGorm(err, "Punto de Venta", schemas.Update)
 		}
 
 		return nil
@@ -187,10 +168,7 @@ func (r *MemberRepository) MemberUpdate(memberID int64, memberUpdate *schemas.Me
 		// Verificar que el miembro existe
 		var existingMember models.Member
 		if err := tx.First(&existingMember, memberUpdate.ID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Miembro no encontrado", err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener el miembro", err)
+			return schemas.HandlerErrorGorm(err, "Miembro", schemas.Read)
 		}
 
 		// Guardar estado anterior
@@ -203,20 +181,17 @@ func (r *MemberRepository) MemberUpdate(memberID int64, memberUpdate *schemas.Me
 		// Verificar que el rol existe
 		var role models.Role
 		if err := tx.First(&role, memberUpdate.RoleID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(400, fmt.Sprintf("El rol %d no existe", memberUpdate.RoleID), err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener el rol", err)
+			return schemas.HandlerErrorGorm(err, "Rol", schemas.Read)
 		}
 
 		// Verificar que los puntos de venta existen
 		var pointSales []models.PointSale
 		if err := tx.Where("id IN ?", memberUpdate.PointSaleIDs).Find(&pointSales).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al obtener los puntos de venta", err)
+			return schemas.HandlerErrorGorm(err, "Punto de Venta", schemas.Read)
 		}
 
 		if len(pointSales) != len(memberUpdate.PointSaleIDs) {
-			return schemas.ErrorResponse(400, "Uno o más puntos de venta no existen", nil)
+			return schemas.ErrorResponse(400, "Uno o más puntos de venta no existen", fmt.Errorf("uno o más puntos de venta no existen"))
 		}
 
 		// Actualizar campos
@@ -234,21 +209,12 @@ func (r *MemberRepository) MemberUpdate(memberID int64, memberUpdate *schemas.Me
 		newMember = existingMember
 
 		if err := tx.Save(&existingMember).Error; err != nil {
-			if schemas.IsDuplicateError(err) {
-				if strings.Contains(err.Error(), "username") {
-					return schemas.ErrorResponse(400, "El nombre de usuario ya existe", err)
-				}
-				if strings.Contains(err.Error(), "email") {
-					return schemas.ErrorResponse(400, "El email ya existe", err)
-				}
-				return schemas.ErrorResponse(400, "Error de duplicación", err)
-			}
-			return schemas.ErrorResponse(500, "Error al actualizar el miembro", err)
+			return schemas.HandlerErrorGorm(err, "Miembro", schemas.Update)
 		}
 
 		// Actualizar puntos de venta (reemplazar asociaciones existentes)
 		if err := tx.Model(&existingMember).Association("PointSales").Replace(&pointSales); err != nil {
-			return schemas.ErrorResponse(500, "Error al actualizar puntos de venta", err)
+			return schemas.HandlerErrorGorm(err, "Punto de Venta", schemas.Update)
 		}
 
 		return nil

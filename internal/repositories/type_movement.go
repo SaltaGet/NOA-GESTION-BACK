@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
@@ -17,12 +16,12 @@ func (t *TypeMovementRepository) TypeMovementGetAll(typeMovement string) ([]*sch
 	case "income":
 		err := t.DB.Model(&models.TypeIncome{}).Select("id", "name").Scan(&typeMovements).Error
 		if err != nil {
-			return nil, schemas.ErrorResponse(500, "error al obtner movimientos", err)
+			return nil, schemas.HandlerErrorGorm(err, "Tipo de ingreso", schemas.Read)
 		}
 	case "expense":
 		err := t.DB.Model(&models.TypeExpense{}).Select("id", "name").Scan(&typeMovements).Error
 		if err != nil {
-			return nil, schemas.ErrorResponse(500, "error al obtner movimientos", err)
+			return nil, schemas.HandlerErrorGorm(err, "Tipo de egreso", schemas.Read)
 		}
 	default:
 		return nil, schemas.ErrorResponse(400, "tipo de movimiento no válido", fmt.Errorf("tipo de movimiento no valido: %s", typeMovement))
@@ -107,10 +106,7 @@ func (t *TypeMovementRepository) TypeMovementCreate(memberID int64, movementCrea
 		}
 
 		if err != nil {
-			if schemas.IsDuplicateError(err) {
-				return schemas.ErrorResponse(409, "tipo de movimiento ya existe", err)
-			}
-			return schemas.ErrorResponse(500, "error al crear tipo de movimiento", err)
+			return schemas.HandlerErrorGorm(err, "Tipo de movimiento", schemas.Create)
 		}
 
 		return nil
@@ -138,10 +134,7 @@ func (t *TypeMovementRepository) TypeMovementUpdate(memberID int64, movementUpda
 			// Obtener estado anterior
 			var oldIncome models.TypeIncome
 			if err := tx.First(&oldIncome, movementUpdate.ID).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return schemas.ErrorResponse(404, "tipo de movimiento no encontrado", err)
-				}
-				return schemas.ErrorResponse(500, "error al obtener tipo de movimiento", err)
+				return schemas.HandlerErrorGorm(err, "Tipo de ingreso", schemas.Read)
 			}
 			oldTypeMovement = oldIncome
 
@@ -157,10 +150,7 @@ func (t *TypeMovementRepository) TypeMovementUpdate(memberID int64, movementUpda
 			// Obtener estado anterior
 			var oldExpense models.TypeExpense
 			if err := tx.First(&oldExpense, movementUpdate.ID).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return schemas.ErrorResponse(404, "tipo de movimiento no encontrado", err)
-				}
-				return schemas.ErrorResponse(500, "error al obtener tipo de movimiento", err)
+				return schemas.HandlerErrorGorm(err, "Tipo de egreso", schemas.Read)
 			}
 			oldTypeMovement = oldExpense
 
@@ -183,10 +173,7 @@ func (t *TypeMovementRepository) TypeMovementUpdate(memberID int64, movementUpda
 		}
 
 		if res.Error != nil {
-			if schemas.IsDuplicateError(res.Error) {
-				return schemas.ErrorResponse(409, "tipo de movimiento ya existe", res.Error)
-			}
-			return schemas.ErrorResponse(500, "error al actualizar tipo de movimiento", res.Error)
+			return schemas.HandlerErrorGorm(res.Error, "Tipo de movimiento", schemas.Update)
 		}
 
 		return nil

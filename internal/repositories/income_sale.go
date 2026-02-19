@@ -33,10 +33,7 @@ func (i *IncomeSaleRepository) IncomeSaleGetByID(pointSaleID, id int64) (*schema
 			return db.Select("id", "total", "method_pay", "income_sale_id", "created_at")
 		}).
 		First(&incomeSaleModel, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "ingreso no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "error al obtener los ingresos", err)
+		return nil, schemas.HandlerErrorGorm(err, "Ingreso de venta", schemas.Read)
 	}
 
 	var incomeSaleSchema schemas.IncomeSaleResponse
@@ -65,10 +62,7 @@ func (i *IncomeSaleRepository) IncomeSaleGetByDate(pointSaleID int64, fromDate, 
 		Offset(offSet).
 		Limit(limit).
 		Find(&incomeSaleModel).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, 0, schemas.ErrorResponse(404, "ingreso no encontrado", err)
-		}
-		return nil, 0, schemas.ErrorResponse(500, "error al obtener los ingresos", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Ingreso de venta", schemas.Read)
 	}
 
 	var total int64
@@ -76,7 +70,7 @@ func (i *IncomeSaleRepository) IncomeSaleGetByDate(pointSaleID int64, fromDate, 
 		Where("created_at BETWEEN ? AND ?", fromDate, toDate).
 		Where("point_sale_id = ?", pointSaleID).
 		Count(&total).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "error al contar los ingresos", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Ingreso de venta", schemas.Read)
 	}
 
 	var incomeSaleSchema []*schemas.IncomeSaleResponseDTO
@@ -95,10 +89,7 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 			Where("is_close = ? AND point_sale_id = ?", false, pointSaleID).
 			Order("hour_open DESC").
 			First(&register).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(400, "No hay caja abierta para este punto de venta", err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener la apertura de caja", err)
+			return schemas.HandlerErrorGorm(err, "Ingreso de venta", schemas.Read)
 		}
 
 		var isDeposit bool
@@ -106,7 +97,7 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 			Select("is_deposit").
 			Where("id = ?", pointSaleID).
 			Scan(&isDeposit).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al obtener el punto de venta", err)
+			return schemas.HandlerErrorGorm(err, "Ingreso de venta", schemas.Read)
 		}
 
 		var clientExist models.Client
@@ -114,10 +105,7 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 			Select("id").
 			Where("id = ?", incomeSaleCreate.ClientID).
 			First(&clientExist).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(400, fmt.Sprintf("El cliente %d no existe", incomeSaleCreate.ClientID), err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener el cliente", err)
+			return schemas.HandlerErrorGorm(err, "Cliente", schemas.Read)
 		}
 
 		var incomeSaleItems []*models.IncomeSaleItem
@@ -127,10 +115,7 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 			var productPrice models.Product
 			if err := tx.Select("price").
 				Where("id = ?", item.ProductID).First(&productPrice).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return schemas.ErrorResponse(400, fmt.Sprintf("El producto %d no existe", item.ProductID), err)
-				}
-				return schemas.ErrorResponse(500, "Error al obtener el producto", err)
+				return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 			}
 			// Buscar stock del producto en el punto de venta
 			if isDeposit {
@@ -138,10 +123,7 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 				if err := tx.
 					Where("product_id = ?", item.ProductID).
 					First(&stock).Error; err != nil {
-					if errors.Is(err, gorm.ErrRecordNotFound) {
-						return schemas.ErrorResponse(400, fmt.Sprintf("El producto %d no tiene stock en este punto de venta", item.ProductID), err)
-					}
-					return schemas.ErrorResponse(500, "Error al obtener stock", err)
+					return schemas.HandlerErrorGorm(err, "Stock Depósito", schemas.Read)
 				}
 
 				// Validar stock suficiente
@@ -156,17 +138,14 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 				// Restar stock
 				stock.Stock -= float64(item.Amount)
 				if err := tx.Save(&stock).Error; err != nil {
-					return schemas.ErrorResponse(500, "Error al restar stock", err)
+					return schemas.HandlerErrorGorm(err, "Stock Depósito", schemas.Update)
 				}
 			} else {
 				var stock models.StockPointSale
 				if err := tx.
 					Where("point_sale_id = ? AND product_id = ?", pointSaleID, item.ProductID).
 					First(&stock).Error; err != nil {
-					if errors.Is(err, gorm.ErrRecordNotFound) {
-						return schemas.ErrorResponse(400, fmt.Sprintf("El producto %d no tiene stock en este punto de venta", item.ProductID), err)
-					}
-					return schemas.ErrorResponse(500, "Error al obtener stock", err)
+					return schemas.HandlerErrorGorm(err, "Stock Punto de Venta", schemas.Read)
 				}
 
 				// Validar stock suficiente
@@ -181,7 +160,7 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 				// Restar stock
 				stock.Stock -= float64(item.Amount)
 				if err := tx.Save(&stock).Error; err != nil {
-					return schemas.ErrorResponse(500, "Error al actualizar stock", err)
+					return schemas.HandlerErrorGorm(err, "Stock Punto de Venta", schemas.Update)
 				}
 			}
 
@@ -285,7 +264,7 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 		}
 
 		if err := tx.Create(&payModels).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al crear pagos del ingreso", err)
+			return schemas.HandlerErrorGorm(err, "Pago de Ingreso", schemas.Create)
 		}
 
 		// Auditoría - Crear estructura completa con items y pagos para el log
@@ -315,10 +294,7 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 		if err := tx.
 			Where("id = ? AND point_sale_id = ?", incomeSaleUpdate.ID, pointSaleID).
 			First(&existingIncome).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Venta no encontrada", err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener la venta", err)
+			return schemas.HandlerErrorGorm(err, "Ingreso de venta", schemas.Read)
 		}
 
 		incomeOld = existingIncome
@@ -326,13 +302,13 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 		// Obtener items anteriores para auditoría
 		var oldItems []models.IncomeSaleItem
 		if err := tx.Where("income_sale_id = ?", incomeSaleUpdate.ID).Find(&oldItems).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al obtener items anteriores", err)
+			return schemas.HandlerErrorGorm(err, "Items de Ingreso", schemas.Read)
 		}
 
 		// Obtener pagos anteriores para auditoría
 		var oldPays []models.PayIncome
 		if err := tx.Where("income_sale_id = ?", incomeSaleUpdate.ID).Find(&oldPays).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al obtener pagos anteriores", err)
+			return schemas.HandlerErrorGorm(err, "Pagos de Ingreso", schemas.Read)
 		}
 
 		var isDeposit bool
@@ -340,7 +316,7 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 			Select("is_deposit").
 			Where("id = ?", pointSaleID).
 			Scan(&isDeposit).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al obtener el punto de venta", err)
+			return schemas.HandlerErrorGorm(err, "Punto de Venta", schemas.Read)
 		}
 
 		// Verificar que el cliente existe
@@ -349,10 +325,7 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 			Select("id").
 			Where("id = ?", incomeSaleUpdate.ClientID).
 			First(&clientExist).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(400, fmt.Sprintf("El cliente %d no existe", incomeSaleUpdate.ClientID), err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener el cliente", err)
+			return schemas.HandlerErrorGorm(err, "Cliente", schemas.Read)
 		}
 
 		// Revertir stock de los items anteriores
@@ -361,20 +334,20 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 				if err := tx.Model(&models.Deposit{}).
 					Where("product_id = ?", oldItem.ProductID).
 					UpdateColumn("stock", gorm.Expr("stock + ?", oldItem.Amount)).Error; err != nil {
-					return schemas.ErrorResponse(500, "Error al revertir stock en depósito", err)
+					return schemas.HandlerErrorGorm(err, "Stock Depósito", schemas.Update)
 				}
 			} else {
 				if err := tx.Model(&models.StockPointSale{}).
 					Where("point_sale_id = ? AND product_id = ?", pointSaleID, oldItem.ProductID).
 					UpdateColumn("stock", gorm.Expr("stock + ?", oldItem.Amount)).Error; err != nil {
-					return schemas.ErrorResponse(500, "Error al revertir stock", err)
+					return schemas.HandlerErrorGorm(err, "Stock Punto de Venta", schemas.Update)
 				}
 			}
 		}
 
 		// Eliminar items anteriores
 		if err := tx.Where("income_sale_id = ?", incomeSaleUpdate.ID).Delete(&models.IncomeSaleItem{}).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al eliminar items anteriores", err)
+			return schemas.HandlerErrorGorm(err, "Items de Ingreso", schemas.Delete)
 		}
 
 		// Procesar nuevos items
@@ -385,10 +358,7 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 			var productPrice models.Product
 			if err := tx.Select("price").
 				Where("id = ?", item.ProductID).First(&productPrice).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return schemas.ErrorResponse(400, fmt.Sprintf("El producto %d no existe", item.ProductID), err)
-				}
-				return schemas.ErrorResponse(500, "Error al obtener el producto", err)
+				return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 			}
 
 			// Validar y descontar stock
@@ -397,10 +367,7 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 				if err := tx.
 					Where("product_id = ?", item.ProductID).
 					First(&stock).Error; err != nil {
-					if errors.Is(err, gorm.ErrRecordNotFound) {
-						return schemas.ErrorResponse(400, fmt.Sprintf("El producto %d no tiene stock en este punto de venta", item.ProductID), err)
-					}
-					return schemas.ErrorResponse(500, "Error al obtener stock", err)
+					return schemas.HandlerErrorGorm(err, "Stock Depósito", schemas.Read)
 				}
 
 				if stock.Stock < float64(item.Amount) {
@@ -413,17 +380,14 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 
 				stock.Stock -= float64(item.Amount)
 				if err := tx.Save(&stock).Error; err != nil {
-					return schemas.ErrorResponse(500, "Error al actualizar stock", err)
+					return schemas.HandlerErrorGorm(err, "Stock Depósito", schemas.Update)
 				}
 			} else {
 				var stock models.StockPointSale
 				if err := tx.
 					Where("point_sale_id = ? AND product_id = ?", pointSaleID, item.ProductID).
 					First(&stock).Error; err != nil {
-					if errors.Is(err, gorm.ErrRecordNotFound) {
-						return schemas.ErrorResponse(400, fmt.Sprintf("El producto %d no tiene stock en este punto de venta", item.ProductID), err)
-					}
-					return schemas.ErrorResponse(500, "Error al obtener stock", err)
+					return schemas.HandlerErrorGorm(err, "Stock Punto de Venta", schemas.Read)
 				}
 
 				if stock.Stock < float64(item.Amount) {
@@ -436,7 +400,7 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 
 				stock.Stock -= float64(item.Amount)
 				if err := tx.Save(&stock).Error; err != nil {
-					return schemas.ErrorResponse(500, "Error al actualizar stock", err)
+					return schemas.HandlerErrorGorm(err, "Stock Punto de Venta", schemas.Update)
 				}
 			}
 
@@ -503,17 +467,17 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 		incomeNew = existingIncome
 
 		if err := tx.Save(&existingIncome).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al actualizar la venta", err)
+			return schemas.HandlerErrorGorm(err, "Ingreso de venta", schemas.Update)
 		}
 
 		// Crear nuevos items
 		if err := tx.Create(&newIncomeSaleItems).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al crear nuevos items", err)
+			return schemas.HandlerErrorGorm(err, "Items de Ingreso", schemas.Create)
 		}
 
 		// Eliminar pagos anteriores
 		if err := tx.Where("income_sale_id = ?", incomeSaleUpdate.ID).Delete(&models.PayIncome{}).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al eliminar pagos anteriores", err)
+			return schemas.HandlerErrorGorm(err, "Pagos de Ingreso", schemas.Delete)
 		}
 
 		// Crear nuevos pagos
@@ -543,7 +507,7 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 		}
 
 		if err := tx.Create(&payModels).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al crear nuevos pagos", err)
+			return schemas.HandlerErrorGorm(err, "Pagos de Ingreso", schemas.Create)
 		}
 
 		return nil
@@ -569,22 +533,19 @@ func (i *IncomeSaleRepository) IncomeSaleDelete(memberID, incomeSaleID, pointSal
 		if err := tx.
 			Where("id = ? AND point_sale_id = ?", incomeSaleID, pointSaleID).
 			First(&existingIncome).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Venta no encontrada", err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener la venta", err)
+			return schemas.HandlerErrorGorm(err, "Ingreso de venta", schemas.Read)
 		}
 
 		// Obtener items para auditoría
 		var items []models.IncomeSaleItem
 		if err := tx.Where("income_sale_id = ?", incomeSaleID).Find(&items).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al obtener items de la venta", err)
+			return schemas.HandlerErrorGorm(err, "Items de Ingreso", schemas.Read)
 		}
 
 		// Obtener pagos para auditoría
 		var pays []models.PayIncome
 		if err := tx.Where("income_sale_id = ?", incomeSaleID).Find(&pays).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al obtener pagos de la venta", err)
+			return schemas.HandlerErrorGorm(err, "Pagos de Ingreso", schemas.Read)
 		}
 
 		// Guardar estado completo para auditoría
@@ -596,7 +557,7 @@ func (i *IncomeSaleRepository) IncomeSaleDelete(memberID, incomeSaleID, pointSal
 			Select("is_deposit").
 			Where("id = ?", pointSaleID).
 			Scan(&isDeposit).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al obtener el punto de venta", err)
+			return schemas.HandlerErrorGorm(err, "Punto de Venta", schemas.Read)
 		}
 
 		// Revertir stock
@@ -605,30 +566,30 @@ func (i *IncomeSaleRepository) IncomeSaleDelete(memberID, incomeSaleID, pointSal
 				if err := tx.Model(&models.Deposit{}).
 					Where("product_id = ?", item.ProductID).
 					UpdateColumn("stock", gorm.Expr("stock + ?", item.Amount)).Error; err != nil {
-					return schemas.ErrorResponse(500, "Error al revertir stock en depósito", err)
+					return schemas.HandlerErrorGorm(err, "Stock Depósito", schemas.Update)
 				}
 			} else {
 				if err := tx.Model(&models.StockPointSale{}).
 					Where("point_sale_id = ? AND product_id = ?", pointSaleID, item.ProductID).
 					UpdateColumn("stock", gorm.Expr("stock + ?", item.Amount)).Error; err != nil {
-					return schemas.ErrorResponse(500, "Error al revertir stock", err)
+					return schemas.HandlerErrorGorm(err, "Stock Punto de Venta", schemas.Update)
 				}
 			}
 		}
 
 		// Eliminar pagos
 		if err := tx.Where("income_sale_id = ?", incomeSaleID).Delete(&models.PayIncome{}).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al eliminar pagos", err)
+			return schemas.HandlerErrorGorm(err, "Pagos de Ingreso", schemas.Delete)
 		}
 
 		// Eliminar items
 		if err := tx.Where("income_sale_id = ?", incomeSaleID).Delete(&models.IncomeSaleItem{}).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al eliminar items", err)
+			return schemas.HandlerErrorGorm(err, "Items de Ingreso", schemas.Delete)
 		}
 
 		// Eliminar venta
 		if err := tx.Delete(&existingIncome).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al eliminar la venta", err)
+			return schemas.HandlerErrorGorm(err, "Ingreso de venta", schemas.Delete)
 		}
 
 		return nil

@@ -15,10 +15,7 @@ import (
 func (r *DepositRepository) DepositGetByID(id int64) (*models.Product, error) {
 	var product models.Product
 	if err := r.DB.Preload("Category").Preload("StockDeposit").Where("id = ?", id).First(&product).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "producto no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "error al obtener el producto", err)
+		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 	return &product, nil
 }
@@ -26,10 +23,7 @@ func (r *DepositRepository) DepositGetByID(id int64) (*models.Product, error) {
 func (r *DepositRepository) DepositGetByCode(code string) (*models.Product, error) {
 	var product models.Product
 	if err := r.DB.Preload("Category").Preload("StockDeposit").Where("code = ?", code).First(&product).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "producto no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "error al obtener el producto", err)
+		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 	return &product, nil
 }
@@ -44,7 +38,7 @@ func (r *DepositRepository) DepositGetByName(name string) ([]*models.Product, er
 		Preload("StockDeposit").
 		Where("name LIKE ?", "%"+name+"%").
 		Find(&allProducts).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
+		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 
 	if strings.TrimSpace(name) == "" {
@@ -105,10 +99,10 @@ func (r *DepositRepository) DepositGetAll(page, limit int) ([]*models.Product, i
 	var products []*models.Product
 	var total int64
 	if err := r.DB.Preload("Category").Preload("StockDeposit").Offset((page - 1) * limit).Limit(limit).Find(&products).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "error al obtener productos", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 	if err := r.DB.Model(&models.Product{}).Count(&total).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "error al contar productos", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 	return products, total, nil
 }
@@ -159,10 +153,7 @@ func (r *DepositRepository) DepositUpdateStock(memberID int64, updateStock schem
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
 		var product models.Product
 		if err := tx.Select("id").Where("id = ?", updateStock.ProductID).First(&product).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "producto no encontrado", err)
-			}
-			return schemas.ErrorResponse(500, "error al obtener el producto", err)
+			return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 		}
 
 		var deposit models.Deposit
@@ -173,7 +164,7 @@ func (r *DepositRepository) DepositUpdateStock(memberID int64, updateStock schem
 				deposit = models.Deposit{ProductID: updateStock.ProductID, Stock: 0}
 				isNewRecord = true
 			} else {
-				return schemas.ErrorResponse(500, "error al obtener el stock", err)
+				return schemas.HandlerErrorGorm(err, "Stock", schemas.Read)
 			}
 		}
 
@@ -196,7 +187,7 @@ func (r *DepositRepository) DepositUpdateStock(memberID int64, updateStock schem
 		}
 
 		if err := tx.Save(&deposit).Error; err != nil {
-			return schemas.ErrorResponse(500, "error al actualizar el stock", err)
+			return schemas.HandlerErrorGorm(err, "Stock", schemas.Update)
 		}
 
 		// Guardar auditoría

@@ -33,10 +33,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyGetByID(id int64) (*schemas.ExpenseBuyR
 			return db.Select("id", "name", "company_name")
 		}).
 		First(&expenseBuy, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "egreso de compras no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "error al obtener los egreso de compras", err)
+		return nil, schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
 	}
 
 	var expenseSchema schemas.ExpenseBuyResponse
@@ -62,14 +59,14 @@ func (r *ExpenseBuyRepository) ExpenseBuyGetByDate(fromDate, toDate time.Time, p
 		Offset(offSet).
 		Limit(limit).
 		Find(&expensesBuy).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "error al obtener los egresos de compras", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
 	}
 
 	var total int64
 	if err := r.DB.Model(&models.ExpenseBuy{}).
 		Where("created_at BETWEEN ? AND ?", fromDate, toDate).
 		Count(&total).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "error al contar los egresos de compras", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
 	}
 
 	var expenseSchema []*schemas.ExpenseBuyResponseSimple
@@ -84,10 +81,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyCreate(memberID int64, expenseBuyCreate
 
 		var supplierID models.Supplier
 		if err := tx.Select("id").First(&supplierID, expenseBuyCreate.SupplierID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(400, fmt.Sprintf("El proveedor %d no existe", expenseBuyCreate.SupplierID), err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener el proveedor", err)
+			return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
 		}
 
 		var expenseItems []*models.ExpenseBuyItem
@@ -100,22 +94,19 @@ func (r *ExpenseBuyRepository) ExpenseBuyCreate(memberID int64, expenseBuyCreate
 
 			var product models.Product
 			if err := tx.First(&product, item.ProductID).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return schemas.ErrorResponse(400, fmt.Sprintf("El producto %d no existe", item.ProductID), err)
-				}
-				return schemas.ErrorResponse(500, "Error al obtener el producto", err)
+				return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
 			}
 			// Buscar stock del producto en el punto de venta
 			var stock models.Deposit
 			if err := tx.
 				Where("product_id = ?", item.ProductID).
 				FirstOrCreate(&stock, models.Deposit{ProductID: item.ProductID, Stock: 0}).Error; err != nil {
-				return schemas.ErrorResponse(500, "Error al obtener stock", err)
+				return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
 			}
 
 			if err := tx.Model(&stock).
 				Update("stock", gorm.Expr("stock + ?", item.Amount)).Error; err != nil {
-				return schemas.ErrorResponse(500, "Error al actualizar stock", err)
+				return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Update)
 			}
 
 			subtotalItem := item.Amount * item.Price
@@ -165,7 +156,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyCreate(memberID int64, expenseBuyCreate
 		}
 
 		if err := tx.Create(&expenseBuy).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al crear el egreso", err)
+			return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Create)
 		}
 
 		// 🔹 Asociar items
@@ -173,7 +164,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyCreate(memberID int64, expenseBuyCreate
 			item.ExpenseBuyID = expenseBuy.ID
 		}
 		if err := tx.Create(&expenseItems).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al crear items del egreso", err)
+			return schemas.HandlerErrorGorm(err, "Items de egreso de compras", schemas.Create)
 		}
 
 		totalPay := 0.0
@@ -193,7 +184,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyCreate(memberID int64, expenseBuyCreate
 		}
 
 		if err := tx.Create(&payExpenseBuy).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al crear pagos del ingreso", err)
+			return schemas.HandlerErrorGorm(err, "Pagos de egreso de compras", schemas.Create)
 		}
 
 		expenseBuySave = expenseBuy
@@ -223,10 +214,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate
 		// Verificar que la compra existe
 		var existingExpense models.ExpenseBuy
 		if err := tx.Where("id = ?", expenseBuyUpdate.ID).First(&existingExpense).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Compra no encontrada", err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener la compra", err)
+			return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
 		}
 
 		// Guardar estado anterior para auditoría
@@ -235,16 +223,13 @@ func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate
 		// Verificar que el proveedor existe
 		var supplierID models.Supplier
 		if err := tx.Select("id").First(&supplierID, expenseBuyUpdate.SupplierID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(400, fmt.Sprintf("El proveedor %d no existe", expenseBuyUpdate.SupplierID), err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener el proveedor", err)
+			return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
 		}
 
 		// Obtener items anteriores para revertir el stock
 		var oldItems []models.ExpenseBuyItem
 		if err := tx.Where("expense_buy_id = ?", expenseBuyUpdate.ID).Find(&oldItems).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al obtener items anteriores", err)
+			return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
 		}
 
 		// Revertir stock de los items anteriores
@@ -252,13 +237,13 @@ func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate
 			if err := tx.Model(&models.Deposit{}).
 				Where("product_id = ?", oldItem.ProductID).
 				UpdateColumn("stock", gorm.Expr("stock - ?", oldItem.Amount)).Error; err != nil {
-				return schemas.ErrorResponse(500, "Error al revertir stock", err)
+				return schemas.HandlerErrorGorm(err, "Stock", schemas.Update)
 			}
 		}
 
 		// Eliminar items anteriores
 		if err := tx.Where("expense_buy_id = ?", expenseBuyUpdate.ID).Delete(&models.ExpenseBuyItem{}).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al eliminar items anteriores", err)
+			return schemas.HandlerErrorGorm(err, "Items de egreso de compras", schemas.Delete)
 		}
 
 		// Procesar nuevos items
@@ -272,10 +257,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate
 
 			var product models.Product
 			if err := tx.First(&product, item.ProductID).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return schemas.ErrorResponse(400, fmt.Sprintf("El producto %d no existe", item.ProductID), err)
-				}
-				return schemas.ErrorResponse(500, "Error al obtener el producto", err)
+				return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 			}
 
 			// Buscar o crear stock del producto en el depósito
@@ -283,13 +265,13 @@ func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate
 			if err := tx.
 				Where("product_id = ?", item.ProductID).
 				FirstOrCreate(&stock, models.Deposit{ProductID: item.ProductID, Stock: 0}).Error; err != nil {
-				return schemas.ErrorResponse(500, "Error al obtener stock", err)
+				return schemas.HandlerErrorGorm(err, "Stock Depósito", schemas.Read)
 			}
 
 			// Sumar stock
 			if err := tx.Model(&stock).
 				Update("stock", gorm.Expr("stock + ?", item.Amount)).Error; err != nil {
-				return schemas.ErrorResponse(500, "Error al actualizar stock", err)
+				return schemas.HandlerErrorGorm(err, "Stock Depósito", schemas.Update)
 			}
 
 			subtotalItem := item.Amount * item.Price
@@ -339,17 +321,17 @@ func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate
 		existingExpense.Total = totalExpense
 
 		if err := tx.Save(&existingExpense).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al actualizar la compra", err)
+			return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Update)
 		}
 
 		// Crear nuevos items
 		if err := tx.Create(&newExpenseItems).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al crear nuevos items", err)
+			return schemas.HandlerErrorGorm(err, "Items de egreso de compras", schemas.Create)
 		}
 
 		// Eliminar pagos anteriores
 		if err := tx.Where("expense_buy_id = ?", expenseBuyUpdate.ID).Delete(&models.PayExpenseBuy{}).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al eliminar pagos anteriores", err)
+			return schemas.HandlerErrorGorm(err, "Pagos de egreso de compras", schemas.Delete)
 		}
 
 		// Crear nuevos pagos
@@ -370,7 +352,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate
 		}
 
 		if err := tx.Create(&payExpenseBuy).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al crear nuevos pagos", err)
+			return schemas.HandlerErrorGorm(err, "Pagos de egreso de compras", schemas.Create)
 		}
 
 		existingExpenseSave = existingExpense
@@ -396,10 +378,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyDelete(memberID int64, expenseBuyID int
 		// Verificar que la compra existe
 		var existingExpense models.ExpenseBuy
 		if err := tx.Where("id = ?", expenseBuyID).First(&existingExpense).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Compra no encontrada", err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener la compra", err)
+			return schemas.HandlerErrorGorm(err, "Compra", schemas.Read)
 		}
 
 		// Guardar estado anterior para auditoría
@@ -408,7 +387,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyDelete(memberID int64, expenseBuyID int
 		// Obtener items para revertir el stock
 		var items []models.ExpenseBuyItem
 		if err := tx.Where("expense_buy_id = ?", expenseBuyID).Find(&items).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al obtener items de la compra", err)
+			return schemas.HandlerErrorGorm(err, "Items de egreso de compras", schemas.Read)
 		}
 
 		// Revertir stock (restar las cantidades que se habían sumado)
@@ -419,7 +398,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyDelete(memberID int64, expenseBuyID int
 					// Si no existe el registro de stock, continuar (caso poco probable)
 					continue
 				}
-				return schemas.ErrorResponse(500, "Error al obtener stock para revertir", err)
+				return schemas.HandlerErrorGorm(err, "Stock", schemas.Read)
 			}
 
 			// Validar que hay suficiente stock para revertir
@@ -434,23 +413,23 @@ func (r *ExpenseBuyRepository) ExpenseBuyDelete(memberID int64, expenseBuyID int
 			// Restar stock
 			if err := tx.Model(&stock).
 				UpdateColumn("stock", gorm.Expr("stock - ?", item.Amount)).Error; err != nil {
-				return schemas.ErrorResponse(500, "Error al revertir stock", err)
+				return schemas.HandlerErrorGorm(err, "Stock", schemas.Update)
 			}
 		}
 
 		// Eliminar pagos
 		if err := tx.Where("expense_buy_id = ?", expenseBuyID).Delete(&models.PayExpenseBuy{}).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al eliminar pagos", err)
+			return schemas.HandlerErrorGorm(err, "Pagos de egreso de compras", schemas.Delete)
 		}
 
 		// Eliminar items
 		if err := tx.Where("expense_buy_id = ?", expenseBuyID).Delete(&models.ExpenseBuyItem{}).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al eliminar items", err)
+			return schemas.HandlerErrorGorm(err, "Items de egreso de compras", schemas.Delete)
 		}
 
 		// Eliminar la compra
 		if err := tx.Delete(&existingExpense).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al eliminar la compra", err)
+			return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Delete)
 		}
 
 		return nil

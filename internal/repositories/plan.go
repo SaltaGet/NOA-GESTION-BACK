@@ -22,10 +22,7 @@ func (r *MainRepository) PlanCreate(adminID int64, planCreate *schemas.PlanCreat
 	}
 
 	if err := r.DB.Create(plan).Error; err != nil {
-		if schemas.IsDuplicateError(err) {
-			return 0, schemas.ErrorResponse(409, "El plan "+plan.Name+" ya existe", err)
-		}
-		return 0, schemas.ErrorResponse(500, "Error al crear el plan", err)
+		return 0, schemas.HandlerErrorGorm(err, "Plan", schemas.Create)
 	}
 
 	go database.SaveAuditAdminAsync(r.DB, models.AuditLogAdmin{

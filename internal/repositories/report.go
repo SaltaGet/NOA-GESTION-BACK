@@ -60,7 +60,7 @@ func (r *ReportRepository) ReportMovementByDatePointSale(start, end time.Time, f
 		start, end,
 	).Scan(&resultados).Error
 	if err != nil {
-		return nil, schemas.ErrorResponse(500, "Error al obtener los datos", err)
+		return nil, schemas.HandlerErrorGorm(err, "Reporte", schemas.Read)
 	}
 
 	grouped := make(map[string][]map[string]any)
@@ -138,7 +138,7 @@ func (r *ReportRepository) ReportMovementByDate(start, end time.Time, form strin
 		start, end,
 	).Scan(&resultados).Error
 	if err != nil {
-		return nil, schemas.ErrorResponse(500, "Error al obtener los datos", err)
+		return nil, schemas.HandlerErrorGorm(err, "Reporte", schemas.Read)
 	}
 
 	grouped := make(map[string][]map[string]any)
@@ -190,7 +190,7 @@ func (r *ReportRepository) ReportProfitableProducts(start, end time.Time) ([]sch
 	`
 
 	if err := r.DB.Raw(query, start, end).Scan(&products).Error; err != nil {
-		return nil, err
+		return nil, schemas.HandlerErrorGorm(err, "Reporte", schemas.Read)
 	}
 
 	return products, nil
@@ -205,7 +205,7 @@ func (r *ReportRepository) ReportStockProducts() ([]*models.Product, error) {
 		Preload("StockPointSales.PointSale").
 		Preload("StockDeposit").
 		Find(&products).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
+		return nil, schemas.HandlerErrorGorm(err, "Reporte", schemas.Read)
 	}
 
 	return products, nil

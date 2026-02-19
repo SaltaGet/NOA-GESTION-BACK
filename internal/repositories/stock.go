@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"errors"
 	"sort"
 	"strings"
 
@@ -15,10 +14,7 @@ import (
 func (r *StockRepository) StockGetByID(id, pointID int64) (*schemas.ProductStockFullResponse, error) {
 	var pointSale models.PointSale
 	if err := r.DB.Select("id", "is_deposit").First(&pointSale, pointID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "punto de venta no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "error al obtener el punto de venta", err)
+		return nil, schemas.HandlerErrorGorm(err, "Punto de Venta", schemas.Read)
 	}
 
 	query := r.DB.Model(&models.Product{}).Preload("Category", func(db *gorm.DB) *gorm.DB {
@@ -39,10 +35,7 @@ func (r *StockRepository) StockGetByID(id, pointID int64) (*schemas.ProductStock
 
 	var product models.Product
 	if err := query.Where("id = ?", id).First(&product).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "producto no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "error al obtener el producto", err)
+		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 
 	var productSchema schemas.ProductStockFullResponse
@@ -66,10 +59,7 @@ func (r *StockRepository) StockGetByID(id, pointID int64) (*schemas.ProductStock
 func (r *StockRepository) StockGetByCode(code string, pointID int64) (*schemas.ProductStockFullResponse, error) {
 	var pointSale models.PointSale
 	if err := r.DB.Select("id", "is_deposit").First(&pointSale, pointID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "punto de venta no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "error al obtener el punto de venta", err)
+		return nil, schemas.HandlerErrorGorm(err, "Punto de Venta", schemas.Read)
 	}
 
 	query := r.DB.Model(&models.Product{}).Preload("Category", func(db *gorm.DB) *gorm.DB {
@@ -90,10 +80,7 @@ func (r *StockRepository) StockGetByCode(code string, pointID int64) (*schemas.P
 
 	var product models.Product
 	if err := query.Where("code = ?", code).First(&product).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "producto no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "error al obtener el producto", err)
+		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 
 	var productSchema schemas.ProductStockFullResponse
@@ -117,10 +104,7 @@ func (r *StockRepository) StockGetByCode(code string, pointID int64) (*schemas.P
 func (r *StockRepository) StockGetByCategoryID(categoryID, pointID int64) ([]*schemas.ProductStockFullResponse, error) {
 	var pointSale models.PointSale
 	if err := r.DB.Select("id", "is_deposit").First(&pointSale, pointID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "punto de venta no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "error al obtener el punto de venta", err)
+		return nil, schemas.HandlerErrorGorm(err, "Punto de Venta", schemas.Read)
 	}
 
 	var products []*schemas.ProductStockFullResponseCategory
@@ -149,7 +133,7 @@ func (r *StockRepository) StockGetByCategoryID(categoryID, pointID int64) ([]*sc
 	}
 
 	if err := query.Where("products.category_id = ?", categoryID).Scan(&products).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
+		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 
 	var result []*schemas.ProductStockFullResponse
@@ -231,10 +215,7 @@ func (r *StockRepository) StockGetByCategoryID(categoryID, pointID int64) ([]*sc
 func (r *StockRepository) StockGetByName(name string, pointID int64) ([]*schemas.ProductStockFullResponse, error) {
 	var pointSale models.PointSale
 	if err := r.DB.Select("id", "is_deposit").First(&pointSale, pointID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(404, "punto de venta no encontrado", err)
-		}
-		return nil, schemas.ErrorResponse(500, "error al obtener el punto de venta", err)
+		return nil, schemas.HandlerErrorGorm(err, "Punto de Venta", schemas.Read)
 	}
 
 	var products []*schemas.ProductStockFullResponseCategory
@@ -264,7 +245,7 @@ func (r *StockRepository) StockGetByName(name string, pointID int64) ([]*schemas
 
 	// Traer más resultados para luego filtrar y ordenar
 	if err := query.Where("products.name LIKE ?", "%"+name+"%").Scan(&products).Error; err != nil {
-		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
+		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 
 	// Si no hay búsqueda, retornar los primeros 10
@@ -352,10 +333,7 @@ func (r *StockRepository) StockGetAll(page, limit int, pointID int64) ([]*schema
 	// verificar punto de venta
 	var pointSale models.PointSale
 	if err := r.DB.Select("id", "is_deposit").First(&pointSale, pointID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, 0, schemas.ErrorResponse(404, "punto de venta no encontrado", err)
-		}
-		return nil, 0, schemas.ErrorResponse(500, "error al obtener el punto de venta", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Punto de Venta", schemas.Read)
 	}
 
 	var products []*schemas.ProductStockFullResponseCategory
@@ -396,7 +374,7 @@ func (r *StockRepository) StockGetAll(page, limit int, pointID int64) ([]*schema
 		Limit(limit)
 
 	if err := query.Scan(&products).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "error al obtener productos", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 	}
 
 	var result []*schemas.ProductStockFullResponse

@@ -1,8 +1,6 @@
 package repositories
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
@@ -26,10 +24,7 @@ func (r *IncomeOtherRepository) IncomeOtherGetByID(id int64, pointSaleId *int64)
 			Preload("PointSale").
 			Where("point_sale_id = ?", *pointSaleId).
 			First(&incomeOther, id).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return nil, schemas.ErrorResponse(404, "Ingreso no encontrado", err)
-			}
-			return nil, schemas.ErrorResponse(500, "Error al obtener el ingreso", err)
+			return nil, schemas.HandlerErrorGorm(err, "Otros ingresos", schemas.Read)
 		}
 	} else {
 		if err := r.DB.
@@ -38,10 +33,7 @@ func (r *IncomeOtherRepository) IncomeOtherGetByID(id int64, pointSaleId *int64)
 			}).
 			Preload("TypeIncome").
 			First(&incomeOther, id).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return nil, schemas.ErrorResponse(404, "Ingreso no encontrado", err)
-			}
-			return nil, schemas.ErrorResponse(500, "Error al obtener el ingreso", err)
+			return nil, schemas.HandlerErrorGorm(err, "Otros ingresos", schemas.Read)
 		}
 	}
 
@@ -74,7 +66,7 @@ func (r *IncomeOtherRepository) IncomeOtherGetByDate(pointSaleID *int64, fromDat
 		Offset(offset).
 		Limit(limit).
 		Find(&incomesOther).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "Error al obtener los ingresos", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Otros ingresos", schemas.Read)
 	}
 
 	// Contar total
@@ -87,7 +79,7 @@ func (r *IncomeOtherRepository) IncomeOtherGetByDate(pointSaleID *int64, fromDat
 	}
 
 	if err := countQuery.Count(&total).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "Error al contar los ingresos", err)
+		return nil, 0, schemas.HandlerErrorGorm(err, "Otros ingresos", schemas.Read)
 	}
 
 	var incomeSchema []*schemas.IncomeOtherResponse
@@ -103,10 +95,7 @@ func (r *IncomeOtherRepository) IncomeOtherCreate(memberID int64, pointSaleID *i
 		// Verificar que el tipo de ingreso existe
 		var typeIncome models.TypeIncome
 		if err := tx.First(&typeIncome, incomeOtherCreate.TypeIncomeID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(400, fmt.Sprintf("El tipo de ingreso %d no existe", incomeOtherCreate.TypeIncomeID), err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener el tipo de ingreso", err)
+			return schemas.HandlerErrorGorm(err, "Tipo de ingreso", schemas.Read)
 		}
 
 		incomeOther := models.IncomeOther{
@@ -120,7 +109,7 @@ func (r *IncomeOtherRepository) IncomeOtherCreate(memberID int64, pointSaleID *i
 
 		if pointSaleID == nil {
 			if err := tx.Create(&incomeOther).Error; err != nil {
-				return schemas.ErrorResponse(500, "Error al crear el ingreso", err)
+				return schemas.HandlerErrorGorm(err, "Otros ingresos", schemas.Create)
 			}
 
 			incomeOtherSave = incomeOther
@@ -132,16 +121,13 @@ func (r *IncomeOtherRepository) IncomeOtherCreate(memberID int64, pointSaleID *i
 			Where("is_close = ? AND point_sale_id = ?", false, pointSaleID).
 			Order("hour_open DESC").
 			First(&register).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(404, "Apertura de caja no encontrada", err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener la apertura de caja", err)
+			return schemas.HandlerErrorGorm(err, "Apertura de caja", schemas.Read)
 		}
 
 		incomeOther.CashRegisterID = &register.ID
 
 		if err := tx.Create(&incomeOther).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al crear el ingreso", err)
+			return schemas.HandlerErrorGorm(err, "Otros ingresos", schemas.Create)
 		}
 
 		incomeOtherSave = incomeOther
@@ -172,19 +158,13 @@ func (r *IncomeOtherRepository) IncomeOtherUpdate(memberID int64, pointSaleID *i
 			if err := tx.
 				Where("id = ? AND point_sale_id = ?", incomeOtherUpdate.ID, pointSaleID).
 				First(&existingIncome).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return schemas.ErrorResponse(404, "Ingreso no encontrado", err)
-				}
-				return schemas.ErrorResponse(500, "Error al obtener el ingreso", err)
+				return schemas.HandlerErrorGorm(err, "Otros ingresos", schemas.Read)
 			}
 		} else {
 			if err := tx.
 				Where("id = ?", incomeOtherUpdate.ID).
 				First(&existingIncome).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return schemas.ErrorResponse(404, "Ingreso no encontrado", err)
-				}
-				return schemas.ErrorResponse(500, "Error al obtener el ingreso", err)
+				return schemas.HandlerErrorGorm(err, "Otros ingresos", schemas.Read)
 			}
 		}
 
@@ -193,10 +173,7 @@ func (r *IncomeOtherRepository) IncomeOtherUpdate(memberID int64, pointSaleID *i
 
 		var typeIncome models.TypeIncome
 		if err := tx.First(&typeIncome, incomeOtherUpdate.TypeIncomeID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return schemas.ErrorResponse(400, fmt.Sprintf("El tipo de ingreso %d no existe", incomeOtherUpdate.TypeIncomeID), err)
-			}
-			return schemas.ErrorResponse(500, "Error al obtener el tipo de ingreso", err)
+			return schemas.HandlerErrorGorm(err, "Tipo de ingreso", schemas.Read)
 		}
 
 		existingIncome.Total = incomeOtherUpdate.Total
@@ -207,7 +184,7 @@ func (r *IncomeOtherRepository) IncomeOtherUpdate(memberID int64, pointSaleID *i
 		existingIncomeSave = existingIncome
 		
 		if err := tx.Save(&existingIncome).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al actualizar el ingreso", err)
+			return schemas.HandlerErrorGorm(err, "Otros ingresos", schemas.Update)
 		}
 
 		return nil
@@ -233,19 +210,13 @@ func (r *IncomeOtherRepository) IncomeOtherDelete(memberID int64, incomeOtherID 
 			if err := tx.
 				Where("id = ? AND point_sale_id = ?", incomeOtherID, pointSaleID).
 				First(&existingIncome).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return schemas.ErrorResponse(404, "Ingreso no encontrado", err)
-				}
-				return schemas.ErrorResponse(500, "Error al obtener el ingreso", err)
+				return schemas.HandlerErrorGorm(err, "Otros ingresos", schemas.Read)
 			}
 		} else {
 			if err := tx.
 				Where("id = ?", incomeOtherID).
 				First(&existingIncome).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return schemas.ErrorResponse(404, "Ingreso no encontrado", err)
-				}
-				return schemas.ErrorResponse(500, "Error al obtener el ingreso", err)
+				return schemas.HandlerErrorGorm(err, "Otros ingresos", schemas.Read)
 			}
 		}
 
@@ -254,7 +225,7 @@ func (r *IncomeOtherRepository) IncomeOtherDelete(memberID int64, incomeOtherID 
 		
 		// Eliminar el ingreso
 		if err := tx.Delete(&existingIncome).Error; err != nil {
-			return schemas.ErrorResponse(500, "Error al eliminar el ingreso", err)
+			return schemas.HandlerErrorGorm(err, "Otros ingresos", schemas.Delete)
 		}
 		return nil
 	})
