@@ -261,15 +261,7 @@ func (p *ProductController) ProductGenerateQR(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/product/create [post]
 func (p *ProductController) ProductCreate(ctx *fiber.Ctx) error {
 	var productCreate schemas.ProductCreate
-	if err := ctx.BodyParser(&productCreate); err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: err.Error(),
-		})
-	}
-
-	if err := productCreate.Validate(); err != nil {
+	if err := validators.ValidateRequest(ctx, &productCreate); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
@@ -348,11 +340,7 @@ func (p *ProductController) ProductUpload(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/product/update [put]
 func (p *ProductController) ProductUpdate(ctx *fiber.Ctx) error {
 	var productUpdate schemas.ProductUpdate
-	if err := ctx.BodyParser(&productUpdate); err != nil {
-		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
-	}
-
-	if err := productUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(ctx, &productUpdate); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
@@ -387,11 +375,7 @@ func (p *ProductController) ProductUpdate(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/product/list_price [put]
 func (p *ProductController) ProductPriceUpdate(ctx *fiber.Ctx) error {
 	var productUpdate schemas.ListPriceUpdate
-	if err := ctx.BodyParser(&productUpdate); err != nil {
-		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
-	}
-
-	if err := productUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(ctx, &productUpdate); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
@@ -471,13 +455,9 @@ func (p *ProductController) ProductDelete(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/product/generate_token_to_image [post]
 func (p *ProductController) ProductGenerateTokenToImage(ctx *fiber.Ctx) error {
 	var productValidateImage schemas.ProductValidateImage
-	if err := ctx.BodyParser(&productValidateImage); err != nil {
-		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
-	}
-	if err := productValidateImage.Validate(); err != nil {
+	if err := validators.ValidateRequest(ctx, &productValidateImage); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
-
 	user := ctx.Locals("user").(*schemas.AuthenticatedUser)
 	currentPlan := ctx.Locals("current_plan").(*schemas.PlanResponseDTO)
 
@@ -506,11 +486,7 @@ func (p *ProductController) ProductGenerateTokenToImage(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/product/update_visibility [put]
 func (p *ProductController) ProductUpdateVisibility(ctx *fiber.Ctx) error {
 	var productUpdate schemas.ListVisibilityUpdate
-	if err := ctx.BodyParser(&productUpdate); err != nil {
-		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
-	}
-
-	if err := productUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(ctx, &productUpdate); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 

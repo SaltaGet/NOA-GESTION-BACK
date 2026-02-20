@@ -9,6 +9,7 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/key"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
+
 	// "github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -54,14 +55,14 @@ func AuthMiddleware() fiber.Handler {
 
 // getAuthUserWithCache versión simplificada sin versión
 func getAuthUserWithCache(tenantID, memberID, pointSaleID int64, deps *dependencies.MainContainer) (*schemas.AuthenticatedUser, error) {
-	// 1️⃣ Intentar obtener del cache de Redis (sin versión)
-	// if cache.IsAvailable() {
-	// 	authUser, err := cache.GetAuthUser(memberID, tenantID)
-	// 	if err == nil {
-	// 		logging.INFO("Obteniendo usuario autenticado desde cache")
-	// 		return authUser, nil
-	// 	}
-	// }
+	// 1️⃣ Intentar obtener del cache de Redis
+	if cache.IsAvailable() {
+		authUser, err := cache.GetAuthUser(memberID, tenantID)
+		if err == nil && authUser != nil {
+			// logging.INFO("Obteniendo usuario autenticado desde cache") // Opcional: log para debug
+			return authUser, nil
+		}
+	}
 
 	// 2️⃣ No está en cache, consultar DB
 	authUser, err := deps.AuthController.AuthService.AuthCurrentUser(tenantID, memberID, pointSaleID)

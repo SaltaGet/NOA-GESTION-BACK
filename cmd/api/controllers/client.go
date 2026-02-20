@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
@@ -149,15 +150,7 @@ func (cl *ClientController) ClientCreate(c *fiber.Ctx) error {
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
 
 	var clientCreate schemas.ClientCreate
-	if err := c.BodyParser(&clientCreate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := clientCreate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &clientCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -186,16 +179,11 @@ func (cl *ClientController) ClientCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/client/update [put]
 func (cl *ClientController) ClientUpdate(c *fiber.Ctx) error {
 	var clientUpdate schemas.ClientUpdate
-	if err := c.BodyParser(&clientUpdate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := clientUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &clientUpdate); err != nil {
 		return schemas.HandleError(c, err)
+	}
+	if clientUpdate.ID == 1 {
+		return schemas.HandleError(c, schemas.ErrorResponse(400, "no se puede modificar el cliente Consumidor Final", fmt.Errorf("no se puede modificar el cliente Consumidor Final")))
 	}
 
 	member := c.Locals("user").(*schemas.AuthenticatedUser)
@@ -224,16 +212,12 @@ func (cl *ClientController) ClientUpdate(c *fiber.Ctx) error {
 //	@Router			/api/v1/client/update_credit [put]
 func (cl *ClientController) ClientUpdateCredit(c *fiber.Ctx) error {
 	var clientUpdate schemas.ClientUpdateCredit
-	if err := c.BodyParser(&clientUpdate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := clientUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &clientUpdate); err != nil {
 		return schemas.HandleError(c, err)
+	}
+
+	if clientUpdate.ID == 1 {
+		return schemas.HandleError(c, schemas.ErrorResponse(400, "no se puede modificar el cliente Consumidor Final", fmt.Errorf("no se puede modificar el cliente Consumidor Final")))
 	}
 
 	pointID := c.Locals("point_sale_id").(int64)
@@ -266,6 +250,10 @@ func (cl *ClientController) ClientDelete(c *fiber.Ctx) error {
 	idint, err := validators.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
+	}
+
+	if idint == 1 {
+		return schemas.HandleError(c, schemas.ErrorResponse(400, "no se puede modificar el cliente Consumidor Final", fmt.Errorf("no se puede modificar el cliente Consumidor Final")))
 	}
 
 	member := c.Locals("user").(*schemas.AuthenticatedUser)

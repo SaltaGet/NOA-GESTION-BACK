@@ -87,11 +87,7 @@ func (c *CategoryController) CategoryGetAll(ctx *fiber.Ctx) error {
 // @Router			/api/v1/category/create [post]
 func (c *CategoryController) CategoryCreate(ctx *fiber.Ctx) error {
 	var categoryCreate *schemas.CategoryCreate
-	if err := ctx.BodyParser(&categoryCreate); err != nil {
-		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
-	}
-
-	if err := categoryCreate.Validate(); err != nil {
+	if err := validators.ValidateRequest(ctx, &categoryCreate); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
@@ -127,14 +123,9 @@ func (c *CategoryController) CategoryCreate(ctx *fiber.Ctx) error {
 // @Router			/api/v1/category/update [put]
 func (c *CategoryController) CategoryUpdate(ctx *fiber.Ctx) error {
 	var categoryUpdate *schemas.CategoryUpdate
-	if err := ctx.BodyParser(&categoryUpdate); err != nil {
-		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
-	}
-
-	if err := categoryUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(ctx, &categoryUpdate); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
-
 	member := ctx.Locals("user").(*schemas.AuthenticatedUser)
 	if err := c.CategoryService.CategoryUpdate(member.ID, categoryUpdate); err != nil {
 		return schemas.HandleError(ctx, err)

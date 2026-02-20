@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"math"
 	"time"
-
-	"github.com/go-playground/validator/v10"
 )
 
 type ExpenseBuyResponse struct {
@@ -120,33 +118,17 @@ type PayExpenseBuyCreate struct {
 	MethodPay string  `json:"payment_method" validate:"oneof=cash credit card transfer" example:"cash credit card transfer"`
 }
 
-func (e *ExpenseBuyCreate) Validate() error {
-	validate := validator.New()
-	err := validate.Struct(e)
-	if err == nil {
-		var sumPay float64
-		for _, p := range e.PayExpenseBuy {
-			sumPay += p.Total
-		}
+func (e *ExpenseBuyCreate) ValidateIntegrity() error {
+    var sumPay float64
+    for _, p := range e.PayExpenseBuy {
+        sumPay += p.Total
+    }
 
-		if math.Abs(sumPay-e.Total) > 1 {
-			message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total (%.2f) no puede ser mayor que 1",
-				sumPay, e.Total)
-
-			return ErrorResponse(422, message, fmt.Errorf("%s", message))
-		}
-
-		return nil
-	}
-
-	validationErr := err.(validator.ValidationErrors)[0]
-	field := validationErr.Field()
-	tag := validationErr.Tag()
-	param := validationErr.Param()
-
-	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
-
-	return ErrorResponse(422, message, fmt.Errorf("%s", message))
+    // Usamos math.Abs para evitar problemas con decimales (punto flotante)
+    if math.Abs(sumPay-e.Total) > 0.01 { // Usamos 0.01 si manejas centavos
+        return fmt.Errorf("la suma de los pagos (%.2f) no coincide con el total (%.2f)", sumPay, e.Total)
+    }
+    return nil
 }
 
 type ExpenseBuyUpdate struct {
@@ -176,33 +158,17 @@ type PayExpenseBuyUpdate struct {
 	MethodPay string  `json:"payment_method" validate:"oneof=cash credit card transfer" example:"cash credit card transfer"`
 }
 
-func (e *ExpenseBuyUpdate) Validate() error {
-	validate := validator.New()
-	err := validate.Struct(e)
-	if err == nil {
-		var sumPay float64
-		for _, p := range e.PayExpenseBuy {
-			sumPay += p.Total
-		}
+func (e *ExpenseBuyUpdate) ValidateIntegrity() error {
+    var sumPay float64
+    for _, p := range e.PayExpenseBuy {
+        sumPay += p.Total
+    }
 
-		if math.Abs(sumPay-e.Total) > 1 {
-			message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total (%.2f) no puede ser mayor que 1",
-				sumPay, e.Total)
-
-			return ErrorResponse(422, message, fmt.Errorf("%s", message))
-		}
-
-		return nil
-	}
-
-	validationErr := err.(validator.ValidationErrors)[0]
-	field := validationErr.Field()
-	tag := validationErr.Tag()
-	param := validationErr.Param()
-
-	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
-
-	return ErrorResponse(422, message, fmt.Errorf("%s", message))
+    // Usamos math.Abs para evitar problemas con decimales (punto flotante)
+    if math.Abs(sumPay-e.Total) > 0.01 { // Usamos 0.01 si manejas centavos
+        return fmt.Errorf("la suma de los pagos (%.2f) no coincide con el total (%.2f)", sumPay, e.Total)
+    }
+    return nil
 }
 
 type ExpenseOtherCreate struct {
@@ -212,42 +178,10 @@ type ExpenseOtherCreate struct {
 	TypeExpenseID int64   `json:"type_expense_id" validate:"required"`
 }
 
-func (e *ExpenseOtherCreate) Validate() error {
-	validate := validator.New()
-	err := validate.Struct(e)
-	if err == nil {
-		return nil
-	}
-
-	validationErr := err.(validator.ValidationErrors)[0]
-	field := validationErr.Field()
-	tag := validationErr.Tag()
-	param := validationErr.Param()
-
-	return fmt.Errorf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
-}
-
 type ExpenseOtherUpdate struct {
 	ID            int64   `json:"id" validate:"required"`
 	Details       *string `json:"details,omitempty"`
 	Total         float64 `json:"total" validate:"required"`
 	PayMethod     string  `json:"payment_method" validate:"oneof=cash credit card transfer" example:"cash credit card transfer"`
 	TypeExpenseID int64   `json:"type_expense_id" validate:"required" example:"1"`
-}
-
-func (e *ExpenseOtherUpdate) Validate() error {
-	validate := validator.New()
-	err := validate.Struct(e)
-	if err == nil {
-		return nil
-	}
-
-	validationErr := err.(validator.ValidationErrors)[0]
-	field := validationErr.Field()
-	tag := validationErr.Tag()
-	param := validationErr.Param()
-
-	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
-
-	return ErrorResponse(422, message, fmt.Errorf("%s", message))
 }

@@ -1,11 +1,5 @@
 package schemas
 
-import (
-	"fmt"
-
-	"github.com/go-playground/validator/v10"
-)
-
 type EcommerceResponse struct {
 	ID                int64                   `json:"id"`
 	PaymentID         string                  `json:"payment_id"`
@@ -50,20 +44,4 @@ type EcommerceResponseDTO struct {
 type EcommerceStatusUpdate struct {
 	ID                int64  `json:"id" validate:"required"`
 	NewStatus         string `json:"new_status" validate:"required"`
-}
-
-func (e *EcommerceStatusUpdate) Validate() error {
-	validate := validator.New()
-	err := validate.Struct(e)
-	if err == nil {
-		return nil
-	}
-
-	validatorErr := err.(validator.ValidationErrors)[0]
-	field := validatorErr.Field()
-	tag := validatorErr.Tag()
-	params := validatorErr.Param()
-
-	errorMessage := field + " " + tag + " " + params
-	return ErrorResponse(422, fmt.Sprintf("error al validar campo(s): %s", errorMessage), err)
 }

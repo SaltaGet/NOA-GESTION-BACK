@@ -6,7 +6,6 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
-	"github.com/rs/zerolog/log"
 )
 
 // ExpenseOtherGetByID godoc
@@ -103,15 +102,7 @@ func (e *ExpenseOtherController) ExpenseOtherGetByDate(c *fiber.Ctx) error {
 //	@Router			/api/v1/expense_other/create [post]
 func (e *ExpenseOtherController) ExpenseOtherCreate(c *fiber.Ctx) error {
 	var expenseOtherCreate schemas.ExpenseOtherCreate
-	if err := c.BodyParser(&expenseOtherCreate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := expenseOtherCreate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &expenseOtherCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -142,15 +133,7 @@ func (e *ExpenseOtherController) ExpenseOtherCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/expense_other/update [put]
 func (e *ExpenseOtherController) ExpenseOtherUpdate(c *fiber.Ctx) error {
 	var expenseOtherUpdate schemas.ExpenseOtherUpdate
-	if err := c.BodyParser(&expenseOtherUpdate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := expenseOtherUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &expenseOtherUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -299,15 +282,7 @@ func (e *ExpenseOtherController) ExpenseOtherGetByDatePointSale(c *fiber.Ctx) er
 //	@Router			/api/v1/expense_other/create_point_sale [post]
 func (e *ExpenseOtherController) ExpenseOtherCreatePointSale(c *fiber.Ctx) error {
 	var expenseOtherCreate schemas.ExpenseOtherCreate
-	if err := c.BodyParser(&expenseOtherCreate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := expenseOtherCreate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &expenseOtherCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -339,15 +314,7 @@ func (e *ExpenseOtherController) ExpenseOtherCreatePointSale(c *fiber.Ctx) error
 //	@Router			/api/v1/expense_other/update_point_sale [put]
 func (e *ExpenseOtherController) ExpenseOtherUpdatePointSale(c *fiber.Ctx) error {
 	var expenseOtherUpdate schemas.ExpenseOtherUpdate
-	if err := c.BodyParser(&expenseOtherUpdate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := expenseOtherUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &expenseOtherUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

@@ -15,7 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog/log"
 )
 
@@ -400,21 +399,6 @@ type FacturaRequest struct {
 	Items           []ItemIVATotal `json:"items" validate:"required,dive"`
 }
 
-func (f *FacturaRequest) Validate() error {
-	validate := validator.New()
-
-	err := validate.Struct(f)
-	if err == nil {
-		return nil
-	}
-
-	validationErr := err.(validator.ValidationErrors)[0]
-	field := validationErr.Field()
-	tag := validationErr.Tag()
-	param := validationErr.Param()
-
-	return ErrorResponse(422, fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param), err)
-}
 
 type Factura struct {
 	PuntoVenta       int
@@ -922,23 +906,6 @@ type DatosQR struct {
 type KeyRequest struct {
 	BusinessName string `json:"business_name" validate:"required" example:"My Company"`
 	Cuit         string `json:"cuit" validate:"required,numeric,len=11" example:"12345678901"`
-}
-
-func (k *KeyRequest) Validate() error {
-	validate := validator.New()
-
-	err := validate.Struct(k)
-	if err == nil {
-		return nil
-	}
-
-	validatorErr := err.(validator.ValidationErrors)[0]
-	field := validatorErr.Field()
-	tag := validatorErr.Tag()
-	params := validatorErr.Param()
-
-	errorMessage := field + " " + tag + " " + params
-	return ErrorResponse(422, fmt.Sprintf("error al validar campo(s): %s", errorMessage), err)
 }
 
 type KeyResponse struct {

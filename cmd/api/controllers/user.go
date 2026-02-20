@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -21,19 +22,8 @@ import (
 //	@Router			/user/create [post]
 func (u *UserController) CreateUser(c *fiber.Ctx) error {
 	var userCreate schemas.UserCreate
-	if err := c.BodyParser(&userCreate); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := userCreate.Validate(); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: err.Error(),
-		})
+	if err := validators.ValidateRequest(c, &userCreate); err != nil {
+		return schemas.HandleError(c, err)
 	}
 	// userCreated, err := u.UserService.UserCreate(&userCreate)
 	// if err != nil {

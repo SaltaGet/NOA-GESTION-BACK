@@ -1,13 +1,6 @@
 package schemas
 
-import (
-	"encoding/pem"
-	"fmt"
-	"strings"
-	"time"
-
-	"github.com/go-playground/validator/v10"
-)
+import "time"
 
 type CredentialMPTokenResponse struct {
 	AccessToken     *string `json:"access_token" example:"token_1234567890"`
@@ -34,24 +27,6 @@ type CredentialMPTokenRequest struct {
 	// TokenEmail      string `json:"token_email" example:"token_1234567890"`
 }
 
-func (c *CredentialMPTokenRequest) Validate() error {
-	validate := validator.New()
-
-	err := validate.Struct(c)
-	if err == nil {
-		return nil
-	}
-
-	validationErr := err.(validator.ValidationErrors)[0]
-	field := validationErr.Field()
-	tag := validationErr.Tag()
-	param := validationErr.Param()
-
-	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
-
-	return ErrorResponse(422, message, fmt.Errorf("%s", message))
-}
-
 type CredentialArcaRequest struct {
 	SocialReason           string `json:"social_reason" validate:"required" example:"My Company"`
 	BusinessName           string `json:"business_name" validate:"required" example:"My Company"`
@@ -61,64 +36,8 @@ type CredentialArcaRequest struct {
 	StartActivities        string `json:"start_activities" validate:"required,datetime=2006-01-02" example:"2022-01-01"`
 	Cuit                   string `json:"cuit" validate:"required,numeric,len=11" example:"20123456789 (sin guiones)"`
 	Concept                string `json:"concept" validate:"required,oneof=productos servicios productos_servicios" example:"productos | servicios | productos_servicios"`
-	ArcaCertificate        string `json:"arca_certificate" validate:"required" example:"crt (un string)"`
-	ArcaKey                string `json:"arca_key" validate:"required" example:"key (un string)"`
-}
-
-func (c *CredentialArcaRequest) Validate() error {
-	validate := validator.New()
-
-	// 1. Registramos la validación para el Certificado
-	validate.RegisterValidation("is_pem_cert", func(fl validator.FieldLevel) bool {
-		block, _ := pem.Decode([]byte(fl.Field().String()))
-		return block != nil && block.Type == "CERTIFICATE"
-	})
-
-	// 2. Registramos la validación para la Clave Privada
-	validate.RegisterValidation("is_pem_key", func(fl validator.FieldLevel) bool {
-		block, _ := pem.Decode([]byte(fl.Field().String()))
-		// Aceptamos cualquier tipo de clave (PRIVATE KEY, RSA PRIVATE KEY, etc)
-		return block != nil && strings.Contains(block.Type, "KEY")
-	})
-
-	err := validate.Struct(c)
-	if err == nil {
-		return nil
-	}
-
-	// Manejo de errores de validación
-	validationErrors, ok := err.(validator.ValidationErrors)
-	if !ok {
-		return ErrorResponse(500, "Error interno de validación", err)
-	}
-
-	verr := validationErrors[0]
-	field := verr.Field()
-	tag := verr.Tag()
-
-	var message string
-	switch tag {
-	case "is_pem_cert":
-		message = "El certificado no tiene un formato PEM válido (debe empezar con -----BEGIN CERTIFICATE-----)"
-	case "is_pem_key":
-		message = "La clave privada no tiene un formato PEM válido (debe empezar con -----BEGIN PRIVATE KEY-----)"
-	case "required":
-		message = fmt.Sprintf("El campo %s es obligatorio", field)
-	case "numeric":
-		message = fmt.Sprintf("El campo %s solo debe contener números", field)
-	case "len", "min", "max":
-		message = fmt.Sprintf("El campo %s tiene una longitud inválida", field)
-	case "datetime":
-		message = fmt.Sprintf("El campo %s debe tener formato YYYY-MM-DD", field)
-	case "oneof":
-		message = fmt.Sprintf("El valor del campo %s no es una opción permitida", field)
-	default:
-		message = fmt.Sprintf("Error en el campo %s: (%s)", field, tag)
-	}
-
-	// message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
-
-	return ErrorResponse(422, message, fmt.Errorf("%s", message))
+	ArcaCertificate        string `json:"arca_certificate" validate:"required,is_pem_cert" example:"crt (un string)"`
+	ArcaKey                string `json:"arca_key" validate:"required,is_pem_key" example:"key (un string)"`
 }
 
 type MPUserResponse struct {

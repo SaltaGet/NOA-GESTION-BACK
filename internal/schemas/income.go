@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"math"
 	"time"
-
-	"github.com/go-playground/validator/v10"
 )
 
 type IncomeSaleCreate struct {
@@ -30,7 +28,7 @@ type PayCreate struct {
 	MethodPay string  `json:"method_pay" validate:"oneof=cash credit card transfer" example:"cash credit card transfer"`
 }
 
-func (i *IncomeSaleCreate) Validate() error {
+func (i *IncomeSaleCreate) ValidateIntegrity() error {
 	if i.ClientID == 1 {
 		for _, p := range i.Pay {
 			if p.MethodPay == "credit" {
@@ -41,16 +39,6 @@ func (i *IncomeSaleCreate) Validate() error {
 				)
 			}
 		}
-	}
-
-	validate := validator.New()
-
-	if err := validate.Struct(i); err != nil {
-		validationErr := err.(validator.ValidationErrors)[0]
-		field := validationErr.Field()
-		tag := validationErr.Tag()
-		param := validationErr.Param()
-		return ErrorResponse(422, fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param), err)
 	}
 
 	var sumPay float64
@@ -91,7 +79,7 @@ type PayUpdate struct {
 	MethodPay string  `json:"method_pay" validate:"oneof=cash credit card transfer"`
 }
 
-func (i *IncomeSaleUpdate) Validate() error {
+func (i *IncomeSaleUpdate) ValidateIntegrity() error {
 	if i.ClientID == 1 {
 		for _, p := range i.Pay {
 			if p.MethodPay == "credit" {
@@ -102,16 +90,6 @@ func (i *IncomeSaleUpdate) Validate() error {
 				)
 			}
 		}
-	}
-
-	validate := validator.New()
-
-	if err := validate.Struct(i); err != nil {
-		validationErr := err.(validator.ValidationErrors)[0]
-		field := validationErr.Field()
-		tag := validationErr.Tag()
-		param := validationErr.Param()
-		return ErrorResponse(422, fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param), err)
 	}
 
 	var sumPay float64
@@ -136,40 +114,12 @@ type IncomeOtherCreate struct {
 	MethodIncome string  `json:"method_income" validate:"oneof=cash credit card transfer" example:"cash credit card transfer"`
 }
 
-func (i *IncomeOtherCreate) Validate() error {
-	validate := validator.New()
-
-	if err := validate.Struct(i); err != nil {
-		validationErr := err.(validator.ValidationErrors)[0]
-		field := validationErr.Field()
-		tag := validationErr.Tag()
-		param := validationErr.Param()
-		return ErrorResponse(422, fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param), err)
-	}
-
-	return nil
-}
-
 type IncomeOtherUpdate struct {
 	ID           int64   `json:"id" validate:"required"`
 	Total        float64 `json:"total" validate:"required"`
 	TypeIncomeID int64   `json:"type_income_id" validate:"required"`
 	Details      *string `json:"details"`
 	MethodIncome string  `json:"method_income" validate:"oneof=cash credit card transfer" example:"cash credit card transfer"`
-}
-
-func (i *IncomeOtherUpdate) Validate() error {
-	validate := validator.New()
-
-	if err := validate.Struct(i); err != nil {
-		validationErr := err.(validator.ValidationErrors)[0]
-		field := validationErr.Field()
-		tag := validationErr.Tag()
-		param := validationErr.Param()
-		return ErrorResponse(422, fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param), err)
-	}
-
-	return nil
 }
 
 type IncomeSaleResponse struct {

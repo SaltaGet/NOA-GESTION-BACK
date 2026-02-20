@@ -1,11 +1,11 @@
 package services
 
 import (
-	// "github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
 	// "github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	// "github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"fmt"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
@@ -34,16 +34,43 @@ func (m *MemberService) MemberCreate(memberID int64, memeberCreate *schemas.Memb
 	return m.MemberRepository.MemberCreate(memberID, memeberCreate)
 }
 
-func (m *MemberService) MemberUpdate(memberID int64, memeberUpdate *schemas.MemberUpdate) error {
-	return m.MemberRepository.MemberUpdate(memberID, memeberUpdate)
+func (m *MemberService) MemberUpdate(memberID int64, tenantID int64, memeberUpdate *schemas.MemberUpdate) error {
+	err := m.MemberRepository.MemberUpdate(memberID, memeberUpdate)
+	if err != nil {
+		return err
+	}
+
+	// 2. Invalidar cache
+	if cache.IsAvailable() {
+		// Asumimos que memberID es el ID del usuario que se actualiza (basado en el controlador)
+		_ = cache.InvalidateAuthUser(memberID, tenantID)
+	}
+	return nil
 }
 
-func (m *MemberService) MemberUpdatePassword(memberID int64, memberUpdatePassword *schemas.MemberUpdatePassword) error {
-	return m.MemberRepository.MemberUpdatePassword(memberID, memberUpdatePassword)
+func (m *MemberService) MemberUpdatePassword(memberID int64, tenantID int64, memberUpdatePassword *schemas.MemberUpdatePassword) error {
+	err := m.MemberRepository.MemberUpdatePassword(memberID, memberUpdatePassword)
+	if err != nil {
+		return err
+	}
+
+	if cache.IsAvailable() {
+		_ = cache.InvalidateAuthUser(memberID, tenantID)
+	}
+	return nil
 }
 
-func (m *MemberService) MemberDelete(memberID int64, id int64) (error) {
-	return m.MemberRepository.MemberDelete(memberID, id)
+func (m *MemberService) MemberDelete(memberID int64, tenantID int64, id int64) error {
+	err := m.MemberRepository.MemberDelete(memberID, id)
+	if err != nil {
+		return err
+	}
+
+	if cache.IsAvailable() {
+		// Invalidar caché del usuario ELIMINADO (id), no del que eliminó (memberID)
+		_ = cache.InvalidateAuthUser(id, tenantID)
+	}
+	return nil
 }
 
 // ********************************************************************************************************************************

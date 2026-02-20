@@ -6,7 +6,6 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
-	"github.com/rs/zerolog/log"
 )
 
 // IncomeOtherGetByID godoc
@@ -190,15 +189,7 @@ func (i *IncomeOtherController) IncomeOtherGetByDateByPointSale(c *fiber.Ctx) er
 //	@Router			/api/v1/income_other/create [post]
 func (i *IncomeOtherController) IncomeOtherCreate(c *fiber.Ctx) error {
 	var incomeOtherCreate schemas.IncomeOtherCreate
-	if err := c.BodyParser(&incomeOtherCreate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := incomeOtherCreate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &incomeOtherCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -229,15 +220,7 @@ func (i *IncomeOtherController) IncomeOtherCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/income_other/create_point_sale [post]
 func (i *IncomeOtherController) IncomeOtherCreateByPointSale(c *fiber.Ctx) error {
 	var incomeOtherCreate schemas.IncomeOtherCreate
-	if err := c.BodyParser(&incomeOtherCreate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := incomeOtherCreate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &incomeOtherCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -269,15 +252,7 @@ func (i *IncomeOtherController) IncomeOtherCreateByPointSale(c *fiber.Ctx) error
 //	@Router			/api/v1/income_other/update [put]
 func (i *IncomeOtherController) IncomeOtherUpdate(c *fiber.Ctx) error {
 	var incomeOtherUpdate schemas.IncomeOtherUpdate
-	if err := c.BodyParser(&incomeOtherUpdate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := incomeOtherUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &incomeOtherUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -339,15 +314,7 @@ func (i *IncomeOtherController) IncomeOtherDelete(c *fiber.Ctx) error {
 //	@Router			/api/v1/income_other/update_point_sale [put]
 func (i *IncomeOtherController) IncomeOtherUpdateByPointSale(c *fiber.Ctx) error {
 	var incomeOtherUpdate schemas.IncomeOtherUpdate
-	if err := c.BodyParser(&incomeOtherUpdate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := incomeOtherUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &incomeOtherUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

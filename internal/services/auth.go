@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
@@ -234,6 +235,10 @@ func (a *AuthService) AuthResetPassword(resetPassword *schemas.AuthResetPassword
 	err = a.AuthRepository.AuthResetPassword(memberID, tenantID, resetPassword.NewPassword)
 	if err != nil {
 		return err
+	}
+
+	if cache.IsAvailable() {
+		_ = cache.InvalidateAuthUser(memberID, tenantID)
 	}
 
 	return nil

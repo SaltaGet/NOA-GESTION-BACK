@@ -5,7 +5,6 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
-	"github.com/rs/zerolog/log"
 )
 
 // ModuleGet godoc
@@ -76,15 +75,7 @@ func (m *ModuleController) ModuleGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/module/create [post]
 func (m *ModuleController) ModuleCreate(c *fiber.Ctx) error {
 	var moduleCrate schemas.ModuleCreate
-	if err := c.BodyParser(&moduleCrate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := moduleCrate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &moduleCrate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -113,15 +104,7 @@ func (m *ModuleController) ModuleCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/module/update [put]
 func (m *ModuleController) ModuleUpdate(c *fiber.Ctx) error {
 	var moduleUpdate schemas.ModuleUpdate
-	if err := c.BodyParser(&moduleUpdate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := moduleUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &moduleUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -154,15 +137,7 @@ func (m *ModuleController) ModuleDelete(c *fiber.Ctx) error {
 //	@Router			/api/v1/module/add_tenant_expiration [put]
 func (m *ModuleController) ModuleAddTenant(c *fiber.Ctx) error {
 	var moduleAddTenant schemas.ModuleAddTenant
-	if err := c.BodyParser(&moduleAddTenant); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := moduleAddTenant.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &moduleAddTenant); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

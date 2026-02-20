@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -130,20 +131,9 @@ func (m *MovementStockController) MoveStockList(c *fiber.Ctx) error {
 	// toDepositHasPointSale := false
 	// toPointSale := false
 	// Validar cada movimiento
-	for idx, ms := range movementStock {
-		// for _, msi := range ms.MovementStockItem {
-		// 	if msi.ToType == "point_sale" {
-		// 		toPointSale = true
-		// 	}
-		// 	if msi.FromType == "deposit" && msi.ToType == "point_sale" {
-		// 		toDepositHasPointSale = true
-		// 		break
-		// 	}
-		// }
-		if err := ms.Validate(); err != nil {
-			return schemas.HandleError(c, schemas.ErrorResponse(400,
-				fmt.Sprintf("Error de validación en producto (posición %d, ID: %d)", idx+1, ms.ProductID),
-				err))
+	for _, ms := range movementStock {
+		if err := validators.ValidateRequest(c, &ms); err != nil {
+			return schemas.HandleError(c, err)
 		}
 	}
 

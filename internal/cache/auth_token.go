@@ -11,8 +11,8 @@ import (
 
 const (
 	// TTLs
-	AuthUserTTL    = 5 * time.Minute
-	TenantInfoTTL  = 10 * time.Minute
+	AuthUserTTL    = 15 * time.Minute
+	TenantInfoTTL  = 15 * time.Minute
 	PermissionsTTL = 15 * time.Minute
 
 	// Prefijos de claves
@@ -23,54 +23,92 @@ const (
 
 // --- Cache de Usuario Autenticado ---
 
-// GetAuthUser obtiene usuario autenticado del cache
+// GetAuthUser obtiene usuario autenticado del cache (Hash: auth:tenant:<ID>:users Field: <userID>)
 func GetAuthUser(userID int64, tenantID int64) (*schemas.AuthenticatedUser, error) {
 	if Client == nil {
 		return nil, fmt.Errorf("redis no disponible")
 	}
 
-	key := authUserKey(userID, tenantID)
-	var authUser schemas.AuthenticatedUser
+	key := tenantUsersKey(tenantID)
+	field := fmt.Sprintf("%d", userID)
 
-	if err := Get(key, &authUser); err != nil {
+	// Obtener del Hash
+	data, err := Client.HGet(context.Background(), key, field).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	var authUser schemas.AuthenticatedUser
+	if err := json.Unmarshal([]byte(data), &authUser); err != nil {
 		return nil, err
 	}
 
 	return &authUser, nil
 }
 
-// SetAuthUser guarda usuario autenticado en cache
+// SetAuthUser guarda usuario autenticado en cache dentro del set del tenant
 func SetAuthUser(authUser *schemas.AuthenticatedUser) error {
 	if Client == nil {
 		return nil // Fallar silenciosamente
 	}
 
-	key := authUserKey(authUser.ID, authUser.TenantID)
-	return Set(key, authUser, AuthUserTTL)
+	key := tenantUsersKey(authUser.TenantID)
+	field := fmt.Sprintf("%d", authUser.ID)
+
+	data, err := json.Marshal(authUser)
+	if err != nil {
+		return err
+	}
+
+	// Guardar en Hash
+	if err := Client.HSet(context.Background(), key, field, data).Err(); err != nil {
+		return err
+	}
+
+	// Establecer TTL al Hash si es nuevo (opcional, para limpieza general)
+	// Si queremos que el cache del tenant expire si no se usa:
+	Client.Expire(context.Background(), key, AuthUserTTL)
+
+	return nil
 }
 
-// InvalidateAuthUser invalida cache de un usuario específico
+// InvalidateAuthUser elimina un usuario específico del cache del tenant
 func InvalidateAuthUser(memberID, tenantID int64) error {
 	if Client == nil {
 		return nil
 	}
 
-	key := authUserKey(memberID, tenantID)
-	return Delete(key)
+	key := tenantUsersKey(tenantID)
+	field := fmt.Sprintf("%d", memberID)
+
+	return Client.HDel(context.Background(), key, field).Err()
 }
 
-// InvalidateAllUserVersions invalida todas las versiones de un usuario
-func InvalidateAllUserVersions(memberID int64) error {
+// GetTenantUsers obtiene todos los usuarios conectados de un tenant
+func GetTenantUsers(tenantID int64) ([]*schemas.AuthenticatedUser, error) {
 	if Client == nil {
-		return nil
+		return nil, fmt.Errorf("redis no disponible")
 	}
 
-	pattern := fmt.Sprintf("%s%d:v*", authUserPrefix, memberID)
-	return DeletePattern(pattern)
+	key := tenantUsersKey(tenantID)
+	results, err := Client.HGetAll(context.Background(), key).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	var users []*schemas.AuthenticatedUser
+	for _, data := range results {
+		var user schemas.AuthenticatedUser
+		if err := json.Unmarshal([]byte(data), &user); err == nil {
+			users = append(users, &user)
+		}
+	}
+	return users, nil
 }
 
-func authUserKey(memberID, tenantID int64) string {
-	return fmt.Sprintf("%s%d:%d", authUserPrefix, memberID, tenantID)
+// Key para el Hash de usuarios de un tenant
+func tenantUsersKey(tenantID int64) string {
+	return fmt.Sprintf("auth:tenant:%d:users", tenantID)
 }
 
 // --- Cache de Tenant ---
@@ -173,7 +211,7 @@ func CheckRateLimit(identifier string, maxRequests int, window time.Duration) (b
 	}
 
 	key := fmt.Sprintf("ratelimit:%s", identifier)
-	
+
 	count, err := IncrementWithExpire(key, window)
 	if err != nil {
 		return true, err // En caso de error, permitir
@@ -281,8 +319,6 @@ func WarmupCache(data map[string]interface{}) error {
 	_, err := pipe.Exec(context.Background())
 	return err
 }
-
-
 
 // --- Blacklist para revocación inmediata ---
 

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 )
@@ -53,10 +54,7 @@ func (t *TypeMovementController) TypeMovementGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/type_movement/create [post]
 func (t *TypeMovementController) TypeMovementCreate(c *fiber.Ctx) error {
 	movementCreate := schemas.TypeMovementCreate{}
-	if err := c.BodyParser(&movementCreate); err != nil {
-		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el modelo", err))
-	}
-	if err := movementCreate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &movementCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -86,10 +84,7 @@ func (t *TypeMovementController) TypeMovementCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/type_movement/update [put]
 func (t *TypeMovementController) TypeMovementUpdate(c *fiber.Ctx) error {
 	movementUpdate := schemas.TypeMovementUpdate{}
-	if err := c.BodyParser(&movementUpdate); err != nil {
-		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el modelo", err))
-	}
-	if err := movementUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &movementUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

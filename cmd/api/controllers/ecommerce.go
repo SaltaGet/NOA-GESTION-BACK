@@ -141,10 +141,7 @@ func (ec *EcommerceController) EcommerceGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/ecommerce/update_status [put]
 func (ec *EcommerceController) EcommerceUpdateStatus(c *fiber.Ctx) error {
 	var statusUpdate schemas.EcommerceStatusUpdate
-	if err := c.BodyParser(&statusUpdate); err != nil {
-		return schemas.HandleError(c, err)
-	}
-	if err := statusUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &statusUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

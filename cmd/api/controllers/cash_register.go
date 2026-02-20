@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -105,10 +106,7 @@ func (r *CashRegisterController) CashRegisterGetByID(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/cash_register/open [post]
 func (r *CashRegisterController) CashRegisterOpen(ctx *fiber.Ctx) error {
 	var amountOpen schemas.CashRegisterOpen
-	if err := ctx.BodyParser(&amountOpen); err != nil {
-		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
-	}
-	if err := amountOpen.Validate(); err != nil {
+	if err := validators.ValidateRequest(ctx, &amountOpen); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
@@ -145,10 +143,7 @@ func (r *CashRegisterController) CashRegisterOpen(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/cash_register/close [post]
 func (r *CashRegisterController) CashRegisterClose(ctx *fiber.Ctx) error {
 	var amountClose schemas.CashRegisterClose
-	if err := ctx.BodyParser(&amountClose); err != nil {
-		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
-	}
-	if err := amountClose.Validate(); err != nil {
+	if err := validators.ValidateRequest(ctx, &amountClose); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 

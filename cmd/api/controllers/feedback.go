@@ -4,7 +4,6 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
-	"github.com/rs/zerolog/log"
 )
 
 // FeedbackGetByID godoc
@@ -73,15 +72,7 @@ func (t *FeedbackController) FeedbackGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/feedback/create [post]
 func (t *FeedbackController) FeedbackCreate(c *fiber.Ctx) error {
 	var newCreate schemas.FeedbackCreate
-	if err := c.BodyParser(&newCreate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := newCreate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &newCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

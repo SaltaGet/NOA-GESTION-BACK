@@ -7,6 +7,7 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 )
@@ -71,15 +72,7 @@ func (t *TenantController) TenantCreateByUserID(c *fiber.Ctx) error {
 	}
 
 	var tenantCreate schemas.TenantCreate
-	if err := c.BodyParser(&tenantCreate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := tenantCreate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &tenantCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -113,19 +106,7 @@ func (t *TenantController) TenantCreateByUserID(c *fiber.Ctx) error {
 //	@Router			/api/v1/tenant/create_tenant_user [post]
 func (t *TenantController) TenantUserCreate(c *fiber.Ctx) error {
 	var tenantUserCrate schemas.TenantUserCreate
-	if err := c.BodyParser(&tenantUserCrate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := tenantUserCrate.TenantCreate.Validate(); err != nil {
-		return schemas.HandleError(c, err)
-	}
-
-	if err := tenantUserCrate.UserCreate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &tenantUserCrate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -155,15 +136,7 @@ func (t *TenantController) TenantUserCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/tenant/update_expiration [put]
 func (t *TenantController) TenantUpdateExpiration(c *fiber.Ctx) error {
 	var tenantUpdateExpiration schemas.TenantUpdateExpiration
-	if err := c.BodyParser(&tenantUpdateExpiration); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := tenantUpdateExpiration.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &tenantUpdateExpiration); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -202,9 +175,6 @@ func (t *TenantController) TenantUpdateAcceptedTerms(c *fiber.Ctx) error {
 		IP:            ip,
 		AcceptedTerms: true,
 		DateAccepted:  time.Now(),
-	}
-	if err := tenantUpdateTerms.Validate(); err != nil {
-		return schemas.HandleError(c, err)
 	}
 
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
@@ -257,15 +227,7 @@ func (t *TenantController) TenantGetSettings(c *fiber.Ctx) error {
 //	@Router			/api/v1/tenant/update_settings [put]
 func (t *TenantController) TenantUpdateSettings(c *fiber.Ctx) error {
 	var tenantUpdateSettings schemas.TenantUpdateSettings
-	if err := c.BodyParser(&tenantUpdateSettings); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := tenantUpdateSettings.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &tenantUpdateSettings); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

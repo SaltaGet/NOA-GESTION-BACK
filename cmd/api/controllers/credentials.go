@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -42,10 +43,7 @@ func (c *CredentialController) CredentialGetMPToken(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/credential/set_mercado_pago_token [put]
 func (c *CredentialController) CredentialSetMPToken(ctx *fiber.Ctx) error {
 	var request schemas.CredentialMPTokenRequest
-	if err := ctx.BodyParser(&request); err != nil {
-		return schemas.HandleError(ctx, err)
-	}
-	if err := request.Validate(); err != nil {
+	if err := validators.ValidateRequest(ctx, &request); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
@@ -99,13 +97,9 @@ func (c *CredentialController) CredentialGetArca(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/credential/set_arca_token [put]
 func (c *CredentialController) CredentialSetArca(ctx *fiber.Ctx) error {
 	var request schemas.CredentialArcaRequest
-	if err := ctx.BodyParser(&request); err != nil {
+	if err := validators.ValidateRequest(ctx, &request); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
-	if err := request.Validate(); err != nil {
-		return schemas.HandleError(ctx, err)
-	}
-
 	user := ctx.Locals("user").(*schemas.AuthenticatedUser)
 	err := c.CredentialService.CredentialSetArca(user.TenantID, &request)
 	if err != nil {

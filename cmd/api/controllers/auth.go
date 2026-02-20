@@ -7,6 +7,7 @@ import (
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 )
@@ -23,11 +24,7 @@ import (
 // @Router			/api/v1/auth/login [post]
 func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
 	var loginRequest schemas.AuthLogin
-	if err := c.BodyParser(&loginRequest); err != nil {
-		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
-	}
-
-	if err := loginRequest.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &loginRequest); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -243,11 +240,7 @@ func (a *AuthController) CurrentTenant(c *fiber.Ctx) error {
 // @Router			/api/v1/auth/login_admin [post]
 func (a *AuthController) AuthLoginAdmin(c *fiber.Ctx) error {
 	var loginRequest schemas.AuthLoginAdmin
-	if err := c.BodyParser(&loginRequest); err != nil {
-		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
-	}
-
-	if err := loginRequest.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &loginRequest); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -311,10 +304,7 @@ func (a *AuthController) LogoutAdmin(ctx *fiber.Ctx) error {
 // @Router			/api/v1/auth/forgot_password [post]
 func (a *AuthController) AuthForgotPassword(ctx *fiber.Ctx) error {
 	var authForgotPassword schemas.AuthForgotPassword
-	if err := ctx.BodyParser(&authForgotPassword); err != nil {
-		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
-	}
-	if err := authForgotPassword.Validate(); err != nil {
+	if err := validators.ValidateRequest(ctx, &authForgotPassword); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
@@ -342,10 +332,7 @@ func (a *AuthController) AuthForgotPassword(ctx *fiber.Ctx) error {
 // @Router			/api/v1/auth/reset_password [post]
 func (a *AuthController) AuthResetPassword(ctx *fiber.Ctx) error {
 	var authResetPassword schemas.AuthResetPassword
-	if err := ctx.BodyParser(&authResetPassword); err != nil {
-		return schemas.HandleError(ctx, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
-	}
-	if err := authResetPassword.Validate(); err != nil {
+	if err := validators.ValidateRequest(ctx, &authResetPassword); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 

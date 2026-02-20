@@ -5,7 +5,6 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
-	"github.com/rs/zerolog/log"
 )
 
 //	PlanGetAll godoc
@@ -74,15 +73,7 @@ func (t *PlanController) PlanGetByID(c *fiber.Ctx) error {
 //	@Router			/api/v1/plan/create [post]
 func (t *PlanController) PlanCreate(c *fiber.Ctx) error {
 	var planCreate schemas.PlanCreate
-	if err := c.BodyParser(&planCreate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := planCreate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &planCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -113,15 +104,7 @@ func (t *PlanController) PlanCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/plan/update [put]
 func (t *PlanController) PlanUpdate(c *fiber.Ctx) error {
 	var planUpdate schemas.PlanUpdate
-	if err := c.BodyParser(&planUpdate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := planUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &planUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

@@ -50,15 +50,28 @@ func (r *ClientRepository) ClientGetAll(limit, page int64, search *map[string]st
 	query := r.DB.Table("clients c")
 
 	if filterDrbt {
-		query = query.
-			Select(`
-				c.id, c.first_name, c.last_name, c.company_name, c.identifier, c.responsability_front_iva,
-				c.email, c.phone, c.address, c.member_create_id, c.created_at, c.updated_at,
-				COALESCE(SUM(CASE WHEN p.method_pay = 'credit' THEN p.total ELSE 0 END), 0) AS debt
-			`).
-			Joins("LEFT JOIN pay_incomes p ON p.client_id = c.id").
-			Group("c.id").
-			Having("debt > 0")
+		// query = query.
+		// 	Select(`
+		// 		c.id, c.first_name, c.last_name, c.company_name, c.identifier, c.responsability_front_iva,
+		// 		c.email, c.phone, c.address, c.member_create_id, c.created_at, c.updated_at,
+		// 		COALESCE(SUM(CASE WHEN p.method_pay = 'credit' THEN p.total ELSE 0 END), 0) AS debt
+		// 	`).
+		// 	Joins("LEFT JOIN pay_incomes p ON p.client_id = c.id").
+		// 	Group("c.id").
+		// 	Having("debt > 0")
+		// Definimos la fórmula de la deuda para reutilizarla
+    debtFormula := "COALESCE(SUM(CASE WHEN p.method_pay = 'credit' THEN p.total ELSE 0 END), 0)"
+    
+    query = query.
+      Select(fmt.Sprintf(`
+        c.id, c.first_name, c.last_name, c.company_name, c.identifier, c.responsability_front_iva,
+        c.email, c.phone, c.address, c.member_create_id, c.created_at, c.updated_at,
+        %s AS debt
+      `, debtFormula)).
+      Joins("LEFT JOIN pay_incomes p ON p.client_id = c.id").
+      Group("c.id").
+      // REGLA POSTGRES: Usar la función agregada, no el alias
+      Having(fmt.Sprintf("%s > 0", debtFormula))
 	} else {
 		query = query.Select("c.*")
 	}

@@ -6,7 +6,6 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
-	"github.com/rs/zerolog/log"
 )
 
 // ExpenseBuyGetByID godoc
@@ -105,15 +104,7 @@ func (e *ExpenseBuyController) ExpenseBuyGetByDate(c *fiber.Ctx) error {
 //	@Router			/api/v1/expense_buy/create [post]
 func (e *ExpenseBuyController) ExpenseBuyCreate(c *fiber.Ctx) error {
 	var expenseBuyCreate schemas.ExpenseBuyCreate
-	if err := c.BodyParser(&expenseBuyCreate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := expenseBuyCreate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &expenseBuyCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -144,15 +135,7 @@ func (e *ExpenseBuyController) ExpenseBuyCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/expense_buy/update [put]
 func (e *ExpenseBuyController) ExpenseBuyUpdate(c *fiber.Ctx) error {
 	var expenseBuyUpdate schemas.ExpenseBuyUpdate
-	if err := c.BodyParser(&expenseBuyUpdate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := expenseBuyUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &expenseBuyUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

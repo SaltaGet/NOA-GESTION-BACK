@@ -1,11 +1,5 @@
 package schemas
 
-import (
-	"fmt"
-
-	"github.com/go-playground/validator/v10"
-)
-
 type ProductFullResponse struct {
 	ID              int64                     `json:"id"`
 	Code            string                    `json:"code"`
@@ -74,22 +68,6 @@ type ProductCreate struct {
 	MinAmount   float64  `json:"min_amount" example:"10.00"`
 }
 
-func (p *ProductCreate) Validate() error {
-	validate := validator.New()
-	err := validate.Struct(p)
-	if err == nil {
-		return nil
-	}
-
-	validatorErr := err.(validator.ValidationErrors)[0]
-	field := validatorErr.Field()
-	tag := validatorErr.Tag()
-	params := validatorErr.Param()
-
-	errorMessage := field + " " + tag + " " + params
-	return ErrorResponse(422, fmt.Sprintf("error al validar campo(s): %s", errorMessage), err)
-}
-
 type ProductUpdate struct {
 	ID          int64    `json:"id" validate:"required" example:"1"`
 	Code        string   `json:"code" validate:"required" example:"ABC123"`
@@ -101,22 +79,6 @@ type ProductUpdate struct {
 	MinAmount   float64  `json:"min_amount" example:"10.00"`
 }
 
-func (p *ProductUpdate) Validate() error {
-	validate := validator.New()
-	err := validate.Struct(p)
-	if err == nil {
-		return nil
-	}
-
-	validatorErr := err.(validator.ValidationErrors)[0]
-	field := validatorErr.Field()
-	tag := validatorErr.Tag()
-	params := validatorErr.Param()
-
-	errorMessage := field + " " + tag + " " + params
-	return ErrorResponse(422, fmt.Sprintf("error al validar campo(s): %s", errorMessage), err)
-}
-
 type ProductPriceUpdate struct {
 	ID    int64   `json:"id" validate:"required" example:"1"`
 	Price float64 `json:"price" validate:"required,gte=0" example:"100.00"`
@@ -124,22 +86,6 @@ type ProductPriceUpdate struct {
 
 type ListPriceUpdate struct {
 	ListProductPriceUpdate []ProductPriceUpdate `json:"list" validate:"required,min=1,dive"`
-}
-
-func (p *ListPriceUpdate) Validate() error {
-	validate := validator.New()
-	err := validate.Struct(p)
-	if err == nil {
-		return nil
-	}
-
-	validatorErr := err.(validator.ValidationErrors)[0]
-	field := validatorErr.Field()
-	tag := validatorErr.Tag()
-	params := validatorErr.Param()
-
-	errorMessage := field + " " + tag + " " + params
-	return ErrorResponse(422, fmt.Sprintf("error al validar campo(s): %s", errorMessage), err)
 }
 
 type ProductStockWithScore struct {
@@ -160,22 +106,6 @@ type ValidateSecondaryImage struct {
 	RemoveUUIDs []string `json:"remove_uuids" example:"uuid1,uuid2,uuid3"`
 }
 
-func (p *ProductValidateImage) Validate() error {
-	validate := validator.New()
-	err := validate.Struct(p)
-	if err == nil {
-		return nil
-	}
-
-	validatorErr := err.(validator.ValidationErrors)[0]
-	field := validatorErr.Field()
-	tag := validatorErr.Tag()
-	params := validatorErr.Param()
-
-	errorMessage := field + " " + tag + " " + params
-	return ErrorResponse(422, fmt.Sprintf("error al validar campo(s): %s", errorMessage), err)
-}
-
 type ListVisibilityUpdate struct{
 	ListProductVisibilityUpdate []ProductVisibilityUpdate `json:"list" validate:"required,min=1,dive"`
 }
@@ -183,20 +113,4 @@ type ListVisibilityUpdate struct{
 type ProductVisibilityUpdate struct {
 	ProductID int64 `json:"product_id" validate:"required" example:"1"`
 	Visibility *bool `json:"visibility" validate:"required" example:"true"`
-}
-
-func (p *ListVisibilityUpdate) Validate() error {
-	validate := validator.New()
-	err := validate.Struct(p)
-	if err == nil {
-		return nil
-	}
-
-	validatorErr := err.(validator.ValidationErrors)[0]
-	field := validatorErr.Field()
-	tag := validatorErr.Tag()
-	params := validatorErr.Param()
-
-	errorMessage := field + " " + tag + " " + params
-	return ErrorResponse(422, fmt.Sprintf("error al validar campo(s): %s", errorMessage), err)
 }

@@ -93,10 +93,7 @@ func (p *PointSaleController) PointSaleGetAllByMember(c *fiber.Ctx) error {
 //	@Router			/api/v1/point_sale/create [post]
 func (p *PointSaleController) PointSaleCreate(c *fiber.Ctx) error {
 	var pointSale schemas.PointSaleCreate
-	if err := c.BodyParser(&pointSale); err != nil {
-		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el modelo", err))
-	}
-	if err := pointSale.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &pointSale); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -126,10 +123,7 @@ member := c.Locals("user").(*schemas.AuthenticatedUser)
 //	@Router			/api/v1/point_sale/update [put]
 func (p *PointSaleController) PointSaleUpdate(c *fiber.Ctx) error {
 	var pointSale schemas.PointSaleUpdate
-	if err := c.BodyParser(&pointSale); err != nil {
-		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el modelo", err))
-	}
-	if err := pointSale.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &pointSale); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -158,10 +152,7 @@ func (p *PointSaleController) PointSaleUpdate(c *fiber.Ctx) error {
 //	@Router			/api/v1/point_sale/update_main [put]
 func (p *PointSaleController) PointSaleUpdateMain(c *fiber.Ctx) error {
 	var pointSale schemas.PointSaleUpdateMain
-	if err := c.BodyParser(&pointSale); err != nil {
-		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el modelo", err))
-	}
-	if err := pointSale.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &pointSale); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

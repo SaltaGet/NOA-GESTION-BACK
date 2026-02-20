@@ -172,11 +172,7 @@ func (d *DepositController) DepositGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/deposit/update_stock [put]
 func (d *DepositController) DepositUpdateStock(c *fiber.Ctx) error {
 	var stockUpdate schemas.DepositUpdateStock
-	if err := c.BodyParser(&stockUpdate); err != nil {
-		return schemas.HandleError(c, err)
-	}
-
-	if err := stockUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &stockUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

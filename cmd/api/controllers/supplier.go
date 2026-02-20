@@ -1,12 +1,12 @@
 package controllers
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
-	"github.com/rs/zerolog/log"
 )
 
 // SupplierGetByID godoc
@@ -122,15 +122,7 @@ func (s *SupplierController) SupplierGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/supplier/create [post]
 func (s *SupplierController) SupplierCreate(c *fiber.Ctx) error {
 	var supplierCreate schemas.SupplierCreate
-	if err := c.BodyParser(&supplierCreate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := supplierCreate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &supplierCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -166,16 +158,12 @@ func (s *SupplierController) SupplierCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/supplier/update [put]
 func (s *SupplierController) SupplierUpdate(c *fiber.Ctx) error {
 	var supplierUpdate schemas.SupplierUpdate
-	if err := c.BodyParser(&supplierUpdate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := supplierUpdate.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &supplierUpdate); err != nil {
 		return schemas.HandleError(c, err)
+	}
+
+	if supplierUpdate.ID == 1 {
+		return schemas.HandleError(c, schemas.ErrorResponse(422, "No se puede editar el proveedor por defecto", fmt.Errorf("no se puede editar el proveedor por defecto")))
 	}
 
 	member := c.Locals("user").(*schemas.AuthenticatedUser)
@@ -212,6 +200,10 @@ func (s *SupplierController) SupplierDeleteByID(c *fiber.Ctx) error {
 	idint, err := validators.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
+	}
+
+	if idint == 1 {
+		return schemas.HandleError(c, schemas.ErrorResponse(422, "No se puede editar el proveedor por defecto", fmt.Errorf("no se puede editar el proveedor por defecto")))
 	}
 
 	member := c.Locals("user").(*schemas.AuthenticatedUser)

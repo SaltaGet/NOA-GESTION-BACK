@@ -1,11 +1,5 @@
 package schemas
 
-import (
-	"fmt"
-
-	"github.com/go-playground/validator/v10"
-)
-
 type PlanResponse struct {
 	ID              int64            `json:"id"`
 	Name            string           `json:"name"`
@@ -43,23 +37,6 @@ type PlanCreate struct {
 	AmountProduct   int64   `json:"amount_product"`
 }
 
-func (p *PlanCreate) Validate() error {
-	validate := validator.New()
-	err := validate.Struct(p)
-	if err == nil {
-		return nil
-	}
-
-	validationErr := err.(validator.ValidationErrors)[0]
-	field := validationErr.Field()
-	tag := validationErr.Tag()
-	param := validationErr.Param()
-
-	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
-
-	return ErrorResponse(422, message, fmt.Errorf("%s", message))
-}
-
 type PlanUpdate struct {
 	ID              int64   `json:"id" validate:"required" example:"1"`
 	Name            string  `json:"name" validate:"required" example:"Plan1"`
@@ -70,21 +47,4 @@ type PlanUpdate struct {
 	AmountPointSale int64   `json:"amount_point_sale" validate:"required" example:"1"`
 	AmountMember    int64   `json:"amount_member" validate:"required" example:"5"`
 	AmountProduct   int64   `json:"amount_product"`
-}
-
-func (p *PlanUpdate) Validate() error {
-	validate := validator.New()
-	err := validate.Struct(p)
-	if err == nil {
-		return nil
-	}
-
-	validationErr := err.(validator.ValidationErrors)[0]
-	field := validationErr.Field()
-	tag := validationErr.Tag()
-	param := validationErr.Param()
-
-	message := fmt.Sprintf("campo %s es invalido, revisar: (%s) (%s)", field, tag, param)
-
-	return ErrorResponse(422, message, fmt.Errorf("%s", message))
 }

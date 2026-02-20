@@ -1,10 +1,7 @@
 package schemas
 
 import (
-	"fmt"
 	"time"
-
-	"github.com/go-playground/validator/v10"
 )
 
 type FeedbackResponse struct {
@@ -27,18 +24,3 @@ type FeedbackCreate struct {
 	Content string `json:"content" validate:"required"`
 }
 
-func (d *FeedbackCreate) Validate() error {
-	validate := validator.New()
-	err := validate.Struct(d)
-	if err == nil {
-		return nil
-	}
-
-	validatorErr := err.(validator.ValidationErrors)[0]
-	field := validatorErr.Field()
-	tag := validatorErr.Tag()
-	params := validatorErr.Param()
-
-	errorMessage := field + " " + tag + " " + params
-	return ErrorResponse(422, fmt.Sprintf("error al validar campo(s): %s", errorMessage), err)
-}

@@ -3,11 +3,9 @@ package controllers
 import (
 	"strconv"
 
-
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
-	"github.com/rs/zerolog/log"
 )
 
 // IncomeSaleGetByID godoc
@@ -103,15 +101,10 @@ func (i *IncomeSaleController) IncomeSaleGetByDate(c *fiber.Ctx) error {
 //	@Router			/api/v1/income_sale/create [post]
 func (i *IncomeSaleController) IncomeSaleCreate(c *fiber.Ctx) error {
 	var incomeSaleCreate schemas.IncomeSaleCreate
-	if err := c.BodyParser(&incomeSaleCreate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
+	if err := validators.ValidateRequest(c, &incomeSaleCreate); err != nil {
+		return schemas.HandleError(c, err)
 	}
-	if err := incomeSaleCreate.Validate(); err != nil {
+	if err := incomeSaleCreate.ValidateIntegrity(); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -142,15 +135,10 @@ func (i *IncomeSaleController) IncomeSaleCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/income_sale/update [put]
 func (i *IncomeSaleController) IncomeSaleUpdate(c *fiber.Ctx) error {
 	var incomeSaleUpdate schemas.IncomeSaleUpdate
-	if err := c.BodyParser(&incomeSaleUpdate); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
+	if err := validators.ValidateRequest(c, &incomeSaleUpdate); err != nil {
+		return schemas.HandleError(c, err)
 	}
-	if err := incomeSaleUpdate.Validate(); err != nil {
+	if err := incomeSaleUpdate.ValidateIntegrity(); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

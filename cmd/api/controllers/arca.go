@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 )
@@ -26,15 +27,7 @@ import (
 //	@Router			/api/v1/arca/emit_invoice [post]
 func (a *ArcaController) ArcaEmitInvoice(c *fiber.Ctx) error {
 	var factReq schemas.FacturaRequest
-	if err := c.BodyParser(&factReq); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := factReq.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &factReq); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -64,15 +57,7 @@ func (a *ArcaController) ArcaEmitInvoice(c *fiber.Ctx) error {
 //	@Router			/api/v1/arca/generate_key [post]
 func (a *ArcaController) ArcaGenerateKey(c *fiber.Ctx) error {
 	var keyReq schemas.KeyRequest
-	if err := c.BodyParser(&keyReq); err != nil {
-		log.Err(err).Msg("Error al parsear el body")
-		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
-			Status:  false,
-			Body:    nil,
-			Message: "Invalid request" + err.Error(),
-		})
-	}
-	if err := keyReq.Validate(); err != nil {
+	if err := validators.ValidateRequest(c, &keyReq); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
