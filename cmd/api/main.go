@@ -184,15 +184,17 @@ func main() {
 	initBackup := os.Getenv("INIT_BACKUP")
 	if initBackup == "true" {
 		c := cron.New()
+		// Backup cron (every minute for testing, or adjust as needed)
+		// _, err = c.AddFunc("* * * * *", func() {
 		_, err = c.AddFunc("0 4 * * *", func() {
 			log.Info().Msg("⏰ [CRON] Iniciando backup diario...")
-			cfg, err := jobs.LoadConfig(dep)
+			cfg, err := jobs.LoadConfigPostgres(dep)
 			if err != nil {
 				log.Err(err).Msg("❌ [CRON] error leyendo config")
 				return
 			}
 			log.Info().Strs("databases", cfg.Databases).Msg("⏰ Iniciando backup")
-			jobs.RunBackup(cfg)
+			jobs.RunOptimizedBackupPostgres(cfg)
 		})
 		if err != nil {
 			log.Err(err).Msg("❌ Error al crear cron job")
@@ -202,6 +204,27 @@ func main() {
 		c.Start()
 		defer c.Stop()
 	}
+	// initBackup := os.Getenv("INIT_BACKUP")
+	// if initBackup == "true" {
+	// 	c := cron.New()
+	// 	_, err = c.AddFunc("0 4 * * *", func() {
+	// 		log.Info().Msg("⏰ [CRON] Iniciando backup diario...")
+	// 		cfg, err := jobs.LoadConfig(dep)
+	// 		if err != nil {
+	// 			log.Err(err).Msg("❌ [CRON] error leyendo config")
+	// 			return
+	// 		}
+	// 		log.Info().Strs("databases", cfg.Databases).Msg("⏰ Iniciando backup")
+	// 		jobs.RunBackup(cfg)
+	// 	})
+	// 	if err != nil {
+	// 		log.Err(err).Msg("❌ Error al crear cron job")
+	// 		panic(err)
+	// 	}
+
+	// 	c.Start()
+	// 	defer c.Stop()
+	// }
 
 	// Canal para señales del sistema
 	quit := make(chan os.Signal, 1)
@@ -218,53 +241,53 @@ func main() {
 
 	var grpcServer *grpc.Server
 
-    // --- SECCIÓN gRPC ACTUALIZADA ---
-    go func() {
-        portGrpc := getEnv("GRPC_PORT", "50051")
-        lis, err := net.Listen("tcp", ":"+portGrpc)
-        if err != nil {
-            log.Fatal().Msgf("falló al escuchar gRPC: %v", err)
-        }
+	// --- SECCIÓN gRPC ACTUALIZADA ---
+	go func() {
+		portGrpc := getEnv("GRPC_PORT", "50051")
+		lis, err := net.Listen("tcp", ":"+portGrpc)
+		if err != nil {
+			log.Fatal().Msgf("falló al escuchar gRPC: %v", err)
+		}
 
-        // Configuramos Keepalive para el servidor
-        // Esto ayuda a detectar clientes muertos y mantener conexiones a través de Proxies/Load Balancers
-        ka := grpc.KeepaliveParams(keepalive.ServerParameters{
-            MaxConnectionIdle:     15 * time.Minute, // Tiempo max que una conexión puede estar ociosa
-            MaxConnectionAge:      30 * time.Minute, // Forzar reconexión para balanceo de carga
-            MaxConnectionAgeGrace: 5 * time.Minute,  // Tiempo extra para terminar llamadas antes de cerrar
-            Time:                  5 * time.Second,  // Ping al cliente cada 5s para ver si sigue vivo
-            Timeout:               1 * time.Second,  // Espera 1s por el pong
-        })
+		// Configuramos Keepalive para el servidor
+		// Esto ayuda a detectar clientes muertos y mantener conexiones a través de Proxies/Load Balancers
+		ka := grpc.KeepaliveParams(keepalive.ServerParameters{
+			MaxConnectionIdle:     15 * time.Minute, // Tiempo max que una conexión puede estar ociosa
+			MaxConnectionAge:      30 * time.Minute, // Forzar reconexión para balanceo de carga
+			MaxConnectionAgeGrace: 5 * time.Minute,  // Tiempo extra para terminar llamadas antes de cerrar
+			Time:                  5 * time.Second,  // Ping al cliente cada 5s para ver si sigue vivo
+			Timeout:               1 * time.Second,  // Espera 1s por el pong
+		})
 
-        grpcServer = grpc.NewServer(
-            ka,
-            grpc.ChainUnaryInterceptor(
-                interceptor.LoggingInterceptor,
-                interceptor.AuthInterceptor,
-                interceptor.MultiTenantInterceptor(dep),
-            ),
-        )
+		grpcServer = grpc.NewServer(
+			ka,
+			grpc.ChainUnaryInterceptor(
+				interceptor.LoggingInterceptor,
+				interceptor.AuthInterceptor,
+				interceptor.MultiTenantInterceptor(dep),
+			),
+		)
 
-        // Registro de servicios
-        productServer := &server.GrpcProductServer{}
-        pb.RegisterProductServiceServer(grpcServer, productServer)
+		// Registro de servicios
+		productServer := &server.GrpcProductServer{}
+		pb.RegisterProductServiceServer(grpcServer, productServer)
 
-        tenantServer := &server.GrpcTenantServer{
-            GrpcTenantService: depGrpc.TenantGrpcService,
-        }
-        pb.RegisterTenantServiceServer(grpcServer, tenantServer)
+		tenantServer := &server.GrpcTenantServer{
+			GrpcTenantService: depGrpc.TenantGrpcService,
+		}
+		pb.RegisterTenantServiceServer(grpcServer, tenantServer)
 
-        categoryServer := &server.GrpcCategoryServer{}
-        pb.RegisterCategoryServiceServer(grpcServer, categoryServer)
+		categoryServer := &server.GrpcCategoryServer{}
+		pb.RegisterCategoryServiceServer(grpcServer, categoryServer)
 
-				mpServer := &server.GrpcMPServer{}
-				pb.RegisterMPServiceServer(grpcServer, mpServer)
+		mpServer := &server.GrpcMPServer{}
+		pb.RegisterMPServiceServer(grpcServer, mpServer)
 
-        log.Info().Msgf("🚀 Servidor gRPC iniciado en :%s", portGrpc)
-        if err := grpcServer.Serve(lis); err != nil {
-            log.Fatal().Msgf("falló al servir gRPC: %v", err)
-        }
-    }()
+		log.Info().Msgf("🚀 Servidor gRPC iniciado en :%s", portGrpc)
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatal().Msgf("falló al servir gRPC: %v", err)
+		}
+	}()
 
 	// Esperar señal de terminación
 	<-quit
@@ -365,10 +388,6 @@ func getEnv(key, defaultVal string) string {
 
 // 	"github.com/rs/zerolog/log"
 // )
-
-
-
-
 
 // type FECAERequest struct {
 // 	XMLName  xml.Name `xml:"FECAESolicitar"`
@@ -651,9 +670,6 @@ func getEnv(key, defaultVal string) string {
 // 	}, nil
 // }
 
-
-
-
 // func NewWSFEClient(token, sign string, cuit int64, homologacion bool) *WSFEClient {
 // 	url := "https://servicios1.afip.gov.ar/wsfev1/service.asmx"
 // 	if homologacion {
@@ -749,8 +765,6 @@ func getEnv(key, defaultVal string) string {
 
 // 	return soap
 // }
-
-
 
 // // ============================================
 // // FUNCIONES AUXILIARES
@@ -873,7 +887,6 @@ func getEnv(key, defaultVal string) string {
 
 // 	return body, nil
 // }
-
 
 // func (w *WSAA) parseResponse(data []byte) (*Credentials, error) {
 // 	var loginResp LoginCMSResponse
@@ -1008,7 +1021,6 @@ func getEnv(key, defaultVal string) string {
 
 // 	return base64.StdEncoding.EncodeToString(cmsData), nil
 // }
-
 
 // // ============================================
 // // MAIN
