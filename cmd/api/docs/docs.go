@@ -10617,12 +10617,18 @@ const docTemplate = `{
         },
         "schemas.PointSaleUpdateMain": {
             "type": "object",
+            "required": [
+                "id",
+                "new_main"
+            ],
             "properties": {
                 "id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "new_main": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 2
                 }
             }
         },

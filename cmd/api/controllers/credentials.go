@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
@@ -104,6 +105,10 @@ func (c *CredentialController) CredentialSetArca(ctx *fiber.Ctx) error {
 	err := c.CredentialService.CredentialSetArca(user.TenantID, &request)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
+	}
+
+	if cache.IsAvailable() {
+		_ = cache.InvalidateTenantConnection(user.TenantID)
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{

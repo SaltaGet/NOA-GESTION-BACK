@@ -1,11 +1,8 @@
 package services
 
 import (
-	// "github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
-	// "github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"fmt"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
@@ -40,11 +37,6 @@ func (m *MemberService) MemberUpdate(memberID int64, tenantID int64, memeberUpda
 		return err
 	}
 
-	// 2. Invalidar cache
-	if cache.IsAvailable() {
-		// Asumimos que memberID es el ID del usuario que se actualiza (basado en el controlador)
-		_ = cache.InvalidateAuthUser(memberID, tenantID)
-	}
 	return nil
 }
 
@@ -54,9 +46,6 @@ func (m *MemberService) MemberUpdatePassword(memberID int64, tenantID int64, mem
 		return err
 	}
 
-	if cache.IsAvailable() {
-		_ = cache.InvalidateAuthUser(memberID, tenantID)
-	}
 	return nil
 }
 
@@ -66,10 +55,6 @@ func (m *MemberService) MemberDelete(memberID int64, tenantID int64, id int64) e
 		return err
 	}
 
-	if cache.IsAvailable() {
-		// Invalidar caché del usuario ELIMINADO (id), no del que eliminó (memberID)
-		_ = cache.InvalidateAuthUser(id, tenantID)
-	}
 	return nil
 }
 

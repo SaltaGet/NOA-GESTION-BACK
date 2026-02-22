@@ -19,10 +19,10 @@ func (r *MovementStockRepository) MovementStockGetByID(id int64) (*models.Moveme
 	return movement, nil
 }
 
-func (r *MovementStockRepository) MovementStockGetByDate(page, limit int, fromDate, toDate time.Time) ([]*models.MovementStock, int64, error) {
+func (r *MovementStockRepository) MovementStockGetByDate(page, limit int, fromDate, toDate time.Time) ([]models.MovementStock, int64, error) {
 	offset := (page - 1) * limit
 
-	var movements []*models.MovementStock
+	var movements []models.MovementStock
 	var total int64
 	if err := r.DB.
 		Preload("Member", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
@@ -41,7 +41,7 @@ func (r *MovementStockRepository) MovementStockGetByDate(page, limit int, fromDa
 	return movements, total, nil
 }
 
-func (r *MovementStockRepository) MoveStockList(memberID int64, input []*schemas.MovementStockList) error {
+func (r *MovementStockRepository) MoveStockList(memberID int64, input []schemas.MovementStockList) error {
 	var fromBeforeState, fromAfterState, toBeforeState, toAfterState, movementStock any
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
 		// Validar que hay elementos para procesar

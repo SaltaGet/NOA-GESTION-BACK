@@ -19,18 +19,18 @@ func (m *MovementStockService) MovementStockGetByID(id int64) (*schemas.Movement
 	return &response, nil
 }
 
-func (m *MovementStockService) MovementStockGetByDate(page, limit int, fromDate, toDate time.Time) ([]*schemas.MovementStockResponseDTO, int64, error) {
+func (m *MovementStockService) MovementStockGetByDate(page, limit int, fromDate, toDate time.Time) ([]schemas.MovementStockResponseDTO, int64, error) {
 	movements, total, err := m.MovementStockRepository.MovementStockGetByDate(page, limit, fromDate, toDate)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	var movementsResponse []*schemas.MovementStockResponseDTO
+	var movementsResponse []schemas.MovementStockResponseDTO
 	_ = copier.Copy(&movementsResponse, &movements)
 
 	return movementsResponse, total, nil
 }
 
-func (m *MovementStockService) MoveStockList(userID int64, input []*schemas.MovementStockList) error {
+func (m *MovementStockService) MoveStockList(userID int64, input []schemas.MovementStockList) error {
 	return m.MovementStockRepository.MoveStockList(userID, input)
 }

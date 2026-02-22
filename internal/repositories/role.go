@@ -29,7 +29,15 @@ func (r *RoleRepository) RoleGetByID(id int64) (*schemas.RoleResponse, error) {
 func (r *RoleRepository) RoleGetAll() (*[]schemas.RoleResponse, error) {
 	var rows []schemas.RolePermissionRow
 	if err := r.DB.Table("roles").
-		Select("roles.id as role_id, roles.name as role_name, permissions.id as perm_id, permissions.code as perm_code, permissions.`group` as perm_group, permissions.environment as environment, permissions.details as detail").
+		Select(`
+    roles.id as role_id, 
+    roles.name as role_name, 
+    permissions.id as perm_id, 
+    permissions.code as perm_code, 
+    permissions."group" as perm_group,
+    permissions.environment as environment, 
+    permissions.details as detail
+`).
 		Joins("left join role_permissions on roles.id = role_permissions.role_id").
 		Joins("left join permissions on permissions.id = role_permissions.permission_id").
 		Find(&rows).Error; err != nil {
@@ -126,8 +134,6 @@ func (r *RoleRepository) RoleGetAll() (*[]schemas.RoleResponse, error) {
 // 	return nil
 // }
 
-
-
 // expandPermissions expande los permisos para incluir automáticamente los permisos de lectura (04)
 // cuando se otorgan permisos de actualización (02) del mismo grupo
 func expandPermissions(db *gorm.DB, permissionIDs []int64) ([]models.Permission, error) {
@@ -184,11 +190,11 @@ func (t *RoleRepository) RoleCreate(memberID int64, roleCreate *schemas.RoleCrea
 		if err != nil {
 			return err
 		}
-		
+
 		// Validar que al menos los permisos solicitados existan
 		if len(permissions) < len(roleCreate.PermissionsID) {
-			return schemas.ErrorResponse(400, "Algunos permisos no existen", 
-				fmt.Errorf("se esperaban al menos %d permisos, pero se encontraron %d", 
+			return schemas.ErrorResponse(400, "Algunos permisos no existen",
+				fmt.Errorf("se esperaban al menos %d permisos, pero se encontraron %d",
 					len(roleCreate.PermissionsID), len(permissions)))
 		}
 
@@ -232,7 +238,7 @@ func (t *RoleRepository) RoleUpdate(memberID int64, roleUpdate *schemas.RoleUpda
 		if err != nil {
 			return err
 		}
-		
+
 		// Validar que al menos los permisos solicitados existan
 		if len(permissions) < len(roleUpdate.PermissionsID) {
 			return schemas.ErrorResponse(400, "Algunos permisos no existen",
@@ -254,7 +260,7 @@ func (t *RoleRepository) RoleUpdate(memberID int64, roleUpdate *schemas.RoleUpda
 		tx.Preload("Permissions").First(&newRole, roleUpdate.ID)
 		return nil
 	})
-	
+
 	if err == nil {
 		// Guardar auditoría
 		go database.SaveAuditAsync(t.DB, models.AuditLog{
@@ -342,7 +348,7 @@ func (t *RoleRepository) RoleUpdate(memberID int64, roleUpdate *schemas.RoleUpda
 // 		tx.Preload("Permissions").First(&newRole, roleUpdate.ID)
 // 		return nil
 // 	})
-	
+
 // 	if err == nil {
 // 		// Guardar auditoría
 // 		go database.SaveAuditAsync(t.DB, models.AuditLog{

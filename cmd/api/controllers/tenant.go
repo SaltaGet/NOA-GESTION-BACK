@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
@@ -146,6 +147,10 @@ func (t *TenantController) TenantUpdateExpiration(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
+	if cache.IsAvailable() {
+		_ = cache.InvalidateTenantConnection(tenantUpdateExpiration.ID)
+	}
+
 	return c.Status(200).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -181,6 +186,10 @@ func (t *TenantController) TenantUpdateAcceptedTerms(c *fiber.Ctx) error {
 	err := t.TenantService.TenantUpdateTerms(user.TenantID, tenantUpdateTerms)
 	if err != nil {
 		return schemas.HandleError(c, err)
+	}
+
+	if cache.IsAvailable() {
+		_ = cache.InvalidateAuthUser(user.ID, user.TenantID)
 	}
 
 	return c.Status(200).JSON(schemas.Response{

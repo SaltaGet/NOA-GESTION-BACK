@@ -1,7 +1,6 @@
 package validators
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -30,46 +29,77 @@ func (e ErrorResponse) Error() string {
 	return fmt.Sprintf("campo %s falló por validación: %s", e.FailedField, e.Tag)
 }
 
-func ValidateStruct(s any) error {
-	var errs []error
-	var userMessages []string
+// func ValidateStruct(s any) error {
+// 	var errs []error
+// 	var userMessages []string
 
+// 	err := validate.Struct(s)
+// 	if err != nil {
+// 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+// 			for _, err := range validationErrors {
+// 				userMessages = append(userMessages, getFriendlyErrorMessage(err))
+
+// 				var element ErrorResponse
+// 				element.FailedField = err.StructNamespace()
+// 				element.Tag = err.Tag()
+// 				element.Value = err.Param()
+// 				errs = append(errs, element)
+// 			}
+// 		}
+// 	}
+
+// 	if len(errs) == 0 {
+// 		return nil
+// 	}
+
+// 	// Unimos los mensajes con un salto de línea o punto para legibilidad en el front
+// 	msgForUser := strings.Join(userMessages, " | ")
+// 	return schemas.ErrorResponse(422, msgForUser, errors.Join(errs...))
+// }
+func ValidateStruct(s any) error {
 	err := validate.Struct(s)
 	if err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			for _, err := range validationErrors {
-				userMessages = append(userMessages, getFriendlyErrorMessage(err))
+			// Tomamos solo el primer error del slice
+			firstErr := validationErrors[0]
 
-				var element ErrorResponse
-				element.FailedField = err.StructNamespace()
-				element.Tag = err.Tag()
-				element.Value = err.Param()
-				errs = append(errs, element)
+			// Generamos el mensaje amigable solo para ese error
+			msgForUser := getFriendlyErrorMessage(firstErr)
+
+			// Creamos el objeto de error técnico (opcional por si lo usas en logs)
+			technicalErr := ErrorResponse{
+				FailedField: firstErr.StructNamespace(),
+				Tag:         firstErr.Tag(),
+				Value:       firstErr.Param(),
 			}
+
+			// Retornamos inmediatamente el primer error
+			return schemas.ErrorResponse(422, msgForUser, technicalErr)
 		}
+		// Caso de error que no sea de validación (ej. pasar un nil)
+		return schemas.ErrorResponse(500, "Error interno de validación", err)
 	}
 
-	if len(errs) == 0 {
-		return nil
-	}
-
-	// Unimos los mensajes con un salto de línea o punto para legibilidad en el front
-	msgForUser := strings.Join(userMessages, " | ")
-	return schemas.ErrorResponse(422, msgForUser, errors.Join(errs...))
+	return nil
 }
 
 func getFriendlyErrorMessage(err validator.FieldError) string {
-	fieldParts := strings.Split(err.Namespace(), ".")
-	var field string
+	// fieldParts := strings.Split(err.Namespace(), ".")
+	// var field string
+	field := err.Field()
+	if strings.Contains(err.Namespace(), "[") {
+        parts := strings.Split(err.Namespace(), ".")
+        field = parts[len(parts)-1] 
+    }
 
 	// Si el error ocurre en un campo anidado (ej. Items[0].Price)
-	if len(fieldParts) >= 2 {
-		// Tomamos los últimos dos segmentos: "NombreDeLista[Indice].Campo"
-		field = fieldParts[len(fieldParts)-2] + "." + fieldParts[len(fieldParts)-1]
-	} else {
-		// Si es un campo de primer nivel
-		field = err.Field()
-	}
+	// if len(fieldParts) >= 2 {
+	// 	// Tomamos los últimos dos segmentos: "NombreDeLista[Indice].Campo"
+	// 	field = fieldParts[len(fieldParts)-2] + "." + fieldParts[len(fieldParts)-1]
+	// } else {
+	// 	// Si es un campo de primer nivel
+	// 	field = err.Field()
+	// }
 
 	// Limpieza estética: opcionalmente puedes pasar esto por tu translateFieldName
 	// field = translateFieldName(field) 
@@ -135,6 +165,8 @@ func getFriendlyErrorMessage(err validator.FieldError) string {
 		return fmt.Sprintf("El campo '%s' no puede ser igual al campo '%s'.", field, param)
 	case "unique": // Muy útil con dive en slices de strings o IDs
 		return fmt.Sprintf("Los elementos en '%s' deben ser únicos.", field)
+	case "username":
+		return fmt.Sprintf("El campo '%s' no es un nombre de usuario válido. tiene que tener el siguiente formato user@dominio", field)
 	default:
 		return fmt.Sprintf("El campo '%s' no supera la validación de tipo '%s'.", field, err.Tag())
 	}
@@ -145,17 +177,5 @@ func ValidateRequest(c *fiber.Ctx, payload any) error {
 		return schemas.ErrorResponse(422, "Cuerpo de petición inválido: "+err.Error(), err)
 	}
 
-	// err := ValidateStruct(payload)
-  //   if err != nil {
-  //       var errorMessages []string
-  //       // Iteramos por todos los campos que fallaron (incluyendo los anidados)
-  //       for _, err := range err.(validator.ValidationErrors) {
-  //           errorMessages = append(errorMessages, getFriendlyErrorMessage(err))
-  //       }
-  //       // Devolvemos un error personalizado que contenga todos los mensajes
-  //       return schemas.ErrorResponse(422, strings.Join(errorMessages, " | "), err)
-  //   }
-
-	// return nil
 	return ValidateStruct(payload)
 }

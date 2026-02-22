@@ -135,6 +135,12 @@ func (a *AuthService) AuthCurrentPlan(tenantID int64) (*schemas.PlanResponseDTO,
 }
 
 func (a *AuthService) AuthCurrentTenant(tenantID int64) (*schemas.TenantResponse, error) {
+	if cache.IsAvailable() {
+		if cachedInfo, err := cache.GetTenantInfo(tenantID); err == nil && cachedInfo != nil {
+			return cachedInfo, nil
+		}
+	}
+
 	tenant, err := a.AuthRepository.AuthTenantGetByID(tenantID)
 	if err != nil {
 		return nil, err
@@ -144,6 +150,10 @@ func (a *AuthService) AuthCurrentTenant(tenantID int64) (*schemas.TenantResponse
 	copier.Copy(&tenantResponse, &tenant)
 
 	tenantResponse.ResponsabilityFrontIVA = tenant.Credentials.ResponsibilityFrontIVA
+
+	if cache.IsAvailable() {
+		_ = cache.SetTenantInfo(tenantID, &tenantResponse)
+	}
 
 	return &tenantResponse, nil
 }

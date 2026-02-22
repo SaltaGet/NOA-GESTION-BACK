@@ -118,7 +118,7 @@ func (m *MovementStockController) MovementStockGetByDate(c *fiber.Ctx) error {
 //	@Router			/api/v1/movement_stock/move_list [post]
 func (m *MovementStockController) MoveStockList(c *fiber.Ctx) error {
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
-	var movementStock []*schemas.MovementStockList
+	var movementStock []schemas.MovementStockList
 	if err := c.BodyParser(&movementStock); err != nil {
 		return schemas.HandleError(c, schemas.ErrorResponse(400, "Error al parsear el cuerpo de la solicitud", err))
 	}

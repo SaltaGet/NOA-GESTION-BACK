@@ -86,14 +86,14 @@ func (c *CategoryController) CategoryGetAll(ctx *fiber.Ctx) error {
 // @Failure		500				{object}	schemas.Response
 // @Router			/api/v1/category/create [post]
 func (c *CategoryController) CategoryCreate(ctx *fiber.Ctx) error {
-	var categoryCreate *schemas.CategoryCreate
+	var categoryCreate schemas.CategoryCreate
 	if err := validators.ValidateRequest(ctx, &categoryCreate); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
 	member := ctx.Locals("user").(*schemas.AuthenticatedUser)
 
-	id, err := c.CategoryService.CategoryCreate(member.ID,categoryCreate)
+	id, err := c.CategoryService.CategoryCreate(member.ID, &categoryCreate)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
@@ -122,12 +122,12 @@ func (c *CategoryController) CategoryCreate(ctx *fiber.Ctx) error {
 // @Failure		500				{object}	schemas.Response
 // @Router			/api/v1/category/update [put]
 func (c *CategoryController) CategoryUpdate(ctx *fiber.Ctx) error {
-	var categoryUpdate *schemas.CategoryUpdate
+	var categoryUpdate schemas.CategoryUpdate
 	if err := validators.ValidateRequest(ctx, &categoryUpdate); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 	member := ctx.Locals("user").(*schemas.AuthenticatedUser)
-	if err := c.CategoryService.CategoryUpdate(member.ID, categoryUpdate); err != nil {
+	if err := c.CategoryService.CategoryUpdate(member.ID, &categoryUpdate); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 

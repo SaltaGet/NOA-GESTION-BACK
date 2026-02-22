@@ -3,6 +3,7 @@ package controllers
 import (
 	"strconv"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
 	"github.com/gofiber/fiber/v2"
@@ -156,6 +157,10 @@ func (m *MemberController) MemberUpdate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
+	if cache.IsAvailable() {
+		_ = cache.InvalidateAuthUser(memberUpdate.ID, member.TenantID)
+	}
+
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{
 		Status:  true,
 		Body:    nil,
@@ -216,6 +221,10 @@ func (m *MemberController) MemberDelete(c *fiber.Ctx) error {
 	err = m.MemberService.MemberDelete(member.ID, member.TenantID, idint)
 	if err != nil {
 		return schemas.HandleError(c, err)
+	}
+
+	if cache.IsAvailable() {
+		_ = cache.InvalidateAuthUser(idint, member.TenantID)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(schemas.Response{

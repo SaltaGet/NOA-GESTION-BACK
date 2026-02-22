@@ -7,13 +7,14 @@ import (
 	"time"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/rs/zerolog/log"
 )
 
 const (
 	// TTLs
-	AuthUserTTL    = 15 * time.Minute
-	TenantInfoTTL  = 15 * time.Minute
-	PermissionsTTL = 15 * time.Minute
+	AuthUserTTL    = 1 * time.Hour
+	TenantInfoTTL  = 1 * time.Hour
+	PermissionsTTL = 1 * time.Hour
 
 	// Prefijos de claves
 	authUserPrefix    = "auth:user:"
@@ -78,6 +79,8 @@ func InvalidateAuthUser(memberID, tenantID int64) error {
 		return nil
 	}
 
+	log.Info().Msgf("Invalidando usuario %d del tenant %d", memberID, tenantID)
+
 	key := tenantUsersKey(tenantID)
 	field := fmt.Sprintf("%d", memberID)
 
@@ -139,15 +142,42 @@ func SetTenantConnection(tenantID int64, connection string) error {
 	return Set(key, connection, TenantInfoTTL)
 }
 
+// GetTenantInfo obtiene la información detallada del tenant
+func GetTenantInfo(tenantID int64) (*schemas.TenantResponse, error) {
+	if Client == nil {
+		return nil, fmt.Errorf("redis no disponible")
+	}
+
+	key := tenantInfoKey(tenantID)
+	var tenantInfo schemas.TenantResponse
+
+	if err := Get(key, &tenantInfo); err != nil {
+		return nil, err
+	}
+
+	return &tenantInfo, nil
+}
+
+// SetTenantInfo guarda la información del tenant en cache
+func SetTenantInfo(tenantID int64, info *schemas.TenantResponse) error {
+	if Client == nil {
+		return nil
+	}
+
+	key := tenantInfoKey(tenantID)
+	return Set(key, info, TenantInfoTTL)
+}
+
 // InvalidateTenantConnection invalida el cache de un tenant
 func InvalidateTenantConnection(tenantID int64) error {
 	if Client == nil {
 		return nil
 	}
 
-	// Invalidar connection
+	// Invalidar connection e info
 	connKey := tenantConnectionKey(tenantID)
-	if err := Delete(connKey); err != nil {
+	infoKey := tenantInfoKey(tenantID)
+	if err := Delete(connKey, infoKey); err != nil {
 		return err
 	}
 
@@ -158,6 +188,10 @@ func InvalidateTenantConnection(tenantID int64) error {
 
 func tenantConnectionKey(tenantID int64) string {
 	return fmt.Sprintf("%s%d:conn", tenantPrefix, tenantID)
+}
+
+func tenantInfoKey(tenantID int64) string {
+	return fmt.Sprintf("%s%d:info", tenantPrefix, tenantID)
 }
 
 // --- Cache de Permisos ---

@@ -25,23 +25,6 @@ func (u *UserController) CreateUser(c *fiber.Ctx) error {
 	if err := validators.ValidateRequest(c, &userCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
-	// userCreated, err := u.UserService.UserCreate(&userCreate)
-	// if err != nil {
-	// 	if errResp, ok := err.(*schemas.ErrorStruc); ok {
-	// 		logging.ERROR("Error: %s", errResp.Err.Error())
-	// 		return c.Status(errResp.StatusCode).JSON(schemas.Response{
-	// 			Status:  false,
-	// 			Body:    nil,
-	// 			Message: errResp.Message,
-	// 		})
-	// 	}
-	// 	logging.ERROR("Error: %s", err.Error())
-	// 	return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-	// 		Status:  false,
-	// 		Body:    nil,
-	// 		Message: "Error interno",
-	// 	})
-	// }
 	
 	return c.Status(fiber.StatusCreated).JSON(schemas.Response{
 		Status:  true,
