@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -11,9 +12,14 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"gorm.io/gorm"
 )
 
-func (r *ArcaRepository) GetCredentialsArca(tenantID int64) (*models.Credential, error) {
+func (r *ArcaRepository) GetCredentialsArca(tenantID, incomeSaleID int64) (*models.Credential, error) {
+	if err := r.DB.Select("id").Where("id = ?", incomeSaleID).First(&models.IncomeSale{}).Error; err != nil {
+		return nil, schemas.HandlerErrorGorm(err, "Ingreso de venta", schemas.Read)
+	}
+
 	db := database.GetMainDB()
 	var credential models.Credential
 	err := db.
@@ -270,4 +276,33 @@ func (r *ArcaRepository) EmitInvoice(w *schemas.WSFEClient, factura *schemas.Fac
 	fmt.Println(strings.Repeat("=", 60))
 
 	return &detResp, nil
+}
+
+func (r *ArcaRepository) SaveInvoice(factura *schemas.FacturaElectronica, incomeSaleID int64) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		factJson, err := json.Marshal(factura)
+		if err != nil {
+			return schemas.ErrorResponse(500, "Error al parsear la factura", err)
+		}
+
+		invoice := &models.Invoice{
+			InvoiceData: factJson,
+		}
+
+		if err := tx.Create(invoice).Error; err != nil {
+			return schemas.HandlerErrorGorm(err, "Factura", schemas.Create)
+		}
+
+		var incomeSale models.IncomeSale
+		if err := tx.Where("id = ?", incomeSaleID).First(&incomeSale).Error; err != nil {
+			return schemas.HandlerErrorGorm(err, "Ingreso de venta", schemas.Read)
+		}
+
+		incomeSale.InvoiceID = &invoice.ID
+		if err := tx.Save(&incomeSale).Error; err != nil {
+			return schemas.HandlerErrorGorm(err, "Ingreso de venta", schemas.Update)
+		}
+
+		return nil
+	})
 }

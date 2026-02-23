@@ -8,7 +8,7 @@
         "version": "1.0"
     },
     "paths": {
-        "/api/v1/arca/emit_invoice": {
+        "/api/v1/arca/emit_invoice/{income_sale_id}": {
             "post": {
                 "description": "### Emitir Factura",
                 "consumes": [
@@ -22,6 +22,19 @@
                 ],
                 "summary": "ArcaEmitInvoice",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la venta",
+                        "name": "income_sale_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Homologación, poner en true para test no mandar nada o false para produccion",
+                        "name": "homo",
+                        "in": "query"
+                    },
                     {
                         "description": "datos de la factura",
                         "name": "datos",
@@ -9357,6 +9370,9 @@
                 "id": {
                     "type": "integer"
                 },
+                "invoice_id": {
+                    "type": "integer"
+                },
                 "is_budget": {
                     "type": "boolean"
                 },
@@ -9398,6 +9414,9 @@
                 "id": {
                     "type": "integer"
                 },
+                "invoice_id": {
+                    "type": "integer"
+                },
                 "member": {
                     "$ref": "#/definitions/schemas.MemberSimpleDTO"
                 },
@@ -9419,6 +9438,9 @@
                     "type": "string"
                 },
                 "id": {
+                    "type": "integer"
+                },
+                "invoice_id": {
                     "type": "integer"
                 },
                 "is_budget": {

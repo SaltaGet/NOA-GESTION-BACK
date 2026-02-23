@@ -9,13 +9,14 @@ import (
 func ArcaRoutes(app *fiber.App) {
 	arca := app.Group("/api/v1/arca", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
 
-	arca.Post("/emit_invoice",
+	arca.Post("/emit_invoice/:income_sale_id",
+		middleware.AuthPointSaleMiddleware(),
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.ArcaController.ArcaEmitInvoice(c)
 		})
 
-		arca.Post("/generate_key",
+	arca.Post("/generate_key",
 		func(c *fiber.Ctx) error {
 			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
 			return tenant.Controllers.ArcaController.ArcaGenerateKey(c)

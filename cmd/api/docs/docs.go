@@ -16,7 +16,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/arca/emit_invoice": {
+        "/api/v1/arca/emit_invoice/{income_sale_id}": {
             "post": {
                 "description": "### Emitir Factura",
                 "consumes": [
@@ -30,6 +30,19 @@ const docTemplate = `{
                 ],
                 "summary": "ArcaEmitInvoice",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la venta",
+                        "name": "income_sale_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Homologación, poner en true para test no mandar nada o false para produccion",
+                        "name": "homo",
+                        "in": "query"
+                    },
                     {
                         "description": "datos de la factura",
                         "name": "datos",
@@ -9365,6 +9378,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "invoice_id": {
+                    "type": "integer"
+                },
                 "is_budget": {
                     "type": "boolean"
                 },
@@ -9406,6 +9422,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "invoice_id": {
+                    "type": "integer"
+                },
                 "member": {
                     "$ref": "#/definitions/schemas.MemberSimpleDTO"
                 },
@@ -9427,6 +9446,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
+                    "type": "integer"
+                },
+                "invoice_id": {
                     "type": "integer"
                 },
                 "is_budget": {

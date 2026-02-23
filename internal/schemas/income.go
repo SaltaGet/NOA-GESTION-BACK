@@ -133,6 +133,7 @@ type IncomeSaleResponse struct {
 	Type      string                   `json:"type_discount"`
 	Total     float64                  `json:"total"`
 	IsBudget  bool                     `json:"is_budget"`
+	InvoiceID *int64                   `json:"invoice_id"`
 	CreatedAt time.Time                `json:"created_at"`
 }
 
@@ -155,6 +156,7 @@ type IncomeSaleResponseDTO struct {
 	Pay       []PayResponse   `json:"pay"`
 	Total     float64         `json:"total"`
 	CreatedAt time.Time       `json:"created_at"`
+	InvoiceID *int64          `json:"invoice_id"`
 }
 
 type IncomeSaleSimpleResponse struct {
@@ -164,6 +166,7 @@ type IncomeSaleSimpleResponse struct {
 	Total     float64                     `json:"total"`
 	IsBudget  bool                        `json:"is_budget"`
 	CreatedAt time.Time                   `json:"created_at"`
+	InvoiceID *int64                      `json:"invoice_id"`
 }
 
 type IncomeSaleItemResponseDTO struct {

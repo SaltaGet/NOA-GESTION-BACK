@@ -50,8 +50,8 @@ var (
 		ConnMaxIdleTime: 30 * time.Minute,
 	}
 	tenantDBConfig = DBConfig{
-		MaxOpenConns:    getEnvInt("TENANT_DB_MAX_OPEN", 20),
-		MaxIdleConns:    getEnvInt("TENANT_DB_MAX_IDLE", 5),
+		MaxOpenConns:    getEnvInt("TENANT_DB_MAX_OPEN", 5),
+		MaxIdleConns:    getEnvInt("TENANT_DB_MAX_IDLE", 2),
 		ConnMaxLifetime: 3 * time.Hour,
 		ConnMaxIdleTime: 30 * time.Minute,
 	}

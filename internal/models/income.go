@@ -19,7 +19,8 @@ type IncomeSale struct {
 	Total          float64          `gorm:"not null" json:"total"`
 	IsBudget       bool             `gorm:"not null;default:false" json:"is_budget"`
 	Pay            []PayIncome      `gorm:"foreignKey:IncomeSaleID" json:"pay"`
-	HasInvoice     bool             `gorm:"not null;default:false" json:"has_invoice"`
+	InvoiceID      *int64           `gorm:"null" json:"invoice_id"`
+	Invoice        *Invoice         `gorm:"foreignKey:InvoiceID;references:ID" json:"invoice"`
 	CreatedAt      time.Time        `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt      time.Time        `gorm:"autoUpdateTime" json:"updated_at"`
 }

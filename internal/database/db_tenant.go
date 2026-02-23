@@ -53,6 +53,7 @@ func PrepareDB(uri string, memberAdmin models.Member) error {
 		&models.IncomeSaleItem{},
 		&models.IncomeEcommerce{},
 		&models.IncomeEcommerceItem{},
+		&models.Invoice{},
 		&models.PayIncome{},
 		&models.IncomeOther{},
 		&models.TypeIncome{},
@@ -87,16 +88,16 @@ func PrepareDB(uri string, memberAdmin models.Member) error {
 
 	responsabilityFrontIVA := "consumidor_final"
 	if err := db.Create(&models.Client{
-		ID:             1,
-		FirstName:      "Consumidor",
-		LastName:       "Final",
-		CompanyName:    nil,
-		Identifier:     nil,
-		Email:          nil,
-		Phone:          nil,
-		Address:        nil,
+		ID:                     1,
+		FirstName:              "Consumidor",
+		LastName:               "Final",
+		CompanyName:            nil,
+		Identifier:             nil,
+		Email:                  nil,
+		Phone:                  nil,
+		Address:                nil,
 		ResponsabilityFrontIVA: &responsabilityFrontIVA,
-		MemberCreateID: memberAdmin.ID,
+		MemberCreateID:         memberAdmin.ID,
 	}).Error; err != nil {
 		handleDBCreationError(uri)
 		return fmt.Errorf("error al crear cliente consumidor final: %w", err)
@@ -255,6 +256,14 @@ func UpdateModels(uri string) error {
 	); err != nil {
 		handleDBCreationError(uri)
 		return fmt.Errorf("error al migrar tablas: %w", err)
+	}
+
+	tables := []string{"roles", "members", "clients", "suppliers", "type_expenses", "type_incomes", "point_sales"}
+	for _, table := range tables {
+		query := fmt.Sprintf("SELECT setval(pg_get_serial_sequence('%s', 'id'), COALESCE(MAX(id), 1)) FROM %s", table, table)
+		if err := db.Exec(query).Error; err != nil {
+			return fmt.Errorf("error sincronizando secuencia de %s: %w", table, err)
+		}
 	}
 
 	return nil

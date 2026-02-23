@@ -22,19 +22,45 @@ import (
 //	@Tags			Arca
 //	@Accept			json
 //	@Produce		json
-//	@Param			datos	body		schemas.FacturaRequest	true	"datos de la factura"
-//	@Success		200		{object}	schemas.Response{body=schemas.FacturaElectronica}
-//	@Router			/api/v1/arca/emit_invoice [post]
+//	@Param			income_sale_id	path		int						true	"ID de la venta"
+//	@Param			homo			query		bool					false	"Homologación, poner en true para test no mandar nada o false para produccion"
+//	@Param			datos			body		schemas.FacturaRequest	true	"datos de la factura"
+//	@Success		200				{object}	schemas.Response{body=schemas.FacturaElectronica}
+//	@Router			/api/v1/arca/emit_invoice/{income_sale_id} [post]
 func (a *ArcaController) ArcaEmitInvoice(c *fiber.Ctx) error {
+	incomeSaleID := c.Params("income_sale_id")
+	idint, err := validators.IdValidate(incomeSaleID)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	var homo bool
+	if c.Query("homo") == "true" {
+		homo = true
+	} else {
+		homo = false
+	}
+
 	var factReq schemas.FacturaRequest
 	if err := validators.ValidateRequest(c, &factReq); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
+	pointSaeID := c.Locals("point_sae_id").(int64)
 
-	factura, err := a.ArcaService.EmitInvoice(user, int64(1), &factReq, true)
+	factura, err := a.ArcaService.EmitInvoice(user, pointSaeID, idint, &factReq, homo)
 	if err != nil {
+		if errResp, ok := err.(*schemas.ErrorStruc); ok {
+			if errResp.StatusCode == 206 {
+				log.Err(err).Msgf("Error: %s", errResp.Err.Error())
+				return c.Status(errResp.StatusCode).JSON(schemas.Response{
+					Status:  true,
+					Body:    factura,
+					Message: errResp.Message,
+				})
+			}
+		}
 		return schemas.HandleError(c, err)
 	}
 

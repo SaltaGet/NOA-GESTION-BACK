@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"gorm.io/gorm"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
 type Response struct {
-	Status bool `json:"status"`
-	Body any `json:"body"`
+	Status  bool   `json:"status"`
+	Body    any    `json:"body"`
 	Message string `json:"message"`
 }
 

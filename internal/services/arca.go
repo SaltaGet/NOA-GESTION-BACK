@@ -12,10 +12,10 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
-func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID int64, req *schemas.FacturaRequest, isHomo bool) (*schemas.FacturaElectronica, error) {
+func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID int64, incomeSaleID int64, req *schemas.FacturaRequest, isHomo bool) (*schemas.FacturaElectronica, error) {
 	isHomo = true
 
-	credentials, err := s.ArcaRepository.GetCredentialsArca(user.TenantID)
+	credentials, err := s.ArcaRepository.GetCredentialsArca(user.TenantID, incomeSaleID)
 	if err != nil {
 		return nil, err
 	}
@@ -237,6 +237,10 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 		CAEVencimiento: fecae.CAEFchVto,
 		ImporteTotal:   factura.ImporteTotal,
 		URL_QR:         *urlQR,
+	}
+
+	if err := s.ArcaRepository.SaveInvoice(facturaResponse, incomeSaleID); err != nil {
+		return facturaResponse, schemas.ErrorResponse(206, "Factura generada, hubio un error en guardar la factura en la base de datos", err)
 	}
 
 	return facturaResponse, nil
