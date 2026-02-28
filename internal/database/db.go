@@ -485,14 +485,17 @@ CREATE OR REPLACE FUNCTION audit_trigger_function_admin()
 RETURNS TRIGGER AS $$
 DECLARE
     current_member TEXT;
+		current_tx_id BIGINT;
 BEGIN
     current_member := current_setting('app.current_member_id', true);
+		current_tx_id := txid_current();
 
     IF current_member IS NULL OR current_member = '' OR current_member = '0' THEN
         RETURN NEW;
     END IF;
 
     INSERT INTO audit_log_admins (
+				transaction_id,
         admin_id,
         method,
         path,
@@ -501,6 +504,7 @@ BEGIN
         created_at
     )
     VALUES (
+				current_tx_id,
         current_member::BIGINT,
         LOWER(TG_OP),
         TG_TABLE_NAME,
