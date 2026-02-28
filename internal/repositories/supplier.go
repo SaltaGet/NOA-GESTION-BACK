@@ -2,8 +2,8 @@ package repositories
 
 import (
 	"errors"
+	"fmt"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/jinzhu/copier"
@@ -69,119 +69,13 @@ func (r *SupplierRepository) SupplierGetAll(limit, page int, search *map[string]
 	return suppliersSchema, total, nil
 }
 
-// SupplierCreate crea un nuevo proveedor
-// func (r *SupplierRepository) SupplierCreate(supplierCreate *schemas.SupplierCreate) (int64, error) {
-// 	var supplierID int64
-
-// 	err := r.DB.Transaction(func(tx *gorm.DB) error {
-// 		// Crear proveedor
-// 		supplier := models.Supplier{
-// 			Name:        supplierCreate.Name,
-// 			CompanyName: supplierCreate.CompanyName,
-// 			Identifier:  supplierCreate.Identifier,
-// 			Address:     supplierCreate.Address,
-// 			DebtLimit:   supplierCreate.DebtLimit,
-// 			Email:       supplierCreate.Email,
-// 			Phone:       supplierCreate.Phone,
-// 		}
-
-// 		if err := tx.Create(&supplier).Error; err != nil {
-// 			if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
-// 				if strings.Contains(err.Error(), "identifier") {
-// 					return schemas.ErrorResponse(400, "El CUIT ya existe", err)
-// 				}
-// 				if strings.Contains(err.Error(), "email") {
-// 					return schemas.ErrorResponse(400, "El email ya existe", err)
-// 				}
-// 				return schemas.ErrorResponse(400, "El proveedor ya existe", err)
-// 			}
-// 			return schemas.ErrorResponse(500, "Error al crear el proveedor", err)
-// 		}
-
-// 		supplierID = supplier.ID
-// 		return nil
-// 	})
-
-// 	if err != nil {
-// 		return 0, err
-// 	}
-
-// 	return supplierID, nil
-// }
-
-// // SupplierUpdate actualiza un proveedor existente
-// func (r *SupplierRepository) SupplierUpdate(supplierUpdate *schemas.SupplierUpdate) error {
-// 	return r.DB.Transaction(func(tx *gorm.DB) error {
-// 		// Verificar que el proveedor existe
-// 		var existingSupplier models.Supplier
-// 		if err := tx.First(&existingSupplier, supplierUpdate.ID).Error; err != nil {
-// 			if errors.Is(err, gorm.ErrRecordNotFound) {
-// 				return schemas.ErrorResponse(404, "Proveedor no encontrado", err)
-// 			}
-// 			return schemas.ErrorResponse(500, "Error al obtener el proveedor", err)
-// 		}
-
-// 		// Actualizar campos
-// 		existingSupplier.Name = supplierUpdate.Name
-// 		existingSupplier.CompanyName = supplierUpdate.CompanyName
-// 		existingSupplier.Identifier = supplierUpdate.Identifier
-// 		existingSupplier.Address = supplierUpdate.Address
-// 		existingSupplier.DebtLimit = supplierUpdate.DebtLimit
-// 		existingSupplier.Email = supplierUpdate.Email
-// 		existingSupplier.Phone = supplierUpdate.Phone
-
-// 		if err := tx.Save(&existingSupplier).Error; err != nil {
-// 			if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
-// 				if strings.Contains(err.Error(), "identifier") {
-// 					return schemas.ErrorResponse(400, "El CUIT ya existe", err)
-// 				}
-// 				if strings.Contains(err.Error(), "email") {
-// 					return schemas.ErrorResponse(400, "El email ya existe", err)
-// 				}
-// 				return schemas.ErrorResponse(400, "Error de duplicación", err)
-// 			}
-// 			return schemas.ErrorResponse(500, "Error al actualizar el proveedor", err)
-// 		}
-
-// 		return nil
-// 	})
-// }
-
-// // SupplierDelete elimina un proveedor (soft delete)
-// func (r *SupplierRepository) SupplierDelete(id int64) error {
-// 	return r.DB.Transaction(func(tx *gorm.DB) error {
-// 		// Verificar que el proveedor existe
-// 		var supplier models.Supplier
-// 		if err := tx.First(&supplier, id).Error; err != nil {
-// 			if errors.Is(err, gorm.ErrRecordNotFound) {
-// 				return schemas.ErrorResponse(404, "Proveedor no encontrado", err)
-// 			}
-// 			return schemas.ErrorResponse(500, "Error al obtener el proveedor", err)
-// 		}
-
-// 		// Verificar si el proveedor tiene compras asociadas
-// 		var expenseCount int64
-// 		if err := tx.Model(&models.ExpenseBuy{}).Where("supplier_id = ?", id).Count(&expenseCount).Error; err != nil {
-// 			return schemas.ErrorResponse(500, "Error al verificar compras asociadas", err)
-// 		}
-
-// 		if expenseCount > 0 {
-// 			return schemas.ErrorResponse(400, "No se puede eliminar el proveedor porque tiene compras asociadas", nil)
-// 		}
-
-// 		// Soft delete
-// 		if err := tx.Delete(&supplier).Error; err != nil {
-// 			return schemas.ErrorResponse(500, "Error al eliminar el proveedor", err)
-// 		}
-
-// 		return nil
-// 	})
-// }
-
 // SupplierCreate crea un nuevo proveedor con auditoría
 func (r *SupplierRepository) SupplierCreate(memberID int64, supplierCreate *schemas.SupplierCreate) (int64, error) {
 	var supplierSave models.Supplier
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
+			return err
+		}
 		// Crear proveedor
 		supplier := models.Supplier{
 			Name:        supplierCreate.Name,
@@ -205,29 +99,21 @@ func (r *SupplierRepository) SupplierCreate(memberID int64, supplierCreate *sche
 		return 0, err
 	}
 
-	go database.SaveAuditAsync(r.DB, models.AuditLog{
-		MemberID: memberID,
-		Method:   "create",
-		Path:     "supplier",
-	}, nil, supplierSave)
-
 	return supplierSave.ID, nil
 }
 
 // SupplierUpdate actualiza un proveedor existente con auditoría
 func (r *SupplierRepository) SupplierUpdate(memberID int64, supplierUpdate *schemas.SupplierUpdate) error {
-	var oldSupplier, newSupplier models.Supplier
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		// Verificar que el proveedor existe
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
+			return err
+		}
+
 		var existingSupplier models.Supplier
 		if err := tx.First(&existingSupplier, supplierUpdate.ID).Error; err != nil {
 			return schemas.HandlerErrorGorm(err, "Proveedor", schemas.Read)
 		}
 
-		// Guardar estado anterior
-		oldSupplier = existingSupplier
-
-		// Actualizar campos
 		existingSupplier.Name = supplierUpdate.Name
 		existingSupplier.CompanyName = supplierUpdate.CompanyName
 		existingSupplier.Identifier = supplierUpdate.Identifier
@@ -236,8 +122,6 @@ func (r *SupplierRepository) SupplierUpdate(memberID int64, supplierUpdate *sche
 		existingSupplier.Email = supplierUpdate.Email
 		existingSupplier.Phone = supplierUpdate.Phone
 
-		newSupplier = existingSupplier
-
 		if err := tx.Save(&existingSupplier).Error; err != nil {
 			return schemas.HandlerErrorGorm(err, "Proveedor", schemas.Update)
 		}
@@ -245,32 +129,20 @@ func (r *SupplierRepository) SupplierUpdate(memberID int64, supplierUpdate *sche
 		return nil
 	})
 
-	if err == nil {
-		// Guardar auditoría
-		go database.SaveAuditAsync(r.DB, models.AuditLog{
-			MemberID: memberID,
-			Method:   "update",
-			Path:     "supplier",
-		}, oldSupplier, newSupplier)
-	}
-
 	return err
 }
 
-// SupplierDelete elimina un proveedor (soft delete) con auditoría
 func (r *SupplierRepository) SupplierDelete(memberID int64, id int64) error {
-	var saveSupplier models.Supplier
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		// Verificar que el proveedor existe
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
+			return err
+		}
+
 		var supplier models.Supplier
 		if err := tx.First(&supplier, id).Error; err != nil {
 			return schemas.HandlerErrorGorm(err, "Proveedor", schemas.Read)
 		}
 
-		// Guardar estado anterior
-		saveSupplier = supplier
-
-		// Verificar si el proveedor tiene compras asociadas
 		var expenseCount int64
 		if err := tx.Model(&models.ExpenseBuy{}).Where("supplier_id = ?", id).Count(&expenseCount).Error; err != nil {
 			return schemas.HandlerErrorGorm(err, "Egreso de compra", schemas.Read)
@@ -286,14 +158,6 @@ func (r *SupplierRepository) SupplierDelete(memberID int64, id int64) error {
 		}
 		return nil
 	})
-
-	if err == nil {
-		go database.SaveAuditAsync(r.DB, models.AuditLog{
-			MemberID: memberID,
-			Method:   "delete",
-			Path:     "supplier",
-		}, saveSupplier, nil)
-	}
 
 	return err
 }

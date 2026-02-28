@@ -15,6 +15,11 @@ import (
 func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID int64, incomeSaleID int64, req *schemas.FacturaRequest, isHomo bool) (*schemas.FacturaElectronica, error) {
 	isHomo = true
 
+	pointSale, err := s.PointSaleRepository.PointSaleGetByID(pointSaleID)
+	if err != nil {
+		return nil, err
+	}
+
 	credentials, err := s.ArcaRepository.GetCredentialsArca(user.TenantID, incomeSaleID)
 	if err != nil {
 		return nil, err
@@ -140,7 +145,7 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 	}
 
 	factura := &schemas.Factura{
-		PuntoVenta:      int(pointSaleID),
+		PuntoVenta:      int(pointSale.Number),
 		TipoDocumento:   tipoDoc,
 		NumeroDocumento: req.NumeroDocumento,
 		Concepto:        concept,
@@ -174,7 +179,7 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 		return nil, schemas.ErrorResponse(400, "Responsabilidad del emisor no válida", errors.New("Responsabilidad del emisor no válida"))
 	}
 
-	lastInvoice, err := s.ArcaRepository.GetLastestInvoice(wsfe, int(pointSaleID), factura.TipoComprobante)
+	lastInvoice, err := s.ArcaRepository.GetLastestInvoice(wsfe, int(pointSale.Number), factura.TipoComprobante)
 	if err != nil {
 		return nil, err
 	}

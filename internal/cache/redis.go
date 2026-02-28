@@ -43,6 +43,8 @@ func InitRedis() error {
 		DialTimeout:  config.DialTimeout,
 		ReadTimeout:  config.ReadTimeout,
 		WriteTimeout: config.WriteTimeout,
+		Protocol: 2,
+		DisableIdentity: true,
 	})
 
 	// Verificar conexión

@@ -1,9 +1,11 @@
 package repositories
 
 import (
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
+	"fmt"
+
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"gorm.io/gorm"
 )
 
 func (r *CategoryRepository) CategoryGetByID(id int64) (*models.Category, error) {
@@ -27,69 +29,67 @@ func (r *CategoryRepository) CategoryGetAll() ([]*models.Category, error) {
 }
 
 func (r *CategoryRepository) CategoryCreate(memberID int64, categoryCreate *schemas.CategoryCreate) (int64, error) {
-	var category models.Category
-
-	category.Name = categoryCreate.Name
-
-	if err := r.DB.Create(&category).Error; err != nil {
-		return 0, schemas.HandlerErrorGorm(err, "Categoria", schemas.Create)
+	category := models.Category{
+		Name: categoryCreate.Name,
 	}
 
-	go database.SaveAuditAsync(r.DB, models.AuditLog{
-		MemberID: memberID,
-		Method:   "create",
-		Path:     "category",
-	}, nil, category)
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Create(&category).Error; err != nil {
+			return schemas.HandlerErrorGorm(err, "Categoria", schemas.Create)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return 0, err
+	}
 
 	return category.ID, nil
 }
 
 func (r *CategoryRepository) CategoryUpdate(memberID int64, categoryUpdate *schemas.CategoryUpdate) error {
-	var oldCategory models.Category
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
+			return err
+		}
 
-	// 1️⃣ obtener categoría antes de actualizar
-	if err := r.DB.First(&oldCategory, categoryUpdate.ID).Error; err != nil {
-		return schemas.HandlerErrorGorm(err, "Categoria", schemas.Read)
-	}
+		var oldCategory models.Category
+		if err := tx.First(&oldCategory, categoryUpdate.ID).Error; err != nil {
+			return schemas.HandlerErrorGorm(err, "Categoria", schemas.Read)
+		}
+		if err := tx.Model(&models.Category{}).
+			Where("id = ?", categoryUpdate.ID).
+			Updates(map[string]any{
+				"name": categoryUpdate.Name,
+			}).Error; err != nil {
+			return schemas.HandlerErrorGorm(err, "Categoria", schemas.Update)
+		}
 
-	// 2️⃣ actualizar
-	updatedCategory := oldCategory
-	if err := r.DB.Model(&models.Category{}).
-		Where("id = ?", categoryUpdate.ID).
-		Updates(map[string]any{
-			"name": categoryUpdate.Name,
-		}).Error; err != nil {
-		return schemas.HandlerErrorGorm(err, "Categoria", schemas.Update)
-	}
-
-	go database.SaveAuditAsync(r.DB, models.AuditLog{
-		MemberID: memberID,
-		Method:   "update",
-		Path:     "category",
-	}, oldCategory, updatedCategory)
-
-	return nil
+		return nil
+	})
 }
-
 
 func (r *CategoryRepository) CategoryDelete(memberID, id int64) error {
-	// obtener estado anterior
-	var oldCategory models.Category
-	if err := r.DB.First(&oldCategory, id).Error; err != nil {
-		return schemas.HandlerErrorGorm(err, "Categoria", schemas.Read)
-	}
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
+			return err
+		}
 
-	res := r.DB.Delete(&oldCategory)
-	if err := res.Error; err != nil {
-		return schemas.HandlerErrorGorm(err, "Categoria", schemas.Delete)
-	}
+		var oldCategory models.Category
+		if err := tx.First(&oldCategory, id).Error; err != nil {
+			return schemas.HandlerErrorGorm(err, "Categoria", schemas.Read)
+		}
 
-	go database.SaveAuditAsync(r.DB, models.AuditLog{
-		MemberID: memberID,
-		Method:   "delete",
-		Path:     "category",
-	}, oldCategory, nil)
+		res := tx.Delete(&oldCategory)
+		if err := res.Error; err != nil {
+			return schemas.HandlerErrorGorm(err, "Categoria", schemas.Delete)
+		}
 
-	return nil
+		return nil
+	})
 }
-

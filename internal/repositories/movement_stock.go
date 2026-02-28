@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"gorm.io/gorm"
@@ -42,8 +41,10 @@ func (r *MovementStockRepository) MovementStockGetByDate(page, limit int, fromDa
 }
 
 func (r *MovementStockRepository) MoveStockList(memberID int64, input []schemas.MovementStockList) error {
-	var fromBeforeState, fromAfterState, toBeforeState, toAfterState, movementStock any
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
+			return err
+		}
 		// Validar que hay elementos para procesar
 		if len(input) == 0 {
 			return schemas.ErrorResponse(400, "no hay movimientos para procesar", fmt.Errorf("lista vacía"))
@@ -71,7 +72,7 @@ func (r *MovementStockRepository) MoveStockList(memberID int64, input []schemas.
 			// Procesar cada movimiento del producto
 			for idx, item := range movementList.MovementStockItem {
 				var errorN error
-				errorN, fromBeforeState, fromAfterState, toBeforeState, toAfterState, movementStock = r.processSingleMovement(tx, memberID, movementList.ProductID, &item, idx)
+				errorN = r.processSingleMovement(tx, memberID, movementList.ProductID, &item, idx)
 				if errorN != nil { 
 					return errorN
 				}
@@ -81,273 +82,8 @@ func (r *MovementStockRepository) MoveStockList(memberID int64, input []schemas.
 		return nil
 	})
 
-	if err == nil {
-		// Guardar auditoría para origen (resta de stock)
-		go database.SaveAuditAsync(r.DB, models.AuditLog{
-			MemberID: memberID,
-			Method:   "update",
-			Path:     "movement-stock",
-		}, fromBeforeState, fromAfterState)
-
-		// Guardar auditoría para destino (suma de stock)
-		go database.SaveAuditAsync(r.DB, models.AuditLog{
-			MemberID: memberID,
-			Method:   "update",
-			Path:     "movement-stock",
-		}, toBeforeState, toAfterState)
-
-		// Guardar auditoría del registro de movimiento creado
-		go database.SaveAuditAsync(r.DB, models.AuditLog{
-			MemberID: memberID,
-			Method:   "create",
-			Path:     "movement-stock",
-		}, nil, movementStock)
-	}
-
 	return err
 }
-
-// func (r *MovementStockRepository) processSingleMovement(tx *gorm.DB, memberID int64, productID int64, item *schemas.MovementStockItem, index int) (error, any, any, any, any, any) {
-// 	var fromID, toID int64
-// 	var fromBeforeState, toBeforeState any
-
-// 	// ===== PROCESAR ORIGEN =====
-// 	switch item.FromType {
-// 	case "deposit":
-// 		fromID = 100
-
-// 		// Obtener estado anterior del depósito origen
-// 		var oldDeposit models.Deposit
-// 		tx.Where("product_id = ?", productID).First(&oldDeposit)
-// 		fromBeforeState = oldDeposit
-
-// 		// Asegurar que existe el registro
-// 		if err := tx.Where("product_id = ?", productID).
-// 			FirstOrCreate(&models.Deposit{}, &models.Deposit{
-// 				ProductID: productID,
-// 				Stock:     0,
-// 			}).Error; err != nil {
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al inicializar el depósito (movimiento %d)", index+1), err), nil, nil, nil, nil, nil
-// 		}
-
-// 		// Validar stock si es necesario
-// 		if !*item.IgnoreStock {
-// 			var currentStock float64
-// 			if err := tx.Model(&models.Deposit{}).
-// 				Where("product_id = ?", productID).
-// 				Select("stock").
-// 				Scan(&currentStock).Error; err != nil {
-// 				return schemas.ErrorResponse(500, fmt.Sprintf("error al verificar stock (movimiento %d)", index+1), err), nil, nil, nil, nil, nil
-// 			}
-
-// 			if currentStock < item.Amount {
-// 				return schemas.ErrorResponse(400, fmt.Sprintf("no hay suficiente stock en depósito para transferir (movimiento %d)", index+1),
-// 					fmt.Errorf("stock actual: %.2f, necesario: %.2f", currentStock, item.Amount)), nil, nil, nil, nil, nil
-// 			}
-// 		}
-
-// 		// Actualización atómica
-// 		result := tx.Model(&models.Deposit{}).
-// 			Where("product_id = ?", productID).
-// 			UpdateColumn("stock", gorm.Expr("stock - ?", item.Amount))
-
-// 		if result.Error != nil {
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al actualizar stock del depósito (movimiento %d)", index+1), result.Error), nil, nil, nil, nil, nil
-// 		}
-
-// 		if result.RowsAffected == 0 {
-// 			return schemas.ErrorResponse(404, fmt.Sprintf("no se pudo actualizar el depósito (movimiento %d)", index+1),
-// 				fmt.Errorf("registro no encontrado")), nil, nil, nil, nil, nil
-// 		}
-
-// 	case "point_sale":
-// 		// Validar que existe el punto de venta
-// 		var pointSale models.PointSale
-// 		if err := tx.
-// 			Select("id", "is_deposit").
-// 			Where("id = ?", item.FromID).
-// 			First(&pointSale).Error; err != nil {
-// 			if errors.Is(err, gorm.ErrRecordNotFound) {
-// 				return schemas.ErrorResponse(404, fmt.Sprintf("punto de venta %d no encontrado (movimiento %d)", item.FromID, index+1), err), nil, nil, nil, nil, nil
-// 			}
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al obtener el punto de venta origen (movimiento %d)", index+1), err), nil, nil, nil, nil, nil
-// 		}
-
-// 		if pointSale.IsDeposit {
-// 			return schemas.ErrorResponse(400, fmt.Sprintf("no se puede transferir stock desde un punto de venta deposito (movimiento %d), transferir desde otro punto de venta o depósito, el punto de venta es deposito", index+1),
-// 				fmt.Errorf("no se puede transferir stock desde un punto de venta deposito")), nil, nil, nil, nil, nil
-// 		}
-
-// 		fromID = item.FromID
-
-// 		// Obtener estado anterior del stock punto de venta origen
-// 		var oldStockPS models.StockPointSale
-// 		tx.Where("product_id = ? AND point_sale_id = ?", productID, item.FromID).First(&oldStockPS)
-// 		fromBeforeState = oldStockPS
-
-// 		// Asegurar que existe el registro
-// 		if err := tx.Where("product_id = ? AND point_sale_id = ?", productID, item.FromID).
-// 			FirstOrCreate(&models.StockPointSale{}, &models.StockPointSale{
-// 				ProductID:   productID,
-// 				PointSaleID: item.FromID,
-// 				Stock:       0,
-// 			}).Error; err != nil {
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al inicializar stock del punto de venta origen (movimiento %d)", index+1), err), nil, nil, nil, nil, nil
-// 		}
-
-// 		// Validar stock si es necesario
-// 		if !*item.IgnoreStock {
-// 			var currentStock float64
-// 			if err := tx.Model(&models.StockPointSale{}).
-// 				Where("product_id = ? AND point_sale_id = ?", productID, item.FromID).
-// 				Select("stock").
-// 				Scan(&currentStock).Error; err != nil {
-// 				return schemas.ErrorResponse(500, fmt.Sprintf("error al verificar stock (movimiento %d)", index+1), err), nil, nil, nil, nil, nil
-// 			}
-
-// 			if currentStock < item.Amount {
-// 				return schemas.ErrorResponse(400, fmt.Sprintf("no hay suficiente stock en punto de venta para transferir (movimiento %d)", index+1),
-// 					fmt.Errorf("stock actual: %.2f, necesario: %.2f", currentStock, item.Amount)), nil, nil, nil, nil, nil
-// 			}
-// 		}
-
-// 		// Actualización atómica
-// 		result := tx.Model(&models.StockPointSale{}).
-// 			Where("product_id = ? AND point_sale_id = ?", productID, item.FromID).
-// 			UpdateColumn("stock", gorm.Expr("stock - ?", item.Amount))
-
-// 		if result.Error != nil {
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al actualizar stock del punto de venta origen (movimiento %d)", index+1), result.Error), nil, nil, nil, nil, nil
-// 		}
-
-// 		if result.RowsAffected == 0 {
-// 			return schemas.ErrorResponse(404, fmt.Sprintf("no se pudo actualizar el punto de venta origen (movimiento %d)", index+1),
-// 				fmt.Errorf("registro no encontrado")), nil, nil, nil, nil, nil
-// 		}
-
-// 	default:
-// 		return schemas.ErrorResponse(400, fmt.Sprintf("tipo de origen inválido (movimiento %d)", index+1),
-// 			fmt.Errorf("tipo de origen inválido: %s", item.FromType)), nil, nil, nil, nil, nil
-// 	}
-
-// 	// ===== PROCESAR DESTINO =====
-// 	switch item.ToType {
-// 	case "deposit":
-// 		toID = 100
-
-// 		// Obtener estado anterior del depósito destino
-// 		var oldDeposit models.Deposit
-// 		tx.Where("product_id = ?", productID).First(&oldDeposit)
-// 		toBeforeState = oldDeposit
-
-// 		// Asegurar que existe el registro
-// 		if err := tx.Where("product_id = ?", productID).
-// 			FirstOrCreate(&models.Deposit{}, &models.Deposit{
-// 				ProductID: productID,
-// 				Stock:     0,
-// 			}).Error; err != nil {
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al inicializar el depósito destino (movimiento %d)", index+1), err), nil, nil, nil, nil, nil
-// 		}
-
-// 		// Actualización atómica
-// 		result := tx.Model(&models.Deposit{}).
-// 			Where("product_id = ?", productID).
-// 			UpdateColumn("stock", gorm.Expr("stock + ?", item.Amount))
-
-// 		if result.Error != nil {
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al actualizar stock del depósito destino (movimiento %d)", index+1), result.Error), nil, nil, nil, nil, nil
-// 		}
-
-// 	case "point_sale":
-// 		// Validar que existe el punto de venta
-// 		var pointSale models.PointSale
-// 		if err := tx.
-// 			Select("id", "is_deposit").
-// 			Where("id = ?", item.ToID).
-// 			First(&pointSale).Error; err != nil {
-// 			if errors.Is(err, gorm.ErrRecordNotFound) {
-// 				return schemas.ErrorResponse(404, fmt.Sprintf("punto de venta %d no encontrado (movimiento %d)", item.FromID, index+1), err), nil, nil, nil, nil, nil
-// 			}
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al obtener el punto de venta origen (movimiento %d)", index+1), err), nil, nil, nil, nil, nil
-// 		}
-
-// 		if pointSale.IsDeposit {
-// 			return schemas.ErrorResponse(400, fmt.Sprintf("no se puede transferir stock desde un punto de venta deposito (movimiento %d), transferir desde otro punto de venta o depósito, el punto de venta es deposito", index+1),
-// 				fmt.Errorf("no se puede transferir stock desde un punto de venta deposito")), nil, nil, nil, nil, nil
-// 		}
-
-// 		toID = item.ToID
-
-// 		// Obtener estado anterior del stock punto de venta destino
-// 		var oldStockPS models.StockPointSale
-// 		tx.Where("product_id = ? AND point_sale_id = ?", productID, item.ToID).First(&oldStockPS)
-// 		toBeforeState = oldStockPS
-
-// 		// Asegurar que existe el registro
-// 		if err := tx.Where("product_id = ? AND point_sale_id = ?", productID, item.ToID).
-// 			FirstOrCreate(&models.StockPointSale{}, &models.StockPointSale{
-// 				ProductID:   productID,
-// 				PointSaleID: item.ToID,
-// 				Stock:       0,
-// 			}).Error; err != nil {
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al inicializar stock del punto de venta destino (movimiento %d)", index+1), err), nil, nil, nil, nil, nil
-// 		}
-
-// 		// Actualización atómica
-// 		result := tx.Model(&models.StockPointSale{}).
-// 			Where("product_id = ? AND point_sale_id = ?", productID, item.ToID).
-// 			UpdateColumn("stock", gorm.Expr("stock + ?", item.Amount))
-
-// 		if result.Error != nil {
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al actualizar stock del punto de venta destino (movimiento %d)", index+1), result.Error), nil, nil, nil, nil, nil
-// 		}
-
-// 	default:
-// 		return schemas.ErrorResponse(400, fmt.Sprintf("tipo de destino inválido (movimiento %d)", index+1),
-// 			fmt.Errorf("tipo de destino inválido: %s", item.ToType)), nil, nil, nil, nil, nil
-// 	}
-
-// 	// Registrar el movimiento
-// 	movementStock := models.MovementStock{
-// 		MemberID:    memberID,
-// 		ProductID:   productID,
-// 		Amount:      item.Amount,
-// 		FromID:      fromID,
-// 		FromType:    item.FromType,
-// 		ToID:        toID,
-// 		ToType:      item.ToType,
-// 		IgnoreStock: *item.IgnoreStock,
-// 	}
-
-// 	if err := tx.Create(&movementStock).Error; err != nil {
-// 		return schemas.ErrorResponse(500, fmt.Sprintf("error al registrar el movimiento %d", index+1), err), nil, nil, nil, nil, nil
-// 	}
-
-// 	// Obtener estados finales después de las actualizaciones
-// 	var fromAfterState, toAfterState any
-
-// 	if item.FromType == "deposit" {
-// 		var updatedDeposit models.Deposit
-// 		tx.Where("product_id = ?", productID).First(&updatedDeposit)
-// 		fromAfterState = updatedDeposit
-// 	} else if item.FromType == "point_sale" {
-// 		var updatedStockPS models.StockPointSale
-// 		tx.Where("product_id = ? AND point_sale_id = ?", productID, item.FromID).First(&updatedStockPS)
-// 		fromAfterState = updatedStockPS
-// 	}
-
-// 	if item.ToType == "deposit" {
-// 		var updatedDeposit models.Deposit
-// 		tx.Where("product_id = ?", productID).First(&updatedDeposit)
-// 		toAfterState = updatedDeposit
-// 	} else if item.ToType == "point_sale" {
-// 		var updatedStockPS models.StockPointSale
-// 		tx.Where("product_id = ? AND point_sale_id = ?", productID, item.ToID).First(&updatedStockPS)
-// 		toAfterState = updatedStockPS
-// 	}
-
-// 	return nil, fromBeforeState, fromAfterState, toBeforeState, toAfterState, movementStock
-// }
 
 func (r *MovementStockRepository) processSingleMovement(
 	tx *gorm.DB,
@@ -355,10 +91,9 @@ func (r *MovementStockRepository) processSingleMovement(
 	productID int64,
 	item *schemas.MovementStockItem,
 	index int,
-) (error, any, any, any, any, any) {
+) (error) {
 
 	var fromID, toID int64
-	var fromBeforeState, toBeforeState any
 
 	ignoreStock := item.IgnoreStock != nil && *item.IgnoreStock
 
@@ -370,15 +105,10 @@ func (r *MovementStockRepository) processSingleMovement(
 	case "deposit":
 		fromID = 100
 
-		var oldDeposit models.Deposit
-		tx.Where("product_id = ?", productID).First(&oldDeposit)
-		fromBeforeState = oldDeposit
-
 		// asegurar existencia
 		if err := tx.Where("product_id = ?", productID).
 			FirstOrCreate(&models.Deposit{ProductID: productID}).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Deposito", schemas.Create),
-				nil, nil, nil, nil, nil
+			return schemas.HandlerErrorGorm(err, "Deposito", schemas.Create)
 		}
 
 		if !ignoreStock {
@@ -387,15 +117,13 @@ func (r *MovementStockRepository) processSingleMovement(
 				Where("product_id = ?", productID).
 				Select("stock").
 				Scan(&current).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Deposito", schemas.Read),
-					nil, nil, nil, nil, nil
+				return schemas.HandlerErrorGorm(err, "Deposito", schemas.Read)
 			}
 
 			if current < item.Amount {
 				return schemas.ErrorResponse(400,
 					fmt.Sprintf("stock insuficiente en depósito (%d)", index+1),
-					fmt.Errorf("actual %.2f < requerido %.2f", current, item.Amount)),
-					nil, nil, nil, nil, nil
+					fmt.Errorf("actual %.2f < requerido %.2f", current, item.Amount))
 			}
 		}
 
@@ -404,15 +132,13 @@ func (r *MovementStockRepository) processSingleMovement(
 			UpdateColumn("stock", gorm.Expr("stock - ?", item.Amount))
 
 		if result.Error != nil {
-			return schemas.HandlerErrorGorm(result.Error, "Deposito", schemas.Update),
-				nil, nil, nil, nil, nil
+			return schemas.HandlerErrorGorm(result.Error, "Deposito", schemas.Update)
 		}
 
 		if result.RowsAffected == 0 {
 			return schemas.ErrorResponse(404,
 				fmt.Sprintf("depósito origen no encontrado (%d)", index+1),
-				fmt.Errorf("RowsAffected=0")),
-				nil, nil, nil, nil, nil
+				fmt.Errorf("RowsAffected=0"))
 		}
 
 	case "point_sale":
@@ -423,18 +149,15 @@ func (r *MovementStockRepository) processSingleMovement(
 			First(&ps).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return schemas.ErrorResponse(404,
-					fmt.Sprintf("punto de venta %d no encontrado (%d)", item.FromID, index+1), err),
-					nil, nil, nil, nil, nil
+					fmt.Sprintf("punto de venta %d no encontrado (%d)", item.FromID, index+1), err)
 			}
-			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read),
-				nil, nil, nil, nil, nil
+			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
 		}
 
 		if ps.IsDeposit {
 			return schemas.ErrorResponse(400,
 				fmt.Sprintf("no se puede usar un punto de venta depósito como origen (%d)", index+1),
-				fmt.Errorf("point_sale es depósito")),
-				nil, nil, nil, nil, nil
+				fmt.Errorf("point_sale es depósito"))
 		}
 
 		fromID = item.FromID
@@ -442,15 +165,13 @@ func (r *MovementStockRepository) processSingleMovement(
 		var oldPS models.StockPointSale
 		tx.Where("product_id = ? AND point_sale_id = ?", productID, item.FromID).
 			First(&oldPS)
-		fromBeforeState = oldPS
 
 		if err := tx.Where("product_id = ? AND point_sale_id = ?", productID, item.FromID).
 			FirstOrCreate(&models.StockPointSale{
 				ProductID:   productID,
 				PointSaleID: item.FromID,
 			}).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Stock Punto de venta", schemas.Create),
-				nil, nil, nil, nil, nil
+			return schemas.HandlerErrorGorm(err, "Stock Punto de venta", schemas.Create)
 		}
 
 		if !ignoreStock {
@@ -459,15 +180,13 @@ func (r *MovementStockRepository) processSingleMovement(
 				Where("product_id = ? AND point_sale_id = ?", productID, item.FromID).
 				Select("stock").
 				Scan(&current).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Stock Punto de venta", schemas.Read),
-					nil, nil, nil, nil, nil
+				return schemas.HandlerErrorGorm(err, "Stock Punto de venta", schemas.Read)
 			}
 
 			if current < item.Amount {
 				return schemas.ErrorResponse(400,
 					fmt.Sprintf("stock insuficiente en point_sale origen (%d)", index+1),
-					fmt.Errorf("actual %.2f < requerido %.2f", current, item.Amount)),
-					nil, nil, nil, nil, nil
+					fmt.Errorf("actual %.2f < requerido %.2f", current, item.Amount))
 			}
 		}
 
@@ -476,22 +195,19 @@ func (r *MovementStockRepository) processSingleMovement(
 			UpdateColumn("stock", gorm.Expr("stock - ?", item.Amount))
 
 		if result.Error != nil {
-			return schemas.HandlerErrorGorm(result.Error, "Stock Punto de venta", schemas.Update),
-				nil, nil, nil, nil, nil
+			return schemas.HandlerErrorGorm(result.Error, "Stock Punto de venta", schemas.Update)
 		}
 
 		if result.RowsAffected == 0 {
 			return schemas.ErrorResponse(404,
 				fmt.Sprintf("stock origen point_sale no encontrado (%d)", index+1),
-				fmt.Errorf("RowsAffected=0")),
-				nil, nil, nil, nil, nil
+				fmt.Errorf("RowsAffected=0"))
 		}
 
 	default:
 		return schemas.ErrorResponse(400,
 			fmt.Sprintf("tipo de origen inválido (%d)", index+1),
-			fmt.Errorf("FromType='%s'", item.FromType)),
-			nil, nil, nil, nil, nil
+			fmt.Errorf("FromType='%s'"))
 	}
 
 	// ---------------------------
@@ -505,12 +221,10 @@ func (r *MovementStockRepository) processSingleMovement(
 
 		var oldDeposit models.Deposit
 		tx.Where("product_id = ?", productID).First(&oldDeposit)
-		toBeforeState = oldDeposit
 
 		if err := tx.Where("product_id = ?", productID).
 			FirstOrCreate(&models.Deposit{ProductID: productID}).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Deposito", schemas.Create),
-				nil, nil, nil, nil, nil
+			return schemas.HandlerErrorGorm(err, "Deposito", schemas.Create)
 		}
 
 		result := tx.Model(&models.Deposit{}).
@@ -518,8 +232,7 @@ func (r *MovementStockRepository) processSingleMovement(
 			UpdateColumn("stock", gorm.Expr("stock + ?", item.Amount))
 
 		if result.Error != nil {
-			return schemas.HandlerErrorGorm(result.Error, "Deposito", schemas.Update),
-				nil, nil, nil, nil, nil
+			return schemas.HandlerErrorGorm(result.Error, "Deposito", schemas.Update)
 		}
 
 	case "point_sale":
@@ -530,18 +243,15 @@ func (r *MovementStockRepository) processSingleMovement(
 			First(&ps).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return schemas.ErrorResponse(404,
-					fmt.Sprintf("punto de venta %d no encontrado (%d)", item.ToID, index+1), err),
-					nil, nil, nil, nil, nil
+					fmt.Sprintf("punto de venta %d no encontrado (%d)", item.ToID, index+1), err)
 			}
-			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read),
-				nil, nil, nil, nil, nil
+			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
 		}
 
 		if ps.IsDeposit {
 			return schemas.ErrorResponse(400,
 				fmt.Sprintf("no se puede usar un punto de venta depósito como destino (%d)", index+1),
-				fmt.Errorf("point_sale es depósito")),
-				nil, nil, nil, nil, nil
+				fmt.Errorf("point_sale es depósito"))
 		}
 
 		toID = item.ToID
@@ -549,15 +259,13 @@ func (r *MovementStockRepository) processSingleMovement(
 		var oldPS models.StockPointSale
 		tx.Where("product_id = ? AND point_sale_id = ?", productID, item.ToID).
 			First(&oldPS)
-		toBeforeState = oldPS
 
 		if err := tx.Where("product_id = ? AND point_sale_id = ?", productID, item.ToID).
 			FirstOrCreate(&models.StockPointSale{
 				ProductID:   productID,
 				PointSaleID: item.ToID,
 			}).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Stock Punto de venta", schemas.Create),
-				nil, nil, nil, nil, nil
+			return schemas.HandlerErrorGorm(err, "Stock Punto de venta", schemas.Create)
 		}
 
 		result := tx.Model(&models.StockPointSale{}).
@@ -565,15 +273,13 @@ func (r *MovementStockRepository) processSingleMovement(
 			UpdateColumn("stock", gorm.Expr("stock + ?", item.Amount))
 
 		if result.Error != nil {
-			return schemas.HandlerErrorGorm(result.Error, "Stock Punto de venta", schemas.Update),
-				nil, nil, nil, nil, nil
+			return schemas.HandlerErrorGorm(result.Error, "Stock Punto de venta", schemas.Update)
 		}
 
 	default:
 		return schemas.ErrorResponse(400,
 			fmt.Sprintf("tipo de destino inválido (%d)", index+1),
-			fmt.Errorf("ToType='%s'", item.ToType)),
-			nil, nil, nil, nil, nil
+			fmt.Errorf("ToType='%s'"))
 	}
 
 	// ---------------------------
@@ -591,275 +297,9 @@ func (r *MovementStockRepository) processSingleMovement(
 	}
 
 	if err := tx.Create(&movement).Error; err != nil {
-		return schemas.HandlerErrorGorm(err, "Movimiento", schemas.Create),
-			nil, nil, nil, nil, nil
+		return schemas.HandlerErrorGorm(err, "Movimiento", schemas.Create)
 	}
 
-	// ---------------------------
-	//   ESTADOS FINALES
-	// ---------------------------
-
-	var fromAfterState, toAfterState any
-
-	if item.FromType == "deposit" {
-		var dep models.Deposit
-		tx.Where("product_id = ?", productID).First(&dep)
-		fromAfterState = dep
-	} else {
-		var ps models.StockPointSale
-		tx.Where("product_id = ? AND point_sale_id = ?", productID, item.FromID).First(&ps)
-		fromAfterState = ps
-	}
-
-	if item.ToType == "deposit" {
-		var dep models.Deposit
-		tx.Where("product_id = ?", productID).First(&dep)
-		toAfterState = dep
-	} else {
-		var ps models.StockPointSale
-		tx.Where("product_id = ? AND point_sale_id = ?", productID, item.ToID).First(&ps)
-		toAfterState = ps
-	}
-
-	return nil, fromBeforeState, fromAfterState, toBeforeState, toAfterState, movement
+	return nil
 }
 
-
-// func (r *MovementStockRepository) MoveStockList(memberID int64, input []*schemas.MovementStockList) error {
-// 	return r.DB.Transaction(func(tx *gorm.DB) error {
-// 		// Validar que hay elementos para procesar
-// 		if len(input) == 0 {
-// 			return schemas.ErrorResponse(400, "no hay movimientos para procesar", fmt.Errorf("lista vacía"))
-// 		}
-
-// 		// Procesar cada producto
-// 		for _, movementList := range input {
-// 			// Validar producto
-// 			var product models.Product
-// 			if err := tx.First(&product, movementList.ProductID).Error; err != nil {
-// 				if errors.Is(err, gorm.ErrRecordNotFound) {
-// 					return schemas.ErrorResponse(404, fmt.Sprintf("producto %d no encontrado", movementList.ProductID), err)
-// 				}
-// 				return schemas.ErrorResponse(500, fmt.Sprintf("error al obtener el producto %d", movementList.ProductID), err)
-// 			}
-
-// 			if product.Price <= 0.0 {
-// 				return schemas.ErrorResponse(400, fmt.Sprintf("no se puede editar el producto %d sin precio", movementList.ProductID),
-// 					fmt.Errorf("no se puede editar un producto sin precio"))
-// 			}
-
-// 			// Validar que hay movimientos para el producto
-// 			if len(movementList.MovementStockItem) == 0 {
-// 				return schemas.ErrorResponse(400, fmt.Sprintf("no hay movimientos para el producto %d", movementList.ProductID),
-// 					fmt.Errorf("lista de movimientos vacía"))
-// 			}
-
-// 			// Procesar cada movimiento del producto
-// 			for idx, item := range movementList.MovementStockItem {
-// 				if err := r.processSingleMovement(tx, memberID, movementList.ProductID, &item, idx); err != nil {
-// 					return err
-// 				}
-// 			}
-// 		}
-
-// 		return nil
-// 	})
-// }
-
-// func (r *MovementStockRepository) processSingleMovement(tx *gorm.DB, memberID int64, productID int64, item *schemas.MovementStockItem, index int) error {
-// 	var fromID, toID int64
-
-// 	// ===== PROCESAR ORIGEN =====
-// 	switch item.FromType {
-// 	case "deposit":
-// 		fromID = 100
-
-// 		// Asegurar que existe el registro
-// 		if err := tx.Where("product_id = ?", productID).
-// 			FirstOrCreate(&models.Deposit{}, &models.Deposit{
-// 				ProductID: productID,
-// 				Stock:     0,
-// 			}).Error; err != nil {
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al inicializar el depósito (movimiento %d)", index+1), err)
-// 		}
-
-// 		// Validar stock si es necesario
-// 		if !*item.IgnoreStock {
-// 			var currentStock float64
-// 			if err := tx.Model(&models.Deposit{}).
-// 				Where("product_id = ?", productID).
-// 				Select("stock").
-// 				Scan(&currentStock).Error; err != nil {
-// 				return schemas.ErrorResponse(500, fmt.Sprintf("error al verificar stock (movimiento %d)", index+1), err)
-// 			}
-
-// 			if currentStock < item.Amount {
-// 				return schemas.ErrorResponse(400, fmt.Sprintf("no hay suficiente stock en depósito para transferir (movimiento %d)", index+1),
-// 					fmt.Errorf("stock actual: %.2f, necesario: %.2f", currentStock, item.Amount))
-// 			}
-// 		}
-
-// 		// Actualización atómica
-// 		result := tx.Model(&models.Deposit{}).
-// 			Where("product_id = ?", productID).
-// 			UpdateColumn("stock", gorm.Expr("stock - ?", item.Amount))
-
-// 		if result.Error != nil {
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al actualizar stock del depósito (movimiento %d)", index+1), result.Error)
-// 		}
-
-// 		if result.RowsAffected == 0 {
-// 			return schemas.ErrorResponse(404, fmt.Sprintf("no se pudo actualizar el depósito (movimiento %d)", index+1),
-// 				fmt.Errorf("registro no encontrado"))
-// 		}
-
-// 	case "point_sale":
-// 		// Validar que existe el punto de venta
-// 		var pointSale models.PointSale
-// 		if err := tx.
-// 			Select("id", "is_deposit").
-// 			Where("id = ?", item.FromID).
-// 			First(&pointSale).Error; err != nil {
-// 				if errors.Is(err, gorm.ErrRecordNotFound) {
-// 					return schemas.ErrorResponse(404, fmt.Sprintf("punto de venta %d no encontrado (movimiento %d)", item.FromID, index+1), err)
-// 				}
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al obtener el punto de venta origen (movimiento %d)", index+1), err)
-// 		}
-
-// 		if pointSale.IsDeposit {
-// 			return schemas.ErrorResponse(400, fmt.Sprintf("no se puede transferir stock desde un punto de venta deposito (movimiento %d), transferir desde otro punto de venta o depósito, el punto de venta es deposito", index+1),
-// 				fmt.Errorf("no se puede transferir stock desde un punto de venta deposito"))
-// 		}
-
-// 		fromID = item.FromID
-
-// 		// Asegurar que existe el registro
-// 		if err := tx.Where("product_id = ? AND point_sale_id = ?", productID, item.FromID).
-// 			FirstOrCreate(&models.StockPointSale{}, &models.StockPointSale{
-// 				ProductID:   productID,
-// 				PointSaleID: item.FromID,
-// 				Stock:       0,
-// 			}).Error; err != nil {
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al inicializar stock del punto de venta origen (movimiento %d)", index+1), err)
-// 		}
-
-// 		// Validar stock si es necesario
-// 		if !*item.IgnoreStock {
-// 			var currentStock float64
-// 			if err := tx.Model(&models.StockPointSale{}).
-// 				Where("product_id = ? AND point_sale_id = ?", productID, item.FromID).
-// 				Select("stock").
-// 				Scan(&currentStock).Error; err != nil {
-// 				return schemas.ErrorResponse(500, fmt.Sprintf("error al verificar stock (movimiento %d)", index+1), err)
-// 			}
-
-// 			if currentStock < item.Amount {
-// 				return schemas.ErrorResponse(400, fmt.Sprintf("no hay suficiente stock en punto de venta para transferir (movimiento %d)", index+1),
-// 					fmt.Errorf("stock actual: %.2f, necesario: %.2f", currentStock, item.Amount))
-// 			}
-// 		}
-
-// 		// Actualización atómica
-// 		result := tx.Model(&models.StockPointSale{}).
-// 			Where("product_id = ? AND point_sale_id = ?", productID, item.FromID).
-// 			UpdateColumn("stock", gorm.Expr("stock - ?", item.Amount))
-
-// 		if result.Error != nil {
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al actualizar stock del punto de venta origen (movimiento %d)", index+1), result.Error)
-// 		}
-
-// 		if result.RowsAffected == 0 {
-// 			return schemas.ErrorResponse(404, fmt.Sprintf("no se pudo actualizar el punto de venta origen (movimiento %d)", index+1),
-// 				fmt.Errorf("registro no encontrado"))
-// 		}
-
-// 	default:
-// 		return schemas.ErrorResponse(400, fmt.Sprintf("tipo de origen inválido (movimiento %d)", index+1),
-// 			fmt.Errorf("tipo de origen inválido: %s", item.FromType))
-// 	}
-
-// 	// ===== PROCESAR DESTINO =====
-// 	switch item.ToType {
-// 	case "deposit":
-// 		toID = 100
-
-// 		// Asegurar que existe el registro
-// 		if err := tx.Where("product_id = ?", productID).
-// 			FirstOrCreate(&models.Deposit{}, &models.Deposit{
-// 				ProductID: productID,
-// 				Stock:     0,
-// 			}).Error; err != nil {
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al inicializar el depósito destino (movimiento %d)", index+1), err)
-// 		}
-
-// 		// Actualización atómica
-// 		result := tx.Model(&models.Deposit{}).
-// 			Where("product_id = ?", productID).
-// 			UpdateColumn("stock", gorm.Expr("stock + ?", item.Amount))
-
-// 		if result.Error != nil {
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al actualizar stock del depósito destino (movimiento %d)", index+1), result.Error)
-// 		}
-
-// 	case "point_sale":
-// 		// Validar que existe el punto de venta
-// 		var pointSale models.PointSale
-// 		if err := tx.
-// 			Select("id", "is_deposit").
-// 			Where("id = ?", item.ToID).
-// 			First(&pointSale).Error; err != nil {
-// 				if errors.Is(err, gorm.ErrRecordNotFound) {
-// 					return schemas.ErrorResponse(404, fmt.Sprintf("punto de venta %d no encontrado (movimiento %d)", item.FromID, index+1), err)
-// 				}
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al obtener el punto de venta origen (movimiento %d)", index+1), err)
-// 		}
-
-// 		if pointSale.IsDeposit {
-// 			return schemas.ErrorResponse(400, fmt.Sprintf("no se puede transferir stock desde un punto de venta deposito (movimiento %d), transferir desde otro punto de venta o depósito, el punto de venta es deposito", index+1),
-// 				fmt.Errorf("no se puede transferir stock desde un punto de venta deposito"))
-// 		}
-
-// 		toID = item.ToID
-
-// 		// Asegurar que existe el registro
-// 		if err := tx.Where("product_id = ? AND point_sale_id = ?", productID, item.ToID).
-// 			FirstOrCreate(&models.StockPointSale{}, &models.StockPointSale{
-// 				ProductID:   productID,
-// 				PointSaleID: item.ToID,
-// 				Stock:       0,
-// 			}).Error; err != nil {
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al inicializar stock del punto de venta destino (movimiento %d)", index+1), err)
-// 		}
-
-// 		// Actualización atómica
-// 		result := tx.Model(&models.StockPointSale{}).
-// 			Where("product_id = ? AND point_sale_id = ?", productID, item.ToID).
-// 			UpdateColumn("stock", gorm.Expr("stock + ?", item.Amount))
-
-// 		if result.Error != nil {
-// 			return schemas.ErrorResponse(500, fmt.Sprintf("error al actualizar stock del punto de venta destino (movimiento %d)", index+1), result.Error)
-// 		}
-
-// 	default:
-// 		return schemas.ErrorResponse(400, fmt.Sprintf("tipo de destino inválido (movimiento %d)", index+1),
-// 			fmt.Errorf("tipo de destino inválido: %s", item.ToType))
-// 	}
-
-// 	// Registrar el movimiento
-// 	movementStock := models.MovementStock{
-// 		MemberID:      memberID,
-// 		ProductID:   productID,
-// 		Amount:      item.Amount,
-// 		FromID:      fromID,
-// 		FromType:    item.FromType,
-// 		ToID:        toID,
-// 		ToType:      item.ToType,
-// 		IgnoreStock: *item.IgnoreStock,
-// 	}
-
-// 	if err := tx.Create(&movementStock).Error; err != nil {
-// 		return schemas.ErrorResponse(500, fmt.Sprintf("error al registrar el movimiento %d", index+1), err)
-// 	}
-
-// 	return nil
-// }

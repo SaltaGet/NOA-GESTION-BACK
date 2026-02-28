@@ -24,16 +24,16 @@ type TenantUpdate struct {
 }
 
 type TenantResponse struct {
-	ID                     int64     `json:"id"`
-	Name                   string    `json:"name"`
-	Address                string    `json:"address"`
-	Phone                  string    `json:"phone"`
-	Email                  string    `json:"email"`
-	IsActive               bool      `json:"is_active"`
-	Expiration             time.Time `json:"expiration"`
-	ResponsabilityFrontIVA *string   `json:"responsability_front_iva"`
-	CreatedAt              time.Time `json:"created_at"`
-	UpdatedAt              time.Time `json:"updated_at"`
+	ID                     int64     `json:"id" example:"1"`
+	Name                   string    `json:"name" example:"Mi tienda"`
+	Address                string    `json:"address" example:"mi casa 123"`
+	Phone                  string    `json:"phone" example:"3884123456"`
+	Email                  string    `json:"email" example:"mitienda@gmail.com"`
+	IsActive               bool      `json:"is_active" example:"true"`
+	Expiration             time.Time `json:"expiration" example:"2023-01-01"`
+	ResponsabilityFrontIVA *string   `json:"responsability_front_iva" example:"responsable_inscripto | monotributo | null"`
+	CreatedAt              time.Time `json:"created_at" example:"2023-01-01 12:00:00"`
+	UpdatedAt              time.Time `json:"updated_at" example:"2023-01-01 12:00:00"`
 }
 
 type TenantUserCreate struct {

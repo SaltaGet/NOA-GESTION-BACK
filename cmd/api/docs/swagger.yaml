@@ -1945,6 +1945,8 @@ definitions:
         type: boolean
       name:
         type: string
+      number:
+        type: integer
     type: object
   schemas.PointSaleStockResponse:
     properties:
@@ -2355,24 +2357,34 @@ definitions:
   schemas.TenantResponse:
     properties:
       address:
+        example: mi casa 123
         type: string
       created_at:
+        example: "2023-01-01 12:00:00"
         type: string
       email:
+        example: mitienda@gmail.com
         type: string
       expiration:
+        example: "2023-01-01"
         type: string
       id:
+        example: 1
         type: integer
       is_active:
+        example: true
         type: boolean
       name:
+        example: Mi tienda
         type: string
       phone:
+        example: "3884123456"
         type: string
       responsability_front_iva:
+        example: responsable_inscripto | monotributo | null
         type: string
       updated_at:
+        example: "2023-01-01 12:00:00"
         type: string
     type: object
   schemas.TenantSettingsResponse:

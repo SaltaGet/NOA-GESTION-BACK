@@ -12,28 +12,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// func (r *MainRepository) AuthUserGetByID(userID int64) (*models.User, error) {
-// 	var user models.User
-// 	if err := r.DB.Where("id = ?", userID).First(&user).Error; err != nil {
-// 		if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			return nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
-// 		}
-// 		return nil, schemas.ErrorResponse(500, "Error al intentar loguearse", err)
-// 	}
-// 	return &user, nil
-// }
-
-// func (r *MainRepository) AuthUserGetByUsername(username string) (*models.User, error) {
-// 	var user models.User
-// 	if err := r.DB.Where("username = ?", username).First(&user).Error; err != nil {
-// 		if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			return nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
-// 		}
-// 		return nil, schemas.ErrorResponse(500, "Error al intentar loguearse", err)
-// 	}
-// 	return &user, nil
-// }
-
 func (r *MainRepository) AuthTenantGetByID(tenantID int64) (*models.Tenant, error) {
 	var tenant models.Tenant
 	err := r.DB.

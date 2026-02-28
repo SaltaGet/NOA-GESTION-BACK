@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/jinzhu/copier"
@@ -97,69 +96,70 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 }
 
 func (r *CashRegisterRepository) CashRegisterOpen(pointSaleID int64, userID int64, amountOpen schemas.CashRegisterOpen) error {
-	var existRegisterOpen float64
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", userID)).Error; err != nil {
+			return err
+		}
 
-	if err := r.DB.
-		Model(&models.CashRegister{}).
-		Select("count(*)").
-		Where("is_close = ? AND point_sale_id = ?", false, pointSaleID).
-		Scan(&existRegisterOpen).Error; err != nil {
-		return schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
-	}
+		var existRegisterOpen float64
+		if err := tx.
+			Model(&models.CashRegister{}).
+			Select("count(*)").
+			Where("is_close = ? AND point_sale_id = ?", false, pointSaleID).
+			Scan(&existRegisterOpen).Error; err != nil {
+			return schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
+		}
 
-	if existRegisterOpen > 0 {
-		return schemas.ErrorResponse(400, "ya existe una apertura de caja, antes de continuar cierre la caja", fmt.Errorf("ya existe una apertura de caja, antes de continuar cerrar"))
-	}
+		if existRegisterOpen > 0 {
+			return schemas.ErrorResponse(400, "ya existe una apertura de caja, antes de continuar cierre la caja", fmt.Errorf("ya existe una apertura de caja, antes de continuar cerrar"))
+		}
 
-	registerOpen := models.CashRegister{
-		PointSaleID:  pointSaleID,
-		MemberOpenID: userID,
-		OpenAmount:   amountOpen.OpenAmount,
-		HourOpen:     time.Now().UTC(),
-	}
+		registerOpen := models.CashRegister{
+			PointSaleID:  pointSaleID,
+			MemberOpenID: userID,
+			OpenAmount:   amountOpen.OpenAmount,
+			HourOpen:     time.Now().UTC(),
+		}
 
-	if err := r.DB.Create(&registerOpen).Error; err != nil {
-		return schemas.HandlerErrorGorm(err, "Caja", schemas.Create)
-	}
+		if err := tx.Create(&registerOpen).Error; err != nil {
+			return schemas.HandlerErrorGorm(err, "Caja", schemas.Create)
+		}
 
-	go database.SaveAuditAsync(r.DB, models.AuditLog{MemberID: userID, Path: "cash_register", Method: "create"}, nil, registerOpen)
-
-	return nil
+		return nil
+	})
 }
 
 func (r *CashRegisterRepository) CashRegisterClose(pointSaleID int64, userID int64, amountOpen schemas.CashRegisterClose) error {
-	var register models.CashRegister
-	if err := r.DB.
-		Where("is_close = ? AND point_sale_id = ?", false, pointSaleID).
-		Order("hour_open DESC").
-		First(&register).Error; err != nil {
-		return schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
-	}
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", userID)).Error; err != nil {
+			return err
+		}
 
-	oldRegister := register
+		var register models.CashRegister
+		if err := tx.
+			Where("is_close = ? AND point_sale_id = ?", false, pointSaleID).
+			Order("hour_open DESC").
+			First(&register).Error; err != nil {
+			return schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
+		}
 
-	var member models.Member
-	if err := r.DB.Preload("Role").First(&member, userID).Error; err != nil {
-		return schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
-	}
+		var member models.Member
+		if err := tx.Preload("Role").First(&member, userID).Error; err != nil {
+			return schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
+		}
 
-	now := time.Now().UTC()
-	register.CloseAmount = &amountOpen.CloseAmount
-	register.IsClose = true
-	register.HourClose = &now
-	register.MemberCloseID = &userID
+		now := time.Now().UTC()
+		register.CloseAmount = &amountOpen.CloseAmount
+		register.IsClose = true
+		register.HourClose = &now
+		register.MemberCloseID = &userID
 
-	if err := r.DB.Save(&register).Error; err != nil {
-		return schemas.HandlerErrorGorm(err, "Caja", schemas.Update)
-	}
+		if err := tx.Save(&register).Error; err != nil {
+			return schemas.HandlerErrorGorm(err, "Caja", schemas.Update)
+		}
 
-	go database.SaveAuditAsync(r.DB, models.AuditLog{
-		MemberID: userID,
-		Method:   "update",
-		Path:     "cash_register",
-	}, oldRegister, register)
-
-	return nil
+		return nil
+	})
 }
 
 func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID int64, fromDate, toDate time.Time) ([]*schemas.CashRegisterInformResponse, error) {

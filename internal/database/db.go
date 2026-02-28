@@ -109,6 +109,10 @@ func ConnectDB(cfg *schemas.EmailConfig) (*gorm.DB, error) {
 
 	mainDB = db
 
+	if err := ApplyAuditAdminTriggers(db); err != nil {
+		log.Error().Err(err).Msg("Error al aplicar triggers de auditoria")
+	}
+
 	return ensureAdmin(db, cfg)
 }
 
@@ -476,3 +480,73 @@ func InitDBCache(maxEntries int) error {
 	return nil
 }
 
+var TriggerAuditAdmin = `
+CREATE OR REPLACE FUNCTION audit_trigger_function_admin()
+RETURNS TRIGGER AS $$
+DECLARE
+    current_member TEXT;
+BEGIN
+    current_member := current_setting('app.current_member_id', true);
+
+    IF current_member IS NULL OR current_member = '' OR current_member = '0' THEN
+        RETURN NEW;
+    END IF;
+
+    INSERT INTO audit_log_admins (
+        admin_id,
+        method,
+        path,
+        old_value,
+        new_value,
+        created_at
+    )
+    VALUES (
+        current_member::BIGINT,
+        LOWER(TG_OP),
+        TG_TABLE_NAME,
+        CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE to_jsonb(OLD) END,
+        CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE to_jsonb(NEW) END,
+        NOW()
+    );
+
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+`
+
+func ApplyAuditAdminTriggers(db *gorm.DB) error {
+	// 1. Crear la función del trigger
+	if err := db.Exec(TriggerAuditAdmin).Error; err != nil {
+		return err
+	}
+
+	// 2. Obtener TODAS las tablas del esquema público
+	var tables []string
+	queryTables := `
+		SELECT table_name 
+		FROM information_schema.tables 
+		WHERE table_schema = 'public' 
+		AND table_type = 'BASE TABLE'
+		AND table_name != 'audit_log_admins' 
+		AND table_name != 'migrations';
+	`
+	if err := db.Raw(queryTables).Scan(&tables).Error; err != nil {
+		return fmt.Errorf("error al obtener lista de tablas: %w", err)
+	}
+
+	// 3. Aplicar el trigger a cada una
+	for _, table := range tables {
+		db.Exec(fmt.Sprintf("DROP TRIGGER IF EXISTS tr_audit_%s ON %s", table, table))
+
+		createQuery := fmt.Sprintf(`
+      CREATE TRIGGER tr_audit_%s
+      AFTER INSERT OR UPDATE OR DELETE ON "%s"
+      FOR EACH ROW EXECUTE FUNCTION audit_trigger_function_admin();`,
+			table, table)
+
+		if err := db.Exec(createQuery).Error; err != nil {
+			return fmt.Errorf("error al crear trigger en tabla %s: %w", table, err)
+		}
+	}
+	return nil
+}

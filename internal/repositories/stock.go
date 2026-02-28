@@ -157,61 +157,6 @@ func (r *StockRepository) StockGetByCategoryID(categoryID, pointID int64) ([]*sc
 	return result, nil
 }
 
-// func (r *StockRepository) StockGetByName(name string, pointID int64) ([]*schemas.ProductStockFullResponse, error) {
-// 	var pointSale models.PointSale
-// 	if err := r.DB.Select("id", "is_deposit").First(&pointSale, pointID).Error; err != nil {
-// 		if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			return nil, schemas.ErrorResponse(404, "punto de venta no encontrado", err)
-// 		}
-// 		return nil, schemas.ErrorResponse(500, "error al obtener el punto de venta", err)
-// 	}
-
-// 	var products []*schemas.ProductStockFullResponseCategory
-
-// 	baseSelect := []string{
-// 		"products.id",
-// 		"products.code",
-// 		"products.name",
-// 		"products.description",
-// 		"products.price",
-// 		"s.stock",
-// 		"categories.id AS category_id",
-// 		"categories.name AS category_name",
-// 	}
-
-// 	query := r.DB.Model(&models.Product{}).
-// 		Select(baseSelect).
-// 		Joins("INNER JOIN categories ON categories.id = products.category_id")
-
-// 	if pointSale.IsDeposit {
-// 		query = query.Joins("INNER JOIN deposits s ON s.product_id = products.id")
-// 	} else {
-// 		query = query.Joins("INNER JOIN stock_point_sales s ON s.product_id = products.id AND s.point_sale_id = ?", pointID)
-// 	}
-
-// 	if err := query.Limit(10).Where("products.name LIKE ?", "%"+name+"%").Scan(&products).Error; err != nil {
-// 		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
-// 	}
-
-// 	var result []*schemas.ProductStockFullResponse
-// 	for _, p := range products {
-// 		result = append(result, &schemas.ProductStockFullResponse{
-// 			ID:           p.ID,
-// 			Code:         p.Code,
-// 			Name:         p.Name,
-// 			Description:  p.Description,
-// 			Price:        p.Price,
-// 			Stock:        p.Stock,
-// 			Category: schemas.CategoryResponseStock{
-// 				ID:   p.CategoryID,
-// 				Name: p.CategoryName,
-// 			},
-// 		})
-// 	}
-
-// 	return result, nil
-// }
-
 func (r *StockRepository) StockGetByName(name string, pointID int64) ([]*schemas.ProductStockFullResponse, error) {
 	var pointSale models.PointSale
 	if err := r.DB.Select("id", "is_deposit").First(&pointSale, pointID).Error; err != nil {

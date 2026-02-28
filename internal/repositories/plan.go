@@ -2,8 +2,8 @@ package repositories
 
 import (
 	"errors"
+	"fmt"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/jinzhu/copier"
@@ -21,52 +21,53 @@ func (r *MainRepository) PlanCreate(adminID int64, planCreate *schemas.PlanCreat
 		AmountMember:    planCreate.AmountMember,
 	}
 
-	if err := r.DB.Create(plan).Error; err != nil {
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", adminID)).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(plan).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
 		return 0, schemas.HandlerErrorGorm(err, "Plan", schemas.Create)
 	}
-
-	go database.SaveAuditAdminAsync(r.DB, models.AuditLogAdmin{
-		AdminID: adminID,
-		Method:  "create",
-		Path:    "plan",
-	}, nil, plan)
 
 	return plan.ID, nil
 }
 
 func (r *MainRepository) PlanUpdate(adminID int64, planUpdate *schemas.PlanUpdate) error {
-	var plan, oldPlan models.Plan
-	if err := r.DB.First(&plan, planUpdate.ID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return schemas.ErrorResponse(404, "El plan no encopntrado", err)
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", adminID)).Error; err != nil {
+			return err
 		}
-		return schemas.ErrorResponse(500, "Error al buscar el plan", err)
-	}
-
-	oldPlan = plan
-
-	plan.Name = planUpdate.Name
-	plan.PriceMounthly = planUpdate.PriceMounthly
-	plan.PriceYearly = planUpdate.PriceYearly
-	plan.Description = planUpdate.Description
-	plan.Features = planUpdate.Features
-	plan.AmountPointSale = planUpdate.AmountPointSale
-	plan.AmountMember = planUpdate.AmountMember
-
-	if err := r.DB.Save(&plan).Error; err != nil {
-		if schemas.IsDuplicateError(err) {
-			return schemas.ErrorResponse(409, "El plan "+plan.Name+" ya existe", err)
+		var plan models.Plan
+		if err := tx.First(&plan, planUpdate.ID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return schemas.ErrorResponse(404, "El plan no encopntrado", err)
+			}
+			return schemas.ErrorResponse(500, "Error al buscar el plan", err)
 		}
-		return schemas.ErrorResponse(500, "Error al actualizar el plan", err)
-	}
 
-	go database.SaveAuditAdminAsync(r.DB, models.AuditLogAdmin{
-		AdminID: adminID,
-		Method:  "update",
-		Path:    "plan",
-	}, oldPlan, plan)
+		plan.Name = planUpdate.Name
+		plan.PriceMounthly = planUpdate.PriceMounthly
+		plan.PriceYearly = planUpdate.PriceYearly
+		plan.Description = planUpdate.Description
+		plan.Features = planUpdate.Features
+		plan.AmountPointSale = planUpdate.AmountPointSale
+		plan.AmountMember = planUpdate.AmountMember
 
-	return nil
+		if err := tx.Save(&plan).Error; err != nil {
+			if schemas.IsDuplicateError(err) {
+				return schemas.ErrorResponse(409, "El plan "+plan.Name+" ya existe", err)
+			}
+			return schemas.ErrorResponse(500, "Error al actualizar el plan", err)
+		}
+
+		return nil
+	})
 }
 
 func (r *MainRepository) PlanGetAll() ([]*schemas.PlanResponseDTO, error) {

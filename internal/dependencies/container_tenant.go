@@ -110,6 +110,7 @@ func NewTenantContainer(db *gorm.DB) *TenantContainer {
 	// Inicializar servicios
 	c.Services.Arca = &services.ArcaService{
 		ArcaRepository: c.Repositories.Arca,
+		PointSaleRepository: c.Repositories.PointSale,
 	}
 	c.Services.CashRegister = &services.CashRegisterService{
 		CashRegisterRepository: c.Repositories.CashRegister,

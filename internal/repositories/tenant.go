@@ -15,24 +15,6 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// func (r *MainRepository) TenantGetByID(tenantID string) (*schemas.Tenant, error) {
-// 	var tenant schemas.Tenant
-// 	err := r.DB.
-// 		Where("id = ?", tenantID).
-// 		First(&tenant).Error
-// 	if err != nil {
-// 		if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			return nil, schemas.ErrorResponse(404, "Tenant not found", err)
-// 		}
-// 		return nil, schemas.ErrorResponse(500, "Error retrieving tenant", err)
-// 	}
-
-// 	if !tenant.IsActive {
-// 		return nil, schemas.ErrorResponse(403, "Tenant is inactive", nil)
-// 	}
-
-//		return &tenant, nil
-//	}
 func (r *MainRepository) TenantGetByID(tenantID int64) (*models.Tenant, error) {
 	var tenant models.Tenant
 	err := r.DB.
@@ -116,89 +98,13 @@ func (r *MainRepository) TenantGetConections() ([]*models.Tenant, error) {
 	return tenants, nil
 }
 
-// func (r *MainRepository) TenantCreateByUserID(tenantCreate *schemas.TenantCreate, userID int64) (int64, error) {
-// 	tx := r.DB.Begin()
-// 	defer func() {
-// 		if r := recover(); r != nil {
-// 			tx.Rollback()
-// 		}
-// 	}()
-
-// 	tenantName := strings.ReplaceAll(tenantCreate.Name, " ", "_")
-// 	identifier := strings.ReplaceAll(tenantCreate.Identifier, " ", "_")
-// 	uri := fmt.Sprintf("%s%s_%s%s", os.Getenv("URI_PATH"), tenantName, identifier, os.Getenv("URI_CONFIG"))
-// 	connection, err := utils.Encrypt(uri)
-// 	if err != nil {
-// 		return 0, schemas.ErrorResponse(500, "Error interno al obtener connection", err)
-// 	}
-
-// 	tenant := &models.Tenant{
-// 		Name:       tenantCreate.Name,
-// 		Address:    tenantCreate.Address,
-// 		Phone:      tenantCreate.Phone,
-// 		Email:      tenantCreate.Email,
-// 		CuitPdv:    tenantCreate.CuitPdv,
-// 		Connection: connection,
-// 		Identifier: identifier,
-// 	}
-
-// 	if err := tx.Create(tenant).Error; err != nil {
-// 		tx.Rollback()
-// 		if errors.Is(err, gorm.ErrInvalidData) {
-// 			return 0, schemas.ErrorResponse(400, "Los campos email, cuit_pdv y identifier deben ser únicos, algun campo ya existe", err)
-// 		}
-// 		return 0, schemas.ErrorResponse(500, "Error interno al crear tenant", err)
-// 	}
-
-// 	var user models.User
-// 	if err := tx.Where("id = ?", userID).First(&user).Error; err != nil {
-// 		tx.Rollback()
-// 		if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			return 0, schemas.ErrorResponse(404, "User no encontrado", err)
-// 		}
-// 		return 0, schemas.ErrorResponse(500, "Error interno al obtener user", err)
-// 	}
-
-// 	if err := tx.Create(&models.UserTenant{
-// 		UserID:   user.ID,
-// 		TenantID: tenant.ID,
-// 	}).Error; err != nil {
-// 		tx.Rollback()
-// 		return 0, schemas.ErrorResponse(500, "Error interno al crear user-tenant", err)
-// 	}
-
-// 	// generar pass generic ***
-
-// 	memberAdmin := &models.Member{
-// 		FirstName: user.FirstName,
-// 		LastName:  user.LastName,
-// 		Username:  user.Username,
-// 		Email:     user.Email,
-// 		Password:  "1",
-// 		IsAdmin:   true,
-// 		Address:   user.Address,
-// 		RoleID:    1,
-// 	}
-
-// 	// enviar email ***
-
-// 	err = database.PrepareDB(uri, *memberAdmin)
-// 	if err != nil {
-// 		tx.Rollback()
-// 		return 0, schemas.ErrorResponse(500, "Error interno al crear la base de datos del tenant", err)
-// 	}
-
-// 	if err := tx.Commit().Error; err != nil {
-// 		return 0, schemas.ErrorResponse(500, "Error interno al crear user-tenant", err)
-// 	}
-
-// 	return tenant.ID, nil
-// }
-
 func (r *MainRepository) TenantCreateByUserID(adminID int64, tenantCreate *schemas.TenantCreate, userID int64) (int64, error) {
 	var tenantID int64
 
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", adminID)).Error; err != nil {
+			return err
+		}
 
 		// Normalizar strings
 		tenantName := strings.ReplaceAll(tenantCreate.Name, " ", "_")
@@ -272,116 +178,15 @@ func (r *MainRepository) TenantCreateByUserID(adminID int64, tenantCreate *schem
 		return 0, err // devuelve error del Transaction
 	}
 
-	go database.SaveAuditAdminAsync(r.DB, models.AuditLogAdmin{
-		AdminID: adminID,
-		Method:  "create",
-		Path:    "plan",
-	}, nil, tenantCreate)
-
 	return tenantID, nil
 }
 
-// func (r *MainRepository) TenantUserCreate(tenantUserCreate *schemas.TenantUserCreate) (int64, error) {
-// 	tx := r.DB.Begin()
-// 	defer func() {
-// 		if r := recover(); r != nil {
-// 			tx.Rollback()
-// 		}
-// 	}()
-
-// 	tenantName := strings.ReplaceAll(tenantUserCreate.TenantCreate.Name, " ", "_")
-// 	identifier := strings.ReplaceAll(tenantUserCreate.TenantCreate.Identifier, " ", "_")
-// 	uri := fmt.Sprintf("%s%s_%s%s", os.Getenv("URI_PATH"), tenantName, identifier, os.Getenv("URI_CONFIG"))
-// 	connection, err := utils.Encrypt(uri)
-// 	if err != nil {
-// 		return 0, err
-// 	}
-
-// 	tenant := &models.Tenant{
-// 		Name:       tenantUserCreate.TenantCreate.Name,
-// 		Address:    tenantUserCreate.TenantCreate.Address,
-// 		Phone:      tenantUserCreate.TenantCreate.Phone,
-// 		Email:      tenantUserCreate.TenantCreate.Email,
-// 		CuitPdv:    tenantUserCreate.TenantCreate.CuitPdv,
-// 		Connection: connection,
-// 		Identifier: identifier,
-// 		PlanID:     tenantUserCreate.TenantCreate.PlanID,
-// 	}
-
-// 	if err := tx.Create(tenant).Error; err != nil {
-// 		tx.Rollback()
-// 		if errors.Is(err, gorm.ErrInvalidData) {
-// 			return 0, schemas.ErrorResponse(400, "Los campos email, cuit_pdv y identifier deben ser únicos, algun campo ya existe", err)
-// 		}
-// 		if schemas.IsDuplicateError(err) {
-// 			if strings.Contains(err.Error(), "email") {
-// 				return 0, schemas.ErrorResponse(409, "El email del tenant ya existe", err)
-// 			} else if strings.Contains(err.Error(), "identifier") {
-// 				return 0, schemas.ErrorResponse(409, "El identificador del tenant ya existe", err)
-// 			} else if strings.Contains(err.Error(), "cuit_pdv") {
-// 				return 0, schemas.ErrorResponse(409, "El cuit del tenant ya existe", err)
-// 			}
-// 		}
-// 		return 0, schemas.ErrorResponse(500, "Error interno creating tenant", err)
-// 	}
-
-// 	user := &models.User{
-// 		FirstName: tenantUserCreate.UserCreate.FirstName,
-// 		LastName:  tenantUserCreate.UserCreate.LastName,
-// 		Email:     tenantUserCreate.UserCreate.Email,
-// 		Address:   &tenantUserCreate.TenantCreate.Address,
-// 		Username:  tenantUserCreate.UserCreate.Username,
-// 	}
-
-// 	if err := tx.Create(user).Error; err != nil {
-// 		tx.Rollback()
-// 		if errors.Is(err, gorm.ErrInvalidData) {
-// 			if schemas.IsDuplicateError(err) {
-// 				if strings.Contains(err.Error(), "email") {
-// 					return 0, schemas.ErrorResponse(409, "El email del usuario ya existe", err)
-// 				} else if strings.Contains(err.Error(), "username") {
-// 					return 0, schemas.ErrorResponse(409, "El username del usuario ya existe", err)
-// 				}
-// 			}
-// 			return 0, schemas.ErrorResponse(400, "Los campos email e identifier deben ser únicos, algun campo ya existe", err)
-// 		}
-// 		return 0, schemas.ErrorResponse(500, "Error interno creating tenant", err)
-// 	}
-
-// 	if err := tx.Create(&models.UserTenant{
-// 		UserID:   user.ID,
-// 		TenantID: tenant.ID,
-// 	}).Error; err != nil {
-// 		tx.Rollback()
-// 		return 0, schemas.ErrorResponse(500, "Error interno al crear tenant", err)
-// 	}
-
-// 	memberAdmin := &models.Member{
-// 		FirstName: tenantUserCreate.UserCreate.FirstName,
-// 		LastName:  tenantUserCreate.UserCreate.LastName,
-// 		Username:  tenantUserCreate.UserCreate.Username,
-// 		Email:     tenantUserCreate.UserCreate.Email,
-// 		Password:  tenantUserCreate.UserCreate.Password,
-// 		IsAdmin:   true,
-// 		Address:   &tenantUserCreate.TenantCreate.Address,
-// 		RoleID:    1,
-// 	}
-
-// 	err = database.PrepareDB(uri, *memberAdmin)
-// 	if err != nil {
-// 		tx.Rollback()
-// 		return 0, schemas.ErrorResponse(500, "Error interno al crear la base de datos del tenant", err)
-// 	}
-
-// 	if err := tx.Commit().Error; err != nil {
-// 		return 0, schemas.ErrorResponse(500, "Error interno al crear user-tenant", err)
-// 	}
-
-//		return tenant.ID, nil
-//	}
 func (r *MainRepository) TenantUserCreate(adminID int64, tenantUserCreate *schemas.TenantUserCreate) (int64, error) {
 	var tenantID int64
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", adminID)).Error; err != nil {
+			return err
+		}
 
 		tenantName := strings.ReplaceAll(tenantUserCreate.TenantCreate.Name, " ", "_")
 		identifier := strings.ReplaceAll(tenantUserCreate.TenantCreate.Identifier, " ", "_")
@@ -461,78 +266,65 @@ func (r *MainRepository) TenantUserCreate(adminID int64, tenantUserCreate *schem
 		return 0, err
 	}
 
-	tenantUserCreate.UserCreate.Password = ""
-	go database.SaveAuditAdminAsync(r.DB, models.AuditLogAdmin{
-		AdminID: adminID,
-		Method:  "create",
-		Path:    "plan",
-	}, nil, tenantUserCreate)
-
 	return tenantID, nil
 }
 
 func (r *MainRepository) TenantUpdate(adminID, userID int64, tenant *schemas.TenantUpdate) error {
-	var userTenant models.UserTenant
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", adminID)).Error; err != nil {
+			return err
+		}
+		var userTenant models.UserTenant
 
-	err := r.DB.First(&userTenant, "user_id = ? AND tenant_id = ?", userID, tenant.ID).Error
-	if err != nil {
-		return schemas.HandlerErrorGorm(err, "UserTenant", schemas.Read)
-	}
+		err := tx.First(&userTenant, "user_id = ? AND tenant_id = ?", userID, tenant.ID).Error
+		if err != nil {
+			return schemas.HandlerErrorGorm(err, "UserTenant", schemas.Read)
+		}
 
-	// if !userTenant.IsAdmin {
-	// 	return schemas.ErrorResponse(403, "No tienes permisos para actualizar el tenant", fmt.Errorf("no tienes permisos para actualizar el tenant"))
-	// }
+		// if !userTenant.IsAdmin {
+		// 	return schemas.ErrorResponse(403, "No tienes permisos para actualizar el tenant", fmt.Errorf("no tienes permisos para actualizar el tenant"))
+		// }
 
-	var tenantOld models.Tenant
-	var tenantUpdates models.Tenant
-	err = r.DB.First(&tenantOld, tenant.ID).Error
-	if err != nil {
-		return schemas.HandlerErrorGorm(err, "Tenant", schemas.Read)
-	}
+		var tenantOld models.Tenant
+		err = tx.First(&tenantOld, tenant.ID).Error
+		if err != nil {
+			return schemas.HandlerErrorGorm(err, "Tenant", schemas.Read)
+		}
 
-	if err := r.DB.Model(&models.Tenant{}).Updates(tenant).Error; err != nil {
-		return schemas.HandlerErrorGorm(err, "Tenant", schemas.Update)
-	}
+		if err := tx.Model(&models.Tenant{}).Updates(tenant).Error; err != nil {
+			return schemas.HandlerErrorGorm(err, "Tenant", schemas.Update)
+		}
 
-	r.DB.First(&tenantUpdates, tenant.ID)
-
-	go database.SaveAuditAdminAsync(r.DB, models.AuditLogAdmin{
-		AdminID: adminID,
-		Method:  "create",
-		Path:    "plan",
-	}, tenantOld, tenantUpdates)
-
-	return nil
+		return nil
+	})
 }
 
 func (r *MainRepository) TenantUpdateExpiration(adminID int64, tenantUpdateExpiration *schemas.TenantUpdateExpiration) error {
-	loc, _ := time.LoadLocation("America/Argentina/Buenos_Aires")
-	exp, err := time.ParseInLocation("2006-01-02", tenantUpdateExpiration.Expiration, loc)
-	if err != nil {
-		return schemas.ErrorResponse(422, "Formato de fecha inválido, debe ser YYYY-MM-DD", err)
-	}
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", adminID)).Error; err != nil {
+			return err
+		}
 
-	var tenantExist models.Tenant
-	var tenantSave models.Tenant
-	err = r.DB.First(&tenantExist, tenantUpdateExpiration.ID).Error
-	if err != nil {
-		return schemas.HandlerErrorGorm(err, "Tenant", schemas.Read)
-	}
+		loc, _ := time.LoadLocation("America/Argentina/Buenos_Aires")
+		exp, err := time.ParseInLocation("2006-01-02", tenantUpdateExpiration.Expiration, loc)
+		if err != nil {
+			return schemas.ErrorResponse(422, "Formato de fecha inválido, debe ser YYYY-MM-DD", err)
+		}
 
-	tenantSave = tenantExist
-	tenantExist.Expiration = &exp
+		var tenantExist models.Tenant
+		err = tx.First(&tenantExist, tenantUpdateExpiration.ID).Error
+		if err != nil {
+			return schemas.HandlerErrorGorm(err, "Tenant", schemas.Read)
+		}
 
-	if err := r.DB.Save(&tenantExist).Error; err != nil {
-		return schemas.HandlerErrorGorm(err, "Tenant", schemas.Update)
-	}
+		tenantExist.Expiration = &exp
 
-	go database.SaveAuditAdminAsync(r.DB, models.AuditLogAdmin{
-		AdminID: adminID,
-		Method:  "create",
-		Path:    "plan",
-	}, tenantSave, tenantExist)
+		if err := tx.Save(&tenantExist).Error; err != nil {
+			return schemas.HandlerErrorGorm(err, "Tenant", schemas.Update)
+		}
 
-	return nil
+		return nil
+	})
 }
 
 func (r *MainRepository) TenantUpdateTerms(tenantID int64, tenantUpdateTerms *schemas.TenantUpdateTerms) error {
@@ -575,7 +367,7 @@ func (r *MainRepository) TenantUpdateSettings(tenantID int64, tenantUpdateSettin
 		Slogan:         tenantUpdateSettings.Slogan,
 		PrimaryColor:   tenantUpdateSettings.PrimaryColor,
 		SecondaryColor: tenantUpdateSettings.SecondaryColor,
-		Phone: tenantUpdateSettings.Phone,
+		Phone:          tenantUpdateSettings.Phone,
 	}
 
 	// 2. Usamos Clauses para definir qué pasa si hay un conflicto en el tenant_id

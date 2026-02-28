@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
@@ -103,7 +102,10 @@ func (r *MemberRepository) MemberGetAll(limit, page int, search *map[string]stri
 func (r *MemberRepository) MemberCreate(memberID int64, memberCreate *schemas.MemberCreate) (int64, error) {
 	var memberSave models.Member
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		// Verificar que el rol existe
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
+			return err
+		}
+
 		var role models.Role
 		if err := tx.First(&role, memberCreate.RoleID).Error; err != nil {
 			return schemas.HandlerErrorGorm(err, "Rol", schemas.Read)
@@ -151,28 +153,20 @@ func (r *MemberRepository) MemberCreate(memberID int64, memberCreate *schemas.Me
 		return 0, err
 	}
 
-	go database.SaveAuditAsync(r.DB, models.AuditLog{
-		MemberID: memberID,
-		Method:   "create",
-		Path:     "member",
-	}, nil, memberSave)
-
 	return memberSave.ID, nil
 }
 
 // MemberUpdate actualiza un miembro existente con auditoría
 func (r *MemberRepository) MemberUpdate(memberID int64, memberUpdate *schemas.MemberUpdate) error {
-	var oldMemeber models.Member
-	var newMember models.Member
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		// Verificar que el miembro existe
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
+			return err
+		}
+
 		var existingMember models.Member
 		if err := tx.First(&existingMember, memberUpdate.ID).Error; err != nil {
 			return schemas.HandlerErrorGorm(err, "Miembro", schemas.Read)
 		}
-
-		// Guardar estado anterior
-		oldMemeber = existingMember
 
 		if existingMember.IsAdmin && memberUpdate.IsActive != nil && !*memberUpdate.IsActive {
 			return schemas.ErrorResponse(400, "No se puede desactivar un administrador", fmt.Errorf("no se puede desactivar un administrador"))
@@ -206,8 +200,6 @@ func (r *MemberRepository) MemberUpdate(memberID int64, memberUpdate *schemas.Me
 			existingMember.IsActive = *memberUpdate.IsActive
 		}
 
-		newMember = existingMember
-
 		if err := tx.Save(&existingMember).Error; err != nil {
 			return schemas.HandlerErrorGorm(err, "Miembro", schemas.Update)
 		}
@@ -220,159 +212,15 @@ func (r *MemberRepository) MemberUpdate(memberID int64, memberUpdate *schemas.Me
 		return nil
 	})
 
-	if err == nil {
-		// Guardar auditoría
-		go database.SaveAuditAsync(r.DB, models.AuditLog{
-			MemberID: memberID,
-			Method:   "udpate",
-			Path:     "member",
-		}, oldMemeber, newMember)
-	}
-
 	return err
 }
 
-// MemberCreate crea un nuevo miembro
-// func (r *MemberRepository) MemberCreate(memberCreate *schemas.MemberCreate) (int64, error) {
-// 	var memberID int64
-
-// 	err := r.DB.Transaction(func(tx *gorm.DB) error {
-// 		// Verificar que el rol existe
-// 		var role models.Role
-// 		if err := tx.First(&role, memberCreate.RoleID).Error; err != nil {
-// 			if errors.Is(err, gorm.ErrRecordNotFound) {
-// 				return schemas.ErrorResponse(400, fmt.Sprintf("El rol %d no existe", memberCreate.RoleID), err)
-// 			}
-// 			return schemas.ErrorResponse(500, "Error al obtener el rol", err)
-// 		}
-
-// 		// Verificar que los puntos de venta existen
-// 		var pointSales []models.PointSale
-// 		if err := tx.Where("id IN ?", memberCreate.PointSaleIDs).Find(&pointSales).Error; err != nil {
-// 			return schemas.ErrorResponse(500, "Error al obtener los puntos de venta", err)
-// 		}
-
-// 		if len(pointSales) != len(memberCreate.PointSaleIDs) {
-// 			return schemas.ErrorResponse(400, "Uno o más puntos de venta no existen", fmt.Errorf("uno o más puntos de venta no existen"))
-// 		}
-
-// 		// Crear miembro
-// 		member := models.Member{
-// 			FirstName: memberCreate.FirstName,
-// 			LastName:  memberCreate.LastName,
-// 			Username:  memberCreate.Username,
-// 			Email:     memberCreate.Email,
-// 			Password:  memberCreate.Password,
-// 			Address:   memberCreate.Address,
-// 			Phone:     memberCreate.Phone,
-// 			RoleID:    memberCreate.RoleID,
-// 			IsActive:  true,
-// 			IsAdmin:   false,
-// 		}
-
-// 		if err := tx.Create(&member).Error; err != nil {
-// 			if schemas.IsDuplicateError(err) {
-// 				if strings.Contains(err.Error(), "username") {
-// 					return schemas.ErrorResponse(400, "El nombre de usuario ya existe", err)
-// 				}
-// 				if strings.Contains(err.Error(), "email") {
-// 					return schemas.ErrorResponse(400, "El email ya existe", err)
-// 				}
-// 				return schemas.ErrorResponse(400, "El miembro ya existe", err)
-// 			}
-// 			return schemas.ErrorResponse(500, "Error al crear el miembro", err)
-// 		}
-
-// 		memberID = member.ID
-
-// 		// Asociar puntos de venta
-// 		if err := tx.Model(&member).Association("PointSales").Append(&pointSales); err != nil {
-// 			return schemas.ErrorResponse(500, "Error al asociar puntos de venta", err)
-// 		}
-
-// 		return nil
-// 	})
-
-// 	if err != nil {
-// 		return 0, err
-// 	}
-
-// 	return memberID, nil
-// }
-
-// // MemberUpdate actualiza un miembro existente
-// func (r *MemberRepository) MemberUpdate(memberUpdate *schemas.MemberUpdate) error {
-// 	return r.DB.Transaction(func(tx *gorm.DB) error {
-// 		// Verificar que el miembro existe
-// 		var existingMember models.Member
-// 		if err := tx.First(&existingMember, memberUpdate.ID).Error; err != nil {
-// 			if errors.Is(err, gorm.ErrRecordNotFound) {
-// 				return schemas.ErrorResponse(404, "Miembro no encontrado", err)
-// 			}
-// 			return schemas.ErrorResponse(500, "Error al obtener el miembro", err)
-// 		}
-
-// 		if existingMember.IsAdmin && memberUpdate.IsActive != nil && !*memberUpdate.IsActive {
-// 			return schemas.ErrorResponse(400, "No se puede desactivar un administrador", fmt.Errorf("no se puede desactivar un administrador"))
-// 		}
-
-// 		// Verificar que el rol existe
-// 		var role models.Role
-// 		if err := tx.First(&role, memberUpdate.RoleID).Error; err != nil {
-// 			if errors.Is(err, gorm.ErrRecordNotFound) {
-// 				return schemas.ErrorResponse(400, fmt.Sprintf("El rol %d no existe", memberUpdate.RoleID), err)
-// 			}
-// 			return schemas.ErrorResponse(500, "Error al obtener el rol", err)
-// 		}
-
-// 		// Verificar que los puntos de venta existen
-// 		var pointSales []models.PointSale
-// 		if err := tx.Where("id IN ?", memberUpdate.PointSaleIDs).Find(&pointSales).Error; err != nil {
-// 			return schemas.ErrorResponse(500, "Error al obtener los puntos de venta", err)
-// 		}
-
-// 		if len(pointSales) != len(memberUpdate.PointSaleIDs) {
-// 			return schemas.ErrorResponse(400, "Uno o más puntos de venta no existen", nil)
-// 		}
-
-// 		// Actualizar campos
-// 		existingMember.FirstName = memberUpdate.FirstName
-// 		existingMember.LastName = memberUpdate.LastName
-// 		existingMember.Username = memberUpdate.Username
-// 		existingMember.Email = memberUpdate.Email
-// 		existingMember.Address = memberUpdate.Address
-// 		existingMember.Phone = memberUpdate.Phone
-// 		existingMember.RoleID = memberUpdate.RoleID
-// 		if memberUpdate.IsActive != nil {
-// 			existingMember.IsActive = *memberUpdate.IsActive
-// 		}
-
-// 		if err := tx.Save(&existingMember).Error; err != nil {
-// 			if schemas.IsDuplicateError(err) {
-// 				if strings.Contains(err.Error(), "username") {
-// 					return schemas.ErrorResponse(400, "El nombre de usuario ya existe", err)
-// 				}
-// 				if strings.Contains(err.Error(), "email") {
-// 					return schemas.ErrorResponse(400, "El email ya existe", err)
-// 				}
-// 				return schemas.ErrorResponse(400, "Error de duplicación", err)
-// 			}
-// 			return schemas.ErrorResponse(500, "Error al actualizar el miembro", err)
-// 		}
-
-// 		// Actualizar puntos de venta (reemplazar asociaciones existentes)
-// 		if err := tx.Model(&existingMember).Association("PointSales").Replace(&pointSales); err != nil {
-// 			return schemas.ErrorResponse(500, "Error al actualizar puntos de venta", err)
-// 		}
-
-// 		return nil
-// 	})
-// }
-
-// MemberUpdatePassword actualiza la contraseña de un miembro
 func (r *MemberRepository) MemberUpdatePassword(memberID int64, passwordUpdate *schemas.MemberUpdatePassword) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
-		// Verificar que el miembro existe
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
+			return err
+		}
+		
 		var member models.Member
 		if err := tx.First(&member, memberID).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -400,7 +248,6 @@ func (r *MemberRepository) MemberUpdatePassword(memberID int64, passwordUpdate *
 }
 
 func (r *MemberRepository) MemberDelete(memberID int64, id int64) error {
-	var saveMember models.Member
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
 		var member models.Member
 		if err := tx.First(&member, id).Error; err != nil {
@@ -409,9 +256,6 @@ func (r *MemberRepository) MemberDelete(memberID int64, id int64) error {
 			}
 			return schemas.ErrorResponse(500, "Error al obtener el miembro", err)
 		}
-
-		// Guardar estado anterior para auditoría
-		saveMember = member
 
 		if member.IsAdmin {
 			return schemas.ErrorResponse(400, "No se puede eliminar un administrador", nil)
@@ -423,14 +267,6 @@ func (r *MemberRepository) MemberDelete(memberID int64, id int64) error {
 
 		return nil
 	})
-
-	if err == nil {
-		go database.SaveAuditAsync(r.DB, models.AuditLog{
-			MemberID: memberID,
-			Method:   "DELETE",
-			Path:     "member/delete",
-		}, saveMember, nil)
-	}
 
 	return err
 }

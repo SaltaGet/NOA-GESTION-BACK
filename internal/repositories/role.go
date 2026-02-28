@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/jinzhu/copier"
@@ -73,69 +72,6 @@ func (r *RoleRepository) RoleGetAll() (*[]schemas.RoleResponse, error) {
 	return &allRoles, nil
 }
 
-// func (t *RoleRepository) RoleCreate(roleCreate *schemas.RoleCreate) (int64, error) {
-// 	var permissions []models.Permission
-// 	if err := t.DB.Where("id IN ?", roleCreate.PermissionsID).Find(&permissions).Error; err != nil {
-// 		return 0, schemas.ErrorResponse(500, "Error interno al buscar permisos", err)
-// 	}
-// 	if len(permissions) != len(roleCreate.PermissionsID) {
-// 		return 0, schemas.ErrorResponse(400, "Algunos permisos no existen", fmt.Errorf("se esperaban %d permisos, pero se encontraron %d", len(roleCreate.PermissionsID), len(permissions)))
-// 	}
-
-// 	newRole := &models.Role{Name: roleCreate.Name, Permissions: permissions}
-
-// 	err := t.DB.Create(&newRole).Error
-// 	if err != nil {
-// 		return 0, schemas.ErrorResponse(500, "Error interno al crear el rol", err)
-// 	}
-// 	return newRole.ID, nil
-// }
-
-// func (t *RoleRepository) RoleUpdate(roleUpdate *schemas.RoleUpdate) error {
-// 	// Verificar que el rol existe
-// 	var existingRole models.Role
-// 	if err := t.DB.First(&existingRole, roleUpdate.ID).Error; err != nil {
-// 		if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			return schemas.ErrorResponse(404, "Rol no encontrado", err)
-// 		}
-// 		return schemas.ErrorResponse(500, "Error interno al buscar rol", err)
-// 	}
-
-// 	// Verificar que todos los permisos existen
-// 	var permissions []models.Permission
-// 	if err := t.DB.Where("id IN ?", roleUpdate.PermissionsID).Find(&permissions).Error; err != nil {
-// 		return schemas.ErrorResponse(500, "Error interno al buscar permisos", err)
-// 	}
-// 	if len(permissions) != len(roleUpdate.PermissionsID) {
-// 		return schemas.ErrorResponse(400, "Algunos permisos no existen",
-// 			fmt.Errorf("se esperaban %d permisos, pero se encontraron %d",
-// 				len(roleUpdate.PermissionsID), len(permissions)))
-// 	}
-
-// 	// Actualizar el rol dentro de una transacción
-// 	err := t.DB.Transaction(func(tx *gorm.DB) error {
-// 		// Actualizar el nombre del rol
-// 		if err := tx.Model(&existingRole).Update("name", roleUpdate.Name).Error; err != nil {
-// 			return err
-// 		}
-
-// 		// Reemplazar las asociaciones de permisos
-// 		if err := tx.Model(&existingRole).Association("Permissions").Replace(permissions); err != nil {
-// 			return err
-// 		}
-
-// 		return nil
-// 	})
-
-// 	if err != nil {
-// 		return schemas.ErrorResponse(500, "Error interno al actualizar el rol", err)
-// 	}
-
-// 	return nil
-// }
-
-// expandPermissions expande los permisos para incluir automáticamente los permisos de lectura (04)
-// cuando se otorgan permisos de actualización (02) del mismo grupo
 func expandPermissions(db *gorm.DB, permissionIDs []int64) ([]models.Permission, error) {
 	// Obtener los permisos solicitados
 	var requestedPermissions []models.Permission
@@ -185,6 +121,9 @@ func expandPermissions(db *gorm.DB, permissionIDs []int64) ([]models.Permission,
 func (t *RoleRepository) RoleCreate(memberID int64, roleCreate *schemas.RoleCreate) (int64, error) {
 	var newRoleSave *models.Role
 	err := t.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
+			return err
+		}
 		// Expandir permisos automáticamente
 		permissions, err := expandPermissions(tx, roleCreate.PermissionsID)
 		if err != nil {
@@ -212,26 +151,20 @@ func (t *RoleRepository) RoleCreate(memberID int64, roleCreate *schemas.RoleCrea
 		return 0, err
 	}
 
-	go database.SaveAuditAsync(t.DB, models.AuditLog{
-		MemberID: memberID,
-		Method:   "create",
-		Path:     "role",
-	}, nil, newRoleSave)
-
 	return newRoleSave.ID, nil
 }
 
 // RoleUpdate actualizado
 func (t *RoleRepository) RoleUpdate(memberID int64, roleUpdate *schemas.RoleUpdate) error {
-	var oldRole, newRole models.Role
 	err := t.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
+			return err
+		}
 		// Verificar que el rol existe
 		var existingRole models.Role
 		if err := tx.Preload("Permissions").First(&existingRole, roleUpdate.ID).Error; err != nil {
 			return schemas.HandlerErrorGorm(err, "Rol", schemas.Read)
 		}
-
-		oldRole = existingRole
 
 		// Expandir permisos automáticamente
 		permissions, err := expandPermissions(tx, roleUpdate.PermissionsID)
@@ -256,107 +189,8 @@ func (t *RoleRepository) RoleUpdate(memberID int64, roleUpdate *schemas.RoleUpda
 			return schemas.HandlerErrorGorm(err, "Rol", schemas.Update)
 		}
 
-		// Recargar el rol con los permisos actualizados
-		tx.Preload("Permissions").First(&newRole, roleUpdate.ID)
 		return nil
 	})
 
-	if err == nil {
-		// Guardar auditoría
-		go database.SaveAuditAsync(t.DB, models.AuditLog{
-			MemberID: memberID,
-			Method:   "update",
-			Path:     "role",
-		}, oldRole, newRole)
-	}
-
 	return err
 }
-
-// RoleCreate crea un nuevo rol con auditoría
-// func (t *RoleRepository) RoleCreate(memberID int64, roleCreate *schemas.RoleCreate) (int64, error) {
-// 	var newRoleSave *models.Role
-// 	err := t.DB.Transaction(func(tx *gorm.DB) error {
-// 		var permissions []models.Permission
-// 		if err := tx.Where("id IN ?", roleCreate.PermissionsID).Find(&permissions).Error; err != nil {
-// 			return schemas.ErrorResponse(500, "Error interno al buscar permisos", err)
-// 		}
-// 		if len(permissions) != len(roleCreate.PermissionsID) {
-// 			return schemas.ErrorResponse(400, "Algunos permisos no existen", fmt.Errorf("se esperaban %d permisos, pero se encontraron %d", len(roleCreate.PermissionsID), len(permissions)))
-// 		}
-
-// 		newRole := &models.Role{Name: roleCreate.Name, Permissions: permissions}
-
-// 		if err := tx.Create(&newRole).Error; err != nil {
-// 			return schemas.ErrorResponse(500, "Error interno al crear el rol", err)
-// 		}
-
-// 		newRoleSave = newRole
-// 		return nil
-// 	})
-
-// 	if err != nil {
-// 		return 0, err
-// 	}
-
-// 	go database.SaveAuditAsync(t.DB, models.AuditLog{
-// 		MemberID: memberID,
-// 		Method:   "create",
-// 		Path:     "role",
-// 	}, nil, newRoleSave)
-
-// 	return newRoleSave.ID, nil
-// }
-
-// // RoleUpdate actualiza un rol con auditoría
-// func (t *RoleRepository) RoleUpdate(memberID int64, roleUpdate *schemas.RoleUpdate) error {
-// 	var oldRole, newRole models.Role
-// 	err := t.DB.Transaction(func(tx *gorm.DB) error {
-// 		// Verificar que el rol existe
-// 		var existingRole models.Role
-// 		if err := tx.Preload("Permissions").First(&existingRole, roleUpdate.ID).Error; err != nil {
-// 			if errors.Is(err, gorm.ErrRecordNotFound) {
-// 				return schemas.ErrorResponse(404, "Rol no encontrado", err)
-// 			}
-// 			return schemas.ErrorResponse(500, "Error interno al buscar rol", err)
-// 		}
-
-// 		oldRole = existingRole
-
-// 		// Verificar que todos los permisos existen
-// 		var permissions []models.Permission
-// 		if err := tx.Where("id IN ?", roleUpdate.PermissionsID).Find(&permissions).Error; err != nil {
-// 			return schemas.ErrorResponse(500, "Error interno al buscar permisos", err)
-// 		}
-// 		if len(permissions) != len(roleUpdate.PermissionsID) {
-// 			return schemas.ErrorResponse(400, "Algunos permisos no existen",
-// 				fmt.Errorf("se esperaban %d permisos, pero se encontraron %d",
-// 					len(roleUpdate.PermissionsID), len(permissions)))
-// 		}
-
-// 		// Actualizar el nombre del rol
-// 		if err := tx.Model(&existingRole).Update("name", roleUpdate.Name).Error; err != nil {
-// 			return schemas.ErrorResponse(500, "Error interno al actualizar el nombre del rol", err)
-// 		}
-
-// 		// Reemplazar las asociaciones de permisos
-// 		if err := tx.Model(&existingRole).Association("Permissions").Replace(permissions); err != nil {
-// 			return schemas.ErrorResponse(500, "Error interno al actualizar los permisos del rol", err)
-// 		}
-
-// 		// Recargar el rol con los permisos actualizados
-// 		tx.Preload("Permissions").First(&newRole, roleUpdate.ID)
-// 		return nil
-// 	})
-
-// 	if err == nil {
-// 		// Guardar auditoría
-// 		go database.SaveAuditAsync(t.DB, models.AuditLog{
-// 			MemberID: memberID,
-// 			Method:   "update",
-// 			Path:     "role",
-// 		}, oldRole, newRole)
-// 	}
-
-// 	return err
-// }

@@ -10591,6 +10591,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "number": {
+                    "type": "integer"
                 }
             }
         },
@@ -11193,34 +11196,44 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "address": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "mi casa 123"
                 },
                 "created_at": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-01-01 12:00:00"
                 },
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "mitienda@gmail.com"
                 },
                 "expiration": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-01-01"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "is_active": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Mi tienda"
                 },
                 "phone": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "3884123456"
                 },
                 "responsability_front_iva": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "responsable_inscripto | monotributo | null"
                 },
                 "updated_at": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-01-01 12:00:00"
                 }
             }
         },

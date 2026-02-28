@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
@@ -149,39 +148,6 @@ func (r *ProductRepository) ProductGetByName(name string) ([]*models.Product, er
 	return products, nil
 }
 
-// func (r *ProductRepository) ProductGetAll(page, limit int, isVisible bool) ([]*models.Product, int64, error) {
-// 	var products []*models.Product
-// 	var total int64
-// 	offset := (page - 1) * limit
-
-// 	if err := r.DB.
-// 		Model(&models.Product{}).
-// 		Count(&total).Error; err != nil {
-// 		return nil, 0, schemas.ErrorResponse(500, "error al contar productos", err)
-// 	}
-
-// 	if err := r.DB.
-// 		Preload("Category", func(db *gorm.DB) *gorm.DB {
-// 			return db.Select("id", "name")
-// 		}).
-// 		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-// 			return db.Select("product_id", "stock", "point_sale_id")
-// 		}).
-// 		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
-// 			return db.Select("id", "name", "is_deposit")
-// 		}).
-// 		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-// 			return db.Select("id", "product_id", "stock")
-// 		}).
-// 		Where("is_visible = ?", true).
-// 		Offset(offset).
-// 		Limit(limit).
-// 		Find(&products).Error; err != nil {
-// 		return nil, 0, schemas.ErrorResponse(500, "error al obtener productos", err)
-// 	}
-
-// 	return products, total, nil
-// }
 func (r *ProductRepository) ProductGetAll(page, limit int, isVisible *bool) ([]*models.Product, int64, error) {
 	var products []*models.Product
 	var total int64
@@ -284,6 +250,10 @@ func (r *ProductRepository) ProductCreate(memberID int64, productCreate *schemas
 	var productSave models.Product
 
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
+			return err
+		}
+
 		var countTotal int64
 		if err := tx.Model(&models.Product{}).Count(&countTotal).Error; err != nil {
 			return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
@@ -317,8 +287,6 @@ func (r *ProductRepository) ProductCreate(memberID int64, productCreate *schemas
 
 		productSave = product
 
-		// Guardar auditoría
-
 		return nil
 	})
 
@@ -326,26 +294,20 @@ func (r *ProductRepository) ProductCreate(memberID int64, productCreate *schemas
 		return 0, err
 	}
 
-	go database.SaveAuditAsync(r.DB, models.AuditLog{
-		MemberID: memberID,
-		Method:   "create",
-		Path:     "product",
-	}, nil, productSave)
-
 	return productSave.ID, nil
 }
 
 // ProductUpdate actualiza un producto con auditoría
 func (r *ProductRepository) ProductUpdate(memberID int64, product *schemas.ProductUpdate) error {
-	var saveProduct, updatedProduct models.Product
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
+			return err
+		}
+
 		var p models.Product
 		if err := tx.First(&p, product.ID).Error; err != nil {
 			return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 		}
-
-		// Guardar estado anterior
-		saveProduct = p
 
 		if product.Price != nil {
 			p.Price = *product.Price
@@ -365,35 +327,25 @@ func (r *ProductRepository) ProductUpdate(memberID int64, product *schemas.Produ
 			return schemas.HandlerErrorGorm(err, "Producto", schemas.Update)
 		}
 
-		tx.First(&updatedProduct, p.ID)
 		return nil
 	})
-
-	if err == nil {
-		// Guardar auditoría
-		go database.SaveAuditAsync(r.DB, models.AuditLog{
-			MemberID: memberID,
-			Method:   "update",
-			Path:     "product",
-		}, saveProduct, updatedProduct)
-	}
 
 	return err
 }
 
 // ProductPriceUpdate actualiza los precios de múltiples productos con auditoría
 func (r *ProductRepository) ProductPriceUpdate(memberID int64, product *schemas.ListPriceUpdate) error {
-	var saveProduct, updatedProduct models.Product
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
+			return err
+		}
+
 		for _, p := range product.ListProductPriceUpdate {
 			// Obtener el estado anterior del producto
 			var oldProduct models.Product
 			if err := tx.First(&oldProduct, p.ID).Error; err != nil {
 				return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 			}
-
-			// Guardar estado anterior
-			saveProduct = oldProduct
 
 			res := tx.Model(&models.Product{}).
 				Where("id = ?", p.ID).
@@ -406,64 +358,39 @@ func (r *ProductRepository) ProductPriceUpdate(memberID int64, product *schemas.
 			if res.RowsAffected == 0 {
 				return schemas.ErrorResponse(404, fmt.Sprintf("producto %d no encontrado", p.ID), fmt.Errorf("producto %d no encontrado", p.ID))
 			}
-
-			tx.First(&updatedProduct, p.ID)
 		}
 		return nil
 	})
 
-	if err == nil {
-		go database.SaveAuditAsync(r.DB, models.AuditLog{
-			MemberID: memberID,
-			Method:   "update",
-			Path:     "product",
-		}, saveProduct, updatedProduct)
-	}
-
 	return err
 }
 
-// ProductDelete elimina un producto con auditoría
 func (r *ProductRepository) ProductDelete(memberID int64, id int64) error {
-	var productSave models.Product
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		// Obtener el producto antes de eliminarlo
+		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
+			return err
+		}
+
 		var product models.Product
 		if err := tx.First(&product, id).Error; err != nil {
 			return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 		}
 
-		// Guardar estado del producto
-
-		productSave = product
-
-		// Obtener los stocks del punto de venta asociados
 		var stockPointSales []models.StockPointSale
 		if err := tx.Where("product_id = ?", id).Find(&stockPointSales).Error; err != nil {
 			return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
 		}
 
-		// Eliminar stocks del punto de venta
 		if err := tx.Where("product_id = ?", id).Delete(&models.StockPointSale{}).Error; err != nil {
 			return schemas.HandlerErrorGorm(err, "Producto", schemas.Delete)
 		}
 
-		// Eliminar el producto
 		if err := tx.Where("id = ?", id).Delete(&models.Product{}).Error; err != nil {
 			return schemas.HandlerErrorGorm(err, "Producto", schemas.Delete)
 		}
 
 		return nil
 	})
-
-	if err == nil {
-		// Guardar auditoría del producto eliminado
-		go database.SaveAuditAsync(r.DB, models.AuditLog{
-			MemberID: memberID,
-			Method:   "delete",
-			Path:     "product",
-		}, productSave, nil)
-	}
 
 	return err
 }

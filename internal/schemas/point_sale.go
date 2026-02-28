@@ -19,6 +19,7 @@ type PointSaleResponse struct {
 	ID          int64   `json:"id"`
 	Name        string  `json:"name"`
 	Description *string `json:"description,omitempty"`
+	Number			int64   `json:"number"`
 	IsDeposit   bool    `json:"is_deposit"`
 	IsMain      bool    `json:"is_main"`
 }

@@ -155,6 +155,10 @@ func PrepareDB(uri string, memberAdmin models.Member) error {
 		return fmt.Errorf("error al crear relacion entre miembro y punto de venta: %w", err)
 	}
 
+	if err := ApplyAuditTriggers(db); err != nil {
+		return fmt.Errorf("error al aplicar triggers de auditoria: %w", err)
+	}
+
 	return nil
 }
 
@@ -372,6 +376,77 @@ var Permissions []models.Permission = []models.Permission{
 	//TYPE MOVEMENT
 	{Code: "TM01", Name: "crear", Details: "Crear un nuevo tipo de movimiento", Group: "tipo de movimiento", Environment: "dashboard"},
 	{Code: "TM02", Name: "actualizar", Details: "Actualizar un tipo de movimiento existente", Group: "tipo de movimiento", Environment: "dashboard"},
+}
+
+var TriggerAudit = `
+CREATE OR REPLACE FUNCTION audit_trigger_function()
+RETURNS TRIGGER AS $$
+DECLARE
+    current_member TEXT;
+BEGIN
+    current_member := current_setting('app.current_member_id', true);
+
+    IF current_member IS NULL OR current_member = '' OR current_member = '0' THEN
+        RETURN NEW;
+    END IF;
+
+    INSERT INTO audit_logs (
+        member_id,
+        method,
+        path,
+        old_value,
+        new_value,
+        created_at
+    )
+    VALUES (
+        current_member::BIGINT,
+        LOWER(TG_OP),
+        TG_TABLE_NAME,
+        CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE to_jsonb(OLD) END,
+        CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE to_jsonb(NEW) END,
+        NOW()
+    );
+
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+`
+
+func ApplyAuditTriggers(db *gorm.DB) error {
+	// 1. Crear la función del trigger
+	if err := db.Exec(TriggerAudit).Error; err != nil {
+		return err
+	}
+
+	// 2. Obtener TODAS las tablas del esquema público
+	var tables []string
+	queryTables := `
+		SELECT table_name 
+		FROM information_schema.tables 
+		WHERE table_schema = 'public' 
+		AND table_type = 'BASE TABLE'
+		AND table_name != 'audit_logs' 
+		AND table_name != 'migrations';
+	`
+	if err := db.Raw(queryTables).Scan(&tables).Error; err != nil {
+		return fmt.Errorf("error al obtener lista de tablas: %w", err)
+	}
+
+	// 3. Aplicar el trigger a cada una
+	for _, table := range tables {
+		db.Exec(fmt.Sprintf("DROP TRIGGER IF EXISTS tr_audit_%s ON %s", table, table))
+
+		createQuery := fmt.Sprintf(`
+      CREATE TRIGGER tr_audit_%s
+      AFTER INSERT OR UPDATE OR DELETE ON "%s"
+      FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();`,
+			table, table)
+
+		if err := db.Exec(createQuery).Error; err != nil {
+			return fmt.Errorf("error al crear trigger en tabla %s: %w", table, err)
+		}
+	}
+	return nil
 }
 
 // package database
