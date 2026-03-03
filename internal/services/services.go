@@ -7,7 +7,6 @@ import (
 
 type AuthService struct {
 	AuthRepository   ports.AuthRepository
-	UserRepository   ports.UserRepository
 	TenantService    ports.TenantService
 	EmailService     ports.EmailService
 	PlanRepository   ports.PlanRepository

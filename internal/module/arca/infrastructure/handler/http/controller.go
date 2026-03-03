@@ -1,6 +1,5 @@
 package http
 
-
 import (
 	"bytes"
 	"crypto/rand"
@@ -10,11 +9,18 @@ import (
 	"encoding/pem"
 	"fmt"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/module/arca/domain"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/module/arca/infrastructure/repository"
+	repositoryAuth "github.com/SaltaGet/NOA-GESTION-BACK/internal/module/auth/infrastructure/repository"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 )
+
+type ArcaController struct {
+	ArcaService domain.ArcaService
+}
 
 // ArcaEmitInvoice godoc
 //
@@ -30,9 +36,9 @@ import (
 //	@Router			/api/v1/arca/emit_invoice/{income_sale_id} [post]
 func (a *ArcaController) ArcaEmitInvoice(c *fiber.Ctx) error {
 	incomeSaleID := c.Params("income_sale_id")
-	idint, err := validators.IdValidate(incomeSaleID)
+	idint, err := validator.IdValidate(incomeSaleID)
 	if err != nil {
-		return schemas.HandleError(c, err)
+		return utils.HandleError(c, err)
 	}
 
 	var homo bool
@@ -42,30 +48,30 @@ func (a *ArcaController) ArcaEmitInvoice(c *fiber.Ctx) error {
 		homo = false
 	}
 
-	var factReq schemas.FacturaRequest
-	if err := validators.ValidateRequest(c, &factReq); err != nil {
-		return schemas.HandleError(c, err)
+	var factReq repository.FacturaRequest
+	if err := validator.ValidateRequest(c, &factReq); err != nil {
+		return utils.HandleError(c, err)
 	}
 
-	user := c.Locals("user").(*schemas.AuthenticatedUser)
+	user := c.Locals("user").(*repositoryAuth.AuthenticatedUser)
 	pointSaeID := c.Locals("point_sae_id").(int64)
 
 	factura, err := a.ArcaService.EmitInvoice(user, pointSaeID, idint, &factReq, homo)
 	if err != nil {
-		if errResp, ok := err.(*schemas.ErrorStruc); ok {
+		if errResp, ok := err.(*utils.ErrorStruc); ok {
 			if errResp.StatusCode == 206 {
 				log.Err(err).Msgf("Error: %s", errResp.Err.Error())
-				return c.Status(errResp.StatusCode).JSON(schemas.Response{
+				return c.Status(errResp.StatusCode).JSON(utils.Response{
 					Status:  true,
 					Body:    factura,
 					Message: errResp.Message,
 				})
 			}
 		}
-		return schemas.HandleError(c, err)
+		return utils.HandleError(c, err)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+	return c.Status(fiber.StatusOK).JSON(utils.Response{
 		Status:  true,
 		Body:    factura,
 		Message: "Factura emitida con éxito",
@@ -83,31 +89,15 @@ func (a *ArcaController) ArcaEmitInvoice(c *fiber.Ctx) error {
 //	@Success		200		{object}	schemas.Response{body=schemas.KeyResponse}
 //	@Router			/api/v1/arca/generate_key [post]
 func (a *ArcaController) ArcaGenerateKey(c *fiber.Ctx) error {
-	var keyReq schemas.KeyRequest
-	if err := validators.ValidateRequest(c, &keyReq); err != nil {
-		return schemas.HandleError(c, err)
+	var keyReq repository.KeyRequest
+	if err := validator.ValidateRequest(c, &keyReq); err != nil {
+		return utils.HandleError(c, err)
 	}
 
-	// privKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	// if err != nil {
-	// 	log.Err(err).Msg("Error al generar la clave privada")
-	// 	return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-	// 		Status:  false,
-	// 		Body:    nil,
-	// 		Message: "Error al generar la clave privada",
-	// 	})
-	// }
-
-	// // 3. Codificar Clave Privada a formato PEM (en memoria)
-	// privKeyBuf := new(bytes.Buffer)
-	// pem.Encode(privKeyBuf, &pem.Block{
-	// 	Type:  "RSA PRIVATE KEY",
-	// 	Bytes: x509.MarshalPKCS1PrivateKey(privKey),
-	// })
 	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		log.Err(err).Msg("Error al generar la clave privada")
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Response{
 			Status:  false,
 			Body:    nil,
 			Message: "Error al generar la clave privada",
@@ -121,7 +111,7 @@ func (a *ArcaController) ArcaGenerateKey(c *fiber.Ctx) error {
 	pkcs8Bytes, err := x509.MarshalPKCS8PrivateKey(privKey)
 	if err != nil {
 		log.Err(err).Msg("Error al serializar clave a PKCS#8")
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Response{
 			Status:  false,
 			Message: "Error al procesar formato de clave",
 		})
@@ -150,7 +140,7 @@ func (a *ArcaController) ArcaGenerateKey(c *fiber.Ctx) error {
 	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, privKey)
 	if err != nil {
 		log.Err(err).Msg("Error al generar el CSR")
-		return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Response{
 			Status:  false,
 			Body:    nil,
 			Message: "Error al generar el CSR",
@@ -172,9 +162,9 @@ func (a *ArcaController) ArcaGenerateKey(c *fiber.Ctx) error {
 	fmt.Println("--- CSR (PEM) ---")
 	fmt.Println(csrBuf.String())
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+	return c.Status(fiber.StatusOK).JSON(utils.Response{
 		Status: true,
-		Body: &schemas.KeyResponse{
+		Body: &repository.KeyResponse{
 			Key:         privKeyBuf.String(),
 			Certificate: csrBuf.String(),
 		},

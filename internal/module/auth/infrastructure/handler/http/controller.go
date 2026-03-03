@@ -1,17 +1,25 @@
 package http
 
-
 import (
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/module/auth/domain"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/module/auth/infrastructure/repository"
+	repositoryTenant "github.com/SaltaGet/NOA-GESTION-BACK/internal/module/tenant/infrastructure/repository"
+	repositoryPlan "github.com/SaltaGet/NOA-GESTION-BACK/internal/module/plan/infrastructure/repository"
+	domainEmail "github.com/SaltaGet/NOA-GESTION-BACK/internal/module/email/domain"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 )
+
+type AuthController struct {
+	AuthService domain.AuthService
+	EmailService domainEmail.EmailService
+}
 
 // Login godoc
 //
@@ -20,18 +28,18 @@ import (
 // @Tags			Auth
 // @Accept			json
 // @Produce		json
-// @Param			credentials	body		schemas.AuthLogin	true	"Credentials"
-// @Success		200			{object}	schemas.Response
+// @Param			credentials	body		repository.AuthLogin	true	"Credentials"
+// @Success		200			{object}	utils.Response
 // @Router			/api/v1/auth/login [post]
 func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
-	var loginRequest schemas.AuthLogin
-	if err := validators.ValidateRequest(c, &loginRequest); err != nil {
-		return schemas.HandleError(c, err)
+	var loginRequest repository.AuthLogin
+	if err := validator.ValidateRequest(c, &loginRequest); err != nil {
+		return utils.HandleError(c, err)
 	}
 
 	token, err := a.AuthService.AuthLogin(loginRequest.Username, loginRequest.Password)
 	if err != nil {
-		return schemas.HandleError(c, err)
+		return utils.HandleError(c, err)
 	}
 
 	cookie := &fiber.Cookie{
@@ -44,7 +52,7 @@ func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
 
 	c.Cookie(cookie)
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+	return c.Status(fiber.StatusOK).JSON(utils.Response{
 		Status:  true,
 		Body:    nil,
 		Message: "Login exitoso",
@@ -62,13 +70,13 @@ func (a *AuthController) AuthLogin(c *fiber.Ctx) error {
 // @Security		CookieAuth
 //
 // @Param			point_sale_id	path		string	true	"id del punto de venta"
-// @Success		200				{object}	schemas.Response
+// @Success		200				{object}	utils.Response
 // @Router			/api/v1/auth/login_point_sale/{point_sale_id} [post]
 func (a *AuthController) AuthPointSale(c *fiber.Ctx) error {
 	id := c.Params("point_sale_id")
 	if id == "" {
 		log.Err(nil).Msg("ID is required")
-		return c.Status(400).JSON(schemas.Response{
+		return c.Status(400).JSON(utils.Response{
 			Status:  false,
 			Body:    nil,
 			Message: "ID es requerido",
@@ -77,14 +85,14 @@ func (a *AuthController) AuthPointSale(c *fiber.Ctx) error {
 
 	pointSaleID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		return c.Status(400).JSON(schemas.ErrorResponse(400, "tenant_id debe ser un número", err))
+		return c.Status(400).JSON(utils.ErrorResponse(400, "tenant_id debe ser un número", err))
 	}
 
-	user := c.Locals("user").(*schemas.AuthenticatedUser)
+	user := c.Locals("user").(*repository.AuthenticatedUser)
 
 	token, err := a.AuthService.AuthPointSale(user, pointSaleID)
 	if err != nil {
-		return schemas.HandleError(c, err)
+		return utils.HandleError(c, err)
 	}
 
 	cookie := &fiber.Cookie{
@@ -98,7 +106,7 @@ func (a *AuthController) AuthPointSale(c *fiber.Ctx) error {
 
 	c.Cookie(cookie)
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+	return c.Status(fiber.StatusOK).JSON(utils.Response{
 		Status:  true,
 		Body:    nil,
 		Message: "Login a Punto de venta exitoso, token enviado en cookie",
@@ -115,14 +123,14 @@ func (a *AuthController) AuthPointSale(c *fiber.Ctx) error {
 //
 // @Security		CookieAuth
 //
-// @Success		200	{object}	schemas.Response
+// @Success		200	{object}	utils.Response
 // @Router			/api/v1/auth/logout_point_sale [post]
 func (a *AuthController) LogoutPointSale(c *fiber.Ctx) error {
-	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	member := c.Locals("user").(*repository.AuthenticatedUser)
 
 	token, err := a.AuthService.LogoutPointSale(member)
 	if err != nil {
-		return schemas.HandleError(c, err)
+		return utils.HandleError(c, err)
 	}
 
 	cookie := &fiber.Cookie{
@@ -136,7 +144,7 @@ func (a *AuthController) LogoutPointSale(c *fiber.Ctx) error {
 
 	c.Cookie(cookie)
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+	return c.Status(fiber.StatusOK).JSON(utils.Response{
 		Status:  true,
 		Body:    nil,
 		Message: "Logout de Punto de venta exitoso, token enviado en cookie",
@@ -151,7 +159,7 @@ func (a *AuthController) LogoutPointSale(c *fiber.Ctx) error {
 // @Accept			json
 // @Produce		json
 // @Security		CookieAuth
-// @Success		200	{object}	schemas.Response
+// @Success		200	{object}	utils.Response
 // @Router			/api/v1/auth/logout [post]
 func (a *AuthController) Logout(ctx *fiber.Ctx) error {
 	ctx.Cookie(&fiber.Cookie{
@@ -162,7 +170,7 @@ func (a *AuthController) Logout(ctx *fiber.Ctx) error {
 		SameSite: utils.Ternary(os.Getenv("ENV") == "dev", "None", "None",), // para prod : "Strict",
 	})
 
-	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
+	return ctx.Status(fiber.StatusOK).JSON(utils.Response{
 		Status:  true,
 		Body:    nil,
 		Message: "Logout exitoso",
@@ -177,12 +185,12 @@ func (a *AuthController) Logout(ctx *fiber.Ctx) error {
 // @Accept			json
 // @Produce		json
 // @Security		CookieAuth
-// @Success		200	{object}	schemas.Response{body=schemas.AuthenticatedUser}
+// @Success		200	{object}	utils.Response{body=repository.AuthenticatedUser}
 // @Router			/api/v1/auth/current_user [get]
 func (a *AuthController) CurrentUser(c *fiber.Ctx) error {
-	user := c.Locals("user").(*schemas.AuthenticatedUser)
+	user := c.Locals("user").(*repository.AuthenticatedUser)
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+	return c.Status(fiber.StatusOK).JSON(utils.Response{
 		Status:  true,
 		Body:    user,
 		Message: "Usuario actual obtenido",
@@ -197,12 +205,12 @@ func (a *AuthController) CurrentUser(c *fiber.Ctx) error {
 // @Accept			json
 // @Produce		json
 // @Security		CookieAuth
-// @Success		200	{object}	schemas.Response{body=schemas.PlanResponseDTO}
+// @Success		200	{object}	utils.Response{body=repository.PlanResponseDTO}
 // @Router			/api/v1/auth/current_plan [get]
 func (a *AuthController) CurrentPlan(c *fiber.Ctx) error {
-	plan := c.Locals("current_plan").(*schemas.PlanResponseDTO)
+	plan := c.Locals("current_plan").(*repositoryPlan.PlanResponseDTO)
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+	return c.Status(fiber.StatusOK).JSON(utils.Response{
 		Status:  true,
 		Body:    plan,
 		Message: "plan actual obtenido",
@@ -217,12 +225,12 @@ func (a *AuthController) CurrentPlan(c *fiber.Ctx) error {
 // @Accept			json
 // @Produce		json
 // @Security		CookieAuth
-// @Success		200	{object}	schemas.Response{body=schemas.TenantResponse}
+// @Success		200	{object}	utils.Response{body=repository.TenantResponse}
 // @Router			/api/v1/auth/current_tenant [get]
 func (a *AuthController) CurrentTenant(c *fiber.Ctx) error {
-	user := c.Locals("current_tenant").(*schemas.TenantResponse)
+	user := c.Locals("current_tenant").(*repositoryTenant.TenantResponse)
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+	return c.Status(fiber.StatusOK).JSON(utils.Response{
 		Status:  true,
 		Body:    user,
 		Message: "Tenant actual obtenido",
@@ -236,18 +244,18 @@ func (a *AuthController) CurrentTenant(c *fiber.Ctx) error {
 // @Tags			Auth
 // @Accept			json
 // @Produce		json
-// @Param			credentials	body		schemas.AuthLoginAdmin	true	"Credentials"
-// @Success		200			{object}	schemas.Response
+// @Param			credentials	body		repository.AuthLoginAdmin	true	"Credentials"
+// @Success		200			{object}	utils.Response
 // @Router			/api/v1/auth/login_admin [post]
 func (a *AuthController) AuthLoginAdmin(c *fiber.Ctx) error {
-	var loginRequest schemas.AuthLoginAdmin
-	if err := validators.ValidateRequest(c, &loginRequest); err != nil {
-		return schemas.HandleError(c, err)
+	var loginRequest repository.AuthLoginAdmin
+	if err := validator.ValidateRequest(c, &loginRequest); err != nil {
+		return utils.HandleError(c, err)
 	}
 
 	token, err := a.AuthService.AuthLoginAdmin(loginRequest.Username, loginRequest.Password)
 	if err != nil {
-		return schemas.HandleError(c, err)
+		return utils.HandleError(c, err)
 	}
 
 	cookie := &fiber.Cookie{
@@ -260,7 +268,7 @@ func (a *AuthController) AuthLoginAdmin(c *fiber.Ctx) error {
 
 	c.Cookie(cookie)
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+	return c.Status(fiber.StatusOK).JSON(utils.Response{
 		Status:  true,
 		Body:    nil,
 		Message: "Login exitoso",
@@ -275,7 +283,7 @@ func (a *AuthController) AuthLoginAdmin(c *fiber.Ctx) error {
 // @Accept			json
 // @Produce		json
 // @Security		CookieAuth
-// @Success		200	{object}	schemas.Response
+// @Success		200	{object}	utils.Response
 // @Router			/api/v1/auth/logout_admin [post]
 func (a *AuthController) LogoutAdmin(ctx *fiber.Ctx) error {
 	ctx.Cookie(&fiber.Cookie{
@@ -286,7 +294,7 @@ func (a *AuthController) LogoutAdmin(ctx *fiber.Ctx) error {
 		SameSite: utils.Ternary(os.Getenv("ENV") == "dev", "None", "None",), // para prod : "Strict",
 	})
 
-	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
+	return ctx.Status(fiber.StatusOK).JSON(utils.Response{
 		Status:  true,
 		Body:    nil,
 		Message: "Logout exitoso",
@@ -300,21 +308,21 @@ func (a *AuthController) LogoutAdmin(ctx *fiber.Ctx) error {
 // @Tags			Auth
 // @Accept			json
 // @Produce		json
-// @Param			forgot_password	body		schemas.AuthForgotPassword	true "field to send email"
-// @Success		200				{object}	schemas.Response
+// @Param			forgot_password	body		repository.AuthForgotPassword	true "field to send email"
+// @Success		200				{object}	utils.Response
 // @Router			/api/v1/auth/forgot_password [post]
 func (a *AuthController) AuthForgotPassword(ctx *fiber.Ctx) error {
-	var authForgotPassword schemas.AuthForgotPassword
-	if err := validators.ValidateRequest(ctx, &authForgotPassword); err != nil {
-		return schemas.HandleError(ctx, err)
+	var authForgotPassword repository.AuthForgotPassword
+	if err := validator.ValidateRequest(ctx, &authForgotPassword); err != nil {
+		return utils.HandleError(ctx, err)
 	}
 
 	err := a.AuthService.AuthForgotPassword(&authForgotPassword)
 	if err != nil {
-		return schemas.HandleError(ctx, err)
+		return utils.HandleError(ctx, err)
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
+	return ctx.Status(fiber.StatusOK).JSON(utils.Response{
 		Status:  true,
 		Body:    nil,
 		Message: "Email enviado con exito!",
@@ -328,21 +336,21 @@ func (a *AuthController) AuthForgotPassword(ctx *fiber.Ctx) error {
 // @Tags			Auth
 // @Accept			json
 // @Produce		json
-// @Param			reset_password	body		schemas.AuthResetPassword	true "new password"
-// @Success		200				{object}	schemas.Response
+// @Param			reset_password	body		repository.AuthResetPassword	true "new password"
+// @Success		200				{object}	utils.Response
 // @Router			/api/v1/auth/reset_password [post]
 func (a *AuthController) AuthResetPassword(ctx *fiber.Ctx) error {
-	var authResetPassword schemas.AuthResetPassword
-	if err := validators.ValidateRequest(ctx, &authResetPassword); err != nil {
-		return schemas.HandleError(ctx, err)
+	var authResetPassword repository.AuthResetPassword
+	if err := validator.ValidateRequest(ctx, &authResetPassword); err != nil {
+		return utils.HandleError(ctx, err)
 	}
 
 	err := a.AuthService.AuthResetPassword(&authResetPassword)
 	if err != nil {
-		return schemas.HandleError(ctx, err)
+		return utils.HandleError(ctx, err)
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(schemas.Response{
+	return ctx.Status(fiber.StatusOK).JSON(utils.Response{
 		Status:  true,
 		Body:    nil,
 		Message: "Contraseña actualizada con exito!",

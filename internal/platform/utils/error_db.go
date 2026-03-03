@@ -1,4 +1,4 @@
-package schemas
+package utils
 
 import (
 	"errors"
@@ -49,7 +49,7 @@ func isConnectionError(err error) bool {
 }
 
 // HandlerErrorGorm centraliza el manejo de errores de DB para Postgres
-func HandlerErrorGorm(err error, entity string, action string) error {
+func HandlerErrorDB(err error, entity string, action string) error {
 	var pgErr *pgconn.PgError
 
 	// Mensajes dinámicos según la acción

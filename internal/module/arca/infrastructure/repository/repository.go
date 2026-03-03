@@ -1,6 +1,5 @@
 package repository
 
-
 import (
 	"encoding/json"
 	"encoding/xml"
@@ -10,37 +9,43 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	modelCredential "github.com/SaltaGet/NOA-GESTION-BACK/internal/module/credential/domain"
+	modelIncomeSale "github.com/SaltaGet/NOA-GESTION-BACK/internal/module/income_sale/domain"
+	modelInvoice "github.com/SaltaGet/NOA-GESTION-BACK/internal/module/invoice/domain"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/database"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
 	"gorm.io/gorm"
 )
 
-func (r *ArcaRepository) GetCredentialsArca(tenantID, incomeSaleID int64) (*models.Credential, error) {
-	if err := r.DB.Select("id").Where("id = ?", incomeSaleID).First(&models.IncomeSale{}).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Ingreso de venta", schemas.Read)
+type ArcaRepository struct {
+	DB *gorm.DB
+}
+
+func (r *ArcaRepository) GetCredentialsArca(tenantID, incomeSaleID int64) (*modelCredential.Credential, error) {
+	if err := r.DB.Select("id").Where("id = ?", incomeSaleID).First(&modelIncomeSale.IncomeSale{}).Error; err != nil {
+		return nil, utils.HandlerErrorDB(err, "Ingreso de venta", utils.Read)
 	}
 
 	db := database.GetMainDB()
-	var credential models.Credential
+	var credential modelCredential.Credential
 	err := db.
 		Select("id", "social_reason", "business_name", "address", "responsibility_front_iva", "cuit", "gross_income", "start_activities", "arca_certificate", "arca_key", "token_arca", "sign_arca", "expire_token_arca", "concept").
 		Where("tenant_id = ?", tenantID).First(&credential).Error
 	if err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Credenciales", schemas.Read)
+		return nil, utils.HandlerErrorDB(err, "Credenciales", utils.Read)
 	}
 
 	if credential.SocialReason == nil || credential.ResponsibilityFrontIVA == nil || credential.Cuit == nil || credential.ArcaCertificate == nil || credential.ArcaKey == nil {
-		return nil, schemas.ErrorResponse(422, "La entidad no se puede procesar por datos incompletos, revise y complete adecuadamente las credenciales", errors.New("La entidad no se puede procesar por datos incompletos."))
+		return nil, utils.ErrorResponse(422, "La entidad no se puede procesar por datos incompletos, revise y complete adecuadamente las credenciales", errors.New("La entidad no se puede procesar por datos incompletos."))
 	}
 
 	return &credential, nil
 }
 
-func (r *ArcaRepository) SetTokenSignArca(v *schemas.CredentialsValidation) error {
+func (r *ArcaRepository) SetTokenSignArca(v *CredentialsValidation) error {
 	db := database.GetMainDB()
 
-	result := db.Model(&models.Credential{}).
+	result := db.Model(&modelCredential.Credential{}).
 		Where("cuit = ?", v.CUIT).
 		Updates(map[string]interface{}{
 			"token_arca":        v.Token,
@@ -49,18 +54,18 @@ func (r *ArcaRepository) SetTokenSignArca(v *schemas.CredentialsValidation) erro
 		})
 
 	if result.Error != nil {
-		return schemas.HandlerErrorGorm(result.Error, "Credenciales", schemas.Update)
+		return utils.HandlerErrorDB(result.Error, "Credenciales", utils.Update)
 	}
 
 	if result.RowsAffected == 0 {
-		return schemas.ErrorResponse(404, "Credencial no encontrada", errors.New("Credencial no encontrada"))
+		return utils.ErrorResponse(404, "Credencial no encontrada", errors.New("Credencial no encontrada"))
 	}
 
 	return nil
 }
 
-func (r *ArcaRepository) GetLastestInvoice(w *schemas.WSFEClient, pointSale, TypeInvoice int) (int64, error) {
-	req := schemas.FECompUltimoAutorizadoRequest{
+func (r *ArcaRepository) GetLastestInvoice(w *WSFEClient, pointSale, TypeInvoice int) (int64, error) {
+	req := FECompUltimoAutorizadoRequest{
 		Xmlns:    "http://ar.gov.afip.dif.FEV1/",
 		Auth:     w.Auth,
 		PtoVta:   pointSale,
@@ -90,7 +95,7 @@ func (r *ArcaRepository) GetLastestInvoice(w *schemas.WSFEClient, pointSale, Typ
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
-	var response schemas.FECompUltimoAutorizadoResponse
+	var response FECompUltimoAutorizadoResponse
 	if err := xml.Unmarshal(body, &response); err != nil {
 		return 0, err
 	}
@@ -102,8 +107,8 @@ func (r *ArcaRepository) GetLastestInvoice(w *schemas.WSFEClient, pointSale, Typ
 	return response.Body.Response.Result.CbteNro, nil
 }
 
-func (r *ArcaRepository) GetInfoInvoice(w *schemas.WSFEClient, pointSale, typeInvoice int, numberInvoice int64) (*schemas.FECompConsultaResponse, error) {
-	req := schemas.FECompConsultaRequest{
+func (r *ArcaRepository) GetInfoInvoice(w *WSFEClient, pointSale, typeInvoice int, numberInvoice int64) (*FECompConsultaResponse, error) {
+	req := FECompConsultaRequest{
 		Xmlns: "http://ar.gov.afip.dif.FEV1/",
 		Auth:  w.Auth,
 	}
@@ -135,7 +140,7 @@ func (r *ArcaRepository) GetInfoInvoice(w *schemas.WSFEClient, pointSale, typeIn
 
 	body, _ := io.ReadAll(resp.Body)
 
-	var response schemas.FECompConsultaResponse
+	var response FECompConsultaResponse
 	if err := xml.Unmarshal(body, &response); err != nil {
 		return nil, fmt.Errorf("error parseando respuesta: %v", err)
 	}
@@ -148,7 +153,7 @@ func (r *ArcaRepository) GetInfoInvoice(w *schemas.WSFEClient, pointSale, typeIn
 	return &response, nil
 }
 
-func (r *ArcaRepository) SendToWSAA(w *schemas.WSAA, cms string) ([]byte, error) {
+func (r *ArcaRepository) SendToWSAA(w *WSAA, cms string) ([]byte, error) {
 	url := "https://wsaahomo.afip.gov.ar/ws/services/LoginCms"
 	if !w.Config.Homologacion {
 		url = "https://wsaa.afip.gov.ar/ws/services/LoginCms"
@@ -191,17 +196,17 @@ func (r *ArcaRepository) SendToWSAA(w *schemas.WSAA, cms string) ([]byte, error)
 // 	return nil
 // }
 
-func (r *ArcaRepository) EmitInvoice(w *schemas.WSFEClient, factura *schemas.Factura) (*schemas.FECAEDetResponse, error) {
-	req := schemas.FECAERequest{
+func (r *ArcaRepository) EmitInvoice(w *WSFEClient, factura *Factura) (*FECAEDetResponse, error) {
+	req := FECAERequest{
 		Xmlns: "http://ar.gov.afip.dif.FEV1/",
 		Auth:  w.Auth,
-		FeCAEReq: schemas.FeCAEReq{
-			FeCabReq: schemas.FeCabReq{
+		FeCAEReq: FeCAEReq{
+			FeCabReq: FeCabReq{
 				CantReg:  1,
 				PtoVta:   factura.PuntoVenta,
 				CbteTipo: factura.TipoComprobante,
 			},
-			FeDetReq: []schemas.FECAEDetRequest{factura.ToFECAEDetRequest()},
+			FeDetReq: []FECAEDetRequest{factura.ToFECAEDetRequest()},
 		},
 	}
 
@@ -209,7 +214,7 @@ func (r *ArcaRepository) EmitInvoice(w *schemas.WSFEClient, factura *schemas.Fac
 
 	httpReq, err := http.NewRequest("POST", w.BaseURL, strings.NewReader(soapEnv))
 	if err != nil {
-		return nil, schemas.ErrorResponse(500, "Error al realizar solicitud a ARCA", err)
+		return nil, utils.ErrorResponse(500, "Error al realizar solicitud a ARCA", err)
 	}
 
 	httpReq.Header.Set("Content-Type", "text/xml; charset=utf-8")
@@ -217,19 +222,19 @@ func (r *ArcaRepository) EmitInvoice(w *schemas.WSFEClient, factura *schemas.Fac
 
 	resp, err := w.Client.Do(httpReq)
 	if err != nil {
-		return nil, schemas.ErrorResponse(500, "Error al realizar solicitud a ARCA", err)
+		return nil, utils.ErrorResponse(500, "Error al realizar solicitud a ARCA", err)
 	}
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, schemas.ErrorResponse(resp.StatusCode, "WSFE error en la solicitud", errors.New(string(body)))
+		return nil, utils.ErrorResponse(resp.StatusCode, "WSFE error en la solicitud", errors.New(string(body)))
 	}
 
-	var response schemas.FECAEResponse
+	var response FECAEResponse
 	if err := xml.Unmarshal(body, &response); err != nil {
-		return nil, schemas.ErrorResponse(500, "Error al parsear la respuesta de ARCA", err)
+		return nil, utils.ErrorResponse(500, "Error al parsear la respuesta de ARCA", err)
 	}
 
 	if len(response.Body.Response.Errors.Err) > 0 {
@@ -237,11 +242,11 @@ func (r *ArcaRepository) EmitInvoice(w *schemas.WSFEClient, factura *schemas.Fac
 		for _, e := range response.Body.Response.Errors.Err {
 			errMsg += fmt.Sprintf("Error %d: %s\n", e.Code, e.Msg)
 		}
-		return nil, schemas.ErrorResponse(500, "Error en la respuesta de ARCA", fmt.Errorf("errores de AFIP:\n%s", errMsg))
+		return nil, utils.ErrorResponse(500, "Error en la respuesta de ARCA", fmt.Errorf("errores de AFIP:\n%s", errMsg))
 	}
 
 	if len(response.Body.Response.Results.FeDetResp.FECAEDetResponse) == 0 {
-		return nil, schemas.ErrorResponse(500, "Error en la respuesta de ARCA", fmt.Errorf("sin resultados en la respuesta"))
+		return nil, utils.ErrorResponse(500, "Error en la respuesta de ARCA", fmt.Errorf("sin resultados en la respuesta"))
 	}
 
 	detResp := response.Body.Response.Results.FeDetResp.FECAEDetResponse[0]
@@ -251,7 +256,7 @@ func (r *ArcaRepository) EmitInvoice(w *schemas.WSFEClient, factura *schemas.Fac
 		for _, obs := range detResp.Observaciones.Obs {
 			obsMsg += fmt.Sprintf("Obs %d: %s\n", obs.Code, obs.Msg)
 		}
-		return nil, schemas.ErrorResponse(500, "Factura no autorizada por ARCA", fmt.Errorf("resultado: %s\nobservaciones:\n%s", detResp.Resultado, obsMsg))
+		return nil, utils.ErrorResponse(500, "Factura no autorizada por ARCA", fmt.Errorf("resultado: %s\nobservaciones:\n%s", detResp.Resultado, obsMsg))
 	}
 
 	fmt.Println("\n" + strings.Repeat("=", 60))
@@ -279,29 +284,29 @@ func (r *ArcaRepository) EmitInvoice(w *schemas.WSFEClient, factura *schemas.Fac
 	return &detResp, nil
 }
 
-func (r *ArcaRepository) SaveInvoice(factura *schemas.FacturaElectronica, incomeSaleID int64) error {
+func (r *ArcaRepository) SaveInvoice(factura *FacturaElectronica, incomeSaleID int64) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
 		factJson, err := json.Marshal(factura)
 		if err != nil {
-			return schemas.ErrorResponse(500, "Error al parsear la factura", err)
+			return utils.ErrorResponse(500, "Error al parsear la factura", err)
 		}
 
-		invoice := &models.Invoice{
+		invoice := &modelInvoice.Invoice{
 			InvoiceData: factJson,
 		}
 
 		if err := tx.Create(invoice).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Factura", schemas.Create)
+			return utils.HandlerErrorDB(err, "Factura", utils.Create)
 		}
 
-		var incomeSale models.IncomeSale
+		var incomeSale modelIncomeSale.IncomeSale
 		if err := tx.Where("id = ?", incomeSaleID).First(&incomeSale).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Ingreso de venta", schemas.Read)
+			return utils.HandlerErrorDB(err, "Ingreso de venta", utils.Read)
 		}
 
 		incomeSale.InvoiceID = &invoice.ID
 		if err := tx.Save(&incomeSale).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Ingreso de venta", schemas.Update)
+			return utils.HandlerErrorDB(err, "Ingreso de venta", utils.Update)
 		}
 
 		return nil

@@ -1,126 +1,133 @@
 package repository
 
-
 import (
 	"errors"
 	"fmt"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
-	"gorm.io/gorm"
+	modelCredential "github.com/SaltaGet/NOA-GESTION-BACK/internal/module/credential/domain"
+	modelTenant "github.com/SaltaGet/NOA-GESTION-BACK/internal/module/tenant/domain"
+	modelMember "github.com/SaltaGet/NOA-GESTION-BACK/internal/module/member/domain"
+	modelPermission "github.com/SaltaGet/NOA-GESTION-BACK/internal/module/permission/domain"
+	modelPointSale "github.com/SaltaGet/NOA-GESTION-BACK/internal/module/point_sale/domain"
+	modelAdmin "github.com/SaltaGet/NOA-GESTION-BACK/internal/module/admin/domain"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/database"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
-func (r *MainRepository) AuthTenantGetByID(tenantID int64) (*models.Tenant, error) {
-	var tenant models.Tenant
+type MainRepository struct {
+	DB *gorm.DB
+}
+
+func (r *MainRepository) AuthTenantGetByID(tenantID int64) (*modelTenant.Tenant, error) {
+	var tenant modelTenant.Tenant
 	err := r.DB.
 		Where("id = ?", tenantID).
 		First(&tenant).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+			return nil, utils.ErrorResponse(401, "Credenciales incorrectas", err)
 		}
-		return nil, schemas.ErrorResponse(500, "Error interno al obtener los tenants", err)
+		return nil, utils.ErrorResponse(500, "Error interno al obtener los tenants", err)
 	}
 
 	if !tenant.IsActive {
-		return nil, schemas.ErrorResponse(403, "Tenant esta inactivo", fmt.Errorf("credenciales incorrectas"))
+		return nil, utils.ErrorResponse(403, "Tenant esta inactivo", fmt.Errorf("credenciales incorrectas"))
 	}
 
-	var credentials models.Credential
+	var credentials modelCredential.Credential
 	if err := r.DB.Select("responsibility_front_iva").Where("tenant_id = ?", tenantID).First(&credentials).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Warn().Msgf("Tenant %d no tiene credenciales configuradas, usando valor por defecto", tenantID)
       credentials.ResponsibilityFrontIVA = nil
 		} else {
-			return nil, schemas.ErrorResponse(500, "Error interno al obtener las credenciales", err)
+			return nil, utils.ErrorResponse(500, "Error interno al obtener las credenciales", err)
 		}
 	}
 
 	tenant.Credentials = credentials
 
 	// if len(tenant.UserTenants) == 0 {
-	// 	return nil, schemas.ErrorResponse(403, "No tienes permiso para acceder al tenant", fmt.Errorf("sin permiso para acceder al tenant"))
+	// 	return nil, utils.ErrorResponse(403, "No tienes permiso para acceder al tenant", fmt.Errorf("sin permiso para acceder al tenant"))
 	// }
 
 	// if !tenant.UserTenants[0].IsActive {
-	// 	return nil, schemas.ErrorResponse(403, "No tienes permiso para acceder al tenant", fmt.Errorf("sin permiso para acceder al tenant"))
+	// 	return nil, utils.ErrorResponse(403, "No tienes permiso para acceder al tenant", fmt.Errorf("sin permiso para acceder al tenant"))
 	// }
 
 	return &tenant, nil
 }
 
-func (r *MainRepository) AuthTenantGetByIdentifier(identifier string) (*models.Tenant, error) {
-	var tenant models.Tenant
+func (r *MainRepository) AuthTenantGetByIdentifier(identifier string) (*modelTenant.Tenant, error) {
+	var tenant modelTenant.Tenant
 	err := r.DB.
 		Where("identifier = ?", identifier).
 		First(&tenant).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+			return nil, utils.ErrorResponse(401, "Credenciales incorrectas", err)
 		}
-		return nil, schemas.ErrorResponse(500, "Error interno al obtener los tenants", err)
+		return nil, utils.ErrorResponse(500, "Error interno al obtener los tenants", err)
 	}
 
 	if !tenant.IsActive {
-		return nil, schemas.ErrorResponse(403, "Tenant esta inactivo", fmt.Errorf("credenciales incorrectas"))
+		return nil, utils.ErrorResponse(403, "Tenant esta inactivo", fmt.Errorf("credenciales incorrectas"))
 	}
 
 	// if len(tenant.UserTenants) == 0 {
-	// 	return nil, schemas.ErrorResponse(403, "No tienes permiso para acceder al tenant", fmt.Errorf("sin permiso para acceder al tenant"))
+	// 	return nil, utils.ErrorResponse(403, "No tienes permiso para acceder al tenant", fmt.Errorf("sin permiso para acceder al tenant"))
 	// }
 
 	// if !tenant.UserTenants[0].IsActive {
-	// 	return nil, schemas.ErrorResponse(403, "No tienes permiso para acceder al tenant", fmt.Errorf("sin permiso para acceder al tenant"))
+	// 	return nil, utils.ErrorResponse(403, "No tienes permiso para acceder al tenant", fmt.Errorf("sin permiso para acceder al tenant"))
 	// }
 
 	return &tenant, nil
 }
 
-func (r *MainRepository) AuthMemberGetByUserID(userID int64, connection string, tenantID int64) (*models.Member, error) {
+func (r *MainRepository) AuthMemberGetByUserID(userID int64, connection string, tenantID int64) (*modelMember.Member, error) {
 	db, err := database.GetTenantDB(connection, tenantID)
 	if err != nil {
-		return nil, schemas.ErrorResponse(500, "Error al recibir la conexión", err)
+		return nil, utils.ErrorResponse(500, "Error al recibir la conexión", err)
 	}
 
-	var member models.Member
+	var member modelMember.Member
 	if err := db.Where("user_id = ?", userID).First(&member).Error; err != nil {
-		return nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+		return nil, utils.ErrorResponse(401, "Credenciales incorrectas", err)
 	}
 
 	if !member.IsActive {
-		return nil, schemas.ErrorResponse(403, "Miembro inactivo", fmt.Errorf("miembro inactivo"))
+		return nil, utils.ErrorResponse(403, "Miembro inactivo", fmt.Errorf("miembro inactivo"))
 	}
 
 	return &member, nil
 }
 
-func (r *MainRepository) AuthMemberGetByID(id int64, connection string, tenantID int64) (*models.Member, *[]string, error) {
+func (r *MainRepository) AuthMemberGetByID(id int64, connection string, tenantID int64) (*modelMember.Member, *[]string, error) {
 	// db, err := database.GetTenantDB(connection)
 	db, err := database.GetTenantDB(connection, tenantID)
 	if err != nil {
-		return nil, nil, schemas.ErrorResponse(500, "Error al recibir la conexión", err)
+		return nil, nil, utils.ErrorResponse(500, "Error al recibir la conexión", err)
 	}
 
-	var member models.Member
+	var member modelMember.Member
 	if err := db.Preload("Role").Where("id = ?", id).First(&member).Error; err != nil {
-		return nil, nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+		return nil, nil, utils.ErrorResponse(401, "Credenciales incorrectas", err)
 	}
 
 	if !member.IsActive {
-		return nil, nil, schemas.ErrorResponse(403, "Miembro inactivo", fmt.Errorf("miembro inactivo"))
+		return nil, nil, utils.ErrorResponse(403, "Miembro inactivo", fmt.Errorf("miembro inactivo"))
 	}
 
-	var permissions []models.Permission
+	var permissions []modelPermission.Permission
 	if member.Role.Name == "admin" {
 		if err := db.Find(&permissions).Error; err != nil {
-			return nil, nil, schemas.ErrorResponse(500, "Error al obtener los permisos", err)
+			return nil, nil, utils.ErrorResponse(500, "Error al obtener los permisos", err)
 		}
 	} else {
 		if err := db.Model(&member.Role).Association("Permissions").Find(&permissions); err != nil {
-			return nil, nil, schemas.ErrorResponse(500, "Error al obtener los permisos", err)
+			return nil, nil, utils.ErrorResponse(500, "Error al obtener los permisos", err)
 		}
 	}
 
@@ -134,138 +141,138 @@ func (r *MainRepository) AuthMemberGetByID(id int64, connection string, tenantID
 	return &member, &perm, nil
 }
 
-func (r *MainRepository) AuthMemberGetByUsername(username string, connection string, tenantID int64) (*models.Member, error) {
+func (r *MainRepository) AuthMemberGetByUsername(username string, connection string, tenantID int64) (*modelMember.Member, error) {
 	// db, err := database.GetTenantDB(connection)
 	db, err := database.GetTenantDB(connection, tenantID)
 	if err != nil {
-		return nil, schemas.ErrorResponse(500, "Error al recibir la conexión", err)
+		return nil, utils.ErrorResponse(500, "Error al recibir la conexión", err)
 	}
 
-	var member models.Member
+	var member modelMember.Member
 	if err := db.Where("username = ?", username).First(&member).Error; err != nil {
-		return nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+		return nil, utils.ErrorResponse(401, "Credenciales incorrectas", err)
 	}
 
 	if !member.IsActive {
-		return nil, schemas.ErrorResponse(403, "Miembro inactivo", fmt.Errorf("miembro inactivo"))
+		return nil, utils.ErrorResponse(403, "Miembro inactivo", fmt.Errorf("miembro inactivo"))
 	}
 
 	return &member, nil
 }
 
-func (r *MainRepository) AuthAdminGetByUsername(username string) (*models.Admin, error) {
-	var admin models.Admin
+func (r *MainRepository) AuthAdminGetByUsername(username string) (*modelAdmin.Admin, error) {
+	var admin modelAdmin.Admin
 	if err := r.DB.Where("username = ?", username).First(&admin).Error; err != nil {
-		return nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+		return nil, utils.ErrorResponse(401, "Credenciales incorrectas", err)
 	}
 
 	return &admin, nil
 }
 
-func (r *MainRepository) AuthAdminGetByID(id int64) (*models.Admin, error) {
-	var admin models.Admin
+func (r *MainRepository) AuthAdminGetByID(id int64) (*modelAdmin.Admin, error) {
+	var admin modelAdmin.Admin
 	if err := r.DB.Where("id = ?", id).First(&admin).Error; err != nil {
-		return nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+		return nil, utils.ErrorResponse(401, "Credenciales incorrectas", err)
 	}
 
 	return &admin, nil
 }
 
-func (r *MainRepository) AuthPointSale(pointSaleID int64, connection string, tenantID, memberID int64) (*models.PointSale, error) {
+func (r *MainRepository) AuthPointSale(pointSaleID int64, connection string, tenantID, memberID int64) (*modelPointSale.PointSale, error) {
 	db, err := database.GetTenantDB(connection, tenantID)
 	if err != nil {
-		return nil, schemas.ErrorResponse(500, "Error al recibir la conexión", err)
+		return nil, utils.ErrorResponse(500, "Error al recibir la conexión", err)
 	}
 
-	var pointSale models.PointSale
-	err = db.Model(&models.PointSale{}).
+	var pointSale modelPointSale.PointSale
+	err = db.Model(&modelPointSale.PointSale{}).
 		Joins("JOIN member_point_sales mp ON mp.point_sale_id = point_sales.id").
 		Where("mp.member_id = ?", memberID).
 		Where("id = ?", pointSaleID).
 		First(&pointSale).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+			return nil, utils.ErrorResponse(401, "Credenciales incorrectas", err)
 		}
-		return nil, schemas.ErrorResponse(500, "Error al obtener tenant", err)
+		return nil, utils.ErrorResponse(500, "Error al obtener tenant", err)
 	}
 
 	return &pointSale, nil
 }
 
-func (r *MainRepository) AuthForgotPassword(forgotPassword *schemas.AuthForgotPassword) (*models.Member, *models.Tenant, error) {
-	var tenant models.Tenant
+func (r *MainRepository) AuthForgotPassword(forgotPassword *AuthForgotPassword) (*modelMember.Member, *modelTenant.Tenant, error) {
+	var tenant modelTenant.Tenant
 	err := r.DB.
 		Select("id", "connection").
 		Where("identifier = ?", forgotPassword.TenantIdentifier).
 		First(&tenant).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+			return nil, nil, utils.ErrorResponse(401, "Credenciales incorrectas", err)
 		}
-		return nil, nil, schemas.ErrorResponse(500, "Error interno al obtener los tenants", err)
+		return nil, nil, utils.ErrorResponse(500, "Error interno al obtener los tenants", err)
 	}
 
 	db, err := database.GetTenantDB(tenant.Connection, tenant.ID)
 	if err != nil {
-		return nil, nil, schemas.ErrorResponse(500, "Error al recibir la conexión", err)
+		return nil, nil, utils.ErrorResponse(500, "Error al recibir la conexión", err)
 	}
 
-	var member models.Member
+	var member modelMember.Member
 	if err := db.
 		Select("id", "username", "email", "is_active").
 		Where("username = ?", forgotPassword.Username).
 		First(&member).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+			return nil, nil, utils.ErrorResponse(401, "Credenciales incorrectas", err)
 		}
-		return nil, nil, schemas.ErrorResponse(500, "Error al obtener el miembro", err)
+		return nil, nil, utils.ErrorResponse(500, "Error al obtener el miembro", err)
 	}
 
 	if !member.IsActive {
-		return nil, nil, schemas.ErrorResponse(403, "Miembro inactivo", fmt.Errorf("miembro inactivo"))
+		return nil, nil, utils.ErrorResponse(403, "Miembro inactivo", fmt.Errorf("miembro inactivo"))
 	}
 
 	return &member, &tenant, nil
 }
 
 func (r *MainRepository) AuthResetPassword(memberID, tenantID int64, newPass string) error {
-	var tenant models.Tenant
+	var tenant modelTenant.Tenant
 	err := r.DB.
 		Select("id", "connection").
 		First(&tenant, tenantID).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+			return utils.ErrorResponse(401, "Credenciales incorrectas", err)
 		}
-		return schemas.ErrorResponse(500, "Error interno al obtener los tenants", err)
+		return utils.ErrorResponse(500, "Error interno al obtener los tenants", err)
 	}
 
 	db, err := database.GetTenantDB(tenant.Connection, tenant.ID)
 	if err != nil {
-		return schemas.ErrorResponse(500, "Error al recibir la conexión", err)
+		return utils.ErrorResponse(500, "Error al recibir la conexión", err)
 	}
 
-	var member models.Member
+	var member modelMember.Member
 	if err := db.
 		First(&member, memberID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return schemas.ErrorResponse(401, "Credenciales incorrectas", err)
+			return utils.ErrorResponse(401, "Credenciales incorrectas", err)
 		}
-		return schemas.ErrorResponse(500, "Error al obtener el miembro", err)
+		return utils.ErrorResponse(500, "Error al obtener el miembro", err)
 	}
 
 	if !member.IsActive {
-		return schemas.ErrorResponse(403, "Miembro inactivo", fmt.Errorf("miembro inactivo"))
+		return utils.ErrorResponse(403, "Miembro inactivo", fmt.Errorf("miembro inactivo"))
 	}
 
 	passHash, err := utils.HashPassword(newPass)
 	if err != nil {
-		return schemas.ErrorResponse(500, "Error al generar la contraseña", err)
+		return utils.ErrorResponse(500, "Error al generar la contraseña", err)
 	}
 
 	if err := db.Model(&member).Update("Password", passHash).Error; err != nil {
-		return schemas.ErrorResponse(500, "Error al actualizar la contraseña", err)
+		return utils.ErrorResponse(500, "Error al actualizar la contraseña", err)
 	}
 
 	return nil

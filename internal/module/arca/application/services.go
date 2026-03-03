@@ -1,6 +1,5 @@
 package application
 
-
 import (
 	"encoding/base64"
 	"encoding/json"
@@ -10,10 +9,19 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/module/arca/domain"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/module/arca/infrastructure/repository"
+	auth "github.com/SaltaGet/NOA-GESTION-BACK/internal/module/auth/infrastructure/repository"
+	domainPS "github.com/SaltaGet/NOA-GESTION-BACK/internal/module/point_sale/domain"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
 )
 
-func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID int64, incomeSaleID int64, req *schemas.FacturaRequest, isHomo bool) (*schemas.FacturaElectronica, error) {
+type ArcaService struct {
+	ArcaRepository domain.ArcaRepository
+	PointSaleRepository domainPS.PointSaleRepository
+}
+
+func (s *ArcaService) EmitInvoice(user *auth.AuthenticatedUser, pointSaleID int64, incomeSaleID int64, req *repository.FacturaRequest, isHomo bool) (*repository.FacturaElectronica, error) {
 	isHomo = true
 
 	pointSale, err := s.PointSaleRepository.PointSaleGetByID(pointSaleID)
@@ -30,10 +38,10 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 
 	cuit, err := strconv.ParseInt(*credentials.Cuit, 10, 64)
 	if err != nil {
-		return nil, schemas.ErrorResponse(500, "Error interno al parsear CUIT, revisa que el CUIT sea correcto", err)
+		return nil, utils.ErrorResponse(500, "Error interno al parsear CUIT, revisa que el CUIT sea correcto", err)
 	}
 
-	wsaa, err := schemas.NewWSAA(schemas.WSAAConfig{
+	wsaa, err := repository.NewWSAA(repository.WSAAConfig{
 		Homologacion: isHomo,
 		CertFile:     *credentials.ArcaCertificate,
 		KeyFile:      *credentials.ArcaKey,
@@ -41,7 +49,7 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 		Service:      "wsfe",
 	})
 	if err != nil {
-		return nil, schemas.ErrorResponse(500, "Error interno al crear cliente WSAA", err)
+		return nil, utils.ErrorResponse(500, "Error interno al crear cliente WSAA", err)
 	}
 
 	invalid := credentials.TokenArca == nil || credentials.SignArca == nil || credentials.ExpireTokenArca == nil
@@ -53,21 +61,21 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 		credentials.ExpireTokenArca = &old
 	}
 
-	cred, err := schemas.LoadCredentials(*credentials.TokenArca, *credentials.SignArca, *credentials.Cuit, *credentials.ExpireTokenArca)
+	cred, err := repository.LoadCredentials(*credentials.TokenArca, *credentials.SignArca, *credentials.Cuit, *credentials.ExpireTokenArca)
 	if err != nil {
-		return nil, schemas.ErrorResponse(500, "Error interno al cargar credenciales", err)
+		return nil, utils.ErrorResponse(500, "Error interno al cargar credenciales", err)
 	}
 
 	if time.Now().Add(5 * time.Minute).After(cred.Expiration) {
 
 		ticketXML, err := wsaa.CreateTicketXML()
 		if err != nil {
-			return nil, schemas.ErrorResponse(500, "error creando XML ticket", err)
+			return nil, utils.ErrorResponse(500, "error creando XML ticket", err)
 		}
 
 		signedCMS, err := wsaa.SignWithOpenSSL(ticketXML)
 		if err != nil {
-			return nil, schemas.ErrorResponse(500, "Error firmando CMS", err)
+			return nil, utils.ErrorResponse(500, "Error firmando CMS", err)
 		}
 
 		response, err := s.ArcaRepository.SendToWSAA(wsaa, signedCMS)
@@ -77,10 +85,10 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 
 		newCred, err := wsaa.ParseResponse(response)
 		if err != nil {
-			return nil, schemas.ErrorResponse(500, "Error parseando respuesta del WSAA", err)
+			return nil, utils.ErrorResponse(500, "Error parseando respuesta del WSAA", err)
 		}
 
-		err = s.ArcaRepository.SetTokenSignArca(&schemas.CredentialsValidation{
+		err = s.ArcaRepository.SetTokenSignArca(&repository.CredentialsValidation{
 			CUIT:       cuit,
 			Token:      newCred.Token,
 			Sign:       newCred.Sign,
@@ -95,26 +103,26 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 		cred.Expiration = newCred.Expiration
 	}
 
-	var wsfe *schemas.WSFEClient
-	wsfe = schemas.NewWSFEClient(cred.Token, cred.Sign, cuit, isHomo)
+	var wsfe *repository.WSFEClient
+	wsfe = repository.NewWSFEClient(cred.Token, cred.Sign, cuit, isHomo)
 
-	concept, err := schemas.GetCodeTipoConcepto(*credentials.Concept)
+	concept, err := repository.GetCodeTipoConcepto(*credentials.Concept)
 	if err != nil {
-		return nil, schemas.ErrorResponse(400, "código de concepto inválido", errors.New("código de concepto inválido"))
+		return nil, utils.ErrorResponse(400, "código de concepto inválido", errors.New("código de concepto inválido"))
 	}
 	fecha := time.Now().Format("20060102")
 
-	alicuotas := []schemas.ItemIVA{}
+	alicuotas := []repository.ItemIVA{}
 	totalNeto := 0.0
 	totalIVA := 0.0
 	totalFinal := 0.0
 	if emisorResponsabilidad == "responsable_inscripto" {
 		for _, alicuota := range req.Items {
-			code, err := schemas.GetCodeAlicuotaIVA(alicuota.Codigo)
+			code, err := repository.GetCodeAlicuotaIVA(alicuota.Codigo)
 			if err != nil {
-				return nil, schemas.ErrorResponse(400, "código de alicuta inválido", errors.New("código de alicuta inválido"))
+				return nil, utils.ErrorResponse(400, "código de alicuta inválido", errors.New("código de alicuta inválido"))
 			}
-			alicuotas = append(alicuotas, schemas.ItemIVA{
+			alicuotas = append(alicuotas, repository.ItemIVA{
 				Codigo:        code,
 				BaseImponible: alicuota.BaseImponible,
 				Importe:       alicuota.Importe,
@@ -135,17 +143,17 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 	totalNeto = math.Round(totalNeto*100) / 100
 	totalIVA = math.Round(totalIVA*100) / 100
 
-	tipoDoc, err := schemas.GetCodeTipoDocumento(req.TipoDocumento)
+	tipoDoc, err := repository.GetCodeTipoDocumento(req.TipoDocumento)
 	if err != nil {
-		return nil, schemas.ErrorResponse(400, "código de tipo de documento inválido", errors.New("código de tipo de documento inválido"))
+		return nil, utils.ErrorResponse(400, "código de tipo de documento inválido", errors.New("código de tipo de documento inválido"))
 	}
 
-	condition, err := schemas.GetCodeConditionIVA(req.CondicionIVA)
+	condition, err := repository.GetCodeConditionIVA(req.CondicionIVA)
 	if err != nil {
-		return nil, schemas.ErrorResponse(400, "código de condición fiscal inválido", errors.New("código de condición fiscal inválido"))
+		return nil, utils.ErrorResponse(400, "código de condición fiscal inválido", errors.New("código de condición fiscal inválido"))
 	}
 
-	factura := &schemas.Factura{
+	factura := &repository.Factura{
 		PuntoVenta:      int(pointSale.Number),
 		TipoDocumento:   tipoDoc,
 		NumeroDocumento: req.NumeroDocumento,
@@ -167,17 +175,17 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 		factura.Alicuotas = nil
 
 	case "responsable_inscripto":
-		condition, _ := schemas.GetCodeConditionIVA(req.CondicionIVA)
+		condition, _ := repository.GetCodeConditionIVA(req.CondicionIVA)
 		if condition == 1 || condition == 4 {
 			factura.TipoComprobante = 1
 		} else if condition == 5 || condition == 6 {
 			factura.TipoComprobante = 6
 		} else {
-			return nil, schemas.ErrorResponse(400, "Condición de IVA del receptor no soportada", errors.New("Condición de IVA del receptor no soportada"))
+			return nil, utils.ErrorResponse(400, "Condición de IVA del receptor no soportada", errors.New("Condición de IVA del receptor no soportada"))
 		}
 
 	default:
-		return nil, schemas.ErrorResponse(400, "Responsabilidad del emisor no válida", errors.New("Responsabilidad del emisor no válida"))
+		return nil, utils.ErrorResponse(400, "Responsabilidad del emisor no válida", errors.New("Responsabilidad del emisor no válida"))
 	}
 
 	lastInvoice, err := s.ArcaRepository.GetLastestInvoice(wsfe, int(pointSale.Number), factura.TipoComprobante)
@@ -194,7 +202,7 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 	}
 
 	cae, err := strconv.ParseInt(fecae.CAE, 10, 64)
-	urlQR := UrlQR(schemas.DatosQR{
+	urlQR := UrlQR(repository.DatosQR{
 		Ver:        1,
 		Fecha:      time.Now().Format("2006-01-02"),
 		Cuit:       cuit,
@@ -210,10 +218,10 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 		CodAut:     cae,
 	})
 	if urlQR == nil {
-		return nil, schemas.ErrorResponse(500, "Error al generar QR", errors.New("Error al generar QR"))
+		return nil, utils.ErrorResponse(500, "Error al generar QR", errors.New("Error al generar QR"))
 	}
 
-	facturaResponse := &schemas.FacturaElectronica{
+	facturaResponse := &repository.FacturaElectronica{
 		TipoComprobante: factura.TipoComprobante,
 		PuntoVenta:      factura.PuntoVenta,
 		Numero:          factura.NumeroDesde,
@@ -246,13 +254,13 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 	}
 
 	if err := s.ArcaRepository.SaveInvoice(facturaResponse, incomeSaleID); err != nil {
-		return facturaResponse, schemas.ErrorResponse(206, "Factura generada, hubio un error en guardar la factura en la base de datos", err)
+		return facturaResponse, utils.ErrorResponse(206, "Factura generada, hubio un error en guardar la factura en la base de datos", err)
 	}
 
 	return facturaResponse, nil
 }
 
-func UrlQR(data schemas.DatosQR) *string {
+func UrlQR(data repository.DatosQR) *string {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		fmt.Println("Error generando JSON:", err)
