@@ -1,0 +1,11 @@
+{
+  "paths": {
+    "models": "internal/module/{{.EntityLower}}/domain/models.go",
+    "schemas": "internal/module/{{.EntityLower}}/infrastructure/repository/schemas.go",
+    "ports": "internal/module/{{.EntityLower}}/domain/ports.go",
+    "services": "internal/module/{{.EntityLower}}/application/services.go",
+    "repositories": "internal/module/{{.EntityLower}}/infrastructure/repository/repository.go",
+    "controllers": "internal/module/{{.EntityLower}}/infrastructure/handler/http/controller.go",
+    "routes": "internal/module/{{.EntityLower}}/infrastructure/handler/http/routes.go"
+  }
+}

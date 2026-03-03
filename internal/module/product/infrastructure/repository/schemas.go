@@ -1,0 +1,117 @@
+package repository
+
+
+type ProductFullResponse struct {
+	ID              int64                     `json:"id"`
+	Code            string                    `json:"code"`
+	Name            string                    `json:"name"`
+	Description     *string                    `json:"description"`
+	Category        CategoryResponse          `json:"category"`
+	Price           float64                   `json:"price"`
+	StockPointSales []*PointSaleStockResponse `json:"stock_point_sales"`
+	StockDeposit    float64          `json:"stock_deposit"`
+	Notifier        bool                      `json:"notifier"`
+	MinAmount       float64                   `json:"min_amount"`
+	PrimaryImage *string `json:"primary_image"`
+	SecondaryImage []string `json:"secondary_image"`
+	IsVisible       bool                      `json:"is_visible"`
+}
+
+type ProductResponse struct {
+	ID          int64            `json:"id"`
+	Code        string           `json:"code"`
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	Category    CategoryResponse `json:"category"`
+	Price       float64          `json:"price"`
+	Stock       float64          `json:"stock"`
+	Notifier    bool             `json:"notifier"`
+	MinAmount   float64          `json:"min_amount"`
+	PrimaryImage *string `json:"primary_image"`
+	SecondaryImage []string `json:"secondary_image"`
+}
+
+type ProductResponseDTO struct {
+	ID        int64             `json:"id"`
+	Code      string            `json:"code"`
+	Name      string            `json:"name"`
+	Category  *CategoryResponse `json:"category,omitempty"`
+	Price     float64           `json:"price"`
+	Stock     float64           `json:"stock"`
+	Notifier  bool              `json:"notifier"`
+	MinAmount float64           `json:"min_amount"`
+}
+
+type ProductSimpleResponse struct {
+	ID        int64   `json:"id"`
+	Code      string  `json:"code"`
+	Name      string  `json:"name"`
+	Price     float64 `json:"price"`
+	Stock     float64 `json:"stock"`
+	Notifier  bool    `json:"notifier"`
+	MinAmount float64 `json:"min_amount"`
+}
+
+type ProductSimpleResponseDTO struct {
+	ID    int64   `json:"id"`
+	Code  string  `json:"code"`
+	Name  string  `json:"name"`
+	Price float64 `json:"price"`
+}
+
+type ProductCreate struct {
+	Code        string   `json:"code" validate:"required" example:"ABC123"`
+	Name        string   `json:"name" validate:"required" example:"Producto1"`
+	Description *string  `json:"description" example:"description|null"`
+	CategoryID  int64    `json:"category_id" validate:"required" example:"1"`
+	Price       *float64 `json:"price" example:"100.00"`
+	Notifier    bool     `json:"notifier" example:"false"`
+	MinAmount   float64  `json:"min_amount" example:"10.00"`
+}
+
+type ProductUpdate struct {
+	ID          int64    `json:"id" validate:"required" example:"1"`
+	Code        string   `json:"code" validate:"required" example:"ABC123"`
+	Name        string   `json:"name" validate:"required" example:"Producto1"`
+	Description *string  `json:"description" example:"description|null"`
+	CategoryID  uint     `json:"category_id" validate:"required" example:"1"`
+	Price       *float64 `json:"price" example:"100.00"`
+	Notifier    bool     `json:"notifier" example:"false"`
+	MinAmount   float64  `json:"min_amount" example:"10.00"`
+}
+
+type ProductPriceUpdate struct {
+	ID    int64   `json:"id" validate:"required" example:"1"`
+	Price float64 `json:"price" validate:"required,gte=0" example:"100.00"`
+}
+
+type ListPriceUpdate struct {
+	ListProductPriceUpdate []ProductPriceUpdate `json:"list" validate:"required,min=1,dive"`
+}
+
+type ProductStockWithScore struct {
+    Product *ProductStockFullResponse
+    Score   float64
+    Length  int
+}
+
+type ProductValidateImage struct {
+	ProductID      int64                  `json:"product_id" validate:"required" example:"1"`
+	PrimaryImage   string                 `json:"primary_image" validate:"required,oneof=set keep" example:"set | keep"`
+	SecondaryImage ValidateSecondaryImage `json:"secondary_image" validate:"required"`
+}
+
+type ValidateSecondaryImage struct {
+	Add    *int64 `json:"add" example:"1"`
+	KeepUUIDs []string `json:"keep_uuids" validate:"required" example:"uuid1,uuid2,uuid3"`
+	RemoveUUIDs []string `json:"remove_uuids" example:"uuid1,uuid2,uuid3"`
+}
+
+type ListVisibilityUpdate struct{
+	ListProductVisibilityUpdate []ProductVisibilityUpdate `json:"list" validate:"required,min=1,dive"`
+}
+
+type ProductVisibilityUpdate struct {
+	ProductID int64 `json:"product_id" validate:"required" example:"1"`
+	Visibility *bool `json:"visibility" validate:"required" example:"true"`
+}

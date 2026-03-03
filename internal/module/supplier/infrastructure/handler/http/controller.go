@@ -1,0 +1,221 @@
+package http
+
+
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/gofiber/fiber/v2"
+)
+
+// SupplierGetByID godoc
+//
+//	@Summary		Get Supplier By ID
+//	@Description	Get a supplier by its ID within a specified workplace.
+//	@Tags			Supplier
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			id	path		string											true	"ID of the supplier"
+//	@Success		200	{object}	schemas.Response{body=schemas.SupplierResponse}	"Supplier obtained with success"
+//	@Failure		400	{object}	schemas.Response								"Bad Request"
+//	@Failure		401	{object}	schemas.Response								"Auth is required"
+//	@Failure		403	{object}	schemas.Response								"Not Authorized"
+//	@Failure		404	{object}	schemas.Response								"Supplier not found"
+//	@Failure		500	{object}	schemas.Response								"Internal server error"
+//	@Router			/api/v1/supplier/{id} [get]
+func (s *SupplierController) SupplierGetByID(c *fiber.Ctx) error {
+	id := c.Params("id")
+	idint, err := validators.IdValidate(id)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	supplier, err := s.SupplierService.SupplierGetByID(idint)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	return c.Status(200).JSON(schemas.Response{
+		Status:  true,
+		Body:    supplier,
+		Message: "Proveedor obtenido con éxito",
+	})
+}
+
+// SupplierGetAll godoc
+//
+//	@Summary		Get All Suppliers
+//	@Description	Get All Suppliers
+//	@Tags			Supplier
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Success		200	{object}	schemas.Response{body=[]schemas.SupplierResponseDTO}	"Suppliers obtained with success"
+//	@Failure		400	{object}	schemas.Response										"Bad Request"
+//	@Failure		401	{object}	schemas.Response										"Auth is required"
+//	@Failure		403	{object}	schemas.Response										"Not Authorized"
+//	@Failure		500	{object}	schemas.Response										"Internal server error"
+//	@Router			/api/v1/supplier/get_all [get]
+func (s *SupplierController) SupplierGetAll(c *fiber.Ctx) error {
+	limit, err := strconv.ParseInt(c.Query("limit"), 10, 64)
+	if err != nil {
+		limit = 10
+	}
+	page, err := strconv.ParseInt(c.Query("page"), 10, 64)
+	if err != nil {
+		page = 1
+	}
+
+	search := &map[string]string{}
+	name := c.Query("name")
+	if name != "" {
+		(*search)["name"] = name
+	}
+	identifier := c.Query("identifier")
+	if identifier != "" {
+		(*search)["identifier"] = identifier
+	}
+	companyName := c.Query("company_name")
+	if companyName != "" {
+		(*search)["company_name"] = companyName
+	}
+	email := c.Query("email")
+	if email != "" {
+		(*search)["email"] = email
+	}
+	isActive := c.Query("is_active")
+	if isActive != "" {
+		(*search)["is_active"] = isActive
+	}
+
+	suppliers, total, err := s.SupplierService.SupplierGetAll(int(limit), int(page), search)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+
+	return c.Status(200).JSON(schemas.Response{
+		Status:  true,
+		Body:    map[string]any{"data": suppliers, "total": total, "page": page, "limit": limit, "total_pages": totalPages},
+		Message: "Proveedores obtenidos con éxito",
+	})
+}
+
+// SupplierCreate godoc
+//
+//	@Summary		Create Supplier
+//	@Description	Creates a new supplier within the specified workplace.
+//	@Tags			Supplier
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			supplier	body		schemas.SupplierCreate	true	"Details of the supplier to create"
+//	@Success		200			{object}	schemas.Response		"Supplier created successfully"
+//	@Failure		400			{object}	schemas.Response		"Bad Request"
+//	@Failure		401			{object}	schemas.Response		"Auth is required"
+//	@Failure		403			{object}	schemas.Response		"Not Authorized"
+//	@Failure		422			{object}	schemas.Response		"Model is invalid"
+//	@Failure		500			{object}	schemas.Response		"Internal server error"
+//	@Router			/api/v1/supplier/create [post]
+func (s *SupplierController) SupplierCreate(c *fiber.Ctx) error {
+	var supplierCreate schemas.SupplierCreate
+	if err := validators.ValidateRequest(c, &supplierCreate); err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	id, err := s.SupplierService.SupplierCreate(member.ID, &supplierCreate)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	return c.Status(200).JSON(schemas.Response{
+		Status:  true,
+		Body:    id,
+		Message: "Proveedor creado con éxito",
+	})
+}
+
+// SupplierUpdate godoc
+//
+//	@Summary		Update Supplier
+//	@Description	Update a supplier's information from the specified workplace.
+//	@Tags			Supplier
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			body	body		schemas.SupplierUpdate	true	"Supplier information"
+//	@Success		200		{object}	schemas.Response		"Supplier updated with success"
+//	@Failure		400		{object}	schemas.Response		"Bad Request"
+//	@Failure		401		{object}	schemas.Response		"Auth is required"
+//	@Failure		403		{object}	schemas.Response		"Not Authorized"
+//	@Failure		404		{object}	schemas.Response		"Supplier not found"
+//	@Failure		422		{object}	schemas.Response		"Model is invalid"
+//	@Failure		500		{object}	schemas.Response		"Internal server error"
+//	@Router			/api/v1/supplier/update [put]
+func (s *SupplierController) SupplierUpdate(c *fiber.Ctx) error {
+	var supplierUpdate schemas.SupplierUpdate
+	if err := validators.ValidateRequest(c, &supplierUpdate); err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	if supplierUpdate.ID == 1 {
+		return schemas.HandleError(c, schemas.ErrorResponse(422, "No se puede editar el proveedor por defecto", fmt.Errorf("no se puede editar el proveedor por defecto")))
+	}
+
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	err := s.SupplierService.SupplierUpdate(member.ID, &supplierUpdate)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	return c.Status(200).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
+		Message: "Proveedor editado con éxito",
+	})
+}
+
+// SupplierDeleteByID godoc
+//
+//	@Summary		Delete Supplier
+//	@Description	Deletes a supplier based on the provided ID and workplace context.
+//	@Tags			Supplier
+//	@Accept			json
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			id	path		string				true	"ID of the supplier"
+//	@Success		200	{object}	schemas.Response	"Supplier deleted with success"
+//	@Failure		400	{object}	schemas.Response	"Bad Request"
+//	@Failure		401	{object}	schemas.Response	"Auth is required"
+//	@Failure		403	{object}	schemas.Response	"Not Authorized"
+//	@Failure		404	{object}	schemas.Response	"Supplier not found"
+//	@Failure		500	{object}	schemas.Response	"Internal server error"
+//	@Router			/api/v1/supplier/delete/{id} [delete]
+func (s *SupplierController) SupplierDeleteByID(c *fiber.Ctx) error {
+	id := c.Params("id")
+	idint, err := validators.IdValidate(id)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	if idint == 1 {
+		return schemas.HandleError(c, schemas.ErrorResponse(422, "No se puede editar el proveedor por defecto", fmt.Errorf("no se puede editar el proveedor por defecto")))
+	}
+
+	member := c.Locals("user").(*schemas.AuthenticatedUser)
+	err = s.SupplierService.SupplierDelete(member.ID, idint)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	return c.Status(200).JSON(schemas.Response{
+		Status:  true,
+		Body:    nil,
+		Message: "Proveedor eliminado con éxito",
+	})
+}

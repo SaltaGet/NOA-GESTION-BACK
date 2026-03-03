@@ -1,0 +1,40 @@
+package http
+
+
+import (
+	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/middleware"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
+	"github.com/gofiber/fiber/v2"
+)
+
+func ReportRoutes(app *fiber.App) {
+	report := app.Group("/api/v1/report", middleware.AuthMiddleware(), middleware.InjectionDependsTenant())
+
+	report.Get("/get_excel",
+		middleware.RolePermissionMiddleware("RP04"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.ReportController.ReportExcelGet(c)
+		})
+
+	report.Post("/get_profitable_products",
+		middleware.RolePermissionMiddleware("RP01"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.ReportController.ReportProfitableProducts(c)
+		})
+
+	report.Post("/get_by_date",
+		middleware.RolePermissionMiddleware("RP01"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.ReportController.ReportMovementByDate(c)
+		})
+
+	report.Post("/get_by_date_point_sale",
+		middleware.RolePermissionMiddleware("RP01"),
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.ReportController.ReportMovementByDatePointSale(c)
+		})
+}
