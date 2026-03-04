@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -26,7 +26,7 @@ import (
 //	@Router			/api/v1/stock/get/{id} [get]
 func (p *StockController) StockGetByID(ctx *fiber.Ctx) error {
 	stockID := ctx.Params("id")
-	idint, err := validators.IdValidate(stockID)
+	idint, err := validator.IdValidate(stockID)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
@@ -138,7 +138,7 @@ func (p *StockController) StockGetByName(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/stock/get_by_category/{category_id} [get]
 func (p *StockController) StockGetByCategoryID(ctx *fiber.Ctx) error {
 	categoryID := ctx.Params("category_id")
-	idint, err := validators.IdValidate(categoryID)
+	idint, err := validator.IdValidate(categoryID)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}

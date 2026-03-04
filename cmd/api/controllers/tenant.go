@@ -4,11 +4,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 )
@@ -73,7 +73,7 @@ func (t *TenantController) TenantCreateByUserID(c *fiber.Ctx) error {
 	}
 
 	var tenantCreate schemas.TenantCreate
-	if err := validators.ValidateRequest(c, &tenantCreate); err != nil {
+	if err := validator.ValidateRequest(c, &tenantCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -107,7 +107,7 @@ func (t *TenantController) TenantCreateByUserID(c *fiber.Ctx) error {
 //	@Router			/api/v1/tenant/create_tenant_user [post]
 func (t *TenantController) TenantUserCreate(c *fiber.Ctx) error {
 	var tenantUserCrate schemas.TenantUserCreate
-	if err := validators.ValidateRequest(c, &tenantUserCrate); err != nil {
+	if err := validator.ValidateRequest(c, &tenantUserCrate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -137,7 +137,7 @@ func (t *TenantController) TenantUserCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/tenant/update_expiration [put]
 func (t *TenantController) TenantUpdateExpiration(c *fiber.Ctx) error {
 	var tenantUpdateExpiration schemas.TenantUpdateExpiration
-	if err := validators.ValidateRequest(c, &tenantUpdateExpiration); err != nil {
+	if err := validator.ValidateRequest(c, &tenantUpdateExpiration); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -236,7 +236,7 @@ func (t *TenantController) TenantGetSettings(c *fiber.Ctx) error {
 //	@Router			/api/v1/tenant/update_settings [put]
 func (t *TenantController) TenantUpdateSettings(c *fiber.Ctx) error {
 	var tenantUpdateSettings schemas.TenantUpdateSettings
-	if err := validators.ValidateRequest(c, &tenantUpdateSettings); err != nil {
+	if err := validator.ValidateRequest(c, &tenantUpdateSettings); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

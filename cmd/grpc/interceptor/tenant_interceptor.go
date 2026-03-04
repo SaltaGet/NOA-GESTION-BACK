@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	grpc_cache "github.com/SaltaGet/NOA-GESTION-BACK/internal/cache/grpc"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
+	grpc_cache "github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache/grpc"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

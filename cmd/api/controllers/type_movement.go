@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 )
@@ -54,7 +54,7 @@ func (t *TypeMovementController) TypeMovementGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/type_movement/create [post]
 func (t *TypeMovementController) TypeMovementCreate(c *fiber.Ctx) error {
 	movementCreate := schemas.TypeMovementCreate{}
-	if err := validators.ValidateRequest(c, &movementCreate); err != nil {
+	if err := validator.ValidateRequest(c, &movementCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -84,7 +84,7 @@ func (t *TypeMovementController) TypeMovementCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/type_movement/update [put]
 func (t *TypeMovementController) TypeMovementUpdate(c *fiber.Ctx) error {
 	movementUpdate := schemas.TypeMovementUpdate{}
-	if err := validators.ValidateRequest(c, &movementUpdate); err != nil {
+	if err := validator.ValidateRequest(c, &movementUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

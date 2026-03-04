@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -27,7 +27,7 @@ import (
 //	@Router			/api/v1/deposit/get/{id} [get]
 func (d *DepositController) DepositGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idUint, err := validators.IdValidate(id)
+	idUint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -172,7 +172,7 @@ func (d *DepositController) DepositGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/deposit/update_stock [put]
 func (d *DepositController) DepositUpdateStock(c *fiber.Ctx) error {
 	var stockUpdate schemas.DepositUpdateStock
-	if err := validators.ValidateRequest(c, &stockUpdate); err != nil {
+	if err := validator.ValidateRequest(c, &stockUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

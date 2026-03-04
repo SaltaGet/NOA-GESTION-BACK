@@ -3,7 +3,7 @@ package controllers
 import (
 	"fmt"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -23,7 +23,7 @@ func (m *ModuleController) ModuleGet(c *fiber.Ctx) error {
 	if id == "" {
 		return schemas.HandleError(c, schemas.ErrorResponse(400, "Se necesita el id del modulo", fmt.Errorf("se necesita el id del modulo")))
 	}
-	uuid, err := validators.IdValidate(id)
+	uuid, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -75,7 +75,7 @@ func (m *ModuleController) ModuleGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/module/create [post]
 func (m *ModuleController) ModuleCreate(c *fiber.Ctx) error {
 	var moduleCrate schemas.ModuleCreate
-	if err := validators.ValidateRequest(c, &moduleCrate); err != nil {
+	if err := validator.ValidateRequest(c, &moduleCrate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -104,7 +104,7 @@ func (m *ModuleController) ModuleCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/module/update [put]
 func (m *ModuleController) ModuleUpdate(c *fiber.Ctx) error {
 	var moduleUpdate schemas.ModuleUpdate
-	if err := validators.ValidateRequest(c, &moduleUpdate); err != nil {
+	if err := validator.ValidateRequest(c, &moduleUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -137,7 +137,7 @@ func (m *ModuleController) ModuleDelete(c *fiber.Ctx) error {
 //	@Router			/api/v1/module/add_tenant_expiration [put]
 func (m *ModuleController) ModuleAddTenant(c *fiber.Ctx) error {
 	var moduleAddTenant schemas.ModuleAddTenant
-	if err := validators.ValidateRequest(c, &moduleAddTenant); err != nil {
+	if err := validator.ValidateRequest(c, &moduleAddTenant); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

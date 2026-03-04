@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -21,7 +21,7 @@ import (
 //	@Router			/api/v1/income_other/get/{id} [get]
 func (i *IncomeOtherController) IncomeOtherGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -103,7 +103,7 @@ func (i *IncomeOtherController) IncomeOtherGetByDate(c *fiber.Ctx) error {
 //	@Router			/api/v1/income_other/get_point_sale/{id} [get]
 func (i *IncomeOtherController) IncomeOtherGetByIDByPointSale(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -189,7 +189,7 @@ func (i *IncomeOtherController) IncomeOtherGetByDateByPointSale(c *fiber.Ctx) er
 //	@Router			/api/v1/income_other/create [post]
 func (i *IncomeOtherController) IncomeOtherCreate(c *fiber.Ctx) error {
 	var incomeOtherCreate schemas.IncomeOtherCreate
-	if err := validators.ValidateRequest(c, &incomeOtherCreate); err != nil {
+	if err := validator.ValidateRequest(c, &incomeOtherCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -220,7 +220,7 @@ func (i *IncomeOtherController) IncomeOtherCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/income_other/create_point_sale [post]
 func (i *IncomeOtherController) IncomeOtherCreateByPointSale(c *fiber.Ctx) error {
 	var incomeOtherCreate schemas.IncomeOtherCreate
-	if err := validators.ValidateRequest(c, &incomeOtherCreate); err != nil {
+	if err := validator.ValidateRequest(c, &incomeOtherCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -252,7 +252,7 @@ func (i *IncomeOtherController) IncomeOtherCreateByPointSale(c *fiber.Ctx) error
 //	@Router			/api/v1/income_other/update [put]
 func (i *IncomeOtherController) IncomeOtherUpdate(c *fiber.Ctx) error {
 	var incomeOtherUpdate schemas.IncomeOtherUpdate
-	if err := validators.ValidateRequest(c, &incomeOtherUpdate); err != nil {
+	if err := validator.ValidateRequest(c, &incomeOtherUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -283,7 +283,7 @@ func (i *IncomeOtherController) IncomeOtherUpdate(c *fiber.Ctx) error {
 //	@Router			/api/v1/income_other/delete/{id} [delete]
 func (i *IncomeOtherController) IncomeOtherDelete(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -314,7 +314,7 @@ func (i *IncomeOtherController) IncomeOtherDelete(c *fiber.Ctx) error {
 //	@Router			/api/v1/income_other/update_point_sale [put]
 func (i *IncomeOtherController) IncomeOtherUpdateByPointSale(c *fiber.Ctx) error {
 	var incomeOtherUpdate schemas.IncomeOtherUpdate
-	if err := validators.ValidateRequest(c, &incomeOtherUpdate); err != nil {
+	if err := validator.ValidateRequest(c, &incomeOtherUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -346,7 +346,7 @@ func (i *IncomeOtherController) IncomeOtherUpdateByPointSale(c *fiber.Ctx) error
 //	@Router			/api/v1/income_other/delete_point_sale/{id} [delete]
 func (i *IncomeOtherController) IncomeOtherDeleteByPointSale(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}

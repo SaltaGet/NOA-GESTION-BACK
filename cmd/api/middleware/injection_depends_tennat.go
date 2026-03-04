@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	tenant_cache "github.com/SaltaGet/NOA-GESTION-BACK/internal/cache/tenant"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
+	tenant_cache "github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache/tenant"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/gofiber/fiber/v2"
 )

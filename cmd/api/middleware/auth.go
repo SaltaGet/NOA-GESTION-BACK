@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/key"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/key"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 
 	// "github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/gofiber/fiber/v2"

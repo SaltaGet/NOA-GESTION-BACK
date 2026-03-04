@@ -9,7 +9,7 @@ import (
 
 	"github.com/DanielChachagua/ecommerce-noagestion-protos/pb"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"

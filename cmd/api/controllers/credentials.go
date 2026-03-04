@@ -1,9 +1,9 @@
 package controllers
 
 import (
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -44,7 +44,7 @@ func (c *CredentialController) CredentialGetMPToken(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/credential/set_mercado_pago_token [put]
 func (c *CredentialController) CredentialSetMPToken(ctx *fiber.Ctx) error {
 	var request schemas.CredentialMPTokenRequest
-	if err := validators.ValidateRequest(ctx, &request); err != nil {
+	if err := validator.ValidateRequest(ctx, &request); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
@@ -98,7 +98,7 @@ func (c *CredentialController) CredentialGetArca(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/credential/set_arca_token [put]
 func (c *CredentialController) CredentialSetArca(ctx *fiber.Ctx) error {
 	var request schemas.CredentialArcaRequest
-	if err := validators.ValidateRequest(ctx, &request); err != nil {
+	if err := validator.ValidateRequest(ctx, &request); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 	user := ctx.Locals("user").(*schemas.AuthenticatedUser)

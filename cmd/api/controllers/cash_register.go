@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -106,7 +106,7 @@ func (r *CashRegisterController) CashRegisterGetByID(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/cash_register/open [post]
 func (r *CashRegisterController) CashRegisterOpen(ctx *fiber.Ctx) error {
 	var amountOpen schemas.CashRegisterOpen
-	if err := validators.ValidateRequest(ctx, &amountOpen); err != nil {
+	if err := validator.ValidateRequest(ctx, &amountOpen); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
@@ -143,7 +143,7 @@ func (r *CashRegisterController) CashRegisterOpen(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/cash_register/close [post]
 func (r *CashRegisterController) CashRegisterClose(ctx *fiber.Ctx) error {
 	var amountClose schemas.CashRegisterClose
-	if err := validators.ValidateRequest(ctx, &amountClose); err != nil {
+	if err := validator.ValidateRequest(ctx, &amountClose); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 

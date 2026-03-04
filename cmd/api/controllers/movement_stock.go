@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -132,7 +132,7 @@ func (m *MovementStockController) MoveStockList(c *fiber.Ctx) error {
 	// toPointSale := false
 	// Validar cada movimiento
 	for _, ms := range movementStock {
-		if err := validators.ValidateRequest(c, &ms); err != nil {
+		if err := validator.ValidateRequest(c, &ms); err != nil {
 			return schemas.HandleError(c, err)
 		}
 	}

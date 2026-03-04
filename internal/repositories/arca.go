@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"gorm.io/gorm"

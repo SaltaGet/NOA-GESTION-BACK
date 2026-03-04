@@ -3,7 +3,7 @@ package controllers
 import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -19,7 +19,7 @@ import (
 //	@Router			/api/v1/news/get/{id} [get]
 func (t *NewsController) NewsGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idInt, err := validators.IdValidate(id)
+	idInt, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -71,7 +71,7 @@ func (t *NewsController) NewsGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/news/create [post]
 func (t *NewsController) NewsCreate(c *fiber.Ctx) error {
 	var newCreate schemas.NewsCreate
-	if err := validators.ValidateRequest(c, &newCreate); err != nil {
+	if err := validator.ValidateRequest(c, &newCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -102,7 +102,7 @@ func (t *NewsController) NewsCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/news/update [put]
 func (t *NewsController) NewsUpdate(c *fiber.Ctx) error {
 	var newUpdate schemas.NewsUpdate
-	if err := validators.ValidateRequest(c, &newUpdate); err != nil {
+	if err := validator.ValidateRequest(c, &newUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -132,7 +132,7 @@ func (t *NewsController) NewsUpdate(c *fiber.Ctx) error {
 //	@Router			/api/v1/news/delete/{id} [delete]
 func (t *NewsController) NewsDelete(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idInt, err := validators.IdValidate(id)
+	idInt, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}

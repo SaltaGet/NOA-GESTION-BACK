@@ -3,7 +3,7 @@ package services
 import (
 	"io"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/assets"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/assets"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"gopkg.in/gomail.v2"
 )

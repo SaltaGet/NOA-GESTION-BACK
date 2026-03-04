@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -20,7 +20,7 @@ import (
 //	@Router			/api/v1/income_sale/{id} [get]
 func (i *IncomeSaleController) IncomeSaleGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -101,7 +101,7 @@ func (i *IncomeSaleController) IncomeSaleGetByDate(c *fiber.Ctx) error {
 //	@Router			/api/v1/income_sale/create [post]
 func (i *IncomeSaleController) IncomeSaleCreate(c *fiber.Ctx) error {
 	var incomeSaleCreate schemas.IncomeSaleCreate
-	if err := validators.ValidateRequest(c, &incomeSaleCreate); err != nil {
+	if err := validator.ValidateRequest(c, &incomeSaleCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 	if err := incomeSaleCreate.ValidateIntegrity(); err != nil {
@@ -135,7 +135,7 @@ func (i *IncomeSaleController) IncomeSaleCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/income_sale/update [put]
 func (i *IncomeSaleController) IncomeSaleUpdate(c *fiber.Ctx) error {
 	var incomeSaleUpdate schemas.IncomeSaleUpdate
-	if err := validators.ValidateRequest(c, &incomeSaleUpdate); err != nil {
+	if err := validator.ValidateRequest(c, &incomeSaleUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 	if err := incomeSaleUpdate.ValidateIntegrity(); err != nil {
@@ -169,7 +169,7 @@ func (i *IncomeSaleController) IncomeSaleUpdate(c *fiber.Ctx) error {
 //	@Router			/api/v1/income_sale/delete/{id} [delete]
 func (i *IncomeSaleController) IncomeSaleDelete(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}

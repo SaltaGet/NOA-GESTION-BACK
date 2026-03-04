@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 )
@@ -26,7 +26,7 @@ func (ec *EcommerceController) EcommerceGetByID(c *fiber.Ctx) error {
 			Message: "ID parameter is required",
 		})
 	}
-	idInt, err := validators.IdValidate(id)
+	idInt, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -63,7 +63,7 @@ func (ec *EcommerceController) EcommerceGetByReference(c *fiber.Ctx) error {
 			Message: "Reference parametro es requirido",
 		})
 	}
-	if !validators.IsValidUUIDv4(reference) {
+	if !validator.IsValidUUIDv4(reference) {
 		log.Error().Msg("Reference must be a valid UUIDv4")
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(schemas.Response{
 			Status:  false,
@@ -99,11 +99,11 @@ func (ec *EcommerceController) EcommerceGetByReference(c *fiber.Ctx) error {
 func (ec *EcommerceController) EcommerceGetAll(c *fiber.Ctx) error {
 	page := c.Query("page", "1")
 	limit := c.Query("limit", "10")
-	pg, err := validators.IntValidate(page)
+	pg, err := validator.IntValidate(page)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
-	lt, err := validators.IntValidate(limit)
+	lt, err := validator.IntValidate(limit)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -141,7 +141,7 @@ func (ec *EcommerceController) EcommerceGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/ecommerce/update_status [put]
 func (ec *EcommerceController) EcommerceUpdateStatus(c *fiber.Ctx) error {
 	var statusUpdate schemas.EcommerceStatusUpdate
-	if err := validators.ValidateRequest(c, &statusUpdate); err != nil {
+	if err := validator.ValidateRequest(c, &statusUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

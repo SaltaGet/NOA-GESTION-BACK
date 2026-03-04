@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -19,7 +19,7 @@ import (
 //	@Router			/api/v1/feedback/get/{id} [get]
 func (t *FeedbackController) FeedbackGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idInt, err := validators.IdValidate(id)
+	idInt, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -72,7 +72,7 @@ func (t *FeedbackController) FeedbackGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/feedback/create [post]
 func (t *FeedbackController) FeedbackCreate(c *fiber.Ctx) error {
 	var newCreate schemas.FeedbackCreate
-	if err := validators.ValidateRequest(c, &newCreate); err != nil {
+	if err := validator.ValidateRequest(c, &newCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -21,7 +21,7 @@ import (
 //	@Router			/api/v1/expense_other/get/{id} [get]
 func (e *ExpenseOtherController) ExpenseOtherGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -102,7 +102,7 @@ func (e *ExpenseOtherController) ExpenseOtherGetByDate(c *fiber.Ctx) error {
 //	@Router			/api/v1/expense_other/create [post]
 func (e *ExpenseOtherController) ExpenseOtherCreate(c *fiber.Ctx) error {
 	var expenseOtherCreate schemas.ExpenseOtherCreate
-	if err := validators.ValidateRequest(c, &expenseOtherCreate); err != nil {
+	if err := validator.ValidateRequest(c, &expenseOtherCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -133,7 +133,7 @@ func (e *ExpenseOtherController) ExpenseOtherCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/expense_other/update [put]
 func (e *ExpenseOtherController) ExpenseOtherUpdate(c *fiber.Ctx) error {
 	var expenseOtherUpdate schemas.ExpenseOtherUpdate
-	if err := validators.ValidateRequest(c, &expenseOtherUpdate); err != nil {
+	if err := validator.ValidateRequest(c, &expenseOtherUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -164,7 +164,7 @@ func (e *ExpenseOtherController) ExpenseOtherUpdate(c *fiber.Ctx) error {
 //	@Router			/api/v1/expense_other/delete/{id} [delete]
 func (e *ExpenseOtherController) ExpenseOtherDelete(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -197,7 +197,7 @@ func (e *ExpenseOtherController) ExpenseOtherDelete(c *fiber.Ctx) error {
 //	@Router			/api/v1/expense_other/get_point_sale/{id} [get]
 func (e *ExpenseOtherController) ExpenseOtherGetByIDPointSale(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -282,7 +282,7 @@ func (e *ExpenseOtherController) ExpenseOtherGetByDatePointSale(c *fiber.Ctx) er
 //	@Router			/api/v1/expense_other/create_point_sale [post]
 func (e *ExpenseOtherController) ExpenseOtherCreatePointSale(c *fiber.Ctx) error {
 	var expenseOtherCreate schemas.ExpenseOtherCreate
-	if err := validators.ValidateRequest(c, &expenseOtherCreate); err != nil {
+	if err := validator.ValidateRequest(c, &expenseOtherCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -314,7 +314,7 @@ func (e *ExpenseOtherController) ExpenseOtherCreatePointSale(c *fiber.Ctx) error
 //	@Router			/api/v1/expense_other/update_point_sale [put]
 func (e *ExpenseOtherController) ExpenseOtherUpdatePointSale(c *fiber.Ctx) error {
 	var expenseOtherUpdate schemas.ExpenseOtherUpdate
-	if err := validators.ValidateRequest(c, &expenseOtherUpdate); err != nil {
+	if err := validator.ValidateRequest(c, &expenseOtherUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -346,7 +346,7 @@ func (e *ExpenseOtherController) ExpenseOtherUpdatePointSale(c *fiber.Ctx) error
 //	@Router			/api/v1/expense_other/delete_point_sale/{id} [delete]
 func (e *ExpenseOtherController) ExpenseOtherDeletePointSale(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}

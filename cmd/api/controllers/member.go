@@ -3,14 +3,14 @@ package controllers
 import (
 	"strconv"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
 // Member godoc
-//
+//|
 // @Summary		Memeber GetAll
 // @Description	Memeber GetAll required auth token
 // @Tags			Member
@@ -86,7 +86,7 @@ func (m *MemberController) MemberGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/member/get/{id} [get]
 func (m *MemberController) MemberGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -116,7 +116,7 @@ func (m *MemberController) MemberGetByID(c *fiber.Ctx) error {
 //	@Router			/api/v1/member/create [post]
 func (m *MemberController) MemberCreate(c *fiber.Ctx) error {
 	var memberCreate schemas.MemberCreate
-	if err := validators.ValidateRequest(c, &memberCreate); err != nil {
+	if err := validator.ValidateRequest(c, &memberCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -147,7 +147,7 @@ func (m *MemberController) MemberCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/member/update [put]
 func (m *MemberController) MemberUpdate(c *fiber.Ctx) error {
 	var memberUpdate schemas.MemberUpdate
-	if err := validators.ValidateRequest(c, &memberUpdate); err != nil {
+	if err := validator.ValidateRequest(c, &memberUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -181,7 +181,7 @@ func (m *MemberController) MemberUpdate(c *fiber.Ctx) error {
 //	@Router			/api/v1/member/update_password [put]
 func (m *MemberController) MemberUpdatePassword(c *fiber.Ctx) error {
 	var memberUpdatePassword schemas.MemberUpdatePassword
-	if err := validators.ValidateRequest(c, &memberUpdatePassword); err != nil {
+	if err := validator.ValidateRequest(c, &memberUpdatePassword); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -212,7 +212,7 @@ func (m *MemberController) MemberUpdatePassword(c *fiber.Ctx) error {
 //	@Router			/api/v1/member/delete/{id} [delete]
 func (m *MemberController) MemberDelete(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}

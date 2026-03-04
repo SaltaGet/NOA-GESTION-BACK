@@ -5,9 +5,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/migrations"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/database"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/migrations"
 )
 
 func Migrations(deps *dependencies.MainContainer) error {

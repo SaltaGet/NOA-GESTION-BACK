@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/key"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/key"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/gofiber/fiber/v2"
 )

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -21,7 +21,7 @@ import (
 //	@Router			/api/v1/role/get/{id} [get]
 func (r *RoleController) RoleGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	intID, err := validators.IdValidate(id)
+	intID, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -76,7 +76,7 @@ func (r *RoleController) RoleGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/role/create [post]
 func (r *RoleController) RoleCreate(c *fiber.Ctx) error {
 	var roleCreate schemas.RoleCreate
-	if err := validators.ValidateRequest(c, &roleCreate); err != nil {
+	if err := validator.ValidateRequest(c, &roleCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -106,7 +106,7 @@ func (r *RoleController) RoleCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/role/update [put]
 func (r *RoleController) RoleUpdate(c *fiber.Ctx) error {
 	var roleCreate schemas.RoleUpdate
-	if err := validators.ValidateRequest(c, &roleCreate); err != nil {
+	if err := validator.ValidateRequest(c, &roleCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

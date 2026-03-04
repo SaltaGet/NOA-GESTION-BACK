@@ -3,10 +3,10 @@ package services
 import (
 	"fmt"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/cache"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jinzhu/copier"
 )

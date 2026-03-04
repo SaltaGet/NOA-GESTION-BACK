@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -27,7 +27,7 @@ import (
 //	@Router			/api/v1/supplier/{id} [get]
 func (s *SupplierController) SupplierGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -122,7 +122,7 @@ func (s *SupplierController) SupplierGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/supplier/create [post]
 func (s *SupplierController) SupplierCreate(c *fiber.Ctx) error {
 	var supplierCreate schemas.SupplierCreate
-	if err := validators.ValidateRequest(c, &supplierCreate); err != nil {
+	if err := validator.ValidateRequest(c, &supplierCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -158,7 +158,7 @@ func (s *SupplierController) SupplierCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/supplier/update [put]
 func (s *SupplierController) SupplierUpdate(c *fiber.Ctx) error {
 	var supplierUpdate schemas.SupplierUpdate
-	if err := validators.ValidateRequest(c, &supplierUpdate); err != nil {
+	if err := validator.ValidateRequest(c, &supplierUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -197,7 +197,7 @@ func (s *SupplierController) SupplierUpdate(c *fiber.Ctx) error {
 //	@Router			/api/v1/supplier/delete/{id} [delete]
 func (s *SupplierController) SupplierDeleteByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}

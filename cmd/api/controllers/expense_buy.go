@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -21,7 +21,7 @@ import (
 //	@Router			/api/v1/expense_buy/{id} [get]
 func (e *ExpenseBuyController) ExpenseBuyGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -104,7 +104,7 @@ func (e *ExpenseBuyController) ExpenseBuyGetByDate(c *fiber.Ctx) error {
 //	@Router			/api/v1/expense_buy/create [post]
 func (e *ExpenseBuyController) ExpenseBuyCreate(c *fiber.Ctx) error {
 	var expenseBuyCreate schemas.ExpenseBuyCreate
-	if err := validators.ValidateRequest(c, &expenseBuyCreate); err != nil {
+	if err := validator.ValidateRequest(c, &expenseBuyCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -135,7 +135,7 @@ func (e *ExpenseBuyController) ExpenseBuyCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/expense_buy/update [put]
 func (e *ExpenseBuyController) ExpenseBuyUpdate(c *fiber.Ctx) error {
 	var expenseBuyUpdate schemas.ExpenseBuyUpdate
-	if err := validators.ValidateRequest(c, &expenseBuyUpdate); err != nil {
+	if err := validator.ValidateRequest(c, &expenseBuyUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -166,7 +166,7 @@ func (e *ExpenseBuyController) ExpenseBuyUpdate(c *fiber.Ctx) error {
 //	@Router			/api/v1/expenseBuy/delete/{id} [delete]
 func (e *ExpenseBuyController) ExpenseBuyDelete(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}

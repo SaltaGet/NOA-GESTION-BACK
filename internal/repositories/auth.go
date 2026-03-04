@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
 	"gorm.io/gorm"
 	"github.com/rs/zerolog/log"
 )

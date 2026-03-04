@@ -10,7 +10,7 @@ import (
 	"fmt"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 )
@@ -29,7 +29,7 @@ import (
 //	@Router			/api/v1/arca/emit_invoice/{income_sale_id} [post]
 func (a *ArcaController) ArcaEmitInvoice(c *fiber.Ctx) error {
 	incomeSaleID := c.Params("income_sale_id")
-	idint, err := validators.IdValidate(incomeSaleID)
+	idint, err := validator.IdValidate(incomeSaleID)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -42,7 +42,7 @@ func (a *ArcaController) ArcaEmitInvoice(c *fiber.Ctx) error {
 	}
 
 	var factReq schemas.FacturaRequest
-	if err := validators.ValidateRequest(c, &factReq); err != nil {
+	if err := validator.ValidateRequest(c, &factReq); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -83,7 +83,7 @@ func (a *ArcaController) ArcaEmitInvoice(c *fiber.Ctx) error {
 //	@Router			/api/v1/arca/generate_key [post]
 func (a *ArcaController) ArcaGenerateKey(c *fiber.Ctx) error {
 	var keyReq schemas.KeyRequest
-	if err := validators.ValidateRequest(c, &keyReq); err != nil {
+	if err := validator.ValidateRequest(c, &keyReq); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -18,7 +18,7 @@ import (
 //	@Router			/api/v1/point_sale/get/{id} [get]
 func (p *PointSaleController) PointSaleGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -93,7 +93,7 @@ func (p *PointSaleController) PointSaleGetAllByMember(c *fiber.Ctx) error {
 //	@Router			/api/v1/point_sale/create [post]
 func (p *PointSaleController) PointSaleCreate(c *fiber.Ctx) error {
 	var pointSale schemas.PointSaleCreate
-	if err := validators.ValidateRequest(c, &pointSale); err != nil {
+	if err := validator.ValidateRequest(c, &pointSale); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -123,7 +123,7 @@ member := c.Locals("user").(*schemas.AuthenticatedUser)
 //	@Router			/api/v1/point_sale/update [put]
 func (p *PointSaleController) PointSaleUpdate(c *fiber.Ctx) error {
 	var pointSale schemas.PointSaleUpdate
-	if err := validators.ValidateRequest(c, &pointSale); err != nil {
+	if err := validator.ValidateRequest(c, &pointSale); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -152,7 +152,7 @@ func (p *PointSaleController) PointSaleUpdate(c *fiber.Ctx) error {
 //	@Router			/api/v1/point_sale/update_main [put]
 func (p *PointSaleController) PointSaleUpdateMain(c *fiber.Ctx) error {
 	var pointSale schemas.PointSaleUpdateMain
-	if err := validators.ValidateRequest(c, &pointSale); err != nil {
+	if err := validator.ValidateRequest(c, &pointSale); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

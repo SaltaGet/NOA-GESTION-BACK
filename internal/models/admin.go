@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
 	"gorm.io/gorm"
 )
 

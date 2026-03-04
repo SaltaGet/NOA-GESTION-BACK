@@ -27,7 +27,7 @@ func NewApplication(mainDB *gorm.DB, cfg *schemas.EmailConfig) *MainContainer {
 	dialer := gomail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)
 	emailService := &services.EmailService{Dialer: dialer}
 
-	authServ := &services.AuthService{AuthRepository: mainRepo, UserRepository: mainRepo, TenantService: mainRepo, EmailService: emailService, PlanRepository: mainRepo, ModuleRepository: mainRepo}
+	authServ := &services.AuthService{AuthRepository: mainRepo, TenantService: mainRepo, EmailService: emailService, PlanRepository: mainRepo, ModuleRepository: mainRepo}
 	userServ := &services.UserService{UserRepository: mainRepo}
 	tenantServ := &services.TenantService{TenantRepository: mainRepo, EmailService: emailService}
 	// notificationServ := &services.NotificationService{NotificationRepository: mainRepo}

@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -22,7 +22,7 @@ import (
 //	@Router			/user/create [post]
 func (u *UserController) CreateUser(c *fiber.Ctx) error {
 	var userCreate schemas.UserCreate
-	if err := validators.ValidateRequest(c, &userCreate); err != nil {
+	if err := validator.ValidateRequest(c, &userCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 	

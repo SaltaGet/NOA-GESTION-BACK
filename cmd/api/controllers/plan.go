@@ -3,7 +3,7 @@ package controllers
 import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -43,7 +43,7 @@ func (t *PlanController) PlanGetAll(c *fiber.Ctx) error {
 //	@Router			/api/v1/plan/get/{id} [get]
 func (t *PlanController) PlanGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idInt, err := validators.IdValidate(id)
+	idInt, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -73,7 +73,7 @@ func (t *PlanController) PlanGetByID(c *fiber.Ctx) error {
 //	@Router			/api/v1/plan/create [post]
 func (t *PlanController) PlanCreate(c *fiber.Ctx) error {
 	var planCreate schemas.PlanCreate
-	if err := validators.ValidateRequest(c, &planCreate); err != nil {
+	if err := validator.ValidateRequest(c, &planCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -104,7 +104,7 @@ func (t *PlanController) PlanCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/plan/update [put]
 func (t *PlanController) PlanUpdate(c *fiber.Ctx) error {
 	var planUpdate schemas.PlanUpdate
-	if err := validators.ValidateRequest(c, &planUpdate); err != nil {
+	if err := validator.ValidateRequest(c, &planUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 

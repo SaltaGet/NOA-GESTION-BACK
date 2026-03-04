@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/key"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/key"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 )

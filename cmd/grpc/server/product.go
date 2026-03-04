@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/DanielChachagua/ecommerce-noagestion-protos/pb"
-	grpc_cache "github.com/SaltaGet/NOA-GESTION-BACK/internal/cache/grpc"
+	grpc_cache "github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache/grpc"
 )
 
 func (s *GrpcProductServer) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.Product, error) {

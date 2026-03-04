@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -24,7 +24,7 @@ import (
 // @Router			/api/v1/category/get/{id} [get]
 func (c *CategoryController) CategoryGet(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
@@ -87,7 +87,7 @@ func (c *CategoryController) CategoryGetAll(ctx *fiber.Ctx) error {
 // @Router			/api/v1/category/create [post]
 func (c *CategoryController) CategoryCreate(ctx *fiber.Ctx) error {
 	var categoryCreate schemas.CategoryCreate
-	if err := validators.ValidateRequest(ctx, &categoryCreate); err != nil {
+	if err := validator.ValidateRequest(ctx, &categoryCreate); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
@@ -123,7 +123,7 @@ func (c *CategoryController) CategoryCreate(ctx *fiber.Ctx) error {
 // @Router			/api/v1/category/update [put]
 func (c *CategoryController) CategoryUpdate(ctx *fiber.Ctx) error {
 	var categoryUpdate schemas.CategoryUpdate
-	if err := validators.ValidateRequest(ctx, &categoryUpdate); err != nil {
+	if err := validator.ValidateRequest(ctx, &categoryUpdate); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 	member := ctx.Locals("user").(*schemas.AuthenticatedUser)
@@ -156,7 +156,7 @@ func (c *CategoryController) CategoryUpdate(ctx *fiber.Ctx) error {
 // @Router			/api/v1/category/delete/{id} [delete]
 func (c *CategoryController) CategoryDelete(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}

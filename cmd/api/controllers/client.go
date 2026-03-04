@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 )
@@ -23,7 +23,7 @@ import (
 //	@Router			/api/v1/client/get/{id} [get]
 func (cl *ClientController) ClientGetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -150,7 +150,7 @@ func (cl *ClientController) ClientCreate(c *fiber.Ctx) error {
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
 
 	var clientCreate schemas.ClientCreate
-	if err := validators.ValidateRequest(c, &clientCreate); err != nil {
+	if err := validator.ValidateRequest(c, &clientCreate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -179,7 +179,7 @@ func (cl *ClientController) ClientCreate(c *fiber.Ctx) error {
 //	@Router			/api/v1/client/update [put]
 func (cl *ClientController) ClientUpdate(c *fiber.Ctx) error {
 	var clientUpdate schemas.ClientUpdate
-	if err := validators.ValidateRequest(c, &clientUpdate); err != nil {
+	if err := validator.ValidateRequest(c, &clientUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 	if clientUpdate.ID == 1 {
@@ -212,7 +212,7 @@ func (cl *ClientController) ClientUpdate(c *fiber.Ctx) error {
 //	@Router			/api/v1/client/update_credit [put]
 func (cl *ClientController) ClientUpdateCredit(c *fiber.Ctx) error {
 	var clientUpdate schemas.ClientUpdateCredit
-	if err := validators.ValidateRequest(c, &clientUpdate); err != nil {
+	if err := validator.ValidateRequest(c, &clientUpdate); err != nil {
 		return schemas.HandleError(c, err)
 	}
 
@@ -247,7 +247,7 @@ func (cl *ClientController) ClientUpdateCredit(c *fiber.Ctx) error {
 //	@Router			/api/v1/client/delete/{id} [delete]
 func (cl *ClientController) ClientDelete(c *fiber.Ctx) error {
 	id := c.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}

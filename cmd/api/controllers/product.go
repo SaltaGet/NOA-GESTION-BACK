@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/utils"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/validators"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -24,7 +24,7 @@ import (
 //	@Router			/api/v1/product/get/{id} [get]
 func (p *ProductController) ProductGetByID(ctx *fiber.Ctx) error {
 	productID := ctx.Params("id")
-	idint, err := validators.IdValidate(productID)
+	idint, err := validator.IdValidate(productID)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
@@ -120,7 +120,7 @@ func (p *ProductController) ProductGetByName(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/product/get_by_category/{category_id} [get]
 func (p *ProductController) ProductGetByCategoryID(ctx *fiber.Ctx) error {
 	categoryID := ctx.Params("category_id")
-	idint, err := validators.IdValidate(categoryID)
+	idint, err := validator.IdValidate(categoryID)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
@@ -261,7 +261,7 @@ func (p *ProductController) ProductGenerateQR(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/product/create [post]
 func (p *ProductController) ProductCreate(ctx *fiber.Ctx) error {
 	var productCreate schemas.ProductCreate
-	if err := validators.ValidateRequest(ctx, &productCreate); err != nil {
+	if err := validator.ValidateRequest(ctx, &productCreate); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
@@ -340,7 +340,7 @@ func (p *ProductController) ProductUpload(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/product/update [put]
 func (p *ProductController) ProductUpdate(ctx *fiber.Ctx) error {
 	var productUpdate schemas.ProductUpdate
-	if err := validators.ValidateRequest(ctx, &productUpdate); err != nil {
+	if err := validator.ValidateRequest(ctx, &productUpdate); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
@@ -375,7 +375,7 @@ func (p *ProductController) ProductUpdate(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/product/list_price [put]
 func (p *ProductController) ProductPriceUpdate(ctx *fiber.Ctx) error {
 	var productUpdate schemas.ListPriceUpdate
-	if err := validators.ValidateRequest(ctx, &productUpdate); err != nil {
+	if err := validator.ValidateRequest(ctx, &productUpdate); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
@@ -410,7 +410,7 @@ func (p *ProductController) ProductPriceUpdate(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/product/delete/{id} [delete]
 func (p *ProductController) ProductDelete(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
-	idint, err := validators.IdValidate(id)
+	idint, err := validator.IdValidate(id)
 	if err != nil {
 		return schemas.HandleError(ctx, err)
 	}
@@ -455,7 +455,7 @@ func (p *ProductController) ProductDelete(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/product/generate_token_to_image [post]
 func (p *ProductController) ProductGenerateTokenToImage(ctx *fiber.Ctx) error {
 	var productValidateImage schemas.ProductValidateImage
-	if err := validators.ValidateRequest(ctx, &productValidateImage); err != nil {
+	if err := validator.ValidateRequest(ctx, &productValidateImage); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 	user := ctx.Locals("user").(*schemas.AuthenticatedUser)
@@ -486,7 +486,7 @@ func (p *ProductController) ProductGenerateTokenToImage(ctx *fiber.Ctx) error {
 //	@Router			/api/v1/product/update_visibility [put]
 func (p *ProductController) ProductUpdateVisibility(ctx *fiber.Ctx) error {
 	var productUpdate schemas.ListVisibilityUpdate
-	if err := validators.ValidateRequest(ctx, &productUpdate); err != nil {
+	if err := validator.ValidateRequest(ctx, &productUpdate); err != nil {
 		return schemas.HandleError(ctx, err)
 	}
 
