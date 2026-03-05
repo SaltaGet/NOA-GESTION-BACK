@@ -1,0 +1,16 @@
+CREATE TABLE products (
+    id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    price NUMERIC(15, 2) NOT NULL DEFAULT 0,
+    category_id BIGINT NOT NULL,
+    primary_image VARCHAR(255) DEFAULT NULL,
+    secondary_images TEXT DEFAULT NULL,
+    is_visible BOOLEAN NOT NULL DEFAULT FALSE,
+    notifier BOOLEAN NOT NULL DEFAULT FALSE,
+    min_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_products_category FOREIGN KEY (category_id) REFERENCES categories(id)
+);

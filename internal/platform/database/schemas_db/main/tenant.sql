@@ -1,0 +1,21 @@
+CREATE TABLE tenants (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    identifier VARCHAR(50) UNIQUE NOT NULL,
+    address VARCHAR(255) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    cuit_pdv VARCHAR(50) UNIQUE NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    plan_id BIGINT NOT NULL,
+    connection VARCHAR(255) NOT NULL,
+    expiration TIMESTAMP WITH TIME ZONE,
+    accepted_terms BOOLEAN NOT NULL DEFAULT FALSE,
+    ip VARCHAR(255),
+    date_accepted TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT fk_tenants_plan FOREIGN KEY (plan_id) REFERENCES plans(id) ON UPDATE CASCADE ON DELETE SET NULL
+);
+CREATE INDEX idx_tenants_deleted_at ON tenants(deleted_at);

@@ -1,31 +1,34 @@
 package repositories
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/volatiletech/sqlboiler/v4/queries"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 func (r *ReportRepository) ReportMovementByDatePointSale(start, end time.Time, form string) (any, error) {
-  var resultados []map[string]any
+	var resultados []map[string]any
 
-  var modo string
-  var dateFormat string
-  
-  // Cambios para compatibilidad con PostgreSQL
-  if form == "month" {
-    // Agrupamos por el mismo string formateado
-    dateFormat = "TO_CHAR(mov.fecha, 'YYYY-MM') as fecha"
-    modo = "ps.id, ps.name, TO_CHAR(mov.fecha, 'YYYY-MM')"
-  } else {
-    dateFormat = "TO_CHAR(mov.fecha, 'YYYY-MM-DD') as fecha"
-    modo = "ps.id, ps.name, TO_CHAR(mov.fecha, 'YYYY-MM-DD')"
-  }
+	var modo string
+	var dateFormat string
 
-  query := fmt.Sprintf(`
+	// Cambios para compatibilidad con PostgreSQL
+	if form == "month" {
+		// Agrupamos por el mismo string formateado
+		dateFormat = "TO_CHAR(mov.fecha, 'YYYY-MM') as fecha"
+		modo = "ps.id, ps.name, TO_CHAR(mov.fecha, 'YYYY-MM')"
+	} else {
+		dateFormat = "TO_CHAR(mov.fecha, 'YYYY-MM-DD') as fecha"
+		modo = "ps.id, ps.name, TO_CHAR(mov.fecha, 'YYYY-MM-DD')"
+	}
+
+	query := fmt.Sprintf(`
   SELECT 
     ps.id as point_sale_id,
     ps.name as point_sale_name,
@@ -36,61 +39,84 @@ func (r *ReportRepository) ReportMovementByDatePointSale(start, end time.Time, f
   FROM (
     SELECT created_at as fecha, total, 'ingreso_ventas' as tipo, point_sale_id
       FROM income_sales
-      WHERE created_at BETWEEN ? AND ?
+      WHERE created_at BETWEEN $1 AND $2
       
       UNION ALL
       
       SELECT created_at as fecha, total, 'ingreso_otros' as tipo, point_sale_id
       FROM income_others
-      WHERE created_at BETWEEN ? AND ?
+      WHERE created_at BETWEEN $3 AND $4
       
       UNION ALL
       
       SELECT created_at as fecha, total, 'egreso_otros' as tipo, point_sale_id
       FROM expense_others
-      WHERE created_at BETWEEN ? AND ?
+      WHERE created_at BETWEEN $5 AND $6
   ) AS mov
   JOIN point_sales ps ON ps.id = mov.point_sale_id
-  WHERE mov.fecha BETWEEN ? AND ?
+  WHERE mov.fecha BETWEEN $7 AND $8
   GROUP BY %s
   ORDER BY ps.id
   `, dateFormat, modo)
 
-  err := r.DB.Raw(query,
-    start, end,
-    start, end,
-    start, end,
-    start, end,
-  ).Scan(&resultados).Error
-  
-  if err != nil {
-    return nil, schemas.HandlerErrorGorm(err, "Reporte", schemas.Read)
-  }
+	ctx := context.Background()
+	// sqlboiler uses bind and struct loading for raw queries, but we can also use dynamic slice of map
+	// wait, Bind doesn't work out-of-the-box for `map[string]any` so we'll do raw SQL rows scan:
+	rows, err := queries.Raw(query, start, end, start, end, start, end, start, end).QueryContext(ctx, r.DB)
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Reporte", schemas.Read)
+	}
+	defer rows.Close()
 
-  grouped := make(map[string][]map[string]any)
-  for _, row := range resultados {
-    // IMPORTANTE: TO_CHAR siempre devuelve string.
-    // Eliminamos la aserción a time.Time que causaba error.
-    fecha, ok := row["fecha"].(string)
-    if !ok {
-        fecha = "Sin Fecha"
-    }
-    grouped[fecha] = append(grouped[fecha], row)
-  }
+	cols, _ := rows.Columns()
+	for rows.Next() {
+		columns := make([]any, len(cols))
+		columnPointers := make([]any, len(cols))
+		for i := range columns {
+			columnPointers[i] = &columns[i]
+		}
 
-  var result []map[string]any
-  for fecha, movimientos := range grouped {
-    result = append(result, map[string]any{
-      "fecha":      fecha,
-      "movimiento": movimientos,
-    })
-  }
+		if err := rows.Scan(columnPointers...); err != nil {
+			return nil, schemas.HandlerErrorDB(err, "Reporte", schemas.Read)
+		}
 
-  sort.Slice(result, func(i, j int) bool {
-    return result[i]["fecha"].(string) < result[j]["fecha"].(string)
-  })
+		m := make(map[string]any)
+		for i, colName := range cols {
+			val := columnPointers[i].(*any)
+			m[colName] = *val
+		}
+		resultados = append(resultados, m)
+	}
 
-  return result, nil
+	grouped := make(map[string][]map[string]any)
+	for _, row := range resultados {
+		// byte array to string mapping in standard pgx/sql queries
+		var fecha string
+		switch v := row["fecha"].(type) {
+		case []byte:
+			fecha = string(v)
+		case string:
+			fecha = v
+		default:
+			fecha = "Sin Fecha"
+		}
+
+		grouped[fecha] = append(grouped[fecha], row)
+	}
+
+	var result []map[string]any
+	for fecha, movimientos := range grouped {
+		result = append(result, map[string]any{
+			"fecha":      fecha,
+			"movimiento": movimientos,
+		})
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i]["fecha"].(string) < result[j]["fecha"].(string)
+	})
+
+	return result, nil
 }
 
 func (r *ReportRepository) ReportMovementByDate(start, end time.Time, form string) (any, error) {
@@ -110,54 +136,74 @@ func (r *ReportRepository) ReportMovementByDate(start, end time.Time, form strin
 	query := fmt.Sprintf(`
 		SELECT
 			%s,
-			COALESCE(SUM(CASE WHEN tipo = 'ingreso_ventas'  THEN total ELSE 0 END), 0) AS total_ingreso_ventas,
-			COALESCE(SUM(CASE WHEN tipo = 'egreso_compras'  THEN total ELSE 0 END), 0) AS total_compra_egresos,
-			COALESCE(SUM(CASE WHEN tipo = 'ingreso_otros'   THEN total ELSE 0 END), 0) AS total_otros_ingresos,
-			COALESCE(SUM(CASE WHEN tipo = 'egreso_otros'    THEN total ELSE 0 END), 0) AS total_otros_egresos
+			COALESCE(SUM(CASE WHEN tipo = 'ingreso_ventas'  THEN total ELSE 0 END), 0) AS total_ingresos,
+			COALESCE(SUM(CASE WHEN tipo = 'egreso_compras'  THEN total ELSE 0 END), 0) AS total_egresos,
+			COALESCE(SUM(CASE WHEN tipo = 'ingreso_otros'   THEN total ELSE 0 END), 0) AS total_canchas,
+			COALESCE(SUM(CASE WHEN tipo = 'egreso_otros'    THEN total ELSE 0 END), 0) AS balance
 		FROM (
 			SELECT created_at AS fecha, total, 'ingreso_ventas' AS tipo
 			FROM income_sales
-			WHERE created_at BETWEEN ? AND ?
+			WHERE created_at BETWEEN $1 AND $2
 
 			UNION ALL
 			
 			SELECT created_at AS fecha, total, 'egreso_compras' AS tipo
 			FROM expense_buys
-			WHERE created_at BETWEEN ? AND ? 
+			WHERE created_at BETWEEN $3 AND $4 
 
 			UNION ALL
 
 			SELECT created_at AS fecha, total, 'ingreso_otros' AS tipo
 			FROM income_others
-			WHERE created_at BETWEEN ? AND ?
+			WHERE created_at BETWEEN $5 AND $6
 
 			UNION ALL
 
 			SELECT created_at AS fecha, total, 'egreso_otros' AS tipo
 			FROM expense_others
-			WHERE created_at BETWEEN ? AND ?
+			WHERE created_at BETWEEN $7 AND $8
 		) AS mov
-		WHERE mov.fecha BETWEEN ? AND ?
+		WHERE mov.fecha BETWEEN $9 AND $10
 		GROUP BY %s
 		ORDER BY %s
 	`, dateFormat, modo, modo)
 
-	err := r.DB.Raw(query,
-		start, end,
-		start, end,
-		start, end,
-		start, end,
-		start, end,
-	).Scan(&resultados).Error
+	ctx := context.Background()
+	rows, err := queries.Raw(query, start, end, start, end, start, end, start, end, start, end).QueryContext(ctx, r.DB)
 	if err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Reporte", schemas.Read)
+		return nil, schemas.HandlerErrorDB(err, "Reporte", schemas.Read)
+	}
+	defer rows.Close()
+
+	cols, _ := rows.Columns()
+	for rows.Next() {
+		columns := make([]any, len(cols))
+		columnPointers := make([]any, len(cols))
+		for i := range columns {
+			columnPointers[i] = &columns[i]
+		}
+
+		if err := rows.Scan(columnPointers...); err != nil {
+			return nil, schemas.HandlerErrorDB(err, "Reporte", schemas.Read)
+		}
+
+		m := make(map[string]any)
+		for i, colName := range cols {
+			val := columnPointers[i].(*any)
+			m[colName] = *val
+		}
+		resultados = append(resultados, m)
 	}
 
 	grouped := make(map[string][]map[string]any)
 	for _, row := range resultados {
-		// Con TO_CHAR PostgreSQL siempre devuelve string, tanto para month como day
-		fecha, ok := row["fecha"].(string)
-		if !ok {
+		var fecha string
+		switch v := row["fecha"].(type) {
+		case []byte:
+			fecha = string(v)
+		case string:
+			fecha = v
+		default:
 			return nil, fmt.Errorf("tipo inesperado en campo fecha: %T", row["fecha"])
 		}
 		grouped[fecha] = append(grouped[fecha], row)
@@ -193,30 +239,72 @@ func (r *ReportRepository) ReportProfitableProducts(start, end time.Time) ([]sch
 		FROM products p
 		LEFT JOIN income_sale_items ii 
 			ON p.id = ii.product_id
-			AND ii.created_at BETWEEN ? AND ?
+			AND ii.created_at BETWEEN $1 AND $2
 		GROUP BY p.id, p.code, p.name
 		ORDER BY total_profit DESC, total_quantity DESC
 	`
 
-	if err := r.DB.Raw(query, start, end).Scan(&products).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Reporte", schemas.Read)
+	ctx := context.Background()
+	if err := queries.Raw(query, start, end).Bind(ctx, r.DB, &products); err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Reporte", schemas.Read)
 	}
 
 	return products, nil
 }
 
-func (r *ReportRepository) ReportStockProducts() ([]*models.Product, error) {
-	var products []*models.Product
+func (r *ReportRepository) ReportStockProducts() ([]schemas.ReportStockProduct, error) {
+	ctx := context.Background()
 
-	if err := r.DB.
-		Preload("Category").
-		Preload("StockPointSales").
-		Preload("StockPointSales.PointSale").
-		Preload("StockDeposit").
-		Find(&products).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Reporte", schemas.Read)
+	products, err := boilmodels.Products(
+		qm.Load(boilmodels.ProductRels.Category),
+		qm.Load(qm.Rels(boilmodels.ProductRels.StockPointSales, boilmodels.StockPointSaleRels.PointSale)),
+		qm.Load(boilmodels.ProductRels.StockDeposits),
+	).All(ctx, r.DB)
+
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Reporte", schemas.Read)
 	}
 
-	return products, nil
-}
+	var response []schemas.ReportStockProduct
+	for _, p := range products {
+		price, _ := p.Price.Big.Float64()
+		minAmount, _ := p.MinAmount.Big.Float64()
 
+		prod := schemas.ReportStockProduct{
+			ID:        p.ID,
+			Code:      p.Code,
+			Name:      p.Name,
+			Price:     price,
+			Notifier:  p.Notifier,
+			MinAmount: minAmount,
+		}
+
+		if p.Description.Valid {
+			prod.Description = &p.Description.String
+		}
+
+		if p.R.Category != nil {
+			prod.Category = p.R.Category.Name
+		}
+
+		if len(p.R.StockDeposits) > 0 {
+			prod.DepositStock = p.R.StockDeposits[0].Stock
+		}
+
+		for _, sp := range p.R.StockPointSales {
+			pointSaleName := ""
+			if sp.R.PointSale != nil {
+				pointSaleName = sp.R.PointSale.Name
+			}
+			prod.PointSaleStocks = append(prod.PointSaleStocks, schemas.ReportStockPointSale{
+				PointSaleID:   sp.PointSaleID,
+				PointSaleName: pointSaleName,
+				Stock:         sp.Stock,
+			})
+		}
+
+		response = append(response, prod)
+	}
+
+	return response, nil
+}

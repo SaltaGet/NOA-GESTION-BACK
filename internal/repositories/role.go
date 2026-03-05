@@ -1,115 +1,135 @@
 package repositories
 
 import (
+	"context"
+	"database/sql"
+	"errors"
 	"fmt"
-	"strconv"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/jinzhu/copier"
-	"gorm.io/gorm"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-func (r *RoleRepository) RoleGetByID(id int64) (*schemas.RoleResponse, error) {
-	var role models.Role
-	if err := r.DB.
-		Preload("Permissions"). // ← Agregar esto
-		Where("roles.id = ?", id).
-		First(&role).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Rol", schemas.Read)
+func mapToPermissionResponse(p *boilmodels.Permission) schemas.PermissionResponse {
+	if p == nil {
+		return schemas.PermissionResponse{}
+	}
+	return schemas.PermissionResponse{
+		ID:          p.ID,
+		Code:        p.Code,
+		Group:       p.Group.String,
+		Environment: p.Environment.String,
+		Details:     p.Details.String,
+	}
+}
+
+func mapToRoleResponse(r *boilmodels.Role) schemas.RoleResponse {
+	if r == nil {
+		return schemas.RoleResponse{}
 	}
 
-	var roleResponse schemas.RoleResponse
-	copier.Copy(&roleResponse, &role)
+	res := schemas.RoleResponse{
+		ID:          r.ID,
+		Name:        r.Name,
+		Permissions: []schemas.PermissionResponse{},
+	}
 
-	return &roleResponse, nil
+	if r.R != nil && len(r.R.Permissions) > 0 {
+		for _, p := range r.R.Permissions {
+			res.Permissions = append(res.Permissions, mapToPermissionResponse(p))
+		}
+	}
+
+	return res
+}
+
+func (r *RoleRepository) RoleGetByID(id int64) (*schemas.RoleResponse, error) {
+	ctx := context.Background()
+
+	role, err := boilmodels.Roles(
+		qm.Load(boilmodels.RoleRels.Permissions),
+		boilmodels.RoleWhere.ID.EQ(id),
+	).One(ctx, r.DB)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, schemas.HandlerErrorDB(err, "Rol", schemas.Read)
+		}
+		return nil, schemas.HandlerErrorDB(err, "Rol", schemas.Read)
+	}
+
+	res := mapToRoleResponse(role)
+	return &res, nil
 }
 
 func (r *RoleRepository) RoleGetAll() (*[]schemas.RoleResponse, error) {
-	var rows []schemas.RolePermissionRow
-	if err := r.DB.Table("roles").
-		Select(`
-    roles.id as role_id, 
-    roles.name as role_name, 
-    permissions.id as perm_id, 
-    permissions.code as perm_code, 
-    permissions."group" as perm_group,
-    permissions.environment as environment, 
-    permissions.details as detail
-`).
-		Joins("left join role_permissions on roles.id = role_permissions.role_id").
-		Joins("left join permissions on permissions.id = role_permissions.permission_id").
-		Find(&rows).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Rol", schemas.Read)
+	ctx := context.Background()
+
+	roles, err := boilmodels.Roles(
+		qm.Load(boilmodels.RoleRels.Permissions),
+	).All(ctx, r.DB)
+
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Rol", schemas.Read)
 	}
 
-	roleMap := make(map[string]*schemas.RoleResponse)
-	for _, row := range rows {
-		role, exists := roleMap[strconv.FormatInt(row.RoleID, 10)]
-		if !exists {
-			idInt := row.RoleID
-
-			role = &schemas.RoleResponse{
-				ID:          idInt,
-				Name:        row.RoleName,
-				Permissions: []schemas.PermissionResponse{},
-			}
-			roleMap[strconv.FormatInt(row.RoleID, 10)] = role
-		}
-
-		role.Permissions = append(role.Permissions, schemas.PermissionResponse{
-			ID:          row.PermID,
-			Code:        row.PermCode,
-			Group:       row.PermGroup,
-			Environment: row.Environment,
-			Details:     row.Detail,
-		})
-	}
 	var allRoles []schemas.RoleResponse
-	for _, role := range roleMap {
-		allRoles = append(allRoles, *role)
+	for _, role := range roles {
+		allRoles = append(allRoles, mapToRoleResponse(role))
 	}
+
 	return &allRoles, nil
 }
 
-func expandPermissions(db *gorm.DB, permissionIDs []int64) ([]models.Permission, error) {
-	// Obtener los permisos solicitados
-	var requestedPermissions []models.Permission
-	if err := db.Where("id IN ?", permissionIDs).Find(&requestedPermissions).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Rol", schemas.Read)
+func expandPermissions(ctx context.Context, exec boil.ContextExecutor, permissionIDs []int64) ([]*boilmodels.Permission, error) {
+	if len(permissionIDs) == 0 {
+		return []*boilmodels.Permission{}, nil
 	}
 
-	// Mapa para evitar duplicados
-	permissionMap := make(map[int64]models.Permission)
+	// Make ids list for querying
+	var interfaces []interface{}
+	for _, id := range permissionIDs {
+		interfaces = append(interfaces, id)
+	}
+
+	requestedPermissions, err := boilmodels.Permissions(
+		qm.WhereIn("id IN ?", interfaces...),
+	).All(ctx, exec)
+
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Rol", schemas.Read)
+	}
+
+	permissionMap := make(map[int64]*boilmodels.Permission)
 	for _, perm := range requestedPermissions {
 		permissionMap[perm.ID] = perm
 	}
 
-	// Para cada permiso de actualización (02), buscar el correspondiente de lectura (04)
-	var groupsToExpand []string
+	var groupsToExpand []interface{}
 	for _, perm := range requestedPermissions {
-		// Si el código termina en 02 (update)
 		if len(perm.Code) >= 2 && perm.Code[len(perm.Code)-2:] == "02" {
-			groupsToExpand = append(groupsToExpand, perm.Group)
+			groupsToExpand = append(groupsToExpand, perm.Group.String)
 		}
 	}
 
-	// Si hay grupos para expandir, buscar los permisos 04 correspondientes
 	if len(groupsToExpand) > 0 {
-		var readPermissions []models.Permission
-		// Buscar permisos que terminen en 04 y pertenezcan a los grupos relevantes
-		if err := db.Where("code LIKE ? AND `group` IN ?", "%04", groupsToExpand).Find(&readPermissions).Error; err != nil {
-			return nil, schemas.HandlerErrorGorm(err, "Rol", schemas.Read)
+		readPermissions, err := boilmodels.Permissions(
+			qm.Where("code LIKE ?", "%04"),
+			qm.WhereIn("\"group\" IN ?", groupsToExpand...), // Note: group is a reserved pgx word
+		).All(ctx, exec)
+
+		if err != nil {
+			return nil, schemas.HandlerErrorDB(err, "Rol", schemas.Read)
 		}
 
-		// Agregar los permisos de lectura al mapa (evita duplicados automáticamente)
 		for _, perm := range readPermissions {
 			permissionMap[perm.ID] = perm
 		}
 	}
 
-	// Convertir el mapa a slice
-	expandedPermissions := make([]models.Permission, 0, len(permissionMap))
+	var expandedPermissions []*boilmodels.Permission
 	for _, perm := range permissionMap {
 		expandedPermissions = append(expandedPermissions, perm)
 	}
@@ -117,80 +137,91 @@ func expandPermissions(db *gorm.DB, permissionIDs []int64) ([]models.Permission,
 	return expandedPermissions, nil
 }
 
-// RoleCreate actualizado
 func (t *RoleRepository) RoleCreate(memberID int64, roleCreate *schemas.RoleCreate) (int64, error) {
-	var newRoleSave *models.Role
-	err := t.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
-		// Expandir permisos automáticamente
-		permissions, err := expandPermissions(tx, roleCreate.PermissionsID)
-		if err != nil {
-			return err
-		}
+	ctx := context.Background()
+	tx, err := t.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
 
-		// Validar que al menos los permisos solicitados existan
-		if len(permissions) < len(roleCreate.PermissionsID) {
-			return schemas.ErrorResponse(400, "Algunos permisos no existen",
-				fmt.Errorf("se esperaban al menos %d permisos, pero se encontraron %d",
-					len(roleCreate.PermissionsID), len(permissions)))
-		}
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return 0, err
+	}
 
-		newRole := &models.Role{Name: roleCreate.Name, Permissions: permissions}
-
-		if err := tx.Create(&newRole).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Rol", schemas.Create)
-		}
-
-		newRoleSave = newRole
-		return nil
-	})
-
+	permissions, err := expandPermissions(ctx, tx, roleCreate.PermissionsID)
 	if err != nil {
 		return 0, err
 	}
 
-	return newRoleSave.ID, nil
+	// Check if all requested permissions actually exist before expanding
+	if len(permissions) < len(roleCreate.PermissionsID) {
+		return 0, schemas.ErrorResponse(400, "Algunos permisos no existen",
+			fmt.Errorf("se esperaban al menos %d permisos, pero se encontraron %d",
+				len(roleCreate.PermissionsID), len(permissions)))
+	}
+
+	newRole := &boilmodels.Role{
+		Name: roleCreate.Name,
+	}
+
+	if err := newRole.Insert(ctx, tx, boil.Infer()); err != nil {
+		return 0, schemas.HandlerErrorDB(err, "Rol", schemas.Create)
+	}
+
+	if len(permissions) > 0 {
+		if err := newRole.SetPermissions(ctx, tx, false, permissions...); err != nil {
+			return 0, schemas.HandlerErrorDB(err, "Rol", schemas.Update)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+
+	return newRole.ID, nil
 }
 
-// RoleUpdate actualizado
 func (t *RoleRepository) RoleUpdate(memberID int64, roleUpdate *schemas.RoleUpdate) error {
-	err := t.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
-		// Verificar que el rol existe
-		var existingRole models.Role
-		if err := tx.Preload("Permissions").First(&existingRole, roleUpdate.ID).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Rol", schemas.Read)
-		}
+	ctx := context.Background()
+	tx, err := t.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-		// Expandir permisos automáticamente
-		permissions, err := expandPermissions(tx, roleUpdate.PermissionsID)
-		if err != nil {
-			return err
-		}
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return err
+	}
 
-		// Validar que al menos los permisos solicitados existan
-		if len(permissions) < len(roleUpdate.PermissionsID) {
-			return schemas.ErrorResponse(400, "Algunos permisos no existen",
-				fmt.Errorf("se esperaban al menos %d permisos, pero se encontraron %d",
-					len(roleUpdate.PermissionsID), len(permissions)))
-		}
+	existingRole, err := boilmodels.Roles(
+		boilmodels.RoleWhere.ID.EQ(roleUpdate.ID),
+	).One(ctx, tx)
 
-		// Actualizar el nombre del rol
-		if err := tx.Model(&existingRole).Update("name", roleUpdate.Name).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Rol", schemas.Update)
-		}
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Rol", schemas.Read)
+	}
 
-		// Reemplazar las asociaciones de permisos
-		if err := tx.Model(&existingRole).Association("Permissions").Replace(permissions); err != nil {
-			return schemas.HandlerErrorGorm(err, "Rol", schemas.Update)
-		}
+	permissions, err := expandPermissions(ctx, tx, roleUpdate.PermissionsID)
+	if err != nil {
+		return err
+	}
 
-		return nil
-	})
+	if len(permissions) < len(roleUpdate.PermissionsID) {
+		return schemas.ErrorResponse(400, "Algunos permisos no existen",
+			fmt.Errorf("se esperaban al menos %d permisos, pero se encontraron %d",
+				len(roleUpdate.PermissionsID), len(permissions)))
+	}
 
-	return err
+	existingRole.Name = roleUpdate.Name
+	if _, err := existingRole.Update(ctx, tx, boil.Infer()); err != nil {
+		return schemas.HandlerErrorDB(err, "Rol", schemas.Update)
+	}
+
+	// Reemplazar asociaciones
+	if err := existingRole.SetPermissions(ctx, tx, false, permissions...); err != nil {
+		return schemas.HandlerErrorDB(err, "Rol", schemas.Update)
+	}
+
+	return tx.Commit()
 }

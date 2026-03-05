@@ -1,95 +1,155 @@
 package repositories
 
 import (
+	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"gorm.io/gorm"
+	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
-func (r *CategoryRepository) CategoryGetByID(id int64) (*models.Category, error) {
-	var category *models.Category
+func mapToModelCategory(c *boilmodels.Category) *models.Category {
+	var updatedAt time.Time
+	if c.UpdatedAt.Valid {
+		updatedAt = c.UpdatedAt.Time
+	}
+	return &models.Category{
+		ID:        c.ID,
+		Name:      c.Name,
+		CreatedAt: c.CreatedAt,
+		UpdatedAt: updatedAt,
+	}
+}
 
-	if err := r.DB.First(&category, id).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Categoria", schemas.Read)
+func (r *CategoryRepository) CategoryGetByID(id int64) (*models.Category, error) {
+	ctx := context.Background()
+
+	c, err := boilmodels.Categories(
+		boilmodels.CategoryWhere.ID.EQ(id),
+		boilmodels.CategoryWhere.DeleteAt.IsNull(),
+	).One(ctx, r.DB)
+
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Categoria", schemas.Read)
 	}
 
-	return category, nil
+	return mapToModelCategory(c), nil
 }
 
 func (r *CategoryRepository) CategoryGetAll() ([]*models.Category, error) {
-	var categories []*models.Category
+	ctx := context.Background()
 
-	if err := r.DB.Find(&categories).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Categoria", schemas.Read)
+	boilCategories, err := boilmodels.Categories(
+		boilmodels.CategoryWhere.DeleteAt.IsNull(),
+	).All(ctx, r.DB)
+
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Categoria", schemas.Read)
+	}
+
+	var categories []*models.Category
+	for _, c := range boilCategories {
+		categories = append(categories, mapToModelCategory(c))
 	}
 
 	return categories, nil
 }
 
 func (r *CategoryRepository) CategoryCreate(memberID int64, categoryCreate *schemas.CategoryCreate) (int64, error) {
-	category := models.Category{
-		Name: categoryCreate.Name,
-	}
-
-	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
-
-		if err := tx.Create(&category).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Categoria", schemas.Create)
-		}
-
-		return nil
-	})
-
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
+	defer tx.Rollback()
 
-	return category.ID, nil
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return 0, schemas.HandlerErrorDB(err, "Categoria", schemas.Create)
+	}
+
+	c := boilmodels.Category{
+		Name: strings.ToLower(categoryCreate.Name),
+	}
+
+	if err := c.Insert(ctx, tx, boil.Infer()); err != nil {
+		return 0, schemas.HandlerErrorDB(err, "Categoria", schemas.Create)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+
+	return c.ID, nil
 }
 
 func (r *CategoryRepository) CategoryUpdate(memberID int64, categoryUpdate *schemas.CategoryUpdate) error {
-	return r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-		var oldCategory models.Category
-		if err := tx.First(&oldCategory, categoryUpdate.ID).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Categoria", schemas.Read)
-		}
-		if err := tx.Model(&models.Category{}).
-			Where("id = ?", categoryUpdate.ID).
-			Updates(map[string]any{
-				"name": categoryUpdate.Name,
-			}).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Categoria", schemas.Update)
-		}
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return err
+	}
 
-		return nil
-	})
+	c, err := boilmodels.Categories(
+		boilmodels.CategoryWhere.ID.EQ(categoryUpdate.ID),
+		boilmodels.CategoryWhere.DeleteAt.IsNull(),
+	).One(ctx, tx)
+
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Categoria", schemas.Read)
+	}
+
+	c.Name = strings.ToLower(categoryUpdate.Name)
+
+	if _, err := c.Update(ctx, tx, boil.Whitelist(boilmodels.CategoryColumns.Name, boilmodels.CategoryColumns.UpdatedAt)); err != nil {
+		return schemas.HandlerErrorDB(err, "Categoria", schemas.Update)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *CategoryRepository) CategoryDelete(memberID, id int64) error {
-	return r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-		var oldCategory models.Category
-		if err := tx.First(&oldCategory, id).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Categoria", schemas.Read)
-		}
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return err
+	}
 
-		res := tx.Delete(&oldCategory)
-		if err := res.Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Categoria", schemas.Delete)
-		}
+	c, err := boilmodels.Categories(
+		boilmodels.CategoryWhere.ID.EQ(id),
+		boilmodels.CategoryWhere.DeleteAt.IsNull(),
+	).One(ctx, tx)
 
-		return nil
-	})
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Categoria", schemas.Read)
+	}
+
+	c.DeleteAt = null.TimeFrom(time.Now())
+	if _, err := c.Update(ctx, tx, boil.Whitelist(boilmodels.CategoryColumns.DeleteAt, boilmodels.CategoryColumns.UpdatedAt)); err != nil {
+		return schemas.HandlerErrorDB(err, "Categoria", schemas.Delete)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }

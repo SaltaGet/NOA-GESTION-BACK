@@ -1,270 +1,393 @@
 package repositories
 
 import (
+	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"math"
 	"strings"
+	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/jinzhu/copier"
-	"gorm.io/gorm"
+	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
+func mapToClientResponseDTO(c *boilmodels.Client, debt *float64) schemas.ClientResponseDTO {
+	dto := schemas.ClientResponseDTO{
+		ID:        c.ID,
+		FirstName: c.FirstName,
+		LastName:  c.LastName,
+	}
+	if c.CompanyName.Valid {
+		dto.CompanyName = &c.CompanyName.String
+	}
+	if c.Identifier.Valid {
+		dto.Identifier = &c.Identifier.String
+	}
+	if c.Email.Valid {
+		dto.Email = &c.Email.String
+	}
+	if c.Phone.Valid {
+		dto.Phone = &c.Phone.String
+	}
+	if c.ResponsabilityFrontIva.Valid {
+		dto.ResponsabilityFrontIVA = &c.ResponsabilityFrontIva.String
+	}
+	if debt != nil {
+		dto.Debt = debt
+	}
+	return dto
+}
+
 func (r *ClientRepository) ClientGetByID(id int64) (*schemas.ClientResponse, error) {
-	var client models.Client
-	if err := r.DB.
-		Preload("MemberCreate", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "first_name", "last_name", "username").Unscoped()
-		}).
-		Preload("Pay", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "income_sale_id", "client_id", "total", "method_pay", "created_at").Where("method_pay = ?", "credit")
-		}).
-		Where("id = ?", id).First(&client).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Cliente", schemas.Read)
+	ctx := context.Background()
+
+	c, err := boilmodels.Clients(
+		boilmodels.ClientWhere.ID.EQ(id),
+		boilmodels.ClientWhere.DeleteAt.IsNull(),
+		qm.Load(boilmodels.ClientRels.MemberCreate),
+		qm.Load(boilmodels.ClientRels.PayIncomes, boilmodels.PayIncomeWhere.MethodPay.EQ("credit")),
+	).One(ctx, r.DB)
+
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Cliente", schemas.Read)
 	}
 
-	var clientResponse schemas.ClientResponse
-	copier.Copy(&clientResponse, &client)
+	res := &schemas.ClientResponse{
+		ID:        c.ID,
+		FirstName: c.FirstName,
+		LastName:  c.LastName,
+	}
+	if c.CompanyName.Valid {
+		res.CompanyName = &c.CompanyName.String
+	}
+	if c.Identifier.Valid {
+		res.Identifier = &c.Identifier.String
+	}
+	if c.Email.Valid {
+		res.Email = &c.Email.String
+	}
+	if c.Phone.Valid {
+		res.Phone = &c.Phone.String
+	}
+	if c.Address.Valid {
+		res.Address = &c.Address.String
+	}
+	if c.ResponsabilityFrontIva.Valid {
+		res.ResponsabilityFrontIVA = &c.ResponsabilityFrontIva.String
+	}
 
-	return &clientResponse, nil
+	if c.R != nil {
+		if c.R.MemberCreate != nil {
+			res.MemberCreate = &schemas.MemberSimpleDTO{
+				ID:        c.R.MemberCreate.ID,
+				FirstName: c.R.MemberCreate.FirstName,
+				LastName:  c.R.MemberCreate.LastName,
+				Username:  c.R.MemberCreate.Username,
+			}
+		}
+
+		if len(c.R.PayIncomes) > 0 {
+			res.Pay = make([]schemas.PayDebtResponse, len(c.R.PayIncomes))
+			for i, pay := range c.R.PayIncomes {
+				val, _ := pay.Total.Big.Float64()
+				var incomeSaleID int64
+				if pay.IncomeSaleID.Valid {
+					incomeSaleID = pay.IncomeSaleID.Int64
+				}
+				res.Pay[i] = schemas.PayDebtResponse{
+					ID:           pay.ID,
+					IncomeSaleID: incomeSaleID,
+					Total:        val,
+					MethodPay:    pay.MethodPay,
+				}
+				if pay.CreatedAt.Valid {
+					res.Pay[i].CreatedAt = pay.CreatedAt.Time
+				}
+			}
+		}
+	}
+
+	return res, nil
 }
 
 func (r *ClientRepository) ClientGetByFilter(search string) (*[]schemas.ClientResponseDTO, error) {
-	var client []models.Client
-	if err := r.DB.Limit(10).Where("last_name LIKE ? OR first_name LIKE ? OR identifier LIKE ?", "%"+search+"%", "%"+search+"%", "%"+search+"%").Find(&client).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Cliente", schemas.Read)
+	ctx := context.Background()
+	searchStr := "%" + search + "%"
+
+	boilClients, err := boilmodels.Clients(
+		boilmodels.ClientWhere.DeleteAt.IsNull(),
+		qm.Where("last_name ILIKE ? OR first_name ILIKE ? OR identifier ILIKE ?", searchStr, searchStr, searchStr),
+		qm.Limit(10),
+	).All(ctx, r.DB)
+
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Cliente", schemas.Read)
 	}
 
-	var clientResponse []schemas.ClientResponseDTO
-	copier.Copy(&clientResponse, &client)
+	dtos := make([]schemas.ClientResponseDTO, 0, len(boilClients))
+	for _, c := range boilClients {
+		dtos = append(dtos, mapToClientResponseDTO(c, nil))
+	}
 
-	return &clientResponse, nil
+	return &dtos, nil
+}
+
+type ClientWithDebt struct {
+	boilmodels.Client `boil:",bind"`
+	Debt              float64 `boil:"debt"`
 }
 
 func (r *ClientRepository) ClientGetAll(limit, page int64, search *map[string]string, filterDrbt bool) (*[]schemas.ClientResponseDTO, int64, error) {
-	var clients []schemas.ClientResponseDTO
+	ctx := context.Background()
 
-	// Base query con join opcional si hay que calcular deuda
-	query := r.DB.Table("clients c")
+	var qms []qm.QueryMod
+	qms = append(qms, boilmodels.ClientWhere.DeleteAt.IsNull())
 
 	if filterDrbt {
-		// query = query.
-		// 	Select(`
-		// 		c.id, c.first_name, c.last_name, c.company_name, c.identifier, c.responsability_front_iva,
-		// 		c.email, c.phone, c.address, c.member_create_id, c.created_at, c.updated_at,
-		// 		COALESCE(SUM(CASE WHEN p.method_pay = 'credit' THEN p.total ELSE 0 END), 0) AS debt
-		// 	`).
-		// 	Joins("LEFT JOIN pay_incomes p ON p.client_id = c.id").
-		// 	Group("c.id").
-		// 	Having("debt > 0")
-		// Definimos la fórmula de la deuda para reutilizarla
 		debtFormula := "COALESCE(SUM(CASE WHEN p.method_pay = 'credit' THEN p.total ELSE 0 END), 0)"
-
-		query = query.
-			Select(fmt.Sprintf(`
-        c.id, c.first_name, c.last_name, c.company_name, c.identifier, c.responsability_front_iva,
-        c.email, c.phone, c.address, c.member_create_id, c.created_at, c.updated_at,
-        %s AS debt
-      `, debtFormula)).
-			Joins("LEFT JOIN pay_incomes p ON p.client_id = c.id").
-			Group("c.id").
-			// REGLA POSTGRES: Usar la función agregada, no el alias
-			Having(fmt.Sprintf("%s > 0", debtFormula))
+		qms = append(qms,
+			qm.Select(fmt.Sprintf("clients.*, %s AS debt", debtFormula)),
+			qm.LeftOuterJoin("pay_incomes p ON p.client_id = clients.id AND p.delete_at IS NULL"),
+			qm.GroupBy("clients.id"),
+			qm.Having(fmt.Sprintf("%s > 0", debtFormula)),
+		)
 	} else {
-		query = query.Select("c.*")
+		qms = append(qms, qm.Select("clients.*"))
 	}
 
-	// Aplicar filtros dinámicos
 	if search != nil {
 		for key, value := range *search {
 			if value == "" {
 				continue
 			}
-
 			switch strings.ToLower(key) {
 			case "identifier":
-				query = query.Where("c.identifier LIKE ?", "%"+value+"%")
+				qms = append(qms, qm.Where("clients.identifier ILIKE ?", "%"+value+"%"))
 			case "first_name":
-				query = query.Where("c.first_name LIKE ?", "%"+value+"%")
+				qms = append(qms, qm.Where("clients.first_name ILIKE ?", "%"+value+"%"))
 			case "last_name":
-				query = query.Where("c.last_name LIKE ?", "%"+value+"%")
+				qms = append(qms, qm.Where("clients.last_name ILIKE ?", "%"+value+"%"))
 			case "email":
-				query = query.Where("c.email LIKE ?", "%"+value+"%")
+				qms = append(qms, qm.Where("clients.email ILIKE ?", "%"+value+"%"))
 			}
 		}
 	}
 
-	// Paginación
+	countQueryMods := make([]qm.QueryMod, len(qms))
+	copy(countQueryMods, qms)
+
+	total, err := boilmodels.Clients(countQueryMods...).Count(ctx, r.DB)
+	if err != nil {
+		return nil, 0, schemas.HandlerErrorDB(err, "Cliente", schemas.Read)
+	}
+
 	if limit > 0 {
 		offset := (page - 1) * limit
-		query = query.Limit(int(limit)).Offset(int(offset))
+		qms = append(qms, qm.Limit(int(limit)), qm.Offset(int(offset)))
 	}
 
-	// Ejecutar consulta
-	if err := query.Scan(&clients).Error; err != nil {
-		return nil, 0, schemas.HandlerErrorGorm(err, "Cliente", schemas.Read)
-	}
-
-	// Contar total
-	var total int64
-	countQuery := r.DB.Model(&models.Client{})
-
-	// Si solo queremos los deudores, aplicar el mismo HAVING al count
+	var results []ClientWithDebt
 	if filterDrbt {
-		countQuery = countQuery.
-			Select("clients.id").
-			Joins("LEFT JOIN pay_incomes p ON p.client_id = clients.id").
-			Group("clients.id").
-			Having("SUM(CASE WHEN p.method_pay = 'credit' THEN p.total ELSE 0 END) > 0")
+		err := boilmodels.Clients(qms...).Bind(ctx, r.DB, &results)
+		if err != nil {
+			return nil, 0, schemas.HandlerErrorDB(err, "Cliente", schemas.Read)
+		}
+	} else {
+		boilClients, err := boilmodels.Clients(qms...).All(ctx, r.DB)
+		if err != nil {
+			return nil, 0, schemas.HandlerErrorDB(err, "Cliente", schemas.Read)
+		}
+		for _, c := range boilClients {
+			results = append(results, ClientWithDebt{Client: *c})
+		}
 	}
 
-	if err := countQuery.Count(&total).Error; err != nil {
-		return nil, 0, schemas.HandlerErrorGorm(err, "Cliente", schemas.Read)
+	dtos := make([]schemas.ClientResponseDTO, 0, len(results))
+	for _, res := range results {
+		var debt *float64
+		if filterDrbt {
+			d := res.Debt
+			debt = &d
+		}
+		dtos = append(dtos, mapToClientResponseDTO(&res.Client, debt))
 	}
 
-	return &clients, total, nil
+	return &dtos, total, nil
 }
 
 func (r *ClientRepository) ClientCreate(memberID int64, client *schemas.ClientCreate) (int64, error) {
-	newClient := models.Client{
-		FirstName:              client.FirstName,
-		LastName:               client.LastName,
-		CompanyName:            client.CompanyName,
-		Identifier:             client.Identifier,
-		Email:                  client.Email,
-		Phone:                  client.Phone,
-		Address:                client.Address,
-		MemberCreateID:         memberID,
-		ResponsabilityFrontIVA: client.ResponsabilityFrontIVA,
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return 0, schemas.HandlerErrorDB(err, "Cliente", schemas.Create)
 	}
 
-	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
+	newClient := boilmodels.Client{
+		FirstName:              client.FirstName,
+		LastName:               client.LastName,
+		CompanyName:            null.StringFromPtr(client.CompanyName),
+		Identifier:             null.StringFromPtr(client.Identifier),
+		Email:                  null.StringFromPtr(client.Email),
+		Phone:                  null.StringFromPtr(client.Phone),
+		Address:                null.StringFromPtr(client.Address),
+		ResponsabilityFrontIva: null.StringFromPtr(client.ResponsabilityFrontIVA),
+		MemberCreateID:         memberID,
+	}
 
-		if err := tx.Create(&newClient).Error; err != nil {
-			return err
-		}
+	if err := newClient.Insert(ctx, tx, boil.Infer()); err != nil {
+		return 0, schemas.HandlerErrorDB(err, "Cliente", schemas.Create)
+	}
 
-		return nil
-	})
-
-	if err != nil {
-		return 0, schemas.HandlerErrorGorm(err, "Cliente", schemas.Create)
+	if err := tx.Commit(); err != nil {
+		return 0, schemas.HandlerErrorDB(err, "Cliente", schemas.Create)
 	}
 
 	return newClient.ID, nil
 }
 
 func (r *ClientRepository) ClientUpdate(memberID int64, client *schemas.ClientUpdate) error {
-	return r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-		var oldClient models.Client
-		if err := tx.First(&oldClient, client.ID).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Cliente", schemas.Read)
-		}
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return err
+	}
 
-		oldClient.FirstName = client.FirstName
-		oldClient.LastName = client.LastName
-		oldClient.CompanyName = client.CompanyName
-		oldClient.Identifier = client.Identifier
-		oldClient.Email = client.Email
-		oldClient.Phone = client.Phone
-		oldClient.Address = client.Address
-		oldClient.ResponsabilityFrontIVA = client.ResponsabilityFrontIVA
-
-		res := tx.Model(&models.Client{}).Where("id = ?", client.ID).Save(&oldClient)
-
-		if res.Error != nil {
-			return schemas.HandlerErrorGorm(res.Error, "Cliente", schemas.Update)
-		}
-
-		if res.RowsAffected == 0 {
+	oldClient, err := boilmodels.FindClient(ctx, tx, client.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
 			return schemas.ErrorResponse(404, "Cliente no encontrado", fmt.Errorf("cliente no encontrado"))
 		}
+		return schemas.HandlerErrorDB(err, "Cliente", schemas.Read)
+	}
 
-		return nil
-	})
+	oldClient.FirstName = client.FirstName
+	oldClient.LastName = client.LastName
+	oldClient.CompanyName = null.StringFromPtr(client.CompanyName)
+	oldClient.Identifier = null.StringFromPtr(client.Identifier)
+	oldClient.Email = null.StringFromPtr(client.Email)
+	oldClient.Phone = null.StringFromPtr(client.Phone)
+	oldClient.Address = null.StringFromPtr(client.Address)
+	oldClient.ResponsabilityFrontIva = null.StringFromPtr(client.ResponsabilityFrontIVA)
+
+	if _, err := oldClient.Update(ctx, tx, boil.Infer()); err != nil {
+		return schemas.HandlerErrorDB(err, "Cliente", schemas.Update)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return schemas.HandlerErrorDB(err, "Cliente", schemas.Update)
+	}
+
+	return nil
 }
 
 func (r *ClientRepository) ClientDelete(memberID, id int64) error {
-	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-		var client models.Client
-		if err := tx.First(&client, id).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Cliente", schemas.Read)
-		}
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return err
+	}
 
-		if err := tx.Delete(&client).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Cliente", schemas.Delete)
-		}
+	client, err := boilmodels.FindClient(ctx, tx, id)
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Cliente", schemas.Read)
+	}
 
-		return nil
-	})
+	// SQLBoiler with delete_at might do a hard delete?
+	// We'll manually soft delete just in case
+	client.DeleteAt = null.TimeFrom(time.Now())
+	if _, err := client.Update(ctx, tx, boil.Whitelist(boilmodels.ClientColumns.DeleteAt, boilmodels.ClientColumns.UpdatedAt)); err != nil {
+		return schemas.HandlerErrorDB(err, "Cliente", schemas.Delete)
+	}
 
-	return err
+	if err := tx.Commit(); err != nil {
+		return schemas.HandlerErrorDB(err, "Cliente", schemas.Delete)
+	}
+
+	return nil
 }
 
 func (r *ClientRepository) ClientUpdateCredit(memberID, pointSaleID int64, clientUpdateCredit *schemas.ClientUpdateCredit) error {
-	var oldCredits []models.PayIncome
-	var newCredits []models.PayIncome
-	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return err
+	}
+
+	register, err := boilmodels.CashRegisters(
+		boilmodels.CashRegisterWhere.IsClose.EQ(false),
+		boilmodels.CashRegisterWhere.PointSaleID.EQ(pointSaleID),
+		qm.OrderBy("hour_open DESC"),
+	).One(ctx, tx)
+
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Caja", schemas.Read)
+	}
+
+	client, err := boilmodels.Clients(
+		qm.Select(boilmodels.ClientColumns.ID),
+		boilmodels.ClientWhere.ID.EQ(clientUpdateCredit.ID),
+	).One(ctx, tx)
+
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Cliente", schemas.Read)
+	}
+
+	total := 0.0
+
+	for _, p := range clientUpdateCredit.PayCredit {
+		payCredit, err := boilmodels.PayIncomes(
+			boilmodels.PayIncomeWhere.ClientID.EQ(null.Int64From(client.ID)),
+			boilmodels.PayIncomeWhere.ID.EQ(p.CreditID),
+		).One(ctx, tx)
+
+		if err != nil {
+			return schemas.HandlerErrorDB(err, "Credito", schemas.Read)
 		}
 
-		var register models.CashRegister
-		if err := tx.
-			Select("id").
-			Where("is_close = ? AND point_sale_id = ?", false, pointSaleID).
-			Order("hour_open DESC").
-			First(&register).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Caja", schemas.Read)
+		payCredit.MethodPay = p.MethodPay
+		payCredit.CashRegisterID = null.Int64From(register.ID)
+
+		if _, err := payCredit.Update(ctx, tx, boil.Whitelist(boilmodels.PayIncomeColumns.MethodPay, boilmodels.PayIncomeColumns.CashRegisterID, boilmodels.PayIncomeColumns.UpdatedAt)); err != nil {
+			return schemas.HandlerErrorDB(err, "Credito", schemas.Update)
 		}
 
-		var client models.Client
-		if err := tx.Select("id").First(&client, clientUpdateCredit.ID).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Cliente", schemas.Read)
-		}
+		val, _ := payCredit.Total.Big.Float64()
+		total += val
+	}
 
-		total := 0.0
+	if math.Abs(total-clientUpdateCredit.Total) > 1 {
+		message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total del cliente (%.2f) no puede ser mayor que 1", total, clientUpdateCredit.Total)
+		return schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
+	}
 
-		for _, p := range clientUpdateCredit.PayCredit {
+	if err := tx.Commit(); err != nil {
+		return err
+	}
 
-			var payCredit models.PayIncome
-			if err := tx.Where("client_id = ?", client.ID).First(&payCredit, p.CreditID).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Credito", schemas.Read)
-			}
-
-			oldCredits = append(oldCredits, payCredit)
-
-			payCredit.MethodPay = p.MethodPay
-			payCredit.CashRegisterID = &register.ID
-
-			if err := tx.Save(&payCredit).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Credito", schemas.Update)
-			}
-
-			newCredits = append(newCredits, payCredit)
-
-			total += payCredit.Total
-		}
-
-		if math.Abs(total-clientUpdateCredit.Total) > 1 {
-			message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total del cliente (%.2f) no puede ser mayor que 1", total, clientUpdateCredit.Total)
-			return schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
-		}
-
-		return nil
-	})
-
-	return err
+	return nil
 }

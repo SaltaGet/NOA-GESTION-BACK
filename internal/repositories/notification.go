@@ -1,33 +1,63 @@
 package repositories
 
 import (
+	"context"
+
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/database"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-func (r *MainRepository) NotificationStock(tenantID int64) ([]*models.Product, error) {
-	var tenant models.Tenant
-	if err := r.DB.Select("connection").Where("id = ?", tenantID).First(tenant).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Tenant", schemas.Read)
-	}
+func (r *MainRepository) NotificationStock(tenantID int64) ([]*schemas.ProductSimpleResponse, error) {
+	ctx := context.Background()
 
-	dbTenant, err := database.GetTenantDB(tenant.Connection, tenantID)
+	tenant, err := boilmodels.Tenants(boilmodels.TenantWhere.ID.EQ(tenantID)).One(ctx, r.DB)
 	if err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Tenant", schemas.Read)
+		return nil, schemas.HandlerErrorDB(err, "Tenant", schemas.Read)
 	}
 
-	var products []*models.Product
-	err = dbTenant.Model(&models.Product{}).
-		Joins("JOIN stock_deposits sd ON sd.product_id = products.id").
-		Where("sd.stock <= products.min_amount").
-		Where("products.notifier = ?", true).
-		Preload("StockDeposit").
-		Find(&products).Error
+	dbTenantGorm, err := database.GetTenantDB(tenant.Connection, tenantID)
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Tenant", schemas.Read)
+	}
+
+	dbTenant, err := dbTenantGorm.DB()
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Tenant", schemas.Read)
+	}
+
+	// Products that have stock <= min_amount AND notifier = true
+	products, err := boilmodels.Products(
+		qm.InnerJoin("stock_deposits sd on sd.product_id = products.id"),
+		qm.Where("sd.stock <= products.min_amount"),
+		qm.Where("products.notifier = ?", true),
+		qm.Load(boilmodels.ProductRels.StockDeposits),
+	).All(ctx, dbTenant)
 
 	if err != nil {
-		return nil, err
+		return nil, schemas.HandlerErrorDB(err, "Product", schemas.Read)
 	}
 
-	return products, nil
+	var response []*schemas.ProductSimpleResponse
+	for _, p := range products {
+		pPrice, _ := p.Price.Big.Float64()
+		minAmt, _ := p.MinAmount.Big.Float64()
+		var sAmt float64
+		if len(p.R.StockDeposits) > 0 {
+			sAmt = p.R.StockDeposits[0].Stock
+		}
+
+		response = append(response, &schemas.ProductSimpleResponse{
+			ID:        p.ID,
+			Code:      p.Code,
+			Name:      p.Name,
+			Price:     pPrice,
+			Stock:     sAmt,
+			Notifier:  p.Notifier,
+			MinAmount: minAmt,
+		})
+	}
+
+	return response, nil
 }

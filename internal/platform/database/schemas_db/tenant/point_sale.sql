@@ -1,0 +1,12 @@
+CREATE TABLE point_sales (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL,
+    description VARCHAR(200),
+    "number" BIGINT NOT NULL,
+    is_deposit BOOLEAN NOT NULL DEFAULT FALSE,
+    is_main BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE
+);
+CREATE INDEX idx_point_sales_deleted_at ON point_sales(deleted_at);

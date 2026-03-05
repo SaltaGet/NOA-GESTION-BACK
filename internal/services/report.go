@@ -7,14 +7,13 @@ import (
 
 	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/xuri/excelize/v2"
 )
 
 func (s *ReportService) ReportExcelGet(start, end time.Time) (*excelize.File, error) {
 	excel := excelize.NewFile()
-	
+
 	daysDiff := end.Sub(start).Hours() / 24
 	form := "day"
 	if daysDiff > 60 {
@@ -27,15 +26,15 @@ func (s *ReportService) ReportExcelGet(start, end time.Time) (*excelize.File, er
 	}
 
 	headerStyle := createHeaderStyle(excel)
-	
+
 	if err := s.createProductsSheet(excel, productsData, headerStyle); err != nil {
 		return nil, err
 	}
-	
+
 	if err := s.createProfitableSheet(excel, profitableData, headerStyle); err != nil {
 		return nil, err
 	}
-	
+
 	if err := s.createMovementsSheet(excel, movementsData, headerStyle); err != nil {
 		return nil, err
 	}
@@ -44,13 +43,13 @@ func (s *ReportService) ReportExcelGet(start, end time.Time) (*excelize.File, er
 }
 
 func (s *ReportService) fetchDataConcurrently(start, end time.Time, form string) (
-	products []*models.Product,
+	products []schemas.ReportStockProduct,
 	profitableProducts []schemas.ReportProfitableProducts,
 	movements []map[string]any,
 	err error,
 ) {
 	type productResult struct {
-		products []*models.Product
+		products []schemas.ReportStockProduct
 		err      error
 	}
 	type profitableResult struct {
@@ -104,7 +103,7 @@ func (s *ReportService) fetchDataConcurrently(start, end time.Time, form string)
 	return productsRes.products, profitableRes.products, movements, nil
 }
 
-func (s *ReportService) createProductsSheet(excel *excelize.File, products []*models.Product, headerStyle int) error {
+func (s *ReportService) createProductsSheet(excel *excelize.File, products []schemas.ReportStockProduct, headerStyle int) error {
 	sheet := "Sheet1"
 	excel.SetSheetName(sheet, "productos")
 	sheet = "productos"
@@ -203,14 +202,14 @@ func (s *ReportService) createMovementsSheet(excel *excelize.File, movements []m
 	return nil
 }
 
-func extractPointSales(products []*models.Product) []psItem {
+func extractPointSales(products []schemas.ReportStockProduct) []psItem {
 	pointMap := make(map[int64]string)
 	for _, p := range products {
-		if p.StockPointSales == nil {
+		if len(p.PointSaleStocks) == 0 {
 			continue
 		}
-		for _, sp := range p.StockPointSales {
-			pointMap[sp.PointSaleID] = sp.PointSale.Name
+		for _, sp := range p.PointSaleStocks {
+			pointMap[sp.PointSaleID] = sp.PointSaleName
 		}
 	}
 
@@ -223,7 +222,7 @@ func extractPointSales(products []*models.Product) []psItem {
 	return points
 }
 
-func writeProductsData(excel *excelize.File, sheet string, products []*models.Product, points []psItem) map[string]int {
+func writeProductsData(excel *excelize.File, sheet string, products []schemas.ReportStockProduct, points []psItem) map[string]int {
 	categoryCount := make(map[string]int)
 
 	for i, product := range products {
@@ -236,18 +235,15 @@ func writeProductsData(excel *excelize.File, sheet string, products []*models.Pr
 			excel.SetCellValue(sheet, "D"+row, *product.Description)
 		}
 		excel.SetCellValue(sheet, "E"+row, product.Price)
-		excel.SetCellValue(sheet, "F"+row, product.Category.Name)
+		excel.SetCellValue(sheet, "F"+row, product.Category)
 		excel.SetCellValue(sheet, "G"+row, product.Notifier)
 		excel.SetCellValue(sheet, "H"+row, product.MinAmount)
 
-		depositStock := 0.0
-		if product.StockDeposit != nil {
-			depositStock = product.StockDeposit.Stock
-		}
+		depositStock := product.DepositStock
 
 		pointStockMap := make(map[int64]float64)
-		if product.StockPointSales != nil {
-			for _, sp := range product.StockPointSales {
+		if len(product.PointSaleStocks) > 0 {
+			for _, sp := range product.PointSaleStocks {
 				pointStockMap[sp.PointSaleID] = sp.Stock
 			}
 		}
@@ -266,7 +262,9 @@ func writeProductsData(excel *excelize.File, sheet string, products []*models.Pr
 		}
 
 		excel.SetCellValue(sheet, colLetter(9)+row, fmt.Sprintf("%.2f", totalStock))
-		categoryCount[product.Category.Name]++
+		if product.Category != "" {
+			categoryCount[product.Category]++
+		}
 	}
 
 	return categoryCount
@@ -286,8 +284,10 @@ func writeMovementsData(excel *excelize.File, sheet string, movements []map[stri
 
 			excel.SetCellValue(sheet, "A"+row, fecha)
 			excel.SetCellValue(sheet, "B"+row, mov["point_sale_name"])
-			
+
 			excel.SetCellValue(sheet, "C"+row, fmt.Sprintf("%.2f", convertToFloat64(mov["total_ingresos"])))
+			// Assuming there's total_egresos mapped inside report.go Map conversion logic, though the new query aliases are slightly different.
+			// the names inside report.go query outputs are total_ingresos, total_egresos, total_canchas, balance
 			excel.SetCellValue(sheet, "D"+row, fmt.Sprintf("%.2f", convertToFloat64(mov["total_egresos"])))
 			excel.SetCellValue(sheet, "E"+row, fmt.Sprintf("%.2f", convertToFloat64(mov["total_canchas"])))
 			excel.SetCellValue(sheet, "F"+row, fmt.Sprintf("%.2f", convertToFloat64(mov["balance"])))
@@ -340,7 +340,7 @@ func addProfitableChart(excel *excelize.File, sheet string, products []schemas.R
 	}
 
 	chartStartRow := len(products) + 3
-	
+
 	sortedProducts := make([]schemas.ReportProfitableProducts, len(products))
 	copy(sortedProducts, products)
 	sort.Slice(sortedProducts, func(i, j int) bool {
@@ -384,9 +384,9 @@ func addProfitableChart(excel *excelize.File, sheet string, products []schemas.R
 // addMovementsSummary agrega resumen y gráfico de movimientos
 func addMovementsSummary(excel *excelize.File, sheet string, movements []map[string]any, currentRow, headerCount int) error {
 	chartStartRow := currentRow + 2
-	
+
 	pointSaleTotals := make(map[string]map[string]float64)
-	
+
 	for _, item := range movements {
 		movimientos, ok := item["movimiento"].([]map[string]any)
 		if !ok {
@@ -395,7 +395,7 @@ func addMovementsSummary(excel *excelize.File, sheet string, movements []map[str
 
 		for _, mov := range movimientos {
 			pointName := mov["point_sale_name"].(string)
-			
+
 			if pointSaleTotals[pointName] == nil {
 				pointSaleTotals[pointName] = make(map[string]float64)
 			}

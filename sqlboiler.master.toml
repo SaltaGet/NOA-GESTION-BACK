@@ -1,0 +1,23 @@
+output          = "./internal/models/master"
+pkgname         = "master"
+wipe            = true
+no-tests        = true
+add-global-variants = true
+no-context      = false    
+
+[psql]
+  dbname    = "noa_gestion"
+  host      = "localhost"
+  port      = 5432
+  user      = "postgres"
+  pass      = "Qwer1234*"
+  sslmode   = "disable"
+  schema    = "public"
+  blacklist = ["migrations", "schema_migrations"]
+
+
+[aliases.tables.news]
+  up_plural     = "News"
+  up_singular   = "NewsItem"
+  down_plural   = "news"
+  down_singular = "news_item"

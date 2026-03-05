@@ -1,0 +1,16 @@
+output          = "./internal/models/tenant"
+pkgname         = "tenant"
+wipe            = true
+no-tests        = true
+add-global-variants = true
+no-context      = false
+
+[psql]
+  dbname    = "daniel_daniel"
+  host      = "localhost"
+  port      = 5432
+  user      = "postgres"
+  pass      = "Qwer1234*"
+  sslmode   = "disable"
+  schema    = "public"
+  blacklist = ["migrations", "schema_migrations"]

@@ -1,417 +1,569 @@
 package repositories
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"math"
 	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/jinzhu/copier"
-	"gorm.io/gorm"
+	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/volatiletech/sqlboiler/v4/types"
 )
 
-func (r *ExpenseBuyRepository) ExpenseBuyGetByID(id int64) (*schemas.ExpenseBuyResponse, error) {
-	var expenseBuy *models.ExpenseBuy
+func mapToSupplierResponse(c *boilmodels.Supplier) schemas.SupplierResponseDTO {
+	if c == nil {
+		return schemas.SupplierResponseDTO{}
+	}
+	res := schemas.SupplierResponseDTO{
+		ID:   c.ID,
+		Name: c.Name,
+	}
+	if c.CompanyName.Valid {
+		res.CompanyName = &c.CompanyName.String
+	}
+	return res
+}
 
-	if err := r.DB.
-		Preload("Member", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "first_name", "last_name", "username").Unscoped()
-		}).
-		Preload("ExpenseBuyItem", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "expense_buy_id", "product_id", "amount", "price", "discount", "type_discount", "subtotal", "total", "created_at")
-		}).
-		Preload("ExpenseBuyItem.Product", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "code", "name", "price")
-		}).
-		Preload("PayExpenseBuy", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "expense_buy_id", "total", "method_pay")
-		}).
-		Preload("Supplier", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name", "company_name")
-		}).
-		First(&expenseBuy, id).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
+func mapToExpenseBuyResponse(e *boilmodels.ExpenseBuy) *schemas.ExpenseBuyResponse {
+	if e == nil {
+		return nil
 	}
 
-	var expenseSchema schemas.ExpenseBuyResponse
-	copier.Copy(&expenseSchema, &expenseBuy)
+	subtotal, _ := e.Subtotal.Big.Float64()
+	discount, _ := e.Discount.Big.Float64()
+	total, _ := e.Total.Big.Float64()
 
-	return &expenseSchema, nil
+	res := &schemas.ExpenseBuyResponse{
+		ID:       e.ID,
+		Subtotal: subtotal,
+		Discount: discount,
+		Total:    total,
+	}
+
+	if e.TypeDiscount.Valid {
+		res.TypeDiscount = e.TypeDiscount.String
+	}
+	if e.Details.Valid {
+		res.Details = &e.Details.String
+	}
+	if e.CreatedAt.Valid {
+		res.CreatedAt = e.CreatedAt.Time
+	}
+
+	if e.R != nil {
+		if e.R.Member != nil {
+			m := mapToMemberSimpleDTO(e.R.Member)
+			if m != nil {
+				res.Member = *m
+			}
+		}
+
+		if e.R.Supplier != nil {
+			res.Supplier = mapToSupplierResponse(e.R.Supplier)
+		}
+
+		for _, item := range e.R.ExpenseBuyItems {
+			iAmt, _ := item.Amount.Big.Float64()
+			iPrice, _ := item.Price.Big.Float64()
+			iDiscount, _ := item.Discount.Big.Float64()
+			iSubtotal, _ := item.Subtotal.Big.Float64()
+			iTotal, _ := item.Total.Big.Float64()
+
+			ier := schemas.ExpenseBuyItemResponse{
+				ID:       item.ID,
+				Amount:   iAmt,
+				Price:    iPrice,
+				Discount: iDiscount,
+				Subtotal: iSubtotal,
+				Total:    iTotal,
+			}
+			if item.TypeDiscount.Valid {
+				ier.TypeDiscount = item.TypeDiscount.String
+			}
+			if item.CreatedAt.Valid {
+				ier.CreatedAt = item.CreatedAt.Time
+			}
+
+			if item.R != nil && item.R.Product != nil {
+				pPrice, _ := item.R.Product.Price.Big.Float64()
+				ier.Product = schemas.ProductSimpleResponseDTO{
+					ID:    item.R.Product.ID,
+					Code:  item.R.Product.Code,
+					Name:  item.R.Product.Name,
+					Price: pPrice,
+				}
+			}
+			res.ExpenseBuyItem = append(res.ExpenseBuyItem, ier)
+		}
+
+		for _, pay := range e.R.PayExpenseBuys {
+			pTotal, _ := pay.Total.Big.Float64()
+			pr := schemas.PayExpenseBuyResponse{
+				ID:        pay.ID,
+				Total:     pTotal,
+				MethodPay: pay.MethodPay.String,
+			}
+			res.PayExpenseBuy = append(res.PayExpenseBuy, pr)
+		}
+	}
+
+	return res
+}
+
+func mapToExpenseBuyResponseSimple(e *boilmodels.ExpenseBuy) *schemas.ExpenseBuyResponseSimple {
+	if e == nil {
+		return nil
+	}
+
+	subtotal, _ := e.Subtotal.Big.Float64()
+	discount, _ := e.Discount.Big.Float64()
+	total, _ := e.Total.Big.Float64()
+
+	res := &schemas.ExpenseBuyResponseSimple{
+		ID:       e.ID,
+		Subtotal: subtotal,
+		Discount: discount,
+		Total:    total,
+	}
+
+	if e.TypeDiscount.Valid {
+		res.TypeDiscount = e.TypeDiscount.String
+	}
+	if e.Details.Valid {
+		res.Description = &e.Details.String
+	}
+	if e.CashRegisterID.Valid {
+		res.CashRegisterID = &e.CashRegisterID.Int64
+	}
+	if e.CreatedAt.Valid {
+		res.CreatedAt = e.CreatedAt.Time
+	}
+
+	if e.R != nil {
+		if e.R.Supplier != nil {
+			res.Supplier = mapToSupplierResponse(e.R.Supplier)
+		}
+
+		for _, pay := range e.R.PayExpenseBuys {
+			pTotal, _ := pay.Total.Big.Float64()
+			pr := schemas.PayExpenseBuyResponse{
+				ID:        pay.ID,
+				Total:     pTotal,
+				MethodPay: pay.MethodPay.String,
+			}
+			res.PayExpenseBuy = append(res.PayExpenseBuy, pr)
+		}
+	}
+
+	return res
+}
+
+func (r *ExpenseBuyRepository) ExpenseBuyGetByID(id int64) (*schemas.ExpenseBuyResponse, error) {
+	ctx := context.Background()
+
+	e, err := boilmodels.ExpenseBuys(
+		boilmodels.ExpenseBuyWhere.ID.EQ(id),
+		qm.Load(boilmodels.ExpenseBuyRels.Member),
+		qm.Load(boilmodels.ExpenseBuyRels.Supplier),
+		qm.Load(boilmodels.ExpenseBuyRels.ExpenseBuyItems),
+		qm.Load(qm.Rels(boilmodels.ExpenseBuyRels.ExpenseBuyItems, boilmodels.ExpenseBuyItemRels.Product)),
+		qm.Load(boilmodels.ExpenseBuyRels.PayExpenseBuys),
+	).One(ctx, r.DB)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, schemas.HandlerErrorDB(err, "Egreso de compras", schemas.Read)
+		}
+		return nil, schemas.HandlerErrorDB(err, "Egreso de compras", schemas.Read)
+	}
+
+	return mapToExpenseBuyResponse(e), nil
 }
 
 func (r *ExpenseBuyRepository) ExpenseBuyGetByDate(fromDate, toDate time.Time, page, limit int) ([]*schemas.ExpenseBuyResponseSimple, int64, error) {
-	var expensesBuy []*models.ExpenseBuy
+	ctx := context.Background()
+	offset := (page - 1) * limit
 
-	offSet := (page - 1) * limit
-
-	if err := r.DB.
-		Preload("Supplier", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name", "company_name")
-		}).
-		Preload("PayExpenseBuy", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "expense_buy_id", "total", "method_pay")
-		}).
-		Where("created_at BETWEEN ? AND ?", fromDate, toDate).
-		Order("created_at DESC").
-		Offset(offSet).
-		Limit(limit).
-		Find(&expensesBuy).Error; err != nil {
-		return nil, 0, schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
+	qms := []qm.QueryMod{
+		boilmodels.ExpenseBuyWhere.CreatedAt.GTE(null.TimeFrom(fromDate)),
+		boilmodels.ExpenseBuyWhere.CreatedAt.LTE(null.TimeFrom(toDate)),
 	}
 
-	var total int64
-	if err := r.DB.Model(&models.ExpenseBuy{}).
-		Where("created_at BETWEEN ? AND ?", fromDate, toDate).
-		Count(&total).Error; err != nil {
-		return nil, 0, schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
+	total, err := boilmodels.ExpenseBuys(qms...).Count(ctx, r.DB)
+	if err != nil {
+		return nil, 0, schemas.HandlerErrorDB(err, "Egreso de compras", schemas.Read)
 	}
 
-	var expenseSchema []*schemas.ExpenseBuyResponseSimple
-	copier.Copy(&expenseSchema, &expensesBuy)
+	qms = append(qms,
+		qm.Load(boilmodels.ExpenseBuyRels.Supplier),
+		qm.Load(boilmodels.ExpenseBuyRels.PayExpenseBuys),
+		qm.OrderBy("created_at DESC"),
+		qm.Offset(offset),
+		qm.Limit(limit),
+	)
 
-	return expenseSchema, total, nil
+	boilExpenses, err := boilmodels.ExpenseBuys(qms...).All(ctx, r.DB)
+	if err != nil {
+		return nil, 0, schemas.HandlerErrorDB(err, "Egreso de compras", schemas.Read)
+	}
+
+	var results []*schemas.ExpenseBuyResponseSimple
+	for _, e := range boilExpenses {
+		results = append(results, mapToExpenseBuyResponseSimple(e))
+	}
+
+	return results, total, nil
 }
 
 func (r *ExpenseBuyRepository) ExpenseBuyCreate(memberID int64, expenseBuyCreate *schemas.ExpenseBuyCreate) (int64, error) {
-	var expenseBuySave models.ExpenseBuy
-	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
-
-		var supplierID models.Supplier
-		if err := tx.Select("id").First(&supplierID, expenseBuyCreate.SupplierID).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
-		}
-
-		var expenseItems []*models.ExpenseBuyItem
-		total := 0.0
-
-		for _, item := range expenseBuyCreate.ExpenseBuyItem {
-			if item.Amount <= 0 {
-				return schemas.ErrorResponse(400, fmt.Sprintf("La cantidad para el producto %d no es válida", item.ProductID), fmt.Errorf("la cantidad para el producto %d no es válida", item.ProductID))
-			}
-
-			var product models.Product
-			if err := tx.First(&product, item.ProductID).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
-			}
-			// Buscar stock del producto en el punto de venta
-			var stock models.Deposit
-			if err := tx.
-				Where("product_id = ?", item.ProductID).
-				FirstOrCreate(&stock, models.Deposit{ProductID: item.ProductID, Stock: 0}).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
-			}
-
-			if err := tx.Model(&stock).
-				Update("stock", gorm.Expr("stock + ?", item.Amount)).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Update)
-			}
-
-			subtotalItem := item.Amount * item.Price
-			totalItem := 0.0
-			if item.Discount > 0 {
-				if item.TypeDiscount == "percent" {
-					totalItem = subtotalItem - (subtotalItem * item.Discount / 100)
-				} else {
-					totalItem = subtotalItem - item.Discount
-				}
-			} else {
-				totalItem = subtotalItem
-			}
-
-			expenseItems = append(expenseItems, &models.ExpenseBuyItem{
-				ProductID:    item.ProductID,
-				Amount:       item.Amount,
-				Price:        item.Price,
-				Discount:     item.Discount,
-				TypeDiscount: item.TypeDiscount,
-				Subtotal:     subtotalItem,
-				Total:        totalItem,
-			})
-
-			total += totalItem
-		}
-
-		totalExpense := 0.0
-		if expenseBuyCreate.Discount > 0 {
-			if expenseBuyCreate.TypeDiscount == "percent" {
-				totalExpense = total - (total * expenseBuyCreate.Discount / 100)
-			} else {
-				totalExpense = total - expenseBuyCreate.Discount
-			}
-		} else {
-			totalExpense = total
-		}
-
-		expenseBuy := models.ExpenseBuy{
-			MemberID:     memberID,
-			SupplierID:   supplierID.ID,
-			Details:      expenseBuyCreate.Details,
-			Subtotal:     total,
-			Discount:     expenseBuyCreate.Discount,
-			TypeDiscount: expenseBuyCreate.TypeDiscount,
-			Total:        totalExpense,
-		}
-
-		if err := tx.Create(&expenseBuy).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Create)
-		}
-
-		// 🔹 Asociar items
-		for _, item := range expenseItems {
-			item.ExpenseBuyID = expenseBuy.ID
-		}
-		if err := tx.Create(&expenseItems).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Items de egreso de compras", schemas.Create)
-		}
-
-		totalPay := 0.0
-		var payExpenseBuy []*models.PayExpenseBuy
-		for _, pay := range expenseBuyCreate.PayExpenseBuy {
-			totalPay += pay.Total
-			payExpenseBuy = append(payExpenseBuy, &models.PayExpenseBuy{
-				ExpenseBuyID: expenseBuy.ID,
-				Total:        pay.Total,
-				MethodPay:    pay.MethodPay,
-			})
-		}
-
-		if math.Abs(totalPay-totalExpense) > 1 {
-			message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total del egreso (%.2f)", totalPay, totalExpense)
-			return schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
-		}
-
-		if err := tx.Create(&payExpenseBuy).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Pagos de egreso de compras", schemas.Create)
-		}
-
-		expenseBuySave = expenseBuy
-
-		return nil
-	})
-
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
+	defer tx.Rollback()
 
-	return expenseBuySave.ID, nil
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return 0, err
+	}
+
+	supplierExists, err := boilmodels.Suppliers(
+		boilmodels.SupplierWhere.ID.EQ(expenseBuyCreate.SupplierID),
+	).Exists(ctx, tx)
+
+	if err != nil || !supplierExists {
+		return 0, schemas.HandlerErrorDB(sql.ErrNoRows, "Proveedor", schemas.Read)
+	}
+
+	var newItems []*boilmodels.ExpenseBuyItem
+	total := 0.0
+
+	for _, item := range expenseBuyCreate.ExpenseBuyItem {
+		if item.Amount <= 0 {
+			return 0, schemas.ErrorResponse(400, fmt.Sprintf("La cantidad para el producto %d no es válida", item.ProductID), fmt.Errorf("la cantidad para el producto %d no es válida", item.ProductID))
+		}
+
+		productExists, err := boilmodels.Products(boilmodels.ProductWhere.ID.EQ(item.ProductID)).Exists(ctx, tx)
+		if err != nil || !productExists {
+			return 0, schemas.HandlerErrorDB(sql.ErrNoRows, "Producto", schemas.Read)
+		}
+
+		deposit, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(item.ProductID)).One(ctx, tx)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				deposit = &boilmodels.Deposit{ProductID: item.ProductID, Stock: 0}
+				if err := deposit.Insert(ctx, tx, boil.Infer()); err != nil {
+					return 0, schemas.HandlerErrorDB(err, "Stock", schemas.Create)
+				}
+			} else {
+				return 0, schemas.HandlerErrorDB(err, "Stock", schemas.Read)
+			}
+		}
+
+		deposit.Stock += item.Amount
+		if _, err := deposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt)); err != nil {
+			return 0, schemas.HandlerErrorDB(err, "Stock", schemas.Update)
+		}
+
+		subtotalItem := item.Amount * item.Price
+		totalItem := 0.0
+		if item.Discount > 0 {
+			if item.TypeDiscount == "percent" {
+				totalItem = subtotalItem - (subtotalItem * item.Discount / 100)
+			} else {
+				totalItem = subtotalItem - item.Discount
+			}
+		} else {
+			totalItem = subtotalItem
+		}
+
+		total += totalItem
+
+		newItem := &boilmodels.ExpenseBuyItem{
+			ProductID:    item.ProductID,
+			Amount:       types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Amount))),
+			Price:        types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Price))),
+			Discount:     types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Discount))),
+			TypeDiscount: null.StringFrom(item.TypeDiscount),
+			Subtotal:     types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", subtotalItem))),
+			Total:        types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", totalItem))),
+		}
+		newItems = append(newItems, newItem)
+	}
+
+	totalExpense := 0.0
+	if expenseBuyCreate.Discount > 0 {
+		if expenseBuyCreate.TypeDiscount == "percent" {
+			totalExpense = total - (total * expenseBuyCreate.Discount / 100)
+		} else {
+			totalExpense = total - expenseBuyCreate.Discount
+		}
+	} else {
+		totalExpense = total
+	}
+
+	subtotalDec := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", total)))
+	discountDec := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", expenseBuyCreate.Discount)))
+	totalExpenseDec := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", totalExpense)))
+
+	expenseBuy := &boilmodels.ExpenseBuy{
+		MemberID:     memberID,
+		SupplierID:   expenseBuyCreate.SupplierID,
+		Details:      null.StringFromPtr(expenseBuyCreate.Details),
+		Subtotal:     subtotalDec,
+		Discount:     discountDec,
+		TypeDiscount: null.StringFrom(expenseBuyCreate.TypeDiscount),
+		Total:        totalExpenseDec,
+	}
+
+	if err := expenseBuy.Insert(ctx, tx, boil.Infer()); err != nil {
+		return 0, schemas.HandlerErrorDB(err, "Egreso de compras", schemas.Create)
+	}
+
+	for _, item := range newItems {
+		item.ExpenseBuyID = expenseBuy.ID
+		if err := item.Insert(ctx, tx, boil.Infer()); err != nil {
+			return 0, schemas.HandlerErrorDB(err, "Items de egreso de compras", schemas.Create)
+		}
+	}
+
+	totalPay := 0.0
+	for _, pay := range expenseBuyCreate.PayExpenseBuy {
+		totalPay += pay.Total
+		pDec := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", pay.Total)))
+		newPay := boilmodels.PayExpenseBuy{
+			ExpenseBuyID: expenseBuy.ID,
+			Total:        pDec,
+			MethodPay:    null.StringFrom(pay.MethodPay),
+		}
+		if err := newPay.Insert(ctx, tx, boil.Infer()); err != nil {
+			return 0, schemas.HandlerErrorDB(err, "Pagos de egreso de compras", schemas.Create)
+		}
+	}
+
+	if math.Abs(totalPay-totalExpense) > 1 {
+		message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total del egreso (%.2f)", totalPay, totalExpense)
+		return 0, schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+
+	return expenseBuy.ID, nil
 }
 
 func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate *schemas.ExpenseBuyUpdate) error {
-	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
-	
-		var existingExpense models.ExpenseBuy
-		if err := tx.Where("id = ?", expenseBuyUpdate.ID).First(&existingExpense).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
-		}
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-		var supplierID models.Supplier
-		if err := tx.Select("id").First(&supplierID, expenseBuyUpdate.SupplierID).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
-		}
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return err
+	}
 
-		// Obtener items anteriores para revertir el stock
-		var oldItems []models.ExpenseBuyItem
-		if err := tx.Where("expense_buy_id = ?", expenseBuyUpdate.ID).Find(&oldItems).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Read)
-		}
+	existingExpense, err := boilmodels.ExpenseBuys(boilmodels.ExpenseBuyWhere.ID.EQ(expenseBuyUpdate.ID)).One(ctx, tx)
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Egreso de compras", schemas.Read)
+	}
 
-		// Revertir stock de los items anteriores
-		for _, oldItem := range oldItems {
-			if err := tx.Model(&models.Deposit{}).
-				Where("product_id = ?", oldItem.ProductID).
-				UpdateColumn("stock", gorm.Expr("stock - ?", oldItem.Amount)).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Stock", schemas.Update)
+	supplierExists, err := boilmodels.Suppliers(boilmodels.SupplierWhere.ID.EQ(expenseBuyUpdate.SupplierID)).Exists(ctx, tx)
+	if err != nil || !supplierExists {
+		return schemas.HandlerErrorDB(sql.ErrNoRows, "Proveedor", schemas.Read)
+	}
+
+	oldItems, err := boilmodels.ExpenseBuyItems(boilmodels.ExpenseBuyItemWhere.ExpenseBuyID.EQ(expenseBuyUpdate.ID)).All(ctx, tx)
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Egreso de compras", schemas.Read)
+	}
+
+	for _, oldItem := range oldItems {
+		deposit, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(oldItem.ProductID)).One(ctx, tx)
+		if err == nil {
+			amt, _ := oldItem.Amount.Big.Float64()
+			deposit.Stock -= amt
+			if _, err := deposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt)); err != nil {
+				return schemas.HandlerErrorDB(err, "Stock", schemas.Update)
 			}
 		}
+	}
 
-		// Eliminar items anteriores
-		if err := tx.Where("expense_buy_id = ?", expenseBuyUpdate.ID).Delete(&models.ExpenseBuyItem{}).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Items de egreso de compras", schemas.Delete)
+	if _, err := boilmodels.ExpenseBuyItems(boilmodels.ExpenseBuyItemWhere.ExpenseBuyID.EQ(expenseBuyUpdate.ID)).DeleteAll(ctx, tx); err != nil {
+		return schemas.HandlerErrorDB(err, "Items de egreso de compras", schemas.Delete)
+	}
+
+	var newItems []*boilmodels.ExpenseBuyItem
+	total := 0.0
+
+	for _, item := range expenseBuyUpdate.ExpenseBuyItem {
+		if item.Amount <= 0 {
+			return schemas.ErrorResponse(400, fmt.Sprintf("La cantidad para el producto %d no es válida", item.ProductID), fmt.Errorf("la cantidad para el producto %d no es válida", item.ProductID))
 		}
 
-		// Procesar nuevos items
-		var newExpenseItems []*models.ExpenseBuyItem
-		total := 0.0
+		productExists, err := boilmodels.Products(boilmodels.ProductWhere.ID.EQ(item.ProductID)).Exists(ctx, tx)
+		if err != nil || !productExists {
+			return schemas.HandlerErrorDB(sql.ErrNoRows, "Producto", schemas.Read)
+		}
 
-		for _, item := range expenseBuyUpdate.ExpenseBuyItem {
-			if item.Amount <= 0 {
-				return schemas.ErrorResponse(400, fmt.Sprintf("La cantidad para el producto %d no es válida", item.ProductID), fmt.Errorf("la cantidad para el producto %d no es válida", item.ProductID))
-			}
-
-			var product models.Product
-			if err := tx.First(&product, item.ProductID).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
-			}
-
-			// Buscar o crear stock del producto en el depósito
-			var stock models.Deposit
-			if err := tx.
-				Where("product_id = ?", item.ProductID).
-				FirstOrCreate(&stock, models.Deposit{ProductID: item.ProductID, Stock: 0}).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Stock Depósito", schemas.Read)
-			}
-
-			// Sumar stock
-			if err := tx.Model(&stock).
-				Update("stock", gorm.Expr("stock + ?", item.Amount)).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Stock Depósito", schemas.Update)
-			}
-
-			subtotalItem := item.Amount * item.Price
-			totalItem := 0.0
-			if item.Discount > 0 {
-				if item.TypeDiscount == "percent" {
-					totalItem = subtotalItem - (subtotalItem * item.Discount / 100)
-				} else {
-					totalItem = subtotalItem - item.Discount
+		deposit, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(item.ProductID)).One(ctx, tx)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				deposit = &boilmodels.Deposit{ProductID: item.ProductID, Stock: 0}
+				if err := deposit.Insert(ctx, tx, boil.Infer()); err != nil {
+					return schemas.HandlerErrorDB(err, "Stock Depósito", schemas.Create)
 				}
 			} else {
-				totalItem = subtotalItem
+				return schemas.HandlerErrorDB(err, "Stock Depósito", schemas.Read)
 			}
-
-			newExpenseItems = append(newExpenseItems, &models.ExpenseBuyItem{
-				ExpenseBuyID: expenseBuyUpdate.ID,
-				ProductID:    item.ProductID,
-				Amount:       item.Amount,
-				Price:        item.Price,
-				Discount:     item.Discount,
-				TypeDiscount: item.TypeDiscount,
-				Subtotal:     subtotalItem,
-				Total:        totalItem,
-			})
-
-			total += totalItem
 		}
 
-		// Calcular total con descuento general
-		totalExpense := 0.0
-		if expenseBuyUpdate.Discount > 0 {
-			if expenseBuyUpdate.Type == "percent" {
-				totalExpense = total - (total * expenseBuyUpdate.Discount / 100)
+		deposit.Stock += item.Amount
+		if _, err := deposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt)); err != nil {
+			return schemas.HandlerErrorDB(err, "Stock Depósito", schemas.Update)
+		}
+
+		subtotalItem := item.Amount * item.Price
+		totalItem := 0.0
+		if item.Discount > 0 {
+			if item.TypeDiscount == "percent" {
+				totalItem = subtotalItem - (subtotalItem * item.Discount / 100)
 			} else {
-				totalExpense = total - expenseBuyUpdate.Discount
+				totalItem = subtotalItem - item.Discount
 			}
 		} else {
-			totalExpense = total
+			totalItem = subtotalItem
 		}
 
-		// Actualizar la compra
-		existingExpense.SupplierID = supplierID.ID
-		existingExpense.Details = expenseBuyUpdate.Details
-		existingExpense.Subtotal = total
-		existingExpense.Discount = expenseBuyUpdate.Discount
-		existingExpense.TypeDiscount = expenseBuyUpdate.Type
-		existingExpense.Total = totalExpense
-
-		if err := tx.Save(&existingExpense).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Update)
+		newItem := &boilmodels.ExpenseBuyItem{
+			ExpenseBuyID: expenseBuyUpdate.ID,
+			ProductID:    item.ProductID,
+			Amount:       types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Amount))),
+			Price:        types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Price))),
+			Discount:     types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Discount))),
+			TypeDiscount: null.StringFrom(item.TypeDiscount),
+			Subtotal:     types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", subtotalItem))),
+			Total:        types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", totalItem))),
 		}
+		newItems = append(newItems, newItem)
+		total += totalItem
+	}
 
-		// Crear nuevos items
-		if err := tx.Create(&newExpenseItems).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Items de egreso de compras", schemas.Create)
+	totalExpense := 0.0
+	if expenseBuyUpdate.Discount > 0 {
+		if expenseBuyUpdate.Type == "percent" {
+			totalExpense = total - (total * expenseBuyUpdate.Discount / 100)
+		} else {
+			totalExpense = total - expenseBuyUpdate.Discount
 		}
+	} else {
+		totalExpense = total
+	}
 
-		// Eliminar pagos anteriores
-		if err := tx.Where("expense_buy_id = ?", expenseBuyUpdate.ID).Delete(&models.PayExpenseBuy{}).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Pagos de egreso de compras", schemas.Delete)
+	existingExpense.SupplierID = expenseBuyUpdate.SupplierID
+	existingExpense.Details = null.StringFromPtr(expenseBuyUpdate.Details)
+	existingExpense.Subtotal = types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", total)))
+	existingExpense.Discount = types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", expenseBuyUpdate.Discount)))
+	existingExpense.TypeDiscount = null.StringFrom(expenseBuyUpdate.Type)
+	existingExpense.Total = types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", totalExpense)))
+
+	if _, err := existingExpense.Update(ctx, tx, boil.Infer()); err != nil {
+		return schemas.HandlerErrorDB(err, "Egreso de compras", schemas.Update)
+	}
+
+	for _, item := range newItems {
+		if err := item.Insert(ctx, tx, boil.Infer()); err != nil {
+			return schemas.HandlerErrorDB(err, "Items de egreso de compras", schemas.Create)
 		}
+	}
 
-		// Crear nuevos pagos
-		totalPay := 0.0
-		var payExpenseBuy []*models.PayExpenseBuy
-		for _, pay := range expenseBuyUpdate.PayExpenseBuy {
-			totalPay += pay.Total
-			payExpenseBuy = append(payExpenseBuy, &models.PayExpenseBuy{
-				ExpenseBuyID: expenseBuyUpdate.ID,
-				Total:        pay.Total,
-				MethodPay:    pay.MethodPay,
-			})
+	if _, err := boilmodels.PayExpenseBuys(boilmodels.PayExpenseBuyWhere.ExpenseBuyID.EQ(expenseBuyUpdate.ID)).DeleteAll(ctx, tx); err != nil {
+		return schemas.HandlerErrorDB(err, "Pagos de egreso de compras", schemas.Delete)
+	}
+
+	totalPay := 0.0
+	for _, pay := range expenseBuyUpdate.PayExpenseBuy {
+		totalPay += pay.Total
+		newPay := boilmodels.PayExpenseBuy{
+			ExpenseBuyID: expenseBuyUpdate.ID,
+			Total:        types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", pay.Total))),
+			MethodPay:    null.StringFrom(pay.MethodPay),
 		}
-
-		if math.Abs(totalPay-totalExpense) > 1 {
-			message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total del egreso (%.2f)", totalPay, totalExpense)
-			return schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
+		if err := newPay.Insert(ctx, tx, boil.Infer()); err != nil {
+			return schemas.HandlerErrorDB(err, "Pagos de egreso de compras", schemas.Create)
 		}
+	}
 
-		if err := tx.Create(&payExpenseBuy).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Pagos de egreso de compras", schemas.Create)
-		}
+	if math.Abs(totalPay-totalExpense) > 1 {
+		message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total del egreso (%.2f)", totalPay, totalExpense)
+		return schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
+	}
 
-		return nil
-	})
-
-	return err
+	return tx.Commit()
 }
 
 func (r *ExpenseBuyRepository) ExpenseBuyDelete(memberID int64, expenseBuyID int64) error {
-	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return err
+	}
+
+	existingExpense, err := boilmodels.ExpenseBuys(boilmodels.ExpenseBuyWhere.ID.EQ(expenseBuyID)).One(ctx, tx)
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Compra", schemas.Read)
+	}
+
+	items, err := boilmodels.ExpenseBuyItems(boilmodels.ExpenseBuyItemWhere.ExpenseBuyID.EQ(expenseBuyID)).All(ctx, tx)
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Items de egreso de compras", schemas.Read)
+	}
+
+	for _, item := range items {
+		deposit, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(item.ProductID)).One(ctx, tx)
+		if err != nil {
+			continue
 		}
 
-		var existingExpense models.ExpenseBuy
-		if err := tx.Where("id = ?", expenseBuyID).First(&existingExpense).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Compra", schemas.Read)
+		itemAmt, _ := item.Amount.Big.Float64()
+		if deposit.Stock < itemAmt {
+			return schemas.ErrorResponse(
+				400,
+				fmt.Sprintf("No se puede eliminar: stock insuficiente para el producto %d (disponible: %.2f, a revertir: %.2f)", item.ProductID, deposit.Stock, itemAmt),
+				fmt.Errorf("stock insuficiente para revertir"),
+			)
 		}
 
-		var items []models.ExpenseBuyItem
-		if err := tx.Where("expense_buy_id = ?", expenseBuyID).Find(&items).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Items de egreso de compras", schemas.Read)
+		deposit.Stock -= itemAmt
+		if _, err := deposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt)); err != nil {
+			return schemas.HandlerErrorDB(err, "Stock", schemas.Update)
 		}
+	}
 
-		// Revertir stock (restar las cantidades que se habían sumado)
-		for _, item := range items {
-			var stock models.Deposit
-			if err := tx.Where("product_id = ?", item.ProductID).First(&stock).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					// Si no existe el registro de stock, continuar (caso poco probable)
-					continue
-				}
-				return schemas.HandlerErrorGorm(err, "Stock", schemas.Read)
-			}
+	if _, err := boilmodels.PayExpenseBuys(boilmodels.PayExpenseBuyWhere.ExpenseBuyID.EQ(expenseBuyID)).DeleteAll(ctx, tx); err != nil {
+		return schemas.HandlerErrorDB(err, "Pagos de egreso de compras", schemas.Delete)
+	}
 
-			// Validar que hay suficiente stock para revertir
-			if stock.Stock < item.Amount {
-				return schemas.ErrorResponse(
-					400,
-					fmt.Sprintf("No se puede eliminar: stock insuficiente para el producto %d (disponible: %.2f, a revertir: %.2f)", item.ProductID, stock.Stock, item.Amount),
-					fmt.Errorf("stock insuficiente para revertir"),
-				)
-			}
+	if _, err := boilmodels.ExpenseBuyItems(boilmodels.ExpenseBuyItemWhere.ExpenseBuyID.EQ(expenseBuyID)).DeleteAll(ctx, tx); err != nil {
+		return schemas.HandlerErrorDB(err, "Items de egreso de compras", schemas.Delete)
+	}
 
-			// Restar stock
-			if err := tx.Model(&stock).
-				UpdateColumn("stock", gorm.Expr("stock - ?", item.Amount)).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Stock", schemas.Update)
-			}
-		}
+	if _, err := existingExpense.Delete(ctx, tx, false); err != nil {
+		return schemas.HandlerErrorDB(err, "Egreso de compras", schemas.Delete)
+	}
 
-		// Eliminar pagos
-		if err := tx.Where("expense_buy_id = ?", expenseBuyID).Delete(&models.PayExpenseBuy{}).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Pagos de egreso de compras", schemas.Delete)
-		}
-
-		// Eliminar items
-		if err := tx.Where("expense_buy_id = ?", expenseBuyID).Delete(&models.ExpenseBuyItem{}).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Items de egreso de compras", schemas.Delete)
-		}
-
-		// Eliminar la compra
-		if err := tx.Delete(&existingExpense).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Egreso de compras", schemas.Delete)
-		}
-
-		return nil
-	})
-
-	return err
+	return tx.Commit()
 }

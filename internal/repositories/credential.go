@@ -1,93 +1,159 @@
 package repositories
 
 import (
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	"context"
+
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"gorm.io/gorm/clause"
+	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 func (r *MainRepository) CredentialGetMPToken(tenantID int64) (*schemas.CredentialMPTokenResponse, error) {
-	var credential models.Credential
-	err := r.DB.Select("access_token_mp", "access_token_test_mp", "token_email").Where("tenant_id = ?", tenantID).First(&credential).Error
+	ctx := context.Background()
+
+	c, err := boilmodels.Credentials(
+		qm.Select(boilmodels.CredentialColumns.AccessTokenMP, boilmodels.CredentialColumns.AccessTokenTestMP, boilmodels.CredentialColumns.TokenEmail),
+		boilmodels.CredentialWhere.TenantID.EQ(tenantID),
+	).One(ctx, r.DB)
+
 	if err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Credencial", schemas.Read)
+		return nil, schemas.HandlerErrorDB(err, "Credencial", schemas.Read)
 	}
 
-	response := &schemas.CredentialMPTokenResponse{
-		AccessToken:     credential.AccessTokenMP,
-		AccessTokenTest: credential.AccessTokenTestMP,
-		TokenEmail:      credential.TokenEmail,
+	response := &schemas.CredentialMPTokenResponse{}
+
+	if c.AccessTokenMP.Valid {
+		response.AccessToken = &c.AccessTokenMP.String
+	}
+	if c.AccessTokenTestMP.Valid {
+		response.AccessTokenTest = &c.AccessTokenTestMP.String
+	}
+	if c.TokenEmail.Valid {
+		response.TokenEmail = &c.TokenEmail.String
 	}
 
 	return response, nil
 }
 
 func (r *MainRepository) CredentialSetMPToken(tenantID int64, request *schemas.CredentialMPTokenRequest) error {
-	credential := models.Credential{
+	ctx := context.Background()
+
+	credential := boilmodels.Credential{
 		TenantID:          tenantID,
-		AccessTokenMP:     &request.AccessToken,
-		AccessTokenTestMP: &request.AccessTokenTest,
-		// TokenEmail: &request.TokenEmail,
+		AccessTokenMP:     null.StringFrom(request.AccessToken),
+		AccessTokenTestMP: null.StringFrom(request.AccessTokenTest),
 	}
 
-	err := r.DB.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "tenant_id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"access_token_mp", "access_token_test_mp"}),
-		// DoUpdates: clause.AssignmentColumns([]string{"access_token_mp", "access_token_test_mp", "token_email"}),
-	}).Create(&credential).Error
+	err := credential.Upsert(ctx, r.DB, true,
+		[]string{boilmodels.CredentialColumns.TenantID},
+		boil.Whitelist(
+			boilmodels.CredentialColumns.AccessTokenMP,
+			boilmodels.CredentialColumns.AccessTokenTestMP,
+			boilmodels.CredentialColumns.UpdatedAt,
+		),
+		boil.Infer(),
+	)
 
 	if err != nil {
-		return schemas.HandlerErrorGorm(err, "Credencial", schemas.Update)
+		return schemas.HandlerErrorDB(err, "Credencial", schemas.Update)
 	}
 
 	return nil
 }
 
 func (r *MainRepository) CredentialGetArca(tenantID int64) (*schemas.CredentialArcaResponse, error) {
-	var credential models.Credential
-	if err := r.DB.Select("social_reason", "business_name", "address", "responsibility_front_iva", "cuit", "gross_income", "start_activities", "arca_certificate", "arca_key").
-		Where("tenant_id = ?", tenantID).First(&credential).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Credencial", schemas.Read)
+	ctx := context.Background()
+
+	c, err := boilmodels.Credentials(
+		qm.Select(
+			boilmodels.CredentialColumns.SocialReason, boilmodels.CredentialColumns.BusinessName,
+			boilmodels.CredentialColumns.Address, boilmodels.CredentialColumns.ResponsibilityFrontIva,
+			boilmodels.CredentialColumns.Cuit, boilmodels.CredentialColumns.GrossIncome,
+			boilmodels.CredentialColumns.StartActivities, boilmodels.CredentialColumns.ArcaCertificate,
+			boilmodels.CredentialColumns.ArcaKey, boilmodels.CredentialColumns.Concept,
+		),
+		boilmodels.CredentialWhere.TenantID.EQ(tenantID),
+	).One(ctx, r.DB)
+
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Credencial", schemas.Read)
 	}
 
-	response := &schemas.CredentialArcaResponse{
-		SocialReason:           credential.SocialReason,
-		BusinessName:           credential.BusinessName,
-		Address:                credential.Address,
-		ResponsibilityFrontIVA: credential.ResponsibilityFrontIVA,
-		GrossIncome:            credential.GrossIncome,
-		StartActivities:        credential.StartActivities,
-		Cuit:                   credential.Cuit,
-		Concept:                credential.Concept,
-		ArcaCertificate:        credential.ArcaCertificate,
-		ArcaKey:                credential.ArcaKey,
+	response := &schemas.CredentialArcaResponse{}
+
+	if c.SocialReason.Valid {
+		response.SocialReason = &c.SocialReason.String
+	}
+	if c.BusinessName.Valid {
+		response.BusinessName = &c.BusinessName.String
+	}
+	if c.Address.Valid {
+		response.Address = &c.Address.String
+	}
+	if c.ResponsibilityFrontIva.Valid {
+		response.ResponsibilityFrontIVA = &c.ResponsibilityFrontIva.String
+	}
+	if c.GrossIncome.Valid {
+		response.GrossIncome = &c.GrossIncome.String
+	}
+	if c.StartActivities.Valid {
+		response.StartActivities = &c.StartActivities.String
+	}
+	if c.Cuit != "" {
+		response.Cuit = &c.Cuit
+	}
+	if c.Concept.Valid {
+		response.Concept = &c.Concept.String
+	}
+	if c.ArcaCertificate.Valid {
+		response.ArcaCertificate = &c.ArcaCertificate.String
+	}
+	if c.ArcaKey.Valid {
+		response.ArcaKey = &c.ArcaKey.String
 	}
 
 	return response, nil
 }
 
 func (r *MainRepository) CredentialSetArca(tenantID int64, request *schemas.CredentialArcaRequest) error {
-	credential := models.Credential{
+	ctx := context.Background()
+
+	credential := boilmodels.Credential{
 		TenantID:               tenantID,
-		SocialReason:           &request.SocialReason,
-		BusinessName:           &request.BusinessName,
-		Address:                &request.Address,
-		ResponsibilityFrontIVA: &request.ResponsibilityFrontIVA,
-		GrossIncome:            &request.GrossIncome,
-		StartActivities:        &request.StartActivities,
-		Cuit:                   &request.Cuit,
-		Concept:                &request.Concept,
-		ArcaCertificate:        &request.ArcaCertificate,
-		ArcaKey:                &request.ArcaKey,
+		SocialReason:           null.StringFrom(request.SocialReason),
+		BusinessName:           null.StringFrom(request.BusinessName),
+		Address:                null.StringFrom(request.Address),
+		ResponsibilityFrontIva: null.StringFrom(request.ResponsibilityFrontIVA),
+		GrossIncome:            null.StringFrom(request.GrossIncome),
+		StartActivities:        null.StringFrom(request.StartActivities),
+		Cuit:                   request.Cuit,
+		Concept:                null.StringFrom(request.Concept),
+		ArcaCertificate:        null.StringFrom(request.ArcaCertificate),
+		ArcaKey:                null.StringFrom(request.ArcaKey),
 	}
 
-	err := r.DB.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "tenant_id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"social_reason", "business_name", "address", "responsibility_front_iva", "gross_income", "start_activities", "cuit", "concept", "arca_certificate", "arca_key"}),
-	}).Create(&credential).Error
+	err := credential.Upsert(ctx, r.DB, true,
+		[]string{boilmodels.CredentialColumns.TenantID},
+		boil.Whitelist(
+			boilmodels.CredentialColumns.SocialReason,
+			boilmodels.CredentialColumns.BusinessName,
+			boilmodels.CredentialColumns.Address,
+			boilmodels.CredentialColumns.ResponsibilityFrontIva,
+			boilmodels.CredentialColumns.GrossIncome,
+			boilmodels.CredentialColumns.StartActivities,
+			boilmodels.CredentialColumns.Cuit,
+			boilmodels.CredentialColumns.Concept,
+			boilmodels.CredentialColumns.ArcaCertificate,
+			boilmodels.CredentialColumns.ArcaKey,
+			boilmodels.CredentialColumns.UpdatedAt,
+		),
+		boil.Infer(),
+	)
 
 	if err != nil {
-		return schemas.HandlerErrorGorm(err, "Credencial", schemas.Update)
+		return schemas.HandlerErrorDB(err, "Credencial", schemas.Update)
 	}
 
 	return nil

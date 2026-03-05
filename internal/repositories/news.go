@@ -1,97 +1,175 @@
 package repositories
 
 import (
+	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/jinzhu/copier"
-	"gorm.io/gorm"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-func (r *MainRepository) NewsGetByID(id int64) (*schemas.NewsResponse, error) {
-	var newGet models.News
-	if err := r.DB.Where("id = ?", id).First(&newGet).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Noticia", schemas.Read)
+func mapToNewsResponse(n *boilmodels.News) *schemas.NewsResponse {
+	if n == nil {
+		return nil
 	}
 
-	var newsResponse schemas.NewsResponse
-	copier.Copy(&newsResponse, &newGet)
+	res := &schemas.NewsResponse{
+		ID:      n.ID,
+		Title:   n.Title,
+		Content: n.Content,
+	}
 
-	return &newsResponse, nil
+	if n.CreatedAt.Valid {
+		res.CreatedAt = n.CreatedAt.Time
+	}
+	if n.UpdatedAt.Valid {
+		res.UpdatedAt = n.UpdatedAt.Time
+	}
+
+	return res
+}
+
+func mapToNewsResponseDTO(n *boilmodels.News) schemas.NewsResponseDTO {
+	if n == nil {
+		return schemas.NewsResponseDTO{}
+	}
+
+	res := schemas.NewsResponseDTO{
+		ID:    n.ID,
+		Title: n.Title,
+	}
+
+	if n.CreatedAt.Valid {
+		res.CreatedAt = n.CreatedAt.Time
+	}
+
+	return res
+}
+
+func (r *MainRepository) NewsGetByID(id int64) (*schemas.NewsResponse, error) {
+	ctx := context.Background()
+
+	news, err := boilmodels.News(boilmodels.NewsWhere.ID.EQ(id)).One(ctx, r.DB)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, schemas.HandlerErrorDB(err, "Noticia", schemas.Read)
+		}
+		return nil, schemas.HandlerErrorDB(err, "Noticia", schemas.Read)
+	}
+
+	return mapToNewsResponse(news), nil
 }
 
 func (r *MainRepository) NewsGetAll() ([]schemas.NewsResponseDTO, error) {
-	var news []models.News
-	if err := r.DB.Select("id", "title", "created_at").Find(&news).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Noticia", schemas.Read)
+	ctx := context.Background()
+
+	newsList, err := boilmodels.News(
+		qm.Select(
+			boilmodels.NewsColumns.ID,
+			boilmodels.NewsColumns.Title,
+			boilmodels.NewsColumns.CreatedAt,
+		),
+	).All(ctx, r.DB)
+
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Noticia", schemas.Read)
 	}
 
 	var newsResponse []schemas.NewsResponseDTO
-	copier.Copy(&newsResponse, &news)
+	for _, n := range newsList {
+		newsResponse = append(newsResponse, mapToNewsResponseDTO(n))
+	}
 
 	return newsResponse, nil
 }
 
 func (r *MainRepository) NewsCreate(adminID int64, newsCreate *schemas.NewsCreate) (int64, error) {
-	newNews := models.News{
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", adminID)); err != nil {
+		return 0, err
+	}
+
+	newNews := &boilmodels.News{
 		Title:   newsCreate.Title,
 		Content: newsCreate.Content,
 	}
 
-	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", adminID)).Error; err != nil {
-			return err
-		}
-		if err := tx.Create(&newNews).Error; err != nil {
-			return err
-		}
-		return nil
-	})
+	if err := newNews.Insert(ctx, tx, boil.Infer()); err != nil {
+		return 0, schemas.HandlerErrorDB(err, "Noticia", schemas.Create)
+	}
 
-	if err != nil {
-		return 0, schemas.HandlerErrorGorm(err, "Noticia", schemas.Create)
+	if err := tx.Commit(); err != nil {
+		return 0, err
 	}
 
 	return newNews.ID, nil
 }
 
 func (r *MainRepository) NewsUpdate(adminID int64, newsUpdate *schemas.NewsUpdate) error {
-	return r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", adminID)).Error; err != nil {
-			return err
-		}
-		var news models.News
-		if err := tx.
-			Where("id = ?", newsUpdate.ID).First(&news).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Noticia", schemas.Read)
-		}
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-		news.Title = newsUpdate.Title
-		news.Content = newsUpdate.Content
-		if err := tx.Save(&news).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Noticia", schemas.Update)
-		}
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", adminID)); err != nil {
+		return err
+	}
 
-		return nil
-	})
+	news, err := boilmodels.News(boilmodels.NewsWhere.ID.EQ(newsUpdate.ID)).One(ctx, tx)
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Noticia", schemas.Read)
+	}
+
+	news.Title = newsUpdate.Title
+	news.Content = newsUpdate.Content
+
+	if _, err := news.Update(ctx, tx, boil.Infer()); err != nil {
+		return schemas.HandlerErrorDB(err, "Noticia", schemas.Update)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *MainRepository) NewsDelete(adminID int64, id int64) error {
-	return r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", adminID)).Error; err != nil {
-			return err
-		}
-		var news models.News
-		if err := tx.
-			Where("id = ?", id).First(&news).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Noticia", schemas.Read)
-		}
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-		if err :=	tx.Delete(&news).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Noticia", schemas.Delete)
-		}
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", adminID)); err != nil {
+		return err
+	}
 
-		return nil
-	})
+	news, err := boilmodels.News(boilmodels.NewsWhere.ID.EQ(id)).One(ctx, tx)
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Noticia", schemas.Read)
+	}
+
+	if _, err := news.Delete(ctx, tx, false); err != nil {
+		return schemas.HandlerErrorDB(err, "Noticia", schemas.Delete)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }

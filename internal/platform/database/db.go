@@ -10,19 +10,20 @@ import (
 	"sync"
 	"time"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/types"
+	"github.com/ericlagergren/decimal"
 	lru "github.com/hashicorp/golang-lru"
 	_ "github.com/jackc/pgx/v5/stdlib" // Driver para sql.Open
 	"github.com/rs/zerolog/log"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 var (
-	mainDB            *gorm.DB
+	mainDB            *sql.DB
 	tenantDBs         *lru.Cache
 	mu                sync.RWMutex
 	dbExpiration      = 30 * time.Minute
@@ -31,7 +32,7 @@ var (
 )
 
 type tenantDBEntry struct {
-	db       *gorm.DB
+	db       *sql.DB
 	lastUsed time.Time
 }
 
@@ -67,7 +68,7 @@ func getEnvInt(key string, defaultVal int) int {
 	return defaultVal
 }
 
-func ConnectDB(cfg *schemas.EmailConfig) (*gorm.DB, error) {
+func ConnectDB(cfg *schemas.EmailConfig) (*sql.DB, error) {
 	dsn := os.Getenv("URI_DB")
 	if dsn == "" {
 		return nil, fmt.Errorf("la variable de entorno URI_DB no esta definida")
@@ -77,29 +78,20 @@ func ConnectDB(cfg *schemas.EmailConfig) (*gorm.DB, error) {
 		log.Fatal().Err(err).Msg("No se pudo crear la base")
 	}
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return nil, err
 	}
 
 	setupDBConnection(db, mainDBConfig)
 
-	if err := db.AutoMigrate(
-		&models.Admin{},
-		&models.AuditLogAdmin{},
-		&models.Feedback{},
-		&models.Module{},
-		&models.News{},
-		&models.PayDetail{},
-		&models.PayTenant{},
-		&models.Plan{},
-		&models.SettingTenant{},
-		&models.Tenant{},
-		&models.Credential{},
-		&models.TenantModule{},
-		&models.User{},
-		&models.UserTenant{}); err != nil {
-		log.Fatal().Err(err).Msg("Error en migración")
+	createTables, err := os.ReadFile("internal/platform/database/schemas_db/main.sql")
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error al leer el archivo de estructura")
+	}
+
+	if _, err := db.Exec(string(createTables)); err != nil {
+		log.Fatal().Err(err).Msg("Error en al crear tablas")
 	}
 
 	err = ensurePlans(db)
@@ -116,7 +108,9 @@ func ConnectDB(cfg *schemas.EmailConfig) (*gorm.DB, error) {
 	return ensureAdmin(db, cfg)
 }
 
-func ensureAdmin(db *gorm.DB, cfg *schemas.EmailConfig) (*gorm.DB, error) {
+func ensureAdmin(db *sql.DB, cfg *schemas.EmailConfig) (*sql.DB, error) {
+	parentCtx := context.Background()
+
 	raw := os.Getenv("ADMIN_EMAIL")
 	if raw == "" {
 		log.Warn().Msg("No se definió ADMIN_EMAIL")
@@ -124,108 +118,100 @@ func ensureAdmin(db *gorm.DB, cfg *schemas.EmailConfig) (*gorm.DB, error) {
 	}
 
 	emailList := strings.Split(strings.ReplaceAll(raw, " ", ""), ",")
-
-	var existing []string
-	if err := db.Model(&models.Admin{}).
-		Where("email IN (?)", emailList).
-		Pluck("email", &existing).Error; err != nil {
-		return nil, err
-	}
-
-	exists := map[string]bool{}
-	for _, e := range existing {
-		exists[e] = true
-	}
-
-	var adminsToCreate []models.Admin
-	var passwords = map[string]string{} // guardar contraseñas generadas
-
 	for _, email := range emailList {
-		if exists[email] {
+		ctx, cancel := context.WithTimeout(parentCtx, 5*time.Second)
+		defer cancel()
+		// 1. Verificar si el admin ya existe por su email
+		exists, err := master.Admins(master.AdminWhere.Email.EQ(email)).Exists(ctx, db)
+		if err != nil {
+			return nil, fmt.Errorf("error al verificar existencia de admin %s: %w", email, err)
+		}
+
+		// 2. Si ya existe, pasamos al siguiente email de la lista
+		if exists {
+			log.Info().Msgf("Admin %s ya existe. Omitiendo creación y envío de correo.", email)
 			continue
 		}
 
-		pass, err := utils.GenerateRandomString(6)
-		if err != nil {
-			return nil, err
-		}
-
+		// 3. Preparar datos para el NUEVO admin
+		var pass string
 		if os.Getenv("ENV") == "dev" {
 			pass = "123456"
+		} else {
+			// Nota: Aquí deberías guardar el HASH de la pass en la DB, no la pass plana
+			pass, _ = utils.GenerateRandomString(6)
 		}
 
 		userName := strings.Split(email, "@")[0]
-
-		passwords[email] = pass
-
-		adminsToCreate = append(adminsToCreate, models.Admin{
+		admin := master.Admin{
 			Email:        email,
-			Password:     pass,
+			Password:     pass, // TODO: HashPass(pass)
 			Username:     userName,
 			IsSuperAdmin: true,
 			FirstName:    "Admin",
 			LastName:     "Admin",
-		})
-	}
-
-	// Crear en DB
-	if len(adminsToCreate) > 0 {
-		if err := db.Create(&adminsToCreate).Error; err != nil {
-			return nil, err
 		}
 
-		// Ahora que existen en la DB, enviar los emails
-		for _, adm := range adminsToCreate {
-			pass := passwords[adm.Email]
-
-			utils.SendEmail(
-				adm.Email,
-				"Bienvenido a NOA-GESTION",
-				utils.WelcomeAdmin(adm.Email, adm.Username, pass),
-				cfg,
-			)
+		// 4. Insertar solo si no existía
+		if err := admin.Insert(ctx, db, boil.Infer()); err != nil {
+			return nil, fmt.Errorf("error al insertar admin %s: %w", email, err)
 		}
+
+		// 5. ENVIAR EMAIL: Solo llegamos aquí si el admin es realmente nuevo
+		log.Info().Msgf("Nuevo admin creado: %s. Enviando credenciales...", email)
+
+		utils.SendEmail(
+			admin.Email,
+			"Bienvenido a NOA-GESTION",
+			utils.WelcomeAdmin(admin.Email, admin.Username, pass),
+			cfg,
+		)
 	}
 
 	return db, nil
 }
 
-func ensurePlans(db *gorm.DB) error {
-	plan := models.Plan{
+func ensurePlans(db *sql.DB) error {
+	ctx := context.Background()
+
+	plan := master.Plan{
 		Name:            "Básico",
-		PriceMounthly:   25,
-		PriceYearly:     250,
+		PriceMounthly:   types.NewDecimal(decimal.New(25, 2)),
+		PriceYearly:     types.NewDecimal(decimal.New(250, 2)),
 		Description:     "Plan básico",
-		Features:        "emmmm, nada es básico, asi que no esperes mucho",
+		Features:        "Nada es básico, así que no esperes mucho",
 		AmountPointSale: 1,
 		AmountMember:    5,
 		AmountProduct:   1000,
 	}
 
-	err := db.Create(&plan).Error
+	// Upsert:
+	// - El 4to parámetro es si queremos actualizar en caso de conflicto (true) o no.
+	// - El 5to parámetro son las columnas que causan el conflicto (ej. "name").
+	// - El 6to parámetro son las columnas a actualizar.
+	err := plan.Upsert(ctx, db,
+		false,            // ¿Actualizar si existe?
+		[]string{"name"}, // Columna que dispara el conflicto
+		boil.Infer(),     // Columnas a actualizar (Infer usa todas)
+		boil.Infer(),     // Columnas a insertar
+	)
+
 	if err != nil {
-		if schemas.IsDuplicateError(err) {
-			log.Warn().Msg("El plan básico ya existe")
-			return nil
-		}
-		return err
+		return fmt.Errorf("error al asegurar plan: %w", err)
 	}
+
 	return nil
 }
 
-func setupDBConnection(db *gorm.DB, config DBConfig) {
-	sqlDB, err := db.DB()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error al obtener conexión de base")
-	}
-	sqlDB.SetMaxOpenConns(config.MaxOpenConns)
-	sqlDB.SetMaxIdleConns(config.MaxIdleConns)
-	sqlDB.SetConnMaxLifetime(config.ConnMaxLifetime)
-	sqlDB.SetConnMaxIdleTime(config.ConnMaxIdleTime)
+func setupDBConnection(db *sql.DB, config DBConfig) {
+	db.SetMaxOpenConns(config.MaxOpenConns)
+	db.SetMaxIdleConns(config.MaxIdleConns)
+	db.SetConnMaxLifetime(config.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(config.ConnMaxIdleTime)
 }
 
 // GetTenantDB obtiene o crea una conexión de tenant con patrón double-check locking
-func GetTenantDB(encryptedConn string, tenantID int64) (*gorm.DB, error) {
+func GetTenantDB(encryptedConn string, tenantID int64) (*sql.DB, error) {
 	// 1️⃣ Verificación rápida si ya existe la conexión GORM
 	mu.RLock()
 	if val, ok := tenantDBs.Get(tenantID); ok {
@@ -246,8 +232,7 @@ func GetTenantDB(encryptedConn string, tenantID int64) (*gorm.DB, error) {
 	mu.RLock()
 	if val, ok := tenantDBs.Get(tenantID); ok {
 		entry := val.(*tenantDBEntry)
-		sqlDB, err := entry.db.DB()
-		if err == nil && sqlDB.Ping() == nil {
+		if err := entry.db.Ping(); err == nil {
 			entry.lastUsed = time.Now()
 			mu.RUnlock()
 			return entry.db, nil
@@ -258,7 +243,6 @@ func GetTenantDB(encryptedConn string, tenantID int64) (*gorm.DB, error) {
 		mu.Lock()
 		tenantDBs.Remove(tenantID)
 		mu.Unlock()
-		return entry.db, nil
 	} else {
 		mu.RUnlock()
 	}
@@ -324,7 +308,7 @@ func InvalidateTenantConnection(tenantID int64) {
 	mu.Lock()
 	if val, ok := tenantDBs.Get(tenantID); ok {
 		entry := val.(*tenantDBEntry)
-		if db, err := entry.db.DB(); err == nil {
+		if db := entry.db; db != nil {
 			db.Close()
 		}
 		tenantDBs.Remove(tenantID)
@@ -332,8 +316,8 @@ func InvalidateTenantConnection(tenantID int64) {
 	mu.Unlock()
 }
 
-func openTenantDB(connStr string) (*gorm.DB, error) {
-	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
+func openTenantDB(connStr string) (*sql.DB, error) {
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("error al abrir DB de tenant: %w", err)
 	}
@@ -423,7 +407,7 @@ func cleanupInactiveConnections(tenants *sync.Map, gprcCache *sync.Map) {
 
 		entry := val.(*tenantDBEntry)
 		if time.Since(entry.lastUsed) > dbExpiration {
-			if db, err := entry.db.DB(); err == nil {
+			if db := entry.db; db != nil {
 				db.Close()
 			}
 			tenantDBs.Remove(key)
@@ -436,12 +420,8 @@ func cleanupInactiveConnections(tenants *sync.Map, gprcCache *sync.Map) {
 	}
 }
 
-func CloseDB(db *gorm.DB) error {
-	sqlDB, err := db.DB()
-	if err != nil {
-		return fmt.Errorf("no se pudo obtener la conexión de bajo nivel: %w", err)
-	}
-
+func CloseDB(db *sql.DB) error {
+	sqlDB := db
 	if sqlDB != nil {
 		if err := sqlDB.Close(); err != nil {
 			return fmt.Errorf("error al cerrar la conexión: %w", err)
@@ -458,7 +438,7 @@ func CloseAllTenantDBs() error {
 	for _, key := range keys {
 		if val, ok := tenantDBs.Get(key); ok {
 			entry := val.(*tenantDBEntry)
-			if db, err := entry.db.DB(); err == nil {
+			if db := entry.db; db != nil {
 				db.Close()
 			}
 			tenantDBs.Remove(key)
@@ -467,7 +447,7 @@ func CloseAllTenantDBs() error {
 	return nil
 }
 
-func GetMainDB() *gorm.DB {
+func GetMainDB() *sql.DB {
 	return mainDB
 }
 
@@ -518,9 +498,9 @@ var TriggerAuditAdmin = `
 	$$ LANGUAGE plpgsql;
 `
 
-func ApplyAuditAdminTriggers(db *gorm.DB) error {
+func ApplyAuditAdminTriggers(db *sql.DB) error {
 	// 1. Crear la función del trigger
-	if err := db.Exec(TriggerAuditAdmin).Error; err != nil {
+	if _, err := db.Exec(TriggerAuditAdmin); err != nil {
 		return err
 	}
 
@@ -534,9 +514,17 @@ func ApplyAuditAdminTriggers(db *gorm.DB) error {
 		AND table_name != 'audit_log_admins' 
 		AND table_name != 'migrations';
 	`
-	if err := db.Raw(queryTables).Scan(&tables).Error; err != nil {
-		return fmt.Errorf("error al obtener lista de tablas: %w", err)
-	}
+	rows, err := db.Query(queryTables)
+    if err != nil {
+        return err
+    }
+    defer rows.Close()
+
+    for rows.Next() {
+        var table string
+        if err := rows.Scan(&table); err != nil { return err }
+        tables = append(tables, table)
+    }
 
 	// 3. Aplicar el trigger a cada una
 	for _, table := range tables {
@@ -548,7 +536,7 @@ func ApplyAuditAdminTriggers(db *gorm.DB) error {
       FOR EACH ROW EXECUTE FUNCTION audit_trigger_function_admin();`,
 			table, table)
 
-		if err := db.Exec(createQuery).Error; err != nil {
+		if _, err := db.Exec(createQuery); err != nil {
 			return fmt.Errorf("error al crear trigger en tabla %s: %w", table, err)
 		}
 	}

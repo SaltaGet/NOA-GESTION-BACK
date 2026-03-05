@@ -1,126 +1,125 @@
 package repositories
 
 import (
-	"gorm.io/gorm"
+	"database/sql"
 )
 
 // type Repository struct {
-// 	DB *gorm.DB
+// 	DB *sql.DB
 // }
 
 type MainRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 // type TenantRepository struct {
-// 	DB *gorm.DB
+// 	DB *sql.DB
 // }
 
-//	func NewTenantRepository(db *gorm.DB) *TenantRepository {
+//	func NewTenantRepository(db *sql.DB) *TenantRepository {
 //	    return &TenantRepository{DB: db}
 //	}
 
 type ArcaRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type CashRegisterRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type CategoryRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type ClientRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type DepositRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type EcommerceRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type EmployeeRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type ExpenseBuyRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type ExpenseOtherRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type IncomeSaleRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type IncomeOtherRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type MemberRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type MovementStockRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type MovementTypeRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 // type NotificationRepository struct {
-// 	DB *gorm.DB
+// 	DB *sql.DB
 // }
 
 type PermissionRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type PointSaleRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type ProductRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type PurchaseOrderRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type PurchaseProductRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type ReportRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type RoleRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type ServiceRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type StockRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type SupplierRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type TypeMovementRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
-

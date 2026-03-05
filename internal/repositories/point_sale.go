@@ -1,233 +1,290 @@
 package repositories
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/jinzhu/copier"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
+	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-func (p *PointSaleRepository) PointSaleGetAllByMember(memberID int64) ([]schemas.PointSaleResponse, error) {
-	var pointSales []schemas.PointSaleResponse
-	err := p.DB.
-		Model(&models.PointSale{}).
-		Select("point_sales.id", "point_sales.name", "point_sales.description", "point_sales.is_deposit", "point_sales.is_main", "point_sales.number").
-		Joins("JOIN member_point_sales mp ON mp.point_sale_id = point_sales.id").
-		Where("mp.member_id = ?", memberID).
-		Scan(&pointSales).Error
-	if err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
+func mapToPointSaleResponse(p *boilmodels.PointSale) schemas.PointSaleResponse {
+	if p == nil {
+		return schemas.PointSaleResponse{}
 	}
 
-	return pointSales, nil
+	res := schemas.PointSaleResponse{
+		ID:        p.ID,
+		Name:      p.Name,
+		Number:    int64(p.Number),
+		IsDeposit: p.IsDeposit,
+		IsMain:    p.IsMain,
+	}
+
+	if p.Description.Valid {
+		res.Description = &p.Description.String
+	}
+
+	return res
+}
+
+func (p *PointSaleRepository) PointSaleGetAllByMember(memberID int64) ([]schemas.PointSaleResponse, error) {
+	ctx := context.Background()
+
+	pointSales, err := boilmodels.PointSales(
+		qm.Select(
+			"point_sales."+boilmodels.PointSaleColumns.ID,
+			"point_sales."+boilmodels.PointSaleColumns.Name,
+			"point_sales."+boilmodels.PointSaleColumns.Description,
+			"point_sales."+boilmodels.PointSaleColumns.IsDeposit,
+			"point_sales."+boilmodels.PointSaleColumns.IsMain,
+			"point_sales."+boilmodels.PointSaleColumns.Number,
+		),
+		qm.InnerJoin("member_point_sales mp ON mp.point_sale_id = point_sales.id"),
+		qm.Where("mp.member_id = ?", memberID),
+	).All(ctx, p.DB)
+
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Punto de venta", schemas.Read)
+	}
+
+	var response []schemas.PointSaleResponse
+	for _, ps := range pointSales {
+		response = append(response, mapToPointSaleResponse(ps))
+	}
+
+	return response, nil
 }
 
 func (p *PointSaleRepository) PointSaleGetAll() ([]schemas.PointSaleResponse, error) {
-	var pointSales []schemas.PointSaleResponse
-	err := p.DB.Model(&models.PointSale{}).Select("id", "name", "description", "is_deposit", "is_main", "number").Scan(&pointSales).Error
+	ctx := context.Background()
+
+	pointSales, err := boilmodels.PointSales(
+		qm.Select(
+			boilmodels.PointSaleColumns.ID,
+			boilmodels.PointSaleColumns.Name,
+			boilmodels.PointSaleColumns.Description,
+			boilmodels.PointSaleColumns.IsDeposit,
+			boilmodels.PointSaleColumns.IsMain,
+			boilmodels.PointSaleColumns.Number,
+		),
+	).All(ctx, p.DB)
+
 	if err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
+		return nil, schemas.HandlerErrorDB(err, "Punto de venta", schemas.Read)
 	}
 
-	return pointSales, nil
+	var response []schemas.PointSaleResponse
+	for _, ps := range pointSales {
+		response = append(response, mapToPointSaleResponse(ps))
+	}
+
+	return response, nil
 }
 
 func (p *PointSaleRepository) PointSaleGetByID(id int64) (*schemas.PointSaleResponse, error) {
-	var pointSales models.PointSale
-	err := p.DB.Select("id", "name", "description", "is_deposit", "is_main", "number").First(&pointSales, id).Error
+	ctx := context.Background()
+
+	ps, err := boilmodels.PointSales(
+		qm.Select(
+			boilmodels.PointSaleColumns.ID,
+			boilmodels.PointSaleColumns.Name,
+			boilmodels.PointSaleColumns.Description,
+			boilmodels.PointSaleColumns.IsDeposit,
+			boilmodels.PointSaleColumns.IsMain,
+			boilmodels.PointSaleColumns.Number,
+		),
+		boilmodels.PointSaleWhere.ID.EQ(id),
+	).One(ctx, p.DB)
+
 	if err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, schemas.HandlerErrorDB(err, "Punto de venta", schemas.Read)
+		}
+		return nil, schemas.HandlerErrorDB(err, "Punto de venta", schemas.Read)
 	}
 
-	var pointSaleResponse schemas.PointSaleResponse
-	copier.Copy(&pointSaleResponse, &pointSales)
-
-	return &pointSaleResponse, nil
+	res := mapToPointSaleResponse(ps)
+	return &res, nil
 }
 
 func (p *PointSaleRepository) PointSaleCount() (int64, error) {
-	var pointSales int64
-	if err := p.DB.Model(&models.PointSale{}).Count(&pointSales).Error; err != nil {
-		return 0, schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
+	ctx := context.Background()
+
+	count, err := boilmodels.PointSales().Count(ctx, p.DB)
+	if err != nil {
+		return 0, schemas.HandlerErrorDB(err, "Punto de venta", schemas.Read)
 	}
 
-	return pointSales, nil
+	return count, nil
 }
 
 func (p *PointSaleRepository) PointSaleCreate(memberID int64, pointSaleCreate *schemas.PointSaleCreate) (int64, error) {
-	var pointSaleSave models.PointSale
-
-	err := p.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
-
-		var pointSaleGet []models.PointSale
-		if err := tx.Where("is_main = ?", true).Find(&pointSaleGet).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
-		}
-
-		pointSale := models.PointSale{
-			Name:        pointSaleCreate.Name,
-			Description: pointSaleCreate.Description,
-			IsDeposit:   *pointSaleCreate.IsDeposit,
-			Number:      pointSaleCreate.Number,
-		}
-
-		if len(pointSaleGet) == 0 {
-			pointSale.IsMain = true
-		}
-
-		if err := tx.Create(&pointSale).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Create)
-		}
-
-		pointSaleSave = pointSale
-
-		var membersAdmin []models.Member
-		if err := tx.Where("is_admin = ?", true).Find(&membersAdmin).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
-		}
-
-		if len(membersAdmin) > 0 {
-			if err := tx.Model(&pointSale).Association("Members").Append(&membersAdmin); err != nil {
-				return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Update)
-			}
-		}
-
-		return nil
-	})
-
+	ctx := context.Background()
+	tx, err := p.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
+	defer tx.Rollback()
 
-	return pointSaleSave.ID, nil
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return 0, err
+	}
+
+	hasMain, err := boilmodels.PointSales(boilmodels.PointSaleWhere.IsMain.EQ(true)).Exists(ctx, tx)
+	if err != nil {
+		return 0, schemas.HandlerErrorDB(err, "Punto de venta", schemas.Read)
+	}
+
+	ps := &boilmodels.PointSale{
+		Name:      pointSaleCreate.Name,
+		IsDeposit: *pointSaleCreate.IsDeposit,
+		Number:    int(pointSaleCreate.Number),
+		IsMain:    !hasMain,
+	}
+
+	if pointSaleCreate.Description != nil {
+		ps.Description = null.StringFromPtr(pointSaleCreate.Description)
+	}
+
+	if err := ps.Insert(ctx, tx, boil.Infer()); err != nil {
+		return 0, schemas.HandlerErrorDB(err, "Punto de venta", schemas.Create)
+	}
+
+	membersAdmin, err := boilmodels.Members(boilmodels.MemberWhere.IsAdmin.EQ(true)).All(ctx, tx)
+	if err != nil {
+		return 0, schemas.HandlerErrorDB(err, "Punto de venta", schemas.Read)
+	}
+
+	if len(membersAdmin) > 0 {
+		if err := ps.AddMembers(ctx, tx, false, membersAdmin...); err != nil {
+			return 0, schemas.HandlerErrorDB(err, "Punto de venta", schemas.Update)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+
+	return ps.ID, nil
 }
 
-// PointSaleUpdate actualiza un punto de venta con auditoría
 func (p *PointSaleRepository) PointSaleUpdate(memberID int64, pointSaleUpdate *schemas.PointSaleUpdate) error {
-	err := p.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
+	ctx := context.Background()
+	tx, err := p.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return err
+	}
+
+	ps, err := boilmodels.PointSales(boilmodels.PointSaleWhere.ID.EQ(pointSaleUpdate.ID)).One(ctx, tx)
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Punto de venta", schemas.Read)
+	}
+
+	ps.Name = pointSaleUpdate.Name
+	ps.Number = int(pointSaleUpdate.Number)
+	if pointSaleUpdate.Description != nil {
+		ps.Description = null.StringFromPtr(pointSaleUpdate.Description)
+	}
+
+	if !ps.IsDeposit && *pointSaleUpdate.IsDeposit {
+		stockList, err := boilmodels.StockPointSales(boilmodels.StockPointSaleWhere.PointSaleID.EQ(ps.ID)).All(ctx, tx)
+		if err != nil {
+			return schemas.HandlerErrorDB(err, "Punto de venta", schemas.Read)
 		}
 
-		var pointSale models.PointSale
-		if err := tx.First(&pointSale, pointSaleUpdate.ID).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
-		}
-
-		pointSale.Name = pointSaleUpdate.Name
-		pointSale.Description = pointSaleUpdate.Description
-		pointSale.Number = pointSaleUpdate.Number
-
-		// Si se convierte a depósito, mover el stock
-		if !pointSale.IsDeposit && *pointSaleUpdate.IsDeposit {
-			var stockList []models.StockPointSale
-			if err := tx.Where("point_sale_id = ?", pointSale.ID).Find(&stockList).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
-			}
-
-			for _, s := range stockList {
-
-				var deposit models.Deposit
-				err := tx.Where("product_id = ?", s.ProductID).First(&deposit).Error
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					deposit = models.Deposit{
+		for _, s := range stockList {
+			deposit, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(s.ProductID)).One(ctx, tx)
+			if err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					deposit = &boilmodels.Deposit{
 						ProductID: s.ProductID,
 						Stock:     s.Stock,
 					}
-					if err := tx.Create(&deposit).Error; err != nil {
-						return schemas.HandlerErrorGorm(err, "Déposito", schemas.Create)
+					if err := deposit.Insert(ctx, tx, boil.Infer()); err != nil {
+						return schemas.HandlerErrorDB(err, "Déposito", schemas.Create)
 					}
-
-				} else if err == nil {
-					deposit.Stock += s.Stock
-					if err := tx.Save(&deposit).Error; err != nil {
-						return schemas.HandlerErrorGorm(err, "Déposito", schemas.Update)
-					}
-
 				} else {
-					return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
+					return schemas.HandlerErrorDB(err, "Punto de venta", schemas.Read)
 				}
-
-				s.Stock = 0
-				if err := tx.Save(&s).Error; err != nil {
-					return schemas.HandlerErrorGorm(err, "Stock punto de venta", schemas.Update)
+			} else {
+				deposit.Stock += s.Stock
+				if _, err := deposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt)); err != nil {
+					return schemas.HandlerErrorDB(err, "Déposito", schemas.Update)
 				}
 			}
+
+			s.Stock = 0
+			if _, err := s.Update(ctx, tx, boil.Whitelist(boilmodels.StockPointSaleColumns.Stock, boilmodels.StockPointSaleColumns.UpdatedAt)); err != nil {
+				return schemas.HandlerErrorDB(err, "Stock punto de venta", schemas.Update)
+			}
 		}
+	}
 
-		pointSale.IsDeposit = *pointSaleUpdate.IsDeposit
+	ps.IsDeposit = *pointSaleUpdate.IsDeposit
 
-		if err := tx.Save(&pointSale).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Update)
-		}
+	if _, err := ps.Update(ctx, tx, boil.Infer()); err != nil {
+		return schemas.HandlerErrorDB(err, "Punto de venta", schemas.Update)
+	}
 
-		return nil
-	})
-
-	return err
+	return tx.Commit()
 }
 
-// PointSaleUpdateMain actualiza el punto de venta principal con auditoría
 func (p *PointSaleRepository) PointSaleUpdateMain(memberID int64, pointSaleUpdateMain *schemas.PointSaleUpdateMain) error {
-	var savePointSaleOld, savePointSaleNew models.PointSale
+	ctx := context.Background()
+	tx, err := p.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-	err := p.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return err
+	}
 
-		var pointSaleOld models.PointSale
-		if err := tx.
-			Clauses(clause.Locking{Strength: "UPDATE"}).
-			First(&pointSaleOld, pointSaleUpdateMain.ID).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
-		}
+	pointSaleOld, err := boilmodels.PointSales(
+		qm.For("UPDATE"),
+		boilmodels.PointSaleWhere.ID.EQ(pointSaleUpdateMain.ID),
+	).One(ctx, tx)
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Punto de venta", schemas.Read)
+	}
 
-		savePointSaleOld = pointSaleOld
+	pointSaleNew, err := boilmodels.PointSales(
+		qm.For("UPDATE"),
+		boilmodels.PointSaleWhere.ID.EQ(pointSaleUpdateMain.NewMain),
+	).One(ctx, tx)
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Punto de venta", schemas.Read)
+	}
 
-		var pointSaleNew models.PointSale
-		if err := tx.
-			Clauses(clause.Locking{Strength: "UPDATE"}).
-			First(&pointSaleNew, pointSaleUpdateMain.NewMain).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
-		}
+	if !pointSaleOld.IsMain {
+		return schemas.ErrorResponse(400, "El punto de venta indicado no es el principal actual", nil)
+	}
 
-		if !pointSaleOld.IsMain {
-			return schemas.ErrorResponse(400, "El punto de venta indicado no es el principal actual", nil)
-		}
+	if pointSaleNew.IsMain {
+		return schemas.ErrorResponse(400, "El nuevo punto de venta ya es el principal", nil)
+	}
 
-		if pointSaleNew.IsMain {
-			return schemas.ErrorResponse(400, "El nuevo punto de venta ya es el principal", nil)
-		}
+	pointSaleOld.IsMain = false
+	if _, err := pointSaleOld.Update(ctx, tx, boil.Whitelist(boilmodels.PointSaleColumns.IsMain, boilmodels.PointSaleColumns.UpdatedAt)); err != nil {
+		return schemas.HandlerErrorDB(err, "Punto de venta", schemas.Update)
+	}
 
-		// Actualizar
-		if err := tx.Model(&pointSaleOld).Update("is_main", false).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Update)
-		}
+	pointSaleNew.IsMain = true
+	if _, err := pointSaleNew.Update(ctx, tx, boil.Whitelist(boilmodels.PointSaleColumns.IsMain, boilmodels.PointSaleColumns.UpdatedAt)); err != nil {
+		return schemas.HandlerErrorDB(err, "Punto de venta", schemas.Update)
+	}
 
-		if err := tx.Model(&pointSaleNew).Update("is_main", true).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Update)
-		}
-
-		// Recargar actualizados
-		if err := tx.First(&savePointSaleOld, pointSaleOld.ID).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
-		}
-
-		if err := tx.First(&savePointSaleNew, pointSaleNew.ID).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Punto de venta", schemas.Read)
-		}
-
-		return nil
-	})
-
-	return err
+	return tx.Commit()
 }
-

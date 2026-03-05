@@ -1,0 +1,126 @@
+package repositories_copy
+
+import (
+	"gorm.io/gorm"
+)
+
+// type Repository struct {
+// 	DB *gorm.DB
+// }
+
+type MainRepository struct {
+	DB *gorm.DB
+}
+
+// type TenantRepository struct {
+// 	DB *gorm.DB
+// }
+
+//	func NewTenantRepository(db *gorm.DB) *TenantRepository {
+//	    return &TenantRepository{DB: db}
+//	}
+
+type ArcaRepository struct {
+	DB *gorm.DB
+}
+
+type CashRegisterRepository struct {
+	DB *gorm.DB
+}
+
+type CategoryRepository struct {
+	DB *gorm.DB
+}
+
+type ClientRepository struct {
+	DB *gorm.DB
+}
+
+type DepositRepository struct {
+	DB *gorm.DB
+}
+
+type EcommerceRepository struct {
+	DB *gorm.DB
+}
+
+type EmployeeRepository struct {
+	DB *gorm.DB
+}
+
+type ExpenseBuyRepository struct {
+	DB *gorm.DB
+}
+
+type ExpenseOtherRepository struct {
+	DB *gorm.DB
+}
+
+type IncomeSaleRepository struct {
+	DB *gorm.DB
+}
+
+type IncomeOtherRepository struct {
+	DB *gorm.DB
+}
+
+type MemberRepository struct {
+	DB *gorm.DB
+}
+
+type MovementStockRepository struct {
+	DB *gorm.DB
+}
+
+type MovementTypeRepository struct {
+	DB *gorm.DB
+}
+
+// type NotificationRepository struct {
+// 	DB *gorm.DB
+// }
+
+type PermissionRepository struct {
+	DB *gorm.DB
+}
+
+type PointSaleRepository struct {
+	DB *gorm.DB
+}
+
+type ProductRepository struct {
+	DB *gorm.DB
+}
+
+type PurchaseOrderRepository struct {
+	DB *gorm.DB
+}
+
+type PurchaseProductRepository struct {
+	DB *gorm.DB
+}
+
+type ReportRepository struct {
+	DB *gorm.DB
+}
+
+type RoleRepository struct {
+	DB *gorm.DB
+}
+
+type ServiceRepository struct {
+	DB *gorm.DB
+}
+
+type StockRepository struct {
+	DB *gorm.DB
+}
+
+type SupplierRepository struct {
+	DB *gorm.DB
+}
+
+type TypeMovementRepository struct {
+	DB *gorm.DB
+}
+

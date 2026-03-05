@@ -1,13 +1,32 @@
 package schemas
 
 type ReportProfitableProducts struct {
-	ID           int64   `json:"id"`
-	Code         string `json:"code"`
-	Name         string `json:"name"`
-	TotalCost    float64 `json:"total_cost"`
-	TotalProfit  float64 `json:"total_profit"`
+	ID            int64   `json:"id"`
+	Code          string  `json:"code"`
+	Name          string  `json:"name"`
+	TotalCost     float64 `json:"total_cost"`
+	TotalProfit   float64 `json:"total_profit"`
 	TotalQuantity float64 `json:"total_quantity"`
-	TotalSales   float64 `json:"total_sales"`
+	TotalSales    float64 `json:"total_sales"`
+}
+
+type ReportStockProduct struct {
+	ID              int64                  `json:"id"`
+	Code            string                 `json:"code"`
+	Name            string                 `json:"name"`
+	Description     *string                `json:"description"`
+	Price           float64                `json:"price"`
+	Category        string                 `json:"category"`
+	Notifier        bool                   `json:"notifier"`
+	MinAmount       float64                `json:"min_amount"`
+	DepositStock    float64                `json:"deposit_stock"`
+	PointSaleStocks []ReportStockPointSale `json:"point_sale_stocks"`
+}
+
+type ReportStockPointSale struct {
+	PointSaleID   int64   `json:"point_sale_id"`
+	PointSaleName string  `json:"point_sale_name"`
+	Stock         float64 `json:"stock"`
 }
 
 // type ReportMovementResponse struct {
@@ -32,10 +51,6 @@ type ReportProfitableProducts struct {
 //     SportsIncome  float64 `json:"sports_income"`
 //     ExpenseBuy    float64 `json:"expense_buy"`
 // }
-
-
-
-
 
 // type ResultadoPorDia struct {
 // 	Fecha           string  `json:"fecha"`

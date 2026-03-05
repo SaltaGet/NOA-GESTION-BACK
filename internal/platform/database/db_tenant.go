@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	_ "github.com/jackc/pgx/v5/stdlib" // Driver para sql.Open
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

@@ -48,8 +48,8 @@ func isConnectionError(err error) bool {
 		strings.Contains(msg, "failed to connect")
 }
 
-// HandlerErrorGorm centraliza el manejo de errores de DB para Postgres
-func HandlerErrorGorm(err error, entity string, action string) error {
+// HandlerErrorDB centraliza el manejo de errores de DB para Postgres
+func HandlerErrorDB(err error, entity string, action string) error {
 	var pgErr *pgconn.PgError
 
 	// Mensajes dinámicos según la acción
@@ -78,7 +78,9 @@ func HandlerErrorGorm(err error, entity string, action string) error {
 			return ErrorResponse(400, fmt.Sprintf("El campo %s es obligatorio para %s.", field, entity), err)
 
 		case "22001": // value_too_long
-			if field == "un campo" { field = "uno de los campos" }
+			if field == "un campo" {
+				field = "uno de los campos"
+			}
 			return ErrorResponse(400, fmt.Sprintf("El valor es demasiado largo en %s.", field), err)
 
 		case "22P02": // invalid_type

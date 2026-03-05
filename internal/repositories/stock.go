@@ -1,143 +1,168 @@
 package repositories
 
 import (
+	"context"
+	"database/sql"
+	"errors"
 	"sort"
 	"strings"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
-	"github.com/jinzhu/copier"
-	"gorm.io/gorm"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-func (r *StockRepository) StockGetByID(id, pointID int64) (*schemas.ProductStockFullResponse, error) {
-	var pointSale models.PointSale
-	if err := r.DB.Select("id", "is_deposit").First(&pointSale, pointID).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Punto de Venta", schemas.Read)
-	}
+func (r *StockRepository) getPointSale(ctx context.Context, pointID int64) (*boilmodels.PointSale, error) {
+	pointSale, err := boilmodels.PointSales(
+		qm.Select(
+			boilmodels.PointSaleColumns.ID,
+			boilmodels.PointSaleColumns.IsDeposit,
+		),
+		boilmodels.PointSaleWhere.ID.EQ(pointID),
+	).One(ctx, r.DB)
 
-	query := r.DB.Model(&models.Product{}).Preload("Category", func(db *gorm.DB) *gorm.DB {
-		return db.Select("id", "name")
-	})
-
-	if pointSale.IsDeposit {
-		query = query.
-			Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-				return db.Select("id", "product_id", "stock")
-			})
-	} else {
-		query = query.
-			Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-				return db.Select("product_id", "stock").Where("point_sale_id = ?", pointID)
-			})
-	}
-
-	var product models.Product
-	if err := query.Where("id = ?", id).First(&product).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
-	}
-
-	var productSchema schemas.ProductStockFullResponse
-	_ = copier.Copy(&productSchema, &product)
-
-	if pointSale.IsDeposit {
-		productSchema.Stock = product.StockDeposit.Stock
-	} else {
-		if len(product.StockPointSales) > 0 {
-			productSchema.Stock = product.StockPointSales[0].Stock
-		} else {
-			productSchema.Stock = 0
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, schemas.HandlerErrorDB(err, "Punto de Venta", schemas.Read)
 		}
+		return nil, schemas.HandlerErrorDB(err, "Punto de Venta", schemas.Read)
 	}
 
-	productSchema.SecondaryImage = utils.SplitStrings(*&product.SecondaryImages)
+	return pointSale, nil
+}
 
-	return &productSchema, nil
+func (r *StockRepository) buildStockQueryMods(pointSale *boilmodels.PointSale, pointID int64) []qm.QueryMod {
+	queryMods := []qm.QueryMod{
+		qm.Select(
+			"products.id",
+			"products.code",
+			"products.name",
+			"products.description",
+			"products.price",
+			"s.stock",
+			"categories.id AS category_id",
+			"categories.name AS category_name",
+			"products.primary_image",
+			"products.secondary_images",
+		),
+		qm.InnerJoin("categories ON categories.id = products.category_id"),
+	}
+
+	if pointSale.IsDeposit {
+		queryMods = append(queryMods, qm.InnerJoin("deposits s ON s.product_id = products.id"))
+	} else {
+		queryMods = append(queryMods,
+			qm.InnerJoin("stock_point_sales s ON s.product_id = products.id"),
+			qm.Where("s.point_sale_id = ?", pointID),
+		)
+	}
+
+	return queryMods
+}
+
+func (r *StockRepository) StockGetByID(id, pointID int64) (*schemas.ProductStockFullResponse, error) {
+	ctx := context.Background()
+
+	pointSale, err := r.getPointSale(ctx, pointID)
+	if err != nil {
+		return nil, err
+	}
+
+	queryMods := r.buildStockQueryMods(pointSale, pointID)
+	queryMods = append(queryMods, qm.Where("products.id = ?", id))
+
+	var product schemas.ProductStockFullResponseCategory
+	if err := boilmodels.Products(queryMods...).Bind(ctx, r.DB, &product); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
+		}
+		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
+	}
+
+	secondaries := ""
+	if product.SecondaryImages != nil {
+		secondaries = *product.SecondaryImages
+	}
+
+	return &schemas.ProductStockFullResponse{
+		ID:             product.ID,
+		Code:           product.Code,
+		Name:           product.Name,
+		Description:    product.Description,
+		Price:          product.Price,
+		Stock:          product.Stock,
+		PrimaryImage:   product.PrimaryImage,
+		SecondaryImage: utils.SplitStrings(secondaries),
+		Category: schemas.CategoryResponseStock{
+			ID:   product.CategoryID,
+			Name: product.CategoryName,
+		},
+	}, nil
 }
 
 func (r *StockRepository) StockGetByCode(code string, pointID int64) (*schemas.ProductStockFullResponse, error) {
-	var pointSale models.PointSale
-	if err := r.DB.Select("id", "is_deposit").First(&pointSale, pointID).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Punto de Venta", schemas.Read)
+	ctx := context.Background()
+
+	pointSale, err := r.getPointSale(ctx, pointID)
+	if err != nil {
+		return nil, err
 	}
 
-	query := r.DB.Model(&models.Product{}).Preload("Category", func(db *gorm.DB) *gorm.DB {
-		return db.Select("id", "name")
-	})
+	queryMods := r.buildStockQueryMods(pointSale, pointID)
+	queryMods = append(queryMods, qm.Where("products.code = ?", code))
 
-	if pointSale.IsDeposit {
-		query = query.
-			Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-				return db.Select("id", "product_id", "stock")
-			})
-	} else {
-		query = query.
-			Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-				return db.Select("product_id", "stock").Where("point_sale_id = ?", pointID)
-			})
-	}
-
-	var product models.Product
-	if err := query.Where("code = ?", code).First(&product).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
-	}
-
-	var productSchema schemas.ProductStockFullResponse
-	_ = copier.Copy(&productSchema, &product)
-
-	if pointSale.IsDeposit {
-		productSchema.Stock = product.StockDeposit.Stock
-	} else {
-		if len(product.StockPointSales) > 0 {
-			productSchema.Stock = product.StockPointSales[0].Stock
-		} else {
-			productSchema.Stock = 0
+	var product schemas.ProductStockFullResponseCategory
+	if err := boilmodels.Products(queryMods...).Bind(ctx, r.DB, &product); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 		}
+		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
-	productSchema.SecondaryImage = utils.SplitStrings(*&product.SecondaryImages)
+	secondaries := ""
+	if product.SecondaryImages != nil {
+		secondaries = *product.SecondaryImages
+	}
 
-	return &productSchema, nil
+	return &schemas.ProductStockFullResponse{
+		ID:             product.ID,
+		Code:           product.Code,
+		Name:           product.Name,
+		Description:    product.Description,
+		Price:          product.Price,
+		Stock:          product.Stock,
+		PrimaryImage:   product.PrimaryImage,
+		SecondaryImage: utils.SplitStrings(secondaries),
+		Category: schemas.CategoryResponseStock{
+			ID:   product.CategoryID,
+			Name: product.CategoryName,
+		},
+	}, nil
 }
 
 func (r *StockRepository) StockGetByCategoryID(categoryID, pointID int64) ([]*schemas.ProductStockFullResponse, error) {
-	var pointSale models.PointSale
-	if err := r.DB.Select("id", "is_deposit").First(&pointSale, pointID).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Punto de Venta", schemas.Read)
+	ctx := context.Background()
+
+	pointSale, err := r.getPointSale(ctx, pointID)
+	if err != nil {
+		return nil, err
 	}
+
+	queryMods := r.buildStockQueryMods(pointSale, pointID)
+	queryMods = append(queryMods, qm.Where("products.category_id = ?", categoryID))
 
 	var products []*schemas.ProductStockFullResponseCategory
-
-	baseSelect := []string{
-		"products.id",
-		"products.code",
-		"products.name",
-		"products.description",
-		"products.price",
-		"s.stock",
-		"categories.id AS category_id",
-		"categories.name AS category_name",
-		"products.primary_image",
-		"products.secondary_images",
-	}
-
-	query := r.DB.Model(&models.Product{}).
-		Select(baseSelect).
-		Joins("INNER JOIN categories ON categories.id = products.category_id")
-
-	if pointSale.IsDeposit {
-		query = query.Joins("INNER JOIN deposits s ON s.product_id = products.id")
-	} else {
-		query = query.Joins("INNER JOIN stock_point_sales s ON s.product_id = products.id AND s.point_sale_id = ?", pointID)
-	}
-
-	if err := query.Where("products.category_id = ?", categoryID).Scan(&products).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
+	if err := boilmodels.Products(queryMods...).Bind(ctx, r.DB, &products); err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
 	var result []*schemas.ProductStockFullResponse
 	for _, p := range products {
+		secondaries := ""
+		if p.SecondaryImages != nil {
+			secondaries = *p.SecondaryImages
+		}
 		result = append(result, &schemas.ProductStockFullResponse{
 			ID:             p.ID,
 			Code:           p.Code,
@@ -146,7 +171,7 @@ func (r *StockRepository) StockGetByCategoryID(categoryID, pointID int64) ([]*sc
 			Price:          p.Price,
 			Stock:          p.Stock,
 			PrimaryImage:   p.PrimaryImage,
-			SecondaryImage: utils.SplitStrings(*&p.SecondaryImages),
+			SecondaryImage: utils.SplitStrings(secondaries),
 			Category: schemas.CategoryResponseStock{
 				ID:   p.CategoryID,
 				Name: p.CategoryName,
@@ -157,48 +182,53 @@ func (r *StockRepository) StockGetByCategoryID(categoryID, pointID int64) ([]*sc
 	return result, nil
 }
 
-func (r *StockRepository) StockGetByName(name string, pointID int64) ([]*schemas.ProductStockFullResponse, error) {
-	var pointSale models.PointSale
-	if err := r.DB.Select("id", "is_deposit").First(&pointSale, pointID).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Punto de Venta", schemas.Read)
+func calculateRelevance(search, name string) int {
+	if search == "" {
+		return 0
 	}
+	// Similar relevance algorithm
+	idx := strings.Index(name, search)
+	if idx == 0 {
+		return 3
+	} else if idx > 0 {
+		return 2
+	}
+
+	// Check word boundaries
+	words := strings.Fields(name)
+	for _, w := range words {
+		if strings.HasPrefix(w, search) {
+			return 2
+		}
+	}
+
+	return 0
+}
+
+func (r *StockRepository) StockGetByName(name string, pointID int64) ([]*schemas.ProductStockFullResponse, error) {
+	ctx := context.Background()
+
+	pointSale, err := r.getPointSale(ctx, pointID)
+	if err != nil {
+		return nil, err
+	}
+
+	queryMods := r.buildStockQueryMods(pointSale, pointID)
 
 	var products []*schemas.ProductStockFullResponseCategory
-
-	baseSelect := []string{
-		"products.id",
-		"products.code",
-		"products.name",
-		"products.description",
-		"products.price",
-		"s.stock",
-		"categories.id AS category_id",
-		"categories.name AS category_name",
-		"products.primary_image",
-		"products.secondary_images",
+	if err := boilmodels.Products(append(queryMods, qm.Where("products.name ILIKE ?", "%"+name+"%"))...).Bind(ctx, r.DB, &products); err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
-	query := r.DB.Model(&models.Product{}).
-		Select(baseSelect).
-		Joins("INNER JOIN categories ON categories.id = products.category_id")
-
-	if pointSale.IsDeposit {
-		query = query.Joins("INNER JOIN deposits s ON s.product_id = products.id")
-	} else {
-		query = query.Joins("INNER JOIN stock_point_sales s ON s.product_id = products.id AND s.point_sale_id = ?", pointID)
-	}
-
-	// Traer más resultados para luego filtrar y ordenar
-	if err := query.Where("products.name LIKE ?", "%"+name+"%").Scan(&products).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
-	}
-
-	// Si no hay búsqueda, retornar los primeros 10
 	if strings.TrimSpace(name) == "" {
 		result := make([]*schemas.ProductStockFullResponse, 0, 10)
 		for i, p := range products {
 			if i >= 10 {
 				break
+			}
+			secondaries := ""
+			if p.SecondaryImages != nil {
+				secondaries = *p.SecondaryImages
 			}
 			result = append(result, &schemas.ProductStockFullResponse{
 				ID:             p.ID,
@@ -208,7 +238,7 @@ func (r *StockRepository) StockGetByName(name string, pointID int64) ([]*schemas
 				Price:          p.Price,
 				Stock:          p.Stock,
 				PrimaryImage:   p.PrimaryImage,
-				SecondaryImage: utils.SplitStrings(*&p.SecondaryImages),
+				SecondaryImage: utils.SplitStrings(secondaries),
 				Category: schemas.CategoryResponseStock{
 					ID:   p.CategoryID,
 					Name: p.CategoryName,
@@ -218,15 +248,18 @@ func (r *StockRepository) StockGetByName(name string, pointID int64) ([]*schemas
 		return result, nil
 	}
 
-	// Calcular relevancia para cada producto
 	scored := make([]schemas.ProductStockWithScore, 0)
 	lowerSearch := strings.ToLower(strings.TrimSpace(name))
 
 	for _, p := range products {
 		lowerName := strings.ToLower(p.Name)
-		score := models.CalculateRelevance(lowerSearch, lowerName)
+		score := calculateRelevance(lowerSearch, lowerName)
 
 		if score > 0 {
+			secondaries := ""
+			if p.SecondaryImages != nil {
+				secondaries = *p.SecondaryImages
+			}
 			scored = append(scored, schemas.ProductStockWithScore{
 				Product: &schemas.ProductStockFullResponse{
 					ID:             p.ID,
@@ -236,7 +269,7 @@ func (r *StockRepository) StockGetByName(name string, pointID int64) ([]*schemas
 					Price:          p.Price,
 					Stock:          p.Stock,
 					PrimaryImage:   p.PrimaryImage,
-					SecondaryImage: utils.SplitStrings(*&p.SecondaryImages),
+					SecondaryImage: utils.SplitStrings(secondaries),
 					Category: schemas.CategoryResponseStock{
 						ID:   p.CategoryID,
 						Name: p.CategoryName,
@@ -248,17 +281,13 @@ func (r *StockRepository) StockGetByName(name string, pointID int64) ([]*schemas
 		}
 	}
 
-	// Ordenar según los criterios especificados
 	sort.Slice(scored, func(i, j int) bool {
-		// Si los scores son diferentes, ordenar por score (descendente)
 		if scored[i].Score != scored[j].Score {
 			return scored[i].Score > scored[j].Score
 		}
-		// Si los scores son iguales, ordenar por longitud (ascendente - más corto primero)
 		return scored[i].Length < scored[j].Length
 	})
 
-	// Limitar a 10 resultados
 	limit := 10
 	result := make([]*schemas.ProductStockFullResponse, 0, limit)
 	for i, ps := range scored {
@@ -272,58 +301,49 @@ func (r *StockRepository) StockGetByName(name string, pointID int64) ([]*schemas
 }
 
 func (r *StockRepository) StockGetAll(page, limit int, pointID int64) ([]*schemas.ProductStockFullResponse, int64, error) {
-	var total int64
+	ctx := context.Background()
 	offset := (page - 1) * limit
 
-	// verificar punto de venta
-	var pointSale models.PointSale
-	if err := r.DB.Select("id", "is_deposit").First(&pointSale, pointID).Error; err != nil {
-		return nil, 0, schemas.HandlerErrorGorm(err, "Punto de Venta", schemas.Read)
+	pointSale, err := r.getPointSale(ctx, pointID)
+	if err != nil {
+		return nil, 0, err
 	}
+
+	queryMods := r.buildStockQueryMods(pointSale, pointID)
+
+	// Since Count and Bind are two different things,
+	// for Count we only need the joins avoiding Select
+	countMods := []qm.QueryMod{
+		qm.InnerJoin("categories ON categories.id = products.category_id"),
+	}
+
+	if pointSale.IsDeposit {
+		countMods = append(countMods, qm.InnerJoin("deposits s ON s.product_id = products.id"))
+	} else {
+		countMods = append(countMods,
+			qm.InnerJoin("stock_point_sales s ON s.product_id = products.id"),
+			qm.Where("s.point_sale_id = ?", pointID),
+		)
+	}
+
+	total, err := boilmodels.Products(countMods...).Count(ctx, r.DB)
+	if err != nil {
+		return nil, 0, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
+	}
+
+	queryMods = append(queryMods, qm.Offset(offset), qm.Limit(limit))
 
 	var products []*schemas.ProductStockFullResponseCategory
-
-	baseSelect := []string{
-		"products.id",
-		"products.code",
-		"products.name",
-		"products.description",
-		"products.price",
-		"s.stock",
-		"categories.id AS category_id",
-		"categories.name AS category_name",
-		"products.primary_image",
-		"products.secondary_images",
-	}
-
-	// QUERY BASE (sin limit ni offset)
-	baseQuery := r.DB.Model(&models.Product{}).
-		Joins("INNER JOIN categories ON categories.id = products.category_id")
-
-	// join según el tipo de stock
-	if pointSale.IsDeposit {
-		baseQuery = baseQuery.Joins("INNER JOIN deposits s ON s.product_id = products.id")
-	} else {
-		baseQuery = baseQuery.Joins("INNER JOIN stock_point_sales s ON s.product_id = products.id AND s.point_sale_id = ?", pointID)
-	}
-
-	// COUNT REAL (MISMO JOIN)
-	if err := baseQuery.Count(&total).Error; err != nil {
-		return nil, 0, schemas.ErrorResponse(500, "error al contar productos", err)
-	}
-
-	// QUERY FINAL (paginada)
-	query := baseQuery.
-		Select(baseSelect).
-		Offset(offset).
-		Limit(limit)
-
-	if err := query.Scan(&products).Error; err != nil {
-		return nil, 0, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
+	if err := boilmodels.Products(queryMods...).Bind(ctx, r.DB, &products); err != nil {
+		return nil, 0, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
 	var result []*schemas.ProductStockFullResponse
 	for _, p := range products {
+		secondaries := ""
+		if p.SecondaryImages != nil {
+			secondaries = *p.SecondaryImages
+		}
 		result = append(result, &schemas.ProductStockFullResponse{
 			ID:             p.ID,
 			Code:           p.Code,
@@ -332,7 +352,7 @@ func (r *StockRepository) StockGetAll(page, limit int, pointID int64) ([]*schema
 			Price:          p.Price,
 			Stock:          p.Stock,
 			PrimaryImage:   p.PrimaryImage,
-			SecondaryImage: utils.SplitStrings(*&p.SecondaryImages),
+			SecondaryImage: utils.SplitStrings(secondaries),
 			Category: schemas.CategoryResponseStock{
 				ID:   p.CategoryID,
 				Name: p.CategoryName,

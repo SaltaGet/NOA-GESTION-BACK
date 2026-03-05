@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"sort"
@@ -8,98 +10,164 @@ import (
 	"strings"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
-	"gorm.io/gorm"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/volatiletech/sqlboiler/v4/types"
 )
 
-func (r *ProductRepository) ProductGetByID(id int64) (*models.Product, error) {
-	var product models.Product
-	if err := r.DB.
-		Preload("Category", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name")
-		}).
-		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-			return db.Select("product_id", "stock", "point_sale_id")
-		}).
-		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name", "is_deposit")
-		}).
-		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "product_id", "stock")
-		}).
-		First(&product, id).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
+func mapToModelProduct(c *boilmodels.Product) *models.Product {
+	if c == nil {
+		return nil
 	}
 
-	return &product, nil
+	p := &models.Product{
+		ID:         c.ID,
+		Code:       c.Code,
+		Name:       c.Name,
+		CategoryID: c.CategoryID,
+		IsVisible:  c.IsVisible,
+		Notifier:   c.Notifier,
+	}
+
+	if c.Description.Valid {
+		p.Description = &c.Description.String
+	}
+	if c.PrimaryImage.Valid {
+		p.PrimaryImage = &c.PrimaryImage.String
+	}
+	if c.SecondaryImages.Valid {
+		p.SecondaryImages = &c.SecondaryImages.String
+	}
+
+	if !c.Price.IsZero() {
+		val, _ := c.Price.Big.Float64()
+		p.Price = val
+	}
+	if !c.MinAmount.IsZero() {
+		val, _ := c.MinAmount.Big.Float64()
+		p.MinAmount = val
+	}
+
+	if c.CreatedAt.Valid {
+		p.CreatedAt = c.CreatedAt.Time
+	}
+	if c.UpdatedAt.Valid {
+		p.UpdatedAt = c.UpdatedAt.Time
+	}
+
+	if c.R != nil {
+		if c.R.Category != nil {
+			p.Category = *mapToModelCategory(c.R.Category)
+		}
+		if len(c.R.Deposits) > 0 {
+			dp := c.R.Deposits[0]
+			stk, _ := dp.Stock.Big.Float64()
+			p.StockDeposit = &models.Deposit{
+				ID:        dp.ID,
+				ProductID: dp.ProductID,
+				Stock:     stk,
+			}
+		}
+		if len(c.R.StockPointSales) > 0 {
+			for _, sp := range c.R.StockPointSales {
+				stk, _ := sp.Stock.Big.Float64()
+				msps := &models.StockPointSale{
+					ID:          sp.ID,
+					ProductID:   sp.ProductID,
+					PointSaleID: sp.PointSaleID,
+					Stock:       stk,
+				}
+				if sp.R != nil && sp.R.PointSale != nil {
+					msps.PointSale = models.PointSale{
+						ID:        sp.R.PointSale.ID,
+						Name:      sp.R.PointSale.Name,
+						IsDeposit: sp.R.PointSale.IsDeposit,
+					}
+				}
+				p.StockPointSales = append(p.StockPointSales, msps)
+			}
+		}
+	}
+
+	return p
+}
+
+func getProductPreloads() []qm.QueryMod {
+	return []qm.QueryMod{
+		qm.Load(boilmodels.ProductRels.Category),
+		qm.Load(boilmodels.ProductRels.Deposits),
+		qm.Load(boilmodels.ProductRels.StockPointSales),
+		qm.Load(fmt.Sprintf("%s.%s", boilmodels.ProductRels.StockPointSales, boilmodels.StockPointSaleRels.PointSale)),
+	}
+}
+
+func floatToDecimal(val float64) types.NullDecimal {
+	d := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%f", val)))
+	return d
+}
+
+func (r *ProductRepository) ProductGetByID(id int64) (*models.Product, error) {
+	ctx := context.Background()
+	mods := getProductPreloads()
+	mods = append(mods, boilmodels.ProductWhere.ID.EQ(id))
+
+	product, err := boilmodels.Products(mods...).One(ctx, r.DB)
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
+	}
+
+	return mapToModelProduct(product), nil
 }
 
 func (r *ProductRepository) ProductGetByCode(code string) (*models.Product, error) {
-	var product *models.Product
+	ctx := context.Background()
+	mods := getProductPreloads()
+	mods = append(mods, boilmodels.ProductWhere.Code.EQ(code))
 
-	if err := r.DB.
-		Preload("Category", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name")
-		}).
-		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-			return db.Select("product_id", "stock", "point_sale_id")
-		}).
-		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name", "is_deposit")
-		}).
-		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "product_id", "stock")
-		}).
-		Where("code = ?", code).First(&product).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
+	product, err := boilmodels.Products(mods...).One(ctx, r.DB)
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
-	return product, nil
+	return mapToModelProduct(product), nil
 }
 
 func (r *ProductRepository) ProductGetByCategoryID(categoryID int64) ([]*models.Product, error) {
-	var products []*models.Product
+	ctx := context.Background()
+	mods := getProductPreloads()
+	mods = append(mods, boilmodels.ProductWhere.CategoryID.EQ(categoryID))
 
-	if err := r.DB.
-		Preload("Category", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name")
-		}).
-		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-			return db.Select("product_id", "stock", "point_sale_id")
-		}).
-		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name", "is_deposit")
-		}).
-		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "product_id", "stock")
-		}).
-		Where("category_id = ?", categoryID).Find(&products).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
+	boilProducts, err := boilmodels.Products(mods...).All(ctx, r.DB)
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
+	var products []*models.Product
+	for _, p := range boilProducts {
+		products = append(products, mapToModelProduct(p))
+	}
 	return products, nil
 }
 
 func (r *ProductRepository) ProductGetByName(name string) ([]*models.Product, error) {
-	var allProducts []*models.Product
+	ctx := context.Background()
+	mods := getProductPreloads()
+	if name != "" {
+		mods = append(mods, boilmodels.ProductWhere.Name.ILIKE("%"+name+"%"))
+	}
 
-	if err := r.DB.
-		Preload("Category", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name")
-		}).
-		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-			return db.Select("product_id", "stock", "point_sale_id")
-		}).
-		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name", "is_deposit")
-		}).
-		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "product_id", "stock")
-		}).
-		Where("name LIKE ?", "%"+name+"%").
-		Find(&allProducts).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
+	boilProducts, err := boilmodels.Products(mods...).All(ctx, r.DB)
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
+	}
+
+	var allProducts []*models.Product
+	for _, p := range boilProducts {
+		allProducts = append(allProducts, mapToModelProduct(p))
 	}
 
 	if strings.TrimSpace(name) == "" {
@@ -125,17 +193,13 @@ func (r *ProductRepository) ProductGetByName(name string) ([]*models.Product, er
 		}
 	}
 
-	// Ordenar según los criterios especificados
 	sort.Slice(scored, func(i, j int) bool {
-		// Si los scores son diferentes, ordenar por score (descendente)
 		if scored[i].Score != scored[j].Score {
 			return scored[i].Score > scored[j].Score
 		}
-		// Si los scores son iguales, ordenar por longitud (ascendente - más corto primero)
 		return scored[i].Length < scored[j].Length
 	})
 
-	// Limitar a 10 resultados
 	limit := 10
 	products := make([]*models.Product, 0, limit)
 	for i, ps := range scored {
@@ -149,94 +213,116 @@ func (r *ProductRepository) ProductGetByName(name string) ([]*models.Product, er
 }
 
 func (r *ProductRepository) ProductGetAll(page, limit int, isVisible *bool) ([]*models.Product, int64, error) {
-	var products []*models.Product
-	var total int64
-	offset := (page - 1) * limit
+	ctx := context.Background()
 
-	// 1. Iniciamos la query base
-	query := r.DB.Model(&models.Product{})
-
-	// 2. Filtro condicional: Si isVisible es true, aplicamos el filtro.
-	// Si es false, no entramos aquí y la query traerá visibles e invisibles.
+	mods := getProductPreloads()
 	if isVisible != nil {
-		query = query.Where("is_visible = ?", isVisible)
+		mods = append(mods, boilmodels.ProductWhere.IsVisible.EQ(*isVisible))
 	}
 
-	// 3. Contar el total basado en si se aplicó el filtro o no
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
+	count, err := boilmodels.Products(mods...).Count(ctx, r.DB)
+	if err != nil {
+		return nil, 0, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
-	// 4. Ejecutar la búsqueda con los Preloads
-	if err := query.
-		Preload("Category", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name")
-		}).
-		Preload("StockPointSales", func(db *gorm.DB) *gorm.DB {
-			return db.Select("product_id", "stock", "point_sale_id")
-		}).
-		Preload("StockPointSales.PointSale", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name", "is_deposit")
-		}).
-		Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "product_id", "stock")
-		}).
-		Offset(offset).
-		Limit(limit).
-		Find(&products).Error; err != nil {
-		return nil, 0, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
+	offset := (page - 1) * limit
+	mods = append(mods, qm.Offset(offset), qm.Limit(limit))
+
+	boilProducts, err := boilmodels.Products(mods...).All(ctx, r.DB)
+	if err != nil {
+		return nil, 0, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
-	return products, total, nil
+	var products []*models.Product
+	for _, p := range boilProducts {
+		products = append(products, mapToModelProduct(p))
+	}
+
+	return products, count, nil
 }
 
 func (r *ProductRepository) ProductGetByCodeToQR(code string) (*models.Product, error) {
-	var product *models.Product
-
-	if err := r.DB.
-		Select("code", "name").
-		Where("code = ?", code).First(&product).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
+	ctx := context.Background()
+	p, err := boilmodels.Products(
+		qm.Select(boilmodels.ProductColumns.Code, boilmodels.ProductColumns.Name),
+		boilmodels.ProductWhere.Code.EQ(code),
+	).One(ctx, r.DB)
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
-
-	return product, nil
+	return mapToModelProduct(p), nil
 }
 
 func (r *ProductRepository) ProductCount() (int64, error) {
-	var count int64
-	if err := r.DB.Model(&models.Product{}).Count(&count).Error; err != nil {
-		return 0, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
+	ctx := context.Background()
+	count, err := boilmodels.Products().Count(ctx, r.DB)
+	if err != nil {
+		return 0, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 	return count, nil
 }
 
 func (r *ProductRepository) ProductInsertToExcel(memberID int64, products []models.Product) ([]map[string]string, error) {
+	ctx := context.Background()
 	rejected := make([]map[string]string, 0)
+
 	for _, product := range products {
-		err := r.DB.Transaction(func(tx *gorm.DB) error {
+		err := func() error {
+			tx, err := r.DB.BeginTx(ctx, nil)
+			if err != nil {
+				return err
+			}
+			defer tx.Rollback()
+
 			if product.Category.Name != "" {
-				if err := tx.FirstOrCreate(&product.Category, models.Category{Name: product.Category.Name}).Error; err != nil {
+				c, err := boilmodels.Categories(boilmodels.CategoryWhere.Name.EQ(strings.ToLower(product.Category.Name))).One(ctx, tx)
+				if err != nil && !errors.Is(err, sql.ErrNoRows) {
 					return err
 				}
-				product.CategoryID = product.Category.ID
+				if errors.Is(err, sql.ErrNoRows) {
+					c = &boilmodels.Category{Name: strings.ToLower(product.Category.Name)}
+					if err := c.Insert(ctx, tx, boil.Infer()); err != nil {
+						return err
+					}
+				}
+				product.CategoryID = c.ID
 			} else {
 				product.CategoryID = 1
 			}
 
-			if err := tx.Create(&product).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Producto", schemas.Create)
+			p := boilmodels.Product{
+				Name:        product.Name,
+				Code:        product.Code,
+				CategoryID:  product.CategoryID,
+				Description: null.StringFromPtr(product.Description),
+				Price:       floatToDecimal(product.Price),
+				MinAmount:   floatToDecimal(product.MinAmount).Decimal,
 			}
 
-			if product.StockDeposit.Stock <= 0 {
+			if err := p.Insert(ctx, tx, boil.Infer()); err != nil {
+				return schemas.HandlerErrorDB(err, "Producto", schemas.Create)
+			}
+
+			product.ID = p.ID
+
+			if product.StockDeposit != nil && product.StockDeposit.Stock <= 0 {
 				return schemas.ErrorResponse(400, "stock no puede ser menor o igual a 0", fmt.Errorf("stock no puede ser menor o igual a 0"))
 			}
 
-			if err := tx.Create(&models.Deposit{ProductID: product.ID, Stock: product.StockDeposit.Stock}).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Producto", schemas.Create)
+			stk := 0.0
+			if product.StockDeposit != nil {
+				stk = product.StockDeposit.Stock
+			}
+			dep := boilmodels.Deposit{
+				ProductID: p.ID,
+				Stock:     floatToDecimal(stk),
+			}
+			if err := dep.Insert(ctx, tx, boil.Infer()); err != nil {
+				return schemas.HandlerErrorDB(err, "Producto", schemas.Create)
 			}
 
-			return nil
-		})
+			return tx.Commit()
+		}()
 
 		if err != nil {
 			rejected = append(rejected, map[string]string{"code": product.Code, "name": product.Name})
@@ -247,167 +333,169 @@ func (r *ProductRepository) ProductInsertToExcel(memberID int64, products []mode
 }
 
 func (r *ProductRepository) ProductCreate(memberID int64, productCreate *schemas.ProductCreate, plan *schemas.PlanResponseDTO) (int64, error) {
-	var productSave models.Product
-
-	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
-
-		var countTotal int64
-		if err := tx.Model(&models.Product{}).Count(&countTotal).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
-		}
-
-		if countTotal >= plan.AmountProduct {
-			return schemas.ErrorResponse(400, "el plan actual no permite crear más productos", fmt.Errorf("el plan actual no permite crear más productos"))
-		}
-
-		var category models.Category
-		if err := tx.First(&category, productCreate.CategoryID).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Categoria", schemas.Read)
-		}
-
-		product := models.Product{
-			Name:        productCreate.Name,
-			Code:        productCreate.Code,
-			Description: productCreate.Description,
-			CategoryID:  productCreate.CategoryID,
-			Notifier:    productCreate.Notifier,
-			MinAmount:   productCreate.MinAmount,
-		}
-
-		if productCreate.Price != nil {
-			product.Price = *productCreate.Price
-		}
-
-		if err := tx.Create(&product).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Producto", schemas.Create)
-		}
-
-		productSave = product
-
-		return nil
-	})
-
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
+	defer tx.Rollback()
 
-	return productSave.ID, nil
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return 0, err
+	}
+
+	countTotal, err := boilmodels.Products().Count(ctx, tx)
+	if err != nil {
+		return 0, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
+	}
+
+	if countTotal >= plan.AmountProduct {
+		return 0, schemas.ErrorResponse(400, "el plan actual no permite crear más productos", fmt.Errorf("el plan actual no permite crear más productos"))
+	}
+
+	exists, err := boilmodels.Categories(boilmodels.CategoryWhere.ID.EQ(productCreate.CategoryID)).Exists(ctx, tx)
+	if err != nil || !exists {
+		if !exists {
+			err = sql.ErrNoRows
+		}
+		return 0, schemas.HandlerErrorDB(err, "Categoria", schemas.Read)
+	}
+
+	p := boilmodels.Product{
+		Name:        productCreate.Name,
+		Code:        productCreate.Code,
+		Description: null.StringFromPtr(productCreate.Description),
+		CategoryID:  productCreate.CategoryID,
+		Notifier:    productCreate.Notifier,
+		MinAmount:   floatToDecimal(productCreate.MinAmount).Decimal,
+	}
+
+	if productCreate.Price != nil {
+		p.Price = floatToDecimal(*productCreate.Price)
+	}
+
+	if err := p.Insert(ctx, tx, boil.Infer()); err != nil {
+		return 0, schemas.HandlerErrorDB(err, "Producto", schemas.Create)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+
+	return p.ID, nil
 }
 
-// ProductUpdate actualiza un producto con auditoría
 func (r *ProductRepository) ProductUpdate(memberID int64, product *schemas.ProductUpdate) error {
-	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-		var p models.Product
-		if err := tx.First(&p, product.ID).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
-		}
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return err
+	}
 
-		if product.Price != nil {
-			p.Price = *product.Price
-		}
+	p, err := boilmodels.FindProduct(ctx, tx, product.ID)
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Producto", schemas.Read)
+	}
 
-		updates := map[string]any{
-			"code":        product.Code,
-			"name":        product.Name,
-			"description": &product.Description,
-			"category_id": product.CategoryID,
-			"price":       p.Price,
-			"notifier":    product.Notifier,
-			"min_amount":  product.MinAmount,
-		}
+	if product.Price != nil {
+		p.Price = floatToDecimal(*product.Price)
+	}
 
-		if err := tx.Model(&p).Updates(updates).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Producto", schemas.Update)
-		}
+	p.Code = product.Code
+	p.Name = product.Name
+	p.Description = null.StringFromPtr(&product.Description)
+	p.CategoryID = product.CategoryID
+	p.Notifier = product.Notifier
+	p.MinAmount = floatToDecimal(product.MinAmount).Decimal
 
-		return nil
-	})
+	if _, err := p.Update(ctx, tx, boil.Infer()); err != nil {
+		return schemas.HandlerErrorDB(err, "Producto", schemas.Update)
+	}
 
-	return err
+	return tx.Commit()
 }
 
-// ProductPriceUpdate actualiza los precios de múltiples productos con auditoría
 func (r *ProductRepository) ProductPriceUpdate(memberID int64, product *schemas.ListPriceUpdate) error {
-	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return err
+	}
+
+	for _, pup := range product.ListProductPriceUpdate {
+		p, err := boilmodels.FindProduct(ctx, tx, pup.ID)
+		if err != nil {
+			return schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 		}
 
-		for _, p := range product.ListProductPriceUpdate {
-			// Obtener el estado anterior del producto
-			var oldProduct models.Product
-			if err := tx.First(&oldProduct, p.ID).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
-			}
-
-			res := tx.Model(&models.Product{}).
-				Where("id = ?", p.ID).
-				Update("price", p.Price)
-
-			if res.Error != nil {
-				return schemas.HandlerErrorGorm(res.Error, "Producto", schemas.Update)
-			}
-
-			if res.RowsAffected == 0 {
-				return schemas.ErrorResponse(404, fmt.Sprintf("producto %d no encontrado", p.ID), fmt.Errorf("producto %d no encontrado", p.ID))
-			}
+		p.Price = floatToDecimal(pup.Price)
+		rowsAff, err := p.Update(ctx, tx, boil.Whitelist(boilmodels.ProductColumns.Price, boilmodels.ProductColumns.UpdatedAt))
+		if err != nil {
+			return schemas.HandlerErrorDB(err, "Producto", schemas.Update)
 		}
-		return nil
-	})
 
-	return err
+		if rowsAff == 0 {
+			return schemas.ErrorResponse(404, fmt.Sprintf("producto %d no encontrado", pup.ID), fmt.Errorf("producto %d no encontrado", pup.ID))
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (r *ProductRepository) ProductDelete(memberID int64, id int64) error {
-	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-		var product models.Product
-		if err := tx.First(&product, id).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
-		}
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return err
+	}
 
-		var stockPointSales []models.StockPointSale
-		if err := tx.Where("product_id = ?", id).Find(&stockPointSales).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
-		}
+	p, err := boilmodels.FindProduct(ctx, tx, id)
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Producto", schemas.Read)
+	}
 
-		if err := tx.Where("product_id = ?", id).Delete(&models.StockPointSale{}).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Producto", schemas.Delete)
-		}
+	_, err = boilmodels.StockPointSales(boilmodels.StockPointSaleWhere.ProductID.EQ(id)).DeleteAll(ctx, tx)
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Producto", schemas.Delete)
+	}
 
-		if err := tx.Where("id = ?", id).Delete(&models.Product{}).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Producto", schemas.Delete)
-		}
+	_, err = p.Delete(ctx, tx)
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Producto", schemas.Delete)
+	}
 
-		return nil
-	})
-
-	return err
+	return tx.Commit()
 }
 
 func (r *ProductRepository) ValidateProductImages(productValidateImage schemas.ProductValidateImage, plan *schemas.PlanResponseDTO) error {
-	var product models.Product
-	if err := r.DB.First(&product, productValidateImage.ProductID).Error; err != nil {
-		return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
+	ctx := context.Background()
+	p, err := boilmodels.FindProduct(ctx, r.DB, productValidateImage.ProductID)
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
-	if productValidateImage.PrimaryImage == "keep" && product.PrimaryImage == nil {
+	if productValidateImage.PrimaryImage == "keep" && (!p.PrimaryImage.Valid || p.PrimaryImage.String == "") {
 		return schemas.ErrorResponse(400, "la imagen princial es obligatoria", fmt.Errorf("la imagen princial es obligatoria"))
 	}
 
-	var count int = 0
-	if product.SecondaryImages != nil {
-		count += len(strings.Split(*product.SecondaryImages, ","))
+	count := 0
+	if p.SecondaryImages.Valid && p.SecondaryImages.String != "" {
+		count += len(strings.Split(p.SecondaryImages.String, ","))
 	}
 
 	if len(productValidateImage.SecondaryImage.KeepUUIDs) > count || len(productValidateImage.SecondaryImage.RemoveUUIDs) > count {
@@ -415,9 +503,9 @@ func (r *ProductRepository) ValidateProductImages(productValidateImage schemas.P
 		return schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
 	}
 
-	var sum = int(*productValidateImage.SecondaryImage.Add) - len(productValidateImage.SecondaryImage.RemoveUUIDs) + len(productValidateImage.SecondaryImage.KeepUUIDs)
-	var typePrimary string = productValidateImage.PrimaryImage
-	var existPrimary int = utils.Ternary(typePrimary == "set", 1, 0)
+	sum := int(*productValidateImage.SecondaryImage.Add) - len(productValidateImage.SecondaryImage.RemoveUUIDs) + len(productValidateImage.SecondaryImage.KeepUUIDs)
+	typePrimary := productValidateImage.PrimaryImage
+	existPrimary := utils.Ternary(typePrimary == "set", 1, 0)
 
 	for _, module := range plan.Modules {
 		if module.Name == "ecommerce" {
@@ -433,24 +521,30 @@ func (r *ProductRepository) ValidateProductImages(productValidateImage schemas.P
 }
 
 func (r *ProductRepository) ProductUpdateVisibility(productUpdate *schemas.ListVisibilityUpdate) error {
-	return r.DB.Transaction(func(tx *gorm.DB) error {
-		for _, prod := range productUpdate.ListProductVisibilityUpdate {
-			// Ejecutamos el update
-			result := tx.Model(&models.Product{}).
-				Where("id = ?", prod.ProductID).
-				Update("is_visible", prod.Visibility) // Asegúrate que el nombre de la columna sea correcto
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-			// 1. Verificar errores de base de datos (conexión, sintaxis, etc.)
-			if result.Error != nil {
-				return schemas.HandlerErrorGorm(result.Error, "Producto", schemas.Update)
-			}
-
-			// 2. Verificar si el producto realmente existía
-			if result.RowsAffected == 0 {
-				return schemas.ErrorResponse(404, fmt.Sprintf("producto con ID %d no encontrado", prod.ProductID), fmt.Errorf("producto con ID %d no encontrado", prod.ProductID))
-			}
+	for _, prod := range productUpdate.ListProductVisibilityUpdate {
+		p, err := boilmodels.FindProduct(ctx, tx, prod.ProductID)
+		if err != nil {
+			return schemas.HandlerErrorDB(err, "Producto", schemas.Update)
 		}
 
-		return nil
-	})
+		p.IsVisible = prod.Visibility
+		rowsAff, err := p.Update(ctx, tx, boil.Whitelist(boilmodels.ProductColumns.IsVisible, boilmodels.ProductColumns.UpdatedAt))
+
+		if err != nil {
+			return schemas.HandlerErrorDB(err, "Producto", schemas.Update)
+		}
+
+		if rowsAff == 0 {
+			return schemas.ErrorResponse(404, fmt.Sprintf("producto con ID %d no encontrado", prod.ProductID), fmt.Errorf("producto con ID %d no encontrado", prod.ProductID))
+		}
+	}
+
+	return tx.Commit()
 }

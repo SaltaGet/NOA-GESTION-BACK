@@ -1,111 +1,129 @@
 package repositories
 
 import (
+	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"gorm.io/gorm"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 func (t *TypeMovementRepository) TypeMovementGetAll(typeMovement string) ([]*schemas.TypeMovementResponse, error) {
+	ctx := context.Background()
 	var typeMovements []*schemas.TypeMovementResponse
+
 	switch typeMovement {
 	case "income":
-		err := t.DB.Model(&models.TypeIncome{}).Select("id", "name").Scan(&typeMovements).Error
+		incomes, err := boilmodels.TypeIncomes(
+			qm.Select(boilmodels.TypeIncomeColumns.ID, boilmodels.TypeIncomeColumns.Name),
+		).All(ctx, t.DB)
 		if err != nil {
-			return nil, schemas.HandlerErrorGorm(err, "Tipo de ingreso", schemas.Read)
+			return nil, schemas.HandlerErrorDB(err, "Tipo de ingreso", schemas.Read)
+		}
+		for _, v := range incomes {
+			typeMovements = append(typeMovements, &schemas.TypeMovementResponse{
+				ID:   v.ID,
+				Name: v.Name,
+			})
 		}
 	case "expense":
-		err := t.DB.Model(&models.TypeExpense{}).Select("id", "name").Scan(&typeMovements).Error
+		expenses, err := boilmodels.TypeExpenses(
+			qm.Select(boilmodels.TypeExpenseColumns.ID, boilmodels.TypeExpenseColumns.Name),
+		).All(ctx, t.DB)
 		if err != nil {
-			return nil, schemas.HandlerErrorGorm(err, "Tipo de egreso", schemas.Read)
+			return nil, schemas.HandlerErrorDB(err, "Tipo de egreso", schemas.Read)
+		}
+		for _, v := range expenses {
+			typeMovements = append(typeMovements, &schemas.TypeMovementResponse{
+				ID:   v.ID,
+				Name: v.Name,
+			})
 		}
 	default:
 		return nil, schemas.ErrorResponse(400, "tipo de movimiento no válido", fmt.Errorf("tipo de movimiento no valido: %s", typeMovement))
 	}
+
 	return typeMovements, nil
 }
 
 func (t *TypeMovementRepository) TypeMovementCreate(memberID int64, movementCreate schemas.TypeMovementCreate) error {
-	err := t.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
+	ctx := context.Background()
+	tx, err := t.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return err
+	}
+
+	switch movementCreate.TypeMovement {
+	case "income":
+		typeIncome := &boilmodels.TypeIncome{Name: movementCreate.Name}
+		if err := typeIncome.Insert(ctx, tx, boil.Infer()); err != nil {
+			return schemas.HandlerErrorDB(err, "Tipo de ingreso", schemas.Create)
 		}
-
-		var err error
-		switch movementCreate.TypeMovement {
-		case "income":
-			typeIncome := models.TypeIncome{Name: movementCreate.Name}
-			err = tx.Create(&typeIncome).Error
-		case "expense":
-			typeExpense := models.TypeExpense{Name: movementCreate.Name}
-			err = tx.Create(&typeExpense).Error
-		default:
-			return schemas.ErrorResponse(400, "tipo de movimiento no válido", fmt.Errorf("tipo de movimiento no valido: %s", movementCreate.TypeMovement))
+	case "expense":
+		typeExpense := &boilmodels.TypeExpense{Name: movementCreate.Name}
+		if err := typeExpense.Insert(ctx, tx, boil.Infer()); err != nil {
+			return schemas.HandlerErrorDB(err, "Tipo de egreso", schemas.Create)
 		}
+	default:
+		return schemas.ErrorResponse(400, "tipo de movimiento no válido", fmt.Errorf("tipo de movimiento no valido: %s", movementCreate.TypeMovement))
+	}
 
-		if err != nil {
-			return schemas.HandlerErrorGorm(err, "Tipo de movimiento", schemas.Create)
-		}
-
-		return nil
-	})
-
-	return err
+	return tx.Commit()
 }
 
-// TypeMovementUpdate actualiza un tipo de movimiento con auditoría
 func (t *TypeMovementRepository) TypeMovementUpdate(memberID int64, movementUpdate schemas.TypeMovementUpdate) error {
-	err := t.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
+	ctx := context.Background()
+	tx, err := t.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-		var res *gorm.DB
-		switch movementUpdate.TypeMovement {
-		case "income":
-			// Obtener estado anterior
-			var oldIncome models.TypeIncome
-			if err := tx.First(&oldIncome, movementUpdate.ID).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Tipo de ingreso", schemas.Read)
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return err
+	}
+
+	switch movementUpdate.TypeMovement {
+	case "income":
+		oldIncome, err := boilmodels.TypeIncomes(boilmodels.TypeIncomeWhere.ID.EQ(movementUpdate.ID)).One(ctx, tx)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return schemas.ErrorResponse(404, "tipo de ingreso no encontrado", fmt.Errorf("id %d no encontrado", movementUpdate.ID))
 			}
-			// Actualizar
-			res = tx.Model(&models.TypeIncome{}).
-				Where("id = ?", movementUpdate.ID).
-				Update("name", movementUpdate.Name)			
-			
-			var newIncome models.TypeIncome
-			tx.First(&newIncome, movementUpdate.ID)
-		case "expense":
-			// Obtener estado anterior
-			var oldExpense models.TypeExpense
-			if err := tx.First(&oldExpense, movementUpdate.ID).Error; err != nil {
-				return schemas.HandlerErrorGorm(err, "Tipo de egreso", schemas.Read)
+			return schemas.HandlerErrorDB(err, "Tipo de ingreso", schemas.Read)
+		}
+
+		oldIncome.Name = movementUpdate.Name
+		if _, err := oldIncome.Update(ctx, tx, boil.Infer()); err != nil {
+			return schemas.HandlerErrorDB(err, "Tipo de ingreso", schemas.Update)
+		}
+
+	case "expense":
+		oldExpense, err := boilmodels.TypeExpenses(boilmodels.TypeExpenseWhere.ID.EQ(movementUpdate.ID)).One(ctx, tx)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return schemas.ErrorResponse(404, "tipo de egreso no encontrado", fmt.Errorf("id %d no encontrado", movementUpdate.ID))
 			}
-
-			// Actualizar
-			res = tx.Model(&models.TypeExpense{}).
-				Where("id = ?", movementUpdate.ID).
-				Update("name", movementUpdate.Name)
-
-			// Obtener estado nuevo
-			var newExpense models.TypeExpense
-			tx.First(&newExpense, movementUpdate.ID)
-		default:
-			return schemas.ErrorResponse(400, "tipo de movimiento no válido", fmt.Errorf("tipo de movimiento no válido: %s", movementUpdate.TypeMovement))
+			return schemas.HandlerErrorDB(err, "Tipo de egreso", schemas.Read)
 		}
 
-		if res.RowsAffected == 0 {
-			return schemas.ErrorResponse(404, "tipo de movimiento no encontrado", fmt.Errorf("id %d no encontrado", movementUpdate.ID))
+		oldExpense.Name = movementUpdate.Name
+		if _, err := oldExpense.Update(ctx, tx, boil.Infer()); err != nil {
+			return schemas.HandlerErrorDB(err, "Tipo de egreso", schemas.Update)
 		}
 
-		if res.Error != nil {
-			return schemas.HandlerErrorGorm(res.Error, "Tipo de movimiento", schemas.Update)
-		}
+	default:
+		return schemas.ErrorResponse(400, "tipo de movimiento no válido", fmt.Errorf("tipo de movimiento no válido: %s", movementUpdate.TypeMovement))
+	}
 
-		return nil
-	})
-
-	return err
+	return tx.Commit()
 }

@@ -1,43 +1,78 @@
 package repositories
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"gorm.io/gorm"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 func (r *DepositRepository) DepositGetByID(id int64) (*models.Product, error) {
-	var product models.Product
-	if err := r.DB.Preload("Category").Preload("StockDeposit").Where("id = ?", id).First(&product).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
+	ctx := context.Background()
+
+	p, err := boilmodels.Products(
+		boilmodels.ProductWhere.ID.EQ(id),
+		boilmodels.ProductWhere.DeleteAt.IsNull(),
+		qm.Load(boilmodels.ProductRels.Category),
+		qm.Load(boilmodels.ProductRels.Deposits),
+	).One(ctx, r.DB)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
+		}
+		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
-	return &product, nil
+
+	return mapToModelProduct(p), nil
 }
 
 func (r *DepositRepository) DepositGetByCode(code string) (*models.Product, error) {
-	var product models.Product
-	if err := r.DB.Preload("Category").Preload("StockDeposit").Where("code = ?", code).First(&product).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
+	ctx := context.Background()
+
+	p, err := boilmodels.Products(
+		boilmodels.ProductWhere.Code.EQ(code),
+		boilmodels.ProductWhere.DeleteAt.IsNull(),
+		qm.Load(boilmodels.ProductRels.Category),
+		qm.Load(boilmodels.ProductRels.Deposits),
+	).One(ctx, r.DB)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
+		}
+		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
-	return &product, nil
+
+	return mapToModelProduct(p), nil
 }
 
 func (r *DepositRepository) DepositGetByName(name string) ([]*models.Product, error) {
-	var allProducts []*models.Product
+	ctx := context.Background()
 
-	if err := r.DB.
-		Preload("Category", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "name")
-		}).
-		Preload("StockDeposit").
-		Where("name LIKE ?", "%"+name+"%").
-		Find(&allProducts).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
+	searchStr := "%" + name + "%"
+	boilProducts, err := boilmodels.Products(
+		boilmodels.ProductWhere.Name.ILIKE(searchStr),
+		boilmodels.ProductWhere.DeleteAt.IsNull(),
+		qm.Load(boilmodels.ProductRels.Category),
+		qm.Load(boilmodels.ProductRels.Deposits),
+	).All(ctx, r.DB)
+
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
+	}
+
+	allProducts := make([]*models.Product, 0, len(boilProducts))
+	for _, bp := range boilProducts {
+		allProducts = append(allProducts, mapToModelProduct(bp))
 	}
 
 	if strings.TrimSpace(name) == "" {
@@ -63,17 +98,13 @@ func (r *DepositRepository) DepositGetByName(name string) ([]*models.Product, er
 		}
 	}
 
-	// Ordenar según los criterios especificados
 	sort.Slice(scored, func(i, j int) bool {
-		// Si los scores son diferentes, ordenar por score (descendente)
 		if scored[i].Score != scored[j].Score {
 			return scored[i].Score > scored[j].Score
 		}
-		// Si los scores son iguales, ordenar por longitud (ascendente - más corto primero)
 		return scored[i].Length < scored[j].Length
 	})
 
-	// Limitar a 10 resultados
 	limit := 10
 	products := make([]*models.Product, 0, limit)
 	for i, ps := range scored {
@@ -86,69 +117,98 @@ func (r *DepositRepository) DepositGetByName(name string) ([]*models.Product, er
 	return products, nil
 }
 
-// func (r *DepositRepository) DepositGetByName(name string) ([]*models.Product, error) {
-// 	var products []*models.Product
-// 	if err := r.DB.Preload("Category").Preload("StockDeposit").Where("name LIKE ?", "%"+name+"%").Find(&products).Error; err != nil {
-// 		return nil, schemas.ErrorResponse(500, "error al obtener productos", err)
-// 	}
-// 	return products, nil
-// }
-
 func (r *DepositRepository) DepositGetAll(page, limit int) ([]*models.Product, int64, error) {
-	var products []*models.Product
-	var total int64
-	if err := r.DB.Preload("Category").Preload("StockDeposit").Offset((page - 1) * limit).Limit(limit).Find(&products).Error; err != nil {
-		return nil, 0, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
+	ctx := context.Background()
+
+	total, err := boilmodels.Products(boilmodels.ProductWhere.DeleteAt.IsNull()).Count(ctx, r.DB)
+	if err != nil {
+		return nil, 0, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
-	if err := r.DB.Model(&models.Product{}).Count(&total).Error; err != nil {
-		return nil, 0, schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
+
+	boilProducts, err := boilmodels.Products(
+		boilmodels.ProductWhere.DeleteAt.IsNull(),
+		qm.Load(boilmodels.ProductRels.Category),
+		qm.Load(boilmodels.ProductRels.Deposits),
+		qm.Limit(limit),
+		qm.Offset((page-1)*limit),
+	).All(ctx, r.DB)
+
+	if err != nil {
+		return nil, 0, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
+
+	products := make([]*models.Product, 0, len(boilProducts))
+	for _, bp := range boilProducts {
+		products = append(products, mapToModelProduct(bp))
+	}
+
 	return products, total, nil
 }
 
 func (r *DepositRepository) DepositUpdateStock(memberID int64, updateStock schemas.DepositUpdateStock) error {
-	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("SELECT set_config('app.current_member_id', ?, true)", fmt.Sprintf("%d", memberID)).Error; err != nil {
-			return err
-		}
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-		var product models.Product
-		if err := tx.Select("id").Where("id = ?", updateStock.ProductID).First(&product).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Producto", schemas.Read)
-		}
+	if _, err := tx.ExecContext(ctx, "SELECT set_config('app.current_member_id', $1, true)", fmt.Sprintf("%d", memberID)); err != nil {
+		return err
+	}
 
-		var deposit models.Deposit
-		// Verificar si el registro existe
-		if err := tx.Where("product_id = ?", updateStock.ProductID).First(&deposit).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				// Si no existe, crear uno nuevo
-				deposit = models.Deposit{ProductID: updateStock.ProductID, Stock: 0}
-			} else {
-				return schemas.HandlerErrorGorm(err, "Stock", schemas.Read)
+	exists, err := boilmodels.Products(
+		boilmodels.ProductWhere.ID.EQ(updateStock.ProductID),
+	).Exists(ctx, tx)
+
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Producto", schemas.Read)
+	}
+	if !exists {
+		return schemas.HandlerErrorDB(sql.ErrNoRows, "Producto", schemas.Read)
+	}
+
+	deposit, err := boilmodels.Deposits(
+		boilmodels.DepositWhere.ProductID.EQ(updateStock.ProductID),
+	).One(ctx, tx)
+
+	isNewEntry := false
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			deposit = &boilmodels.Deposit{
+				ProductID: updateStock.ProductID,
+				Stock:     0,
 			}
+			isNewEntry = true
+		} else {
+			return schemas.HandlerErrorDB(err, "Stock", schemas.Read)
 		}
+	}
 
-		stock := *updateStock.Stock
-		switch updateStock.Method {
-		case "add":
-			deposit.Stock += stock
-		case "subtract":
-			if deposit.Stock < stock {
-				return schemas.ErrorResponse(400, "stock insuficiente", fmt.Errorf("stock insuficiente: %.2f", stock))
-			}
-			deposit.Stock -= stock
-		case "set":
-			deposit.Stock = stock
-		default:
-			return schemas.ErrorResponse(400, "metodo de actualizacion no valido", fmt.Errorf("metodo de actualizacion no valido"))
+	stock := *updateStock.Stock
+	switch updateStock.Method {
+	case "add":
+		deposit.Stock += stock
+	case "subtract":
+		if deposit.Stock < stock {
+			return schemas.ErrorResponse(400, "stock insuficiente", fmt.Errorf("stock insuficiente: %.2f", stock))
 		}
+		deposit.Stock -= stock
+	case "set":
+		deposit.Stock = stock
+	default:
+		return schemas.ErrorResponse(400, "metodo de actualizacion no valido", fmt.Errorf("metodo de actualizacion no valido"))
+	}
 
-		if err := tx.Save(&deposit).Error; err != nil {
-			return schemas.HandlerErrorGorm(err, "Stock", schemas.Update)
+	if isNewEntry {
+		if err := deposit.Insert(ctx, tx, boil.Infer()); err != nil {
+			return schemas.HandlerErrorDB(err, "Stock", schemas.Create)
 		}
+	} else {
+		if _, err := deposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt)); err != nil {
+			return schemas.HandlerErrorDB(err, "Stock", schemas.Update)
+		}
+	}
 
-		return nil
-	})
-
-	return err
+	return tx.Commit()
 }

@@ -1,107 +1,136 @@
 package repositories
 
 import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
 	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/jinzhu/copier"
-	"gorm.io/gorm/clause"
+	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/volatiletech/sqlboiler/v4/types"
 )
 
-func (r *MainRepository) ModuleGet(id int64) (*schemas.ModuleResponse, error) {
-	var module models.Module
-	if err := r.DB.First(&module, id).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Modulo", schemas.Read)
+func mapToModuleResponse(m *boilmodels.Module) *schemas.ModuleResponse {
+	if m == nil {
+		return nil
 	}
 
-	var moduleResponse schemas.ModuleResponse
-	copier.Copy(&moduleResponse, &module)
+	price, _ := m.PriceMonthly.Big.Float64()
+	priceYearly, _ := m.PriceYearly.Big.Float64()
 
-	return &moduleResponse, nil
+	res := &schemas.ModuleResponse{
+		ID:                     m.ID,
+		Name:                   m.Name,
+		PriceMonthly:           price,
+		PriceYearly:            priceYearly,
+		Description:            m.Description.String,
+		Features:               m.Features.String,
+		AmountImagesPerProduct: int32(m.AmountImagesPerProduct.Int),
+	}
+
+	return res
+}
+
+func (r *MainRepository) ModuleGet(id int64) (*schemas.ModuleResponse, error) {
+	ctx := context.Background()
+
+	module, err := boilmodels.Modules(boilmodels.ModuleWhere.ID.EQ(id)).One(ctx, r.DB)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, schemas.HandlerErrorDB(err, "Modulo", schemas.Read)
+		}
+		return nil, schemas.HandlerErrorDB(err, "Modulo", schemas.Read)
+	}
+
+	return mapToModuleResponse(module), nil
 }
 
 func (r *MainRepository) ModuleGetAll() ([]schemas.ModuleResponse, error) {
-	var modules []models.Module
-	if err := r.DB.Find(&modules).Error; err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Modulo", schemas.Read)
+	ctx := context.Background()
+
+	modules, err := boilmodels.Modules().All(ctx, r.DB)
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Modulo", schemas.Read)
 	}
 
 	var modulesResponse []schemas.ModuleResponse
-	copier.Copy(&modulesResponse, &modules)
+	for _, m := range modules {
+		res := mapToModuleResponse(m)
+		if res != nil {
+			modulesResponse = append(modulesResponse, *res)
+		}
+	}
 
 	return modulesResponse, nil
 }
 
 func (r *MainRepository) ModuleCreate(moduleCreate *schemas.ModuleCreate) (int64, error) {
-	newModule := &models.Module{
+	ctx := context.Background()
+
+	newModule := &boilmodels.Module{
 		Name:                   moduleCreate.Name,
-		AmountImagesPerProduct: moduleCreate.AmountImagesPerProduct,
-		PriceMonthly:           moduleCreate.PriceMonthly,
-		PriceYearly:            moduleCreate.PriceYearly,
-		Description:            *moduleCreate.Description,
-		Features:               moduleCreate.Features,
+		AmountImagesPerProduct: null.IntFrom(int(moduleCreate.AmountImagesPerProduct)),
+		PriceMonthly:           types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", moduleCreate.PriceMonthly))),
+		PriceYearly:            types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", moduleCreate.PriceYearly))),
+		Description:            null.StringFromPtr(moduleCreate.Description),
+		Features:               null.StringFrom(moduleCreate.Features),
 	}
 
-	err := r.DB.Create(&newModule).Error
-	if err != nil {
-		return 0, schemas.HandlerErrorGorm(err, "Modulo", schemas.Create)
+	if err := newModule.Insert(ctx, r.DB, boil.Infer()); err != nil {
+		return 0, schemas.HandlerErrorDB(err, "Modulo", schemas.Create)
 	}
 
 	return newModule.ID, nil
 }
 
 func (r *MainRepository) ModuleUpdate(moduleUpdate *schemas.ModuleUpdate) error {
-	if err := r.DB.Model(&models.Module{}).Where("id = ?", moduleUpdate.ID).Updates(moduleUpdate).Error; err != nil {
-		return schemas.HandlerErrorGorm(err, "Modulo", schemas.Update)
+	ctx := context.Background()
+
+	module, err := boilmodels.Modules(boilmodels.ModuleWhere.ID.EQ(moduleUpdate.ID)).One(ctx, r.DB)
+	if err != nil {
+		return schemas.HandlerErrorDB(err, "Modulo", schemas.Read)
+	}
+
+	module.Name = moduleUpdate.Name
+	module.AmountImagesPerProduct = null.IntFrom(int(moduleUpdate.AmountImagesPerProduct))
+	module.PriceMonthly = types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", moduleUpdate.PriceMonthly)))
+	module.PriceYearly = types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", moduleUpdate.PriceYearly)))
+	module.Description = null.StringFromPtr(moduleUpdate.Description)
+	module.Features = null.StringFrom(moduleUpdate.Features)
+
+	if _, err := module.Update(ctx, r.DB, boil.Infer()); err != nil {
+		return schemas.HandlerErrorDB(err, "Modulo", schemas.Update)
 	}
 
 	return nil
 }
 
 func (r *MainRepository) ModuleDelete(id int64) error {
-	// return r.DB.Delete(&models.Module{}, id).Error
+	// Original code returns nil explicitly for testing or avoiding deletes.
+	// We retain it as is.
 	return nil
 }
 
-// func (r *MainRepository) ModuleAddTenant(moduleAddTenant *schemas.ModuleAddTenant) error {
-// 	loc, _ := time.LoadLocation("America/Argentina/Buenos_Aires")
-// 	exp, err := time.ParseInLocation("2006-01-02", moduleAddTenant.Expiration, loc)
-// 	if err != nil {
-// 		return schemas.ErrorResponse(422, "Formato de fecha inválido, debe ser YYYY-MM-DD", err)
-// 	}
-
-// 	newModuleAdd := &models.TenantModule{
-// 		ModuleID:   moduleAddTenant.ModuleID,
-// 		TenantID:   moduleAddTenant.TenantID,
-// 	}
-
-// 	if err := r.DB.
-// 		Where("tenant_id = ? AND module_id = ?", moduleAddTenant.TenantID, moduleAddTenant.ModuleID).
-// 		FirstOrCreate(&newModuleAdd).Error; err != nil {
-// 		return schemas.ErrorResponse(500, "Error interno al guardar el modulo para el tenant", errors.New("error interno al guardar el modulo para el tenant"))
-// 	}
-
-// 	newModuleAdd.Expiration = &exp
-
-// 	if err := r.DB.Save(&newModuleAdd).Error; err != nil {
-// 		return schemas.ErrorResponse(500, "Error interno al guardar el modulo para el tenant", errors.New("error interno al guardar el modulo para el tenant"))
-// 	}
-
-//		return nil
-//	}
 func (r *MainRepository) ModuleAddTenant(moduleAddTenant *schemas.ModuleAddTenant) error {
-	if err := r.DB.First(&models.Tenant{}, moduleAddTenant.TenantID).Error; err != nil {
-		return schemas.HandlerErrorGorm(err, "Tenant", schemas.Read)
+	ctx := context.Background()
+
+	tenantExists, err := boilmodels.Tenants(boilmodels.TenantWhere.ID.EQ(moduleAddTenant.TenantID)).Exists(ctx, r.DB)
+	if err != nil || !tenantExists {
+		return schemas.HandlerErrorDB(sql.ErrNoRows, "Tenant", schemas.Read)
 	}
 
-	if err := r.DB.Where("id = ?", moduleAddTenant.ModuleID).First(&models.Module{}).Error; err != nil {
-		return schemas.HandlerErrorGorm(err, "Modulo", schemas.Read)
+	moduleExists, err := boilmodels.Modules(boilmodels.ModuleWhere.ID.EQ(moduleAddTenant.ModuleID)).Exists(ctx, r.DB)
+	if err != nil || !moduleExists {
+		return schemas.HandlerErrorDB(sql.ErrNoRows, "Modulo", schemas.Read)
 	}
 
 	loc, err := time.LoadLocation("America/Argentina/Buenos_Aires")
 	if err != nil {
-		// Fallback a UTC o manejar error si la locación falla
 		loc = time.UTC
 	}
 
@@ -110,52 +139,49 @@ func (r *MainRepository) ModuleAddTenant(moduleAddTenant *schemas.ModuleAddTenan
 		return schemas.ErrorResponse(422, "Formato de fecha inválido, debe ser YYYY-MM-DD", err)
 	}
 
-	newModuleAdd := models.TenantModule{
+	newModuleAdd := &boilmodels.TenantModule{
 		ModuleID:   moduleAddTenant.ModuleID,
 		TenantID:   moduleAddTenant.TenantID,
-		Expiration: &exp,
+		Expiration: null.TimeFrom(exp),
 	}
 
-	// Usamos Upsert: Si coinciden TenantID y ModuleID, actualiza la Expiration
-	err = r.DB.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "tenant_id"}, {Name: "module_id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"expiration"}),
-	}).Create(&newModuleAdd).Error
-
+	err = newModuleAdd.Upsert(ctx, r.DB, true, []string{"tenant_id", "module_id"}, boil.Infer(), boil.Infer())
 	if err != nil {
-		return schemas.HandlerErrorGorm(err, "Modulo", schemas.Create)
+		return schemas.HandlerErrorDB(err, "Modulo", schemas.Create)
 	}
 
 	return nil
 }
 
 func (r *MainRepository) ModuleGetByTenantID(tenantID int64) ([]schemas.ModuleResponseDTO, error) {
-	var modules []models.Module
+	ctx := context.Background()
 
-	err := r.DB.
-		Joins("JOIN tenant_modules tm ON tm.module_id = modules.id").
-		Where("tm.tenant_id = ?", tenantID).
-		Where("tm.deleted_at IS NULL").
-		Preload("Tenants", "tenant_id = ?", tenantID).
-		Find(&modules).Error
+	tenantModules, err := boilmodels.TenantModules(
+		boilmodels.TenantModuleWhere.TenantID.EQ(tenantID),
+		qm.Load(boilmodels.TenantModuleRels.Module),
+	).All(ctx, r.DB)
 
 	if err != nil {
-		return nil, schemas.HandlerErrorGorm(err, "Modulo", schemas.Read)
+		return nil, schemas.HandlerErrorDB(err, "Modulo", schemas.Read)
 	}
 
-	modulesResponse := make([]schemas.ModuleResponseDTO, 0, len(modules))
-	for _, module := range modules {
-		if len(module.Tenants) == 0 {
-			continue
-		}
+	modulesResponse := make([]schemas.ModuleResponseDTO, 0, len(tenantModules))
 
-		modulesResponse = append(modulesResponse, schemas.ModuleResponseDTO{
-			ID:                     module.ID,
-			Name:                   module.Name,
-			AmountImagesPerProduct: module.AmountImagesPerProduct,
-			Expiration:             module.Tenants[0].Expiration,
-			AcceptTerms: module.Tenants[0].AcceptedTerms,
-		})
+	for _, tm := range tenantModules {
+		if tm.R != nil && tm.R.Module != nil {
+			var expire *time.Time
+			if tm.Expiration.Valid {
+				t := tm.Expiration.Time
+				expire = &t
+			}
+			modulesResponse = append(modulesResponse, schemas.ModuleResponseDTO{
+				ID:                     tm.R.Module.ID,
+				Name:                   tm.R.Module.Name,
+				AmountImagesPerProduct: int32(tm.R.Module.AmountImagesPerProduct.Int),
+				Expiration:             expire,
+				AcceptTerms:            tm.AcceptedTerms,
+			})
+		}
 	}
 
 	return modulesResponse, nil
