@@ -8,27 +8,14 @@ import (
 	"math"
 	"time"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"github.com/volatiletech/sqlboiler/v4/types"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/types"
+	"github.com/ericlagergren/decimal"
+	"github.com/aarondl/null/v8"
 )
-
-func mapToSupplierResponse(c *boilmodels.Supplier) schemas.SupplierResponseDTO {
-	if c == nil {
-		return schemas.SupplierResponseDTO{}
-	}
-	res := schemas.SupplierResponseDTO{
-		ID:   c.ID,
-		Name: c.Name,
-	}
-	if c.CompanyName.Valid {
-		res.CompanyName = &c.CompanyName.String
-	}
-	return res
-}
 
 func mapToExpenseBuyResponse(e *boilmodels.ExpenseBuy) *schemas.ExpenseBuyResponse {
 	if e == nil {
@@ -46,26 +33,24 @@ func mapToExpenseBuyResponse(e *boilmodels.ExpenseBuy) *schemas.ExpenseBuyRespon
 		Total:    total,
 	}
 
-	if e.TypeDiscount.Valid {
-		res.TypeDiscount = e.TypeDiscount.String
-	}
-	if e.Details.Valid {
-		res.Details = &e.Details.String
-	}
-	if e.CreatedAt.Valid {
-		res.CreatedAt = e.CreatedAt.Time
-	}
+	res.TypeDiscount = e.TypeDiscount
+	res.Details = &e.Details.String
+	res.CreatedAt = e.CreatedAt
 
 	if e.R != nil {
 		if e.R.Member != nil {
-			m := mapToMemberSimpleDTO(e.R.Member)
-			if m != nil {
-				res.Member = *m
+			res.Member = schemas.MemberSimpleDTO{
+				ID:        e.R.Member.ID,
+				Username:  e.R.Member.Username,
+				FirstName: e.R.Member.FirstName,
+				LastName:  e.R.Member.LastName,
 			}
 		}
 
 		if e.R.Supplier != nil {
-			res.Supplier = mapToSupplierResponse(e.R.Supplier)
+			res.Supplier.ID = e.R.Supplier.ID
+			res.Supplier.Name = e.R.Supplier.Name
+			res.Supplier.CompanyName = e.R.Supplier.CompanyName
 		}
 
 		for _, item := range e.R.ExpenseBuyItems {
@@ -83,12 +68,8 @@ func mapToExpenseBuyResponse(e *boilmodels.ExpenseBuy) *schemas.ExpenseBuyRespon
 				Subtotal: iSubtotal,
 				Total:    iTotal,
 			}
-			if item.TypeDiscount.Valid {
-				ier.TypeDiscount = item.TypeDiscount.String
-			}
-			if item.CreatedAt.Valid {
-				ier.CreatedAt = item.CreatedAt.Time
-			}
+			ier.TypeDiscount = item.TypeDiscount
+			ier.CreatedAt = item.CreatedAt
 
 			if item.R != nil && item.R.Product != nil {
 				pPrice, _ := item.R.Product.Price.Big.Float64()
@@ -107,7 +88,7 @@ func mapToExpenseBuyResponse(e *boilmodels.ExpenseBuy) *schemas.ExpenseBuyRespon
 			pr := schemas.PayExpenseBuyResponse{
 				ID:        pay.ID,
 				Total:     pTotal,
-				MethodPay: pay.MethodPay.String,
+				MethodPay: pay.MethodPay,
 			}
 			res.PayExpenseBuy = append(res.PayExpenseBuy, pr)
 		}
@@ -132,22 +113,17 @@ func mapToExpenseBuyResponseSimple(e *boilmodels.ExpenseBuy) *schemas.ExpenseBuy
 		Total:    total,
 	}
 
-	if e.TypeDiscount.Valid {
-		res.TypeDiscount = e.TypeDiscount.String
-	}
-	if e.Details.Valid {
-		res.Description = &e.Details.String
-	}
-	if e.CashRegisterID.Valid {
-		res.CashRegisterID = &e.CashRegisterID.Int64
-	}
-	if e.CreatedAt.Valid {
-		res.CreatedAt = e.CreatedAt.Time
-	}
+	res.TypeDiscount = e.TypeDiscount
+	res.Description = &e.Details.String
+	res.CreatedAt = e.CreatedAt
 
 	if e.R != nil {
 		if e.R.Supplier != nil {
-			res.Supplier = mapToSupplierResponse(e.R.Supplier)
+			res.Supplier = schemas.SupplierResponseDTO{
+				ID:          e.R.Supplier.ID,
+				Name:        e.R.Supplier.Name,
+				CompanyName: e.R.Supplier.CompanyName,
+			}
 		}
 
 		for _, pay := range e.R.PayExpenseBuys {
@@ -155,7 +131,7 @@ func mapToExpenseBuyResponseSimple(e *boilmodels.ExpenseBuy) *schemas.ExpenseBuy
 			pr := schemas.PayExpenseBuyResponse{
 				ID:        pay.ID,
 				Total:     pTotal,
-				MethodPay: pay.MethodPay.String,
+				MethodPay: pay.MethodPay,
 			}
 			res.PayExpenseBuy = append(res.PayExpenseBuy, pr)
 		}
@@ -191,8 +167,8 @@ func (r *ExpenseBuyRepository) ExpenseBuyGetByDate(fromDate, toDate time.Time, p
 	offset := (page - 1) * limit
 
 	qms := []qm.QueryMod{
-		boilmodels.ExpenseBuyWhere.CreatedAt.GTE(null.TimeFrom(fromDate)),
-		boilmodels.ExpenseBuyWhere.CreatedAt.LTE(null.TimeFrom(toDate)),
+		boilmodels.ExpenseBuyWhere.CreatedAt.GTE(fromDate),
+		boilmodels.ExpenseBuyWhere.CreatedAt.LTE(toDate),
 	}
 
 	total, err := boilmodels.ExpenseBuys(qms...).Count(ctx, r.DB)
@@ -257,7 +233,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyCreate(memberID int64, expenseBuyCreate
 		deposit, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(item.ProductID)).One(ctx, tx)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				deposit = &boilmodels.Deposit{ProductID: item.ProductID, Stock: 0}
+				deposit = &boilmodels.Deposit{ProductID: item.ProductID, Stock: types.NewDecimal(decimal.New(0, 0))}
 				if err := deposit.Insert(ctx, tx, boil.Infer()); err != nil {
 					return 0, schemas.HandlerErrorDB(err, "Stock", schemas.Create)
 				}
@@ -266,7 +242,8 @@ func (r *ExpenseBuyRepository) ExpenseBuyCreate(memberID int64, expenseBuyCreate
 			}
 		}
 
-		deposit.Stock += item.Amount
+		deposit.Stock.Big = deposit.Stock.Big.Add(deposit.Stock.Big, decimal.New(0, 0).SetFloat64(item.Amount))
+
 		if _, err := deposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt)); err != nil {
 			return 0, schemas.HandlerErrorDB(err, "Stock", schemas.Update)
 		}
@@ -287,12 +264,12 @@ func (r *ExpenseBuyRepository) ExpenseBuyCreate(memberID int64, expenseBuyCreate
 
 		newItem := &boilmodels.ExpenseBuyItem{
 			ProductID:    item.ProductID,
-			Amount:       types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Amount))),
-			Price:        types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Price))),
-			Discount:     types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Discount))),
-			TypeDiscount: null.StringFrom(item.TypeDiscount),
-			Subtotal:     types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", subtotalItem))),
-			Total:        types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", totalItem))),
+			Amount:       types.NewDecimal(decimal.New(0, 0).SetFloat64(item.Amount)),
+			Price:        types.NewDecimal(decimal.New(0, 0).SetFloat64(item.Price)),
+			Discount:     types.NewDecimal(decimal.New(0, 0).SetFloat64(item.Discount)),
+			TypeDiscount: item.TypeDiscount,
+			Subtotal:     types.NewDecimal(decimal.New(0, 0).SetFloat64(subtotalItem)),
+			Total:        types.NewDecimal(decimal.New(0, 0).SetFloat64(totalItem)),
 		}
 		newItems = append(newItems, newItem)
 	}
@@ -308,9 +285,9 @@ func (r *ExpenseBuyRepository) ExpenseBuyCreate(memberID int64, expenseBuyCreate
 		totalExpense = total
 	}
 
-	subtotalDec := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", total)))
-	discountDec := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", expenseBuyCreate.Discount)))
-	totalExpenseDec := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", totalExpense)))
+	subtotalDec := types.NewDecimal(decimal.New(0, 0).SetFloat64(total))
+	discountDec := types.NewDecimal(decimal.New(0, 0).SetFloat64(expenseBuyCreate.Discount))
+	totalExpenseDec := types.NewDecimal(decimal.New(0, 0).SetFloat64(totalExpense))
 
 	expenseBuy := &boilmodels.ExpenseBuy{
 		MemberID:     memberID,
@@ -318,7 +295,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyCreate(memberID int64, expenseBuyCreate
 		Details:      null.StringFromPtr(expenseBuyCreate.Details),
 		Subtotal:     subtotalDec,
 		Discount:     discountDec,
-		TypeDiscount: null.StringFrom(expenseBuyCreate.TypeDiscount),
+		TypeDiscount: null.StringFrom(expenseBuyCreate.TypeDiscount).String,
 		Total:        totalExpenseDec,
 	}
 
@@ -336,11 +313,11 @@ func (r *ExpenseBuyRepository) ExpenseBuyCreate(memberID int64, expenseBuyCreate
 	totalPay := 0.0
 	for _, pay := range expenseBuyCreate.PayExpenseBuy {
 		totalPay += pay.Total
-		pDec := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", pay.Total)))
+		pDec := types.NewDecimal(decimal.New(0, 0).SetFloat64(pay.Total))
 		newPay := boilmodels.PayExpenseBuy{
 			ExpenseBuyID: expenseBuy.ID,
 			Total:        pDec,
-			MethodPay:    null.StringFrom(pay.MethodPay),
+			MethodPay:    null.StringFrom(pay.MethodPay).String,
 		}
 		if err := newPay.Insert(ctx, tx, boil.Infer()); err != nil {
 			return 0, schemas.HandlerErrorDB(err, "Pagos de egreso de compras", schemas.Create)
@@ -390,7 +367,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate
 		deposit, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(oldItem.ProductID)).One(ctx, tx)
 		if err == nil {
 			amt, _ := oldItem.Amount.Big.Float64()
-			deposit.Stock -= amt
+			deposit.Stock.Big = deposit.Stock.Big.Sub(deposit.Stock.Big, decimal.New(0, 0).SetFloat64(amt))
 			if _, err := deposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt)); err != nil {
 				return schemas.HandlerErrorDB(err, "Stock", schemas.Update)
 			}
@@ -417,7 +394,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate
 		deposit, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(item.ProductID)).One(ctx, tx)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				deposit = &boilmodels.Deposit{ProductID: item.ProductID, Stock: 0}
+				deposit = &boilmodels.Deposit{ProductID: item.ProductID, Stock: types.NewDecimal(decimal.New(0, 0))}
 				if err := deposit.Insert(ctx, tx, boil.Infer()); err != nil {
 					return schemas.HandlerErrorDB(err, "Stock Depósito", schemas.Create)
 				}
@@ -426,7 +403,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate
 			}
 		}
 
-		deposit.Stock += item.Amount
+		deposit.Stock.Big = deposit.Stock.Big.Add(deposit.Stock.Big, decimal.New(0, 0).SetFloat64(item.Amount))
 		if _, err := deposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt)); err != nil {
 			return schemas.HandlerErrorDB(err, "Stock Depósito", schemas.Update)
 		}
@@ -446,12 +423,12 @@ func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate
 		newItem := &boilmodels.ExpenseBuyItem{
 			ExpenseBuyID: expenseBuyUpdate.ID,
 			ProductID:    item.ProductID,
-			Amount:       types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Amount))),
-			Price:        types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Price))),
-			Discount:     types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Discount))),
-			TypeDiscount: null.StringFrom(item.TypeDiscount),
-			Subtotal:     types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", subtotalItem))),
-			Total:        types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", totalItem))),
+			Amount:       types.NewDecimal(decimal.New(0, 0).SetFloat64(item.Amount)),
+			Price:       types.NewDecimal(decimal.New(0, 0).SetFloat64(item.Price)),
+			Subtotal:       types.NewDecimal(decimal.New(0, 0).SetFloat64(item.Discount)),
+			Total:       types.NewDecimal(decimal.New(0, 0).SetFloat64(subtotalItem)),
+			Discount:     types.NewDecimal(decimal.New(0, 0).SetFloat64(item.Discount)),
+			TypeDiscount: null.StringFrom(item.TypeDiscount).String,
 		}
 		newItems = append(newItems, newItem)
 		total += totalItem
@@ -470,10 +447,10 @@ func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate
 
 	existingExpense.SupplierID = expenseBuyUpdate.SupplierID
 	existingExpense.Details = null.StringFromPtr(expenseBuyUpdate.Details)
-	existingExpense.Subtotal = types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", total)))
-	existingExpense.Discount = types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", expenseBuyUpdate.Discount)))
-	existingExpense.TypeDiscount = null.StringFrom(expenseBuyUpdate.Type)
-	existingExpense.Total = types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", totalExpense)))
+	existingExpense.Subtotal = types.NewDecimal(decimal.New(0, 0).SetFloat64(total))
+	existingExpense.Discount = types.NewDecimal(decimal.New(0, 0).SetFloat64(expenseBuyUpdate.Discount))
+	existingExpense.TypeDiscount = null.StringFrom(expenseBuyUpdate.Type).String
+	existingExpense.Total = types.NewDecimal(decimal.New(0, 0).SetFloat64(totalExpense))
 
 	if _, err := existingExpense.Update(ctx, tx, boil.Infer()); err != nil {
 		return schemas.HandlerErrorDB(err, "Egreso de compras", schemas.Update)
@@ -494,8 +471,8 @@ func (r *ExpenseBuyRepository) ExpenseBuyUpdate(memberID int64, expenseBuyUpdate
 		totalPay += pay.Total
 		newPay := boilmodels.PayExpenseBuy{
 			ExpenseBuyID: expenseBuyUpdate.ID,
-			Total:        types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", pay.Total))),
-			MethodPay:    null.StringFrom(pay.MethodPay),
+			Total:       types.NewDecimal(decimal.New(0, 0).SetFloat64(pay.Total)),
+			MethodPay:    null.StringFrom(pay.MethodPay).String,
 		}
 		if err := newPay.Insert(ctx, tx, boil.Infer()); err != nil {
 			return schemas.HandlerErrorDB(err, "Pagos de egreso de compras", schemas.Create)
@@ -539,7 +516,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyDelete(memberID int64, expenseBuyID int
 		}
 
 		itemAmt, _ := item.Amount.Big.Float64()
-		if deposit.Stock < itemAmt {
+		if deposit.Stock.Big.Cmp(item.Amount.Big) < 0 {
 			return schemas.ErrorResponse(
 				400,
 				fmt.Sprintf("No se puede eliminar: stock insuficiente para el producto %d (disponible: %.2f, a revertir: %.2f)", item.ProductID, deposit.Stock, itemAmt),
@@ -547,7 +524,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyDelete(memberID int64, expenseBuyID int
 			)
 		}
 
-		deposit.Stock -= itemAmt
+		deposit.Stock.Big = deposit.Stock.Big.Sub(deposit.Stock.Big, item.Amount.Big)
 		if _, err := deposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt)); err != nil {
 			return schemas.HandlerErrorDB(err, "Stock", schemas.Update)
 		}
@@ -561,7 +538,7 @@ func (r *ExpenseBuyRepository) ExpenseBuyDelete(memberID int64, expenseBuyID int
 		return schemas.HandlerErrorDB(err, "Items de egreso de compras", schemas.Delete)
 	}
 
-	if _, err := existingExpense.Delete(ctx, tx, false); err != nil {
+	if _, err := existingExpense.Delete(ctx, tx); err != nil {
 		return schemas.HandlerErrorDB(err, "Egreso de compras", schemas.Delete)
 	}
 

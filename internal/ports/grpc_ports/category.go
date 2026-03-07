@@ -2,12 +2,12 @@ package grpc_ports
 
 import (
 	"github.com/DanielChachagua/ecommerce-noagestion-protos/pb"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 )
 
 
 type GrpcCategoryRepository interface {
-	CategoryGetAll() ([]*models.Category, error)
+	CategoryGetAll() ([]*tenant.Category, error)
 }
 
 type GrpcCategoryService interface {

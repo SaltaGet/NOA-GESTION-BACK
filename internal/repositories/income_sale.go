@@ -8,12 +8,13 @@ import (
 	"math"
 	"time"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"github.com/volatiletech/sqlboiler/v4/types"
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/types"
+	"github.com/ericlagergren/decimal"
 )
 
 func mapToIncomeSaleResponse(i *boilmodels.IncomeSale) *schemas.IncomeSaleResponse {
@@ -21,28 +22,23 @@ func mapToIncomeSaleResponse(i *boilmodels.IncomeSale) *schemas.IncomeSaleRespon
 		return nil
 	}
 
-	subtotal, _ := i.Subtotal.Big.Float64()
-	discount, _ := i.Discount.Big.Float64()
-	total, _ := i.Total.Big.Float64()
+	subtotal, _ := i.Subtotal.Float64()
+	discount, _ := i.Discount.Float64()
+	total, _ := i.Total.Float64()
 
 	res := &schemas.IncomeSaleResponse{
 		ID:       i.ID,
-		Subtotal: subtotal,
+		SubTotal: subtotal,
 		Discount: discount,
-		Type:     i.Type.String,
+		Type:     i.Type,
 		Total:    total,
 		IsBudget: i.IsBudget,
 	}
 
-	if i.CashRegisterID.Valid {
-		res.RegisterID = &i.CashRegisterID.Int64
-	}
 	if i.InvoiceID.Valid {
 		res.InvoiceID = &i.InvoiceID.Int64
 	}
-	if i.CreatedAt.Valid {
-		res.CreatedAt = i.CreatedAt.Time
-	}
+	res.CreatedAt = i.CreatedAt
 
 	if i.R != nil {
 		// Client relation
@@ -63,20 +59,18 @@ func mapToIncomeSaleResponse(i *boilmodels.IncomeSale) *schemas.IncomeSaleRespon
 			iSubtotal, _ := item.Subtotal.Big.Float64()
 			iTotal, _ := item.Total.Big.Float64()
 
-			ier := schemas.IncomeSaleItemResponseDTO{
+			ier := schemas.IncomeSaleItemResponse{
 				ID:       item.ID,
 				Amount:   iAmt,
 				Price:    iPrice,
 				Discount: iDiscount,
-				Subtotal: iSubtotal,
+				SubTotal: iSubtotal,
 				Total:    iTotal,
 			}
-			if item.TypeDiscount.Valid {
-				ier.TypeDiscount = item.TypeDiscount.String
+			if item.TypeDiscount != "" {
+				ier.TypeDiscount = item.TypeDiscount
 			}
-			if item.CreatedAt.Valid {
-				ier.CreatedAt = item.CreatedAt.Time
-			}
+			ier.CreatedAt = item.CreatedAt
 
 			if item.R != nil && item.R.Product != nil {
 				pPrice, _ := item.R.Product.Price.Big.Float64()
@@ -97,9 +91,7 @@ func mapToIncomeSaleResponse(i *boilmodels.IncomeSale) *schemas.IncomeSaleRespon
 				Total:     pTotal,
 				MethodPay: pay.MethodPay,
 			}
-			if pay.CreatedAt.Valid {
-				pr.CreatedAt = pay.CreatedAt.Time.Format(time.RFC3339)
-			}
+			pr.CreatedAt = pay.CreatedAt
 			res.Pay = append(res.Pay, pr)
 		}
 	}
@@ -112,33 +104,22 @@ func mapToIncomeSaleResponseDTO(i *boilmodels.IncomeSale) *schemas.IncomeSaleRes
 		return nil
 	}
 
-	subtotal, _ := i.Subtotal.Big.Float64()
-	discount, _ := i.Discount.Big.Float64()
 	total, _ := i.Total.Big.Float64()
 
 	res := &schemas.IncomeSaleResponseDTO{
-		ID:       i.ID,
-		Subtotal: subtotal,
-		Discount: discount,
-		Type:     i.Type.String,
-		Total:    total,
-		IsBudget: i.IsBudget,
+		ID:    i.ID,
+		Total: total,
 	}
 
-	if i.CashRegisterID.Valid {
-		res.RegisterID = &i.CashRegisterID.Int64
-	}
 	if i.InvoiceID.Valid {
 		res.InvoiceID = &i.InvoiceID.Int64
 	}
-	if i.CreatedAt.Valid {
-		res.CreatedAt = i.CreatedAt.Time
-	}
+	res.CreatedAt = i.CreatedAt
 
 	if i.R != nil {
 		if i.R.Client != nil {
-			var clientDebt float64 = 0
-			res.Client = mapToClientResponseDTO(i.R.Client, &clientDebt)
+			var clientDebt float64 = 0 // Placeholder
+			res.Client = *mapToClientSimpleDTO(i.R.Client, &clientDebt)
 		}
 
 		if i.R.Member != nil {
@@ -152,13 +133,36 @@ func mapToIncomeSaleResponseDTO(i *boilmodels.IncomeSale) *schemas.IncomeSaleRes
 				Total:     pTotal,
 				MethodPay: pay.MethodPay,
 			}
-			if pay.CreatedAt.Valid {
-				pr.CreatedAt = pay.CreatedAt.Time.Format(time.RFC3339)
-			}
+			pr.CreatedAt = pay.CreatedAt
 			res.Pay = append(res.Pay, pr)
 		}
 	}
 
+	return res
+}
+
+func mapToMemberSimpleDTO(m *boilmodels.Member) *schemas.MemberSimpleDTO {
+	if m == nil {
+		return nil
+	}
+	res := &schemas.MemberSimpleDTO{
+		ID: m.ID,
+	}
+	return res
+}
+
+func mapToClientSimpleDTO(c *boilmodels.Client, debt *float64) *schemas.ClientSimpleDTO {
+	if c == nil {
+		return nil
+	}
+	res := &schemas.ClientSimpleDTO{
+		ID:        c.ID,
+		FirstName: c.FirstName,
+		LastName:  c.LastName,
+	}
+	if c.CompanyName.Valid {
+		res.CompanyName = &c.CompanyName.String
+	}
 	return res
 }
 
@@ -190,8 +194,8 @@ func (i *IncomeSaleRepository) IncomeSaleGetByDate(pointSaleID int64, fromDate, 
 
 	qms := []qm.QueryMod{
 		boilmodels.IncomeSaleWhere.PointSaleID.EQ(pointSaleID),
-		boilmodels.IncomeSaleWhere.CreatedAt.GTE(null.TimeFrom(fromDate)),
-		boilmodels.IncomeSaleWhere.CreatedAt.LTE(null.TimeFrom(toDate)),
+		boilmodels.IncomeSaleWhere.CreatedAt.GTE(fromDate),
+		boilmodels.IncomeSaleWhere.CreatedAt.LTE(toDate),
 	}
 
 	total, err := boilmodels.IncomeSales(qms...).Count(ctx, i.DB)
@@ -277,14 +281,15 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 			if err != nil {
 				return 0, schemas.HandlerErrorDB(err, "Stock Depósito", schemas.Read)
 			}
-			if stock.Stock < float64(item.Amount) {
+			stockF, _ := stock.Stock.Big.Float64()
+			if stockF < float64(item.Amount) {
 				return 0, schemas.ErrorResponse(
 					400,
-					fmt.Sprintf("stock insuficiente para el producto %d (disponible: %.2f, requerido: %v)", item.ProductID, stock.Stock, item.Amount),
+					fmt.Sprintf("stock insuficiente para el producto %d (disponible: %.2f, requerido: %v)", item.ProductID, stockF, item.Amount),
 					fmt.Errorf("stock insuficiente"),
 				)
 			}
-			stock.Stock -= float64(item.Amount)
+			stock.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF - float64(item.Amount)))
 			if _, err := stock.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt)); err != nil {
 				return 0, schemas.HandlerErrorDB(err, "Stock Depósito", schemas.Update)
 			}
@@ -297,14 +302,15 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 			if err != nil {
 				return 0, schemas.HandlerErrorDB(err, "Stock Punto de Venta", schemas.Read)
 			}
-			if stock.Stock < float64(item.Amount) {
+			stockF, _ := stock.Stock.Big.Float64()
+			if stockF < float64(item.Amount) {
 				return 0, schemas.ErrorResponse(
 					400,
-					fmt.Sprintf("stock insuficiente para el producto %d (disponible: %.2f, requerido: %v)", item.ProductID, stock.Stock, item.Amount),
+					fmt.Sprintf("stock insuficiente para el producto %d (disponible: %.2f, requerido: %v)", item.ProductID, stockF, item.Amount),
 					fmt.Errorf("stock insuficiente"),
 				)
 			}
-			stock.Stock -= float64(item.Amount)
+			stock.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF - float64(item.Amount)))
 			if _, err := stock.Update(ctx, tx, boil.Whitelist(boilmodels.StockPointSaleColumns.Stock, boilmodels.StockPointSaleColumns.UpdatedAt)); err != nil {
 				return 0, schemas.HandlerErrorDB(err, "Stock Punto de Venta", schemas.Update)
 			}
@@ -335,14 +341,14 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 		}
 
 		newItems = append(newItems, &boilmodels.IncomeSaleItem{
-			ProductID:    item.ProductID,
-			Amount:       types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Amount))),
-			Price:        types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", productPrice))),
-			PriceCost:    types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", priceCostVal))),
-			Subtotal:     types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", subtotalItem))),
-			Discount:     types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Discount))),
-			TypeDiscount: null.StringFrom(item.TypeDiscount),
-			Total:        types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", totalItem))),
+			ProductID:    null.Int64From(item.ProductID),
+			Amount:       types.NewDecimal(decimal.New(0, 0).SetFloat64(item.Amount)),
+			Price:        types.NewDecimal(decimal.New(0, 0).SetFloat64(productPrice)),
+			PriceCost:    types.NewDecimal(decimal.New(0, 0).SetFloat64(priceCostVal)),
+			Subtotal:     types.NewDecimal(decimal.New(0, 0).SetFloat64(subtotalItem)),
+			Discount:     types.NewDecimal(decimal.New(0, 0).SetFloat64(item.Discount)),
+			TypeDiscount: item.TypeDiscount,
+			Total:        types.NewDecimal(decimal.New(0, 0).SetFloat64(totalItem)),
 		})
 
 		subtotal += totalItem
@@ -362,12 +368,12 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 	income := &boilmodels.IncomeSale{
 		PointSaleID:    pointSaleID,
 		MemberID:       memberID,
-		ClientID:       null.Int64From(incomeSaleCreate.ClientID),
-		CashRegisterID: null.Int64From(register.ID),
-		Subtotal:       types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", subtotal))),
-		Discount:       types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", incomeSaleCreate.Discount))),
-		Type:           null.StringFrom(incomeSaleCreate.Type),
-		Total:          types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", totalIncome))),
+		ClientID:       incomeSaleCreate.ClientID,
+		CashRegisterID: register.ID,
+		Subtotal:       types.NewDecimal(decimal.New(0, 0).SetFloat64(subtotal)),
+		Discount:       types.NewDecimal(decimal.New(0, 0).SetFloat64(incomeSaleCreate.Discount)),
+		Type:           incomeSaleCreate.Type,
+		Total:          types.NewDecimal(decimal.New(0, 0).SetFloat64(totalIncome)),
 		IsBudget:       *incomeSaleCreate.IsBudget,
 	}
 
@@ -377,7 +383,7 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 	incomeSaleID := income.ID
 
 	for _, item := range newItems {
-		item.IncomeSaleID = incomeSaleID
+		item.IncomeSaleID = null.Int64From(incomeSaleID)
 		if err := item.Insert(ctx, tx, boil.Infer()); err != nil {
 			return 0, schemas.ErrorResponse(500, "Error al crear items del ingreso", err)
 		}
@@ -391,7 +397,7 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 			IncomeSaleID:   incomeSaleID,
 			CashRegisterID: null.Int64From(register.ID),
 			ClientID:       null.Int64From(incomeSaleCreate.ClientID),
-			Total:          types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", pay.Total))),
+			Total:          types.NewDecimal(decimal.New(0, 0).SetFloat64(pay.Total)),
 			MethodPay:      pay.MethodPay,
 		}
 
@@ -437,7 +443,7 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 		return schemas.HandlerErrorDB(err, "Ingreso de venta", schemas.Read)
 	}
 
-	oldItems, err := boilmodels.IncomeSaleItems(boilmodels.IncomeSaleItemWhere.IncomeSaleID.EQ(incomeSaleUpdate.ID)).All(ctx, tx)
+	oldItems, err := boilmodels.IncomeSaleItems(boilmodels.IncomeSaleItemWhere.IncomeSaleID.EQ(null.Int64From(incomeSaleUpdate.ID))).All(ctx, tx)
 	if err != nil {
 		return schemas.HandlerErrorDB(err, "Items de Ingreso", schemas.Read)
 	}
@@ -451,21 +457,23 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 		}
 
 		if isDeposit {
-			deposit, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(oldItem.ProductID)).One(ctx, tx)
+			deposit, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(oldItem.ProductID.Int64)).One(ctx, tx)
 			if err == nil {
-				deposit.Stock += oldItemAmt
+				stockF, _ := deposit.Stock.Big.Float64()
+				deposit.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF + oldItemAmt))
 				deposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt))
 			}
 		} else {
-			stockPointSale, err := boilmodels.StockPointSales(boilmodels.StockPointSaleWhere.PointSaleID.EQ(pointSaleID), boilmodels.StockPointSaleWhere.ProductID.EQ(oldItem.ProductID)).One(ctx, tx)
+			stockPointSale, err := boilmodels.StockPointSales(boilmodels.StockPointSaleWhere.PointSaleID.EQ(pointSaleID), boilmodels.StockPointSaleWhere.ProductID.EQ(oldItem.ProductID.Int64)).One(ctx, tx)
 			if err == nil {
-				stockPointSale.Stock += oldItemAmt
+				stockF, _ := stockPointSale.Stock.Big.Float64()
+				stockPointSale.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF + oldItemAmt))
 				stockPointSale.Update(ctx, tx, boil.Whitelist(boilmodels.StockPointSaleColumns.Stock, boilmodels.StockPointSaleColumns.UpdatedAt))
 			}
 		}
 	}
 
-	if _, err := boilmodels.IncomeSaleItems(boilmodels.IncomeSaleItemWhere.IncomeSaleID.EQ(incomeSaleUpdate.ID)).DeleteAll(ctx, tx); err != nil {
+	if _, err := boilmodels.IncomeSaleItems(boilmodels.IncomeSaleItemWhere.IncomeSaleID.EQ(null.Int64From(incomeSaleUpdate.ID))).DeleteAll(ctx, tx); err != nil {
 		return schemas.HandlerErrorDB(err, "Items de Ingreso", schemas.Delete)
 	}
 
@@ -496,20 +504,22 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 			if err != nil {
 				return schemas.HandlerErrorDB(err, "Stock Depósito", schemas.Read)
 			}
-			if stock.Stock < float64(item.Amount) {
+			stockF, _ := stock.Stock.Big.Float64()
+			if stockF < float64(item.Amount) {
 				return schemas.ErrorResponse(400, "stock insuficiente", fmt.Errorf("stock insuficiente"))
 			}
-			stock.Stock -= float64(item.Amount)
+			stock.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF - float64(item.Amount)))
 			stock.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt))
 		} else {
 			stock, err := boilmodels.StockPointSales(boilmodels.StockPointSaleWhere.PointSaleID.EQ(pointSaleID), boilmodels.StockPointSaleWhere.ProductID.EQ(item.ProductID)).One(ctx, tx)
 			if err != nil {
 				return schemas.HandlerErrorDB(err, "Stock Punto de Venta", schemas.Read)
 			}
-			if stock.Stock < float64(item.Amount) {
+			stockF, _ := stock.Stock.Big.Float64()
+			if stockF < float64(item.Amount) {
 				return schemas.ErrorResponse(400, "stock insuficiente", fmt.Errorf("stock insuficiente"))
 			}
-			stock.Stock -= float64(item.Amount)
+			stock.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF - float64(item.Amount)))
 			stock.Update(ctx, tx, boil.Whitelist(boilmodels.StockPointSaleColumns.Stock, boilmodels.StockPointSaleColumns.UpdatedAt))
 		}
 
@@ -538,15 +548,15 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 		}
 
 		newIncomeSaleItems = append(newIncomeSaleItems, &boilmodels.IncomeSaleItem{
-			IncomeSaleID: incomeSaleUpdate.ID,
-			ProductID:    item.ProductID,
-			Amount:       types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Amount))),
-			Price:        types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", productPrice))),
-			PriceCost:    types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", priceCostVal))),
-			Subtotal:     types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", subtotalItem))),
-			Discount:     types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Discount))),
-			TypeDiscount: null.StringFrom(item.TypeDiscount),
-			Total:        types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", totalItem))),
+			IncomeSaleID: null.Int64From(incomeSaleUpdate.ID),
+			ProductID:    null.Int64From(item.ProductID),
+			Amount:       types.NewDecimal(decimal.New(0, 0).SetFloat64(item.Amount)),
+			Price:        types.NewDecimal(decimal.New(0, 0).SetFloat64(productPrice)),
+			PriceCost:    types.NewDecimal(decimal.New(0, 0).SetFloat64(priceCostVal)),
+			Subtotal:     types.NewDecimal(decimal.New(0, 0).SetFloat64(subtotalItem)),
+			Discount:     types.NewDecimal(decimal.New(0, 0).SetFloat64(item.Discount)),
+			TypeDiscount: item.TypeDiscount,
+			Total:        types.NewDecimal(decimal.New(0, 0).SetFloat64(totalItem)),
 		})
 		subtotal += totalItem
 	}
@@ -562,11 +572,11 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 		totalIncome = subtotal
 	}
 
-	existingIncome.ClientID = null.Int64From(incomeSaleUpdate.ClientID)
-	existingIncome.Subtotal = types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", subtotal)))
-	existingIncome.Discount = types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", incomeSaleUpdate.Discount)))
-	existingIncome.Type = null.StringFrom(incomeSaleUpdate.Type)
-	existingIncome.Total = types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", totalIncome)))
+	existingIncome.ClientID = incomeSaleUpdate.ClientID
+	existingIncome.Subtotal = types.NewDecimal(decimal.New(0, 0).SetFloat64(subtotal))
+	existingIncome.Discount = types.NewDecimal(decimal.New(0, 0).SetFloat64(incomeSaleUpdate.Discount))
+	existingIncome.Type = incomeSaleUpdate.Type
+	existingIncome.Total = types.NewDecimal(decimal.New(0, 0).SetFloat64(totalIncome))
 	existingIncome.IsBudget = incomeSaleUpdate.IsBudget
 
 	if _, err := existingIncome.Update(ctx, tx, boil.Infer()); err != nil {
@@ -589,9 +599,9 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 
 		newPay := boilmodels.PayIncome{
 			IncomeSaleID:   incomeSaleUpdate.ID,
-			CashRegisterID: existingIncome.CashRegisterID,
+			CashRegisterID: null.Int64From(existingIncome.CashRegisterID),
 			ClientID:       null.Int64From(incomeSaleUpdate.ClientID),
-			Total:          types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", pay.Total))),
+			Total:          types.NewDecimal(decimal.New(0, 0).SetFloat64(pay.Total)),
 			MethodPay:      pay.MethodPay,
 		}
 
@@ -633,7 +643,7 @@ func (i *IncomeSaleRepository) IncomeSaleDelete(memberID, incomeSaleID, pointSal
 		return schemas.HandlerErrorDB(err, "Ingreso de venta", schemas.Read)
 	}
 
-	items, err := boilmodels.IncomeSaleItems(boilmodels.IncomeSaleItemWhere.IncomeSaleID.EQ(incomeSaleID)).All(ctx, tx)
+	items, err := boilmodels.IncomeSaleItems(boilmodels.IncomeSaleItemWhere.IncomeSaleID.EQ(null.Int64From(incomeSaleID))).All(ctx, tx)
 	if err != nil {
 		return schemas.HandlerErrorDB(err, "Items de Ingreso", schemas.Read)
 	}
@@ -648,15 +658,17 @@ func (i *IncomeSaleRepository) IncomeSaleDelete(memberID, incomeSaleID, pointSal
 	for _, item := range items {
 		itemAmt, _ := item.Amount.Big.Float64()
 		if isDeposit {
-			deposit, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(item.ProductID)).One(ctx, tx)
+			deposit, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(item.ProductID.Int64)).One(ctx, tx)
 			if err == nil {
-				deposit.Stock += itemAmt
+				stockF, _ := deposit.Stock.Big.Float64()
+				deposit.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF + itemAmt))
 				deposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt))
 			}
 		} else {
-			stockPointSale, err := boilmodels.StockPointSales(boilmodels.StockPointSaleWhere.PointSaleID.EQ(pointSaleID), boilmodels.StockPointSaleWhere.ProductID.EQ(item.ProductID)).One(ctx, tx)
+			stockPointSale, err := boilmodels.StockPointSales(boilmodels.StockPointSaleWhere.PointSaleID.EQ(pointSaleID), boilmodels.StockPointSaleWhere.ProductID.EQ(item.ProductID.Int64)).One(ctx, tx)
 			if err == nil {
-				stockPointSale.Stock += itemAmt
+				stockF, _ := stockPointSale.Stock.Big.Float64()
+				stockPointSale.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF + itemAmt))
 				stockPointSale.Update(ctx, tx, boil.Whitelist(boilmodels.StockPointSaleColumns.Stock, boilmodels.StockPointSaleColumns.UpdatedAt))
 			}
 		}
@@ -666,11 +678,11 @@ func (i *IncomeSaleRepository) IncomeSaleDelete(memberID, incomeSaleID, pointSal
 		return schemas.HandlerErrorDB(err, "Pagos de Ingreso", schemas.Delete)
 	}
 
-	if _, err := boilmodels.IncomeSaleItems(boilmodels.IncomeSaleItemWhere.IncomeSaleID.EQ(incomeSaleID)).DeleteAll(ctx, tx); err != nil {
+	if _, err := boilmodels.IncomeSaleItems(boilmodels.IncomeSaleItemWhere.IncomeSaleID.EQ(null.Int64From(incomeSaleID))).DeleteAll(ctx, tx); err != nil {
 		return schemas.HandlerErrorDB(err, "Items de Ingreso", schemas.Delete)
 	}
 
-	if _, err := existingIncome.Delete(ctx, tx, false); err != nil {
+	if _, err := existingIncome.Delete(ctx, tx); err != nil {
 		return schemas.HandlerErrorDB(err, "Ingreso de venta", schemas.Delete)
 	}
 

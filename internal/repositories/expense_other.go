@@ -7,40 +7,14 @@ import (
 	"fmt"
 	"time"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"github.com/volatiletech/sqlboiler/v4/types"
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/types"
+	"github.com/ericlagergren/decimal"
 )
-
-func mapToPointSaleResponse(c *boilmodels.PointSale) *schemas.PointSaleResponse {
-	if c == nil {
-		return nil
-	}
-	res := &schemas.PointSaleResponse{
-		ID:        c.ID,
-		Name:      c.Name,
-		Number:    int64(c.Number),
-		IsDeposit: c.IsDeposit,
-		IsMain:    c.IsMain,
-	}
-	if c.Description.Valid {
-		res.Description = &c.Description.String
-	}
-	return res
-}
-
-func mapToTypeExpenseResponse(c *boilmodels.TypeExpense) schemas.TypeExpenseResponse {
-	if c == nil {
-		return schemas.TypeExpenseResponse{}
-	}
-	return schemas.TypeExpenseResponse{
-		ID:   c.ID,
-		Name: c.Name,
-	}
-}
 
 func mapToExpenseOtherResponse(e *boilmodels.ExpenseOther) *schemas.ExpenseOtherResponse {
 	if e == nil {
@@ -61,19 +35,35 @@ func mapToExpenseOtherResponse(e *boilmodels.ExpenseOther) *schemas.ExpenseOther
 	if e.CashRegisterID.Valid {
 		res.CashRegisterID = &e.CashRegisterID.Int64
 	}
-	if e.CreatedAt.Valid {
-		res.CreatedAt = e.CreatedAt.Time
-	}
+
+	res.CreatedAt = e.CreatedAt
 
 	if e.R != nil {
 		if e.R.Member != nil {
-			res.Member = mapToMemberSimpleDTO(e.R.Member)
+			res.Member = &schemas.MemberSimpleDTO{
+				ID:        e.R.Member.ID,
+				FirstName: e.R.Member.FirstName,
+				LastName:  e.R.Member.LastName,
+				Username:  e.R.Member.Username,
+			}
 		}
 		if e.R.PointSale != nil {
-			res.PointSale = mapToPointSaleResponse(e.R.PointSale)
+			res.PointSale = &schemas.PointSaleResponse{
+				ID:        e.R.PointSale.ID,
+				Name:      e.R.PointSale.Name,
+				Number:    int64(e.R.PointSale.Number),
+				IsDeposit: e.R.PointSale.IsDeposit,
+				IsMain:    e.R.PointSale.IsMain,
+			}
+			if e.R.PointSale.Description.Valid {
+				res.PointSale.Description = &e.R.PointSale.Description.String
+			}
 		}
 		if e.R.TypeExpense != nil {
-			res.TypeExpense = mapToTypeExpenseResponse(e.R.TypeExpense)
+			res.TypeExpense = schemas.TypeExpenseResponse{
+				ID:   e.R.TypeExpense.ID,
+				Name: e.R.TypeExpense.Name,
+			}
 		}
 	}
 
@@ -111,8 +101,8 @@ func (r *ExpenseOtherRepository) ExpenseOtherGetByDate(pointSaleID *int64, fromD
 	offset := (page - 1) * limit
 
 	qms := []qm.QueryMod{
-		boilmodels.ExpenseOtherWhere.CreatedAt.GTE(null.TimeFrom(fromDate)),
-		boilmodels.ExpenseOtherWhere.CreatedAt.LTE(null.TimeFrom(toDate)),
+		boilmodels.ExpenseOtherWhere.CreatedAt.GTE(fromDate),
+		boilmodels.ExpenseOtherWhere.CreatedAt.LTE(toDate),
 	}
 
 	if pointSaleID != nil {
@@ -163,12 +153,12 @@ func (r *ExpenseOtherRepository) ExpenseOtherCreate(memberID int64, pointSaleID 
 		return 0, schemas.HandlerErrorDB(sql.ErrNoRows, "Tipo de egreso", schemas.Read)
 	}
 
-	totalDec := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", expenseOtherCreate.Total)))
+	totalDec := types.NewDecimal(decimal.New(0, 0).SetFloat64(expenseOtherCreate.Total))
 
 	expenseOther := &boilmodels.ExpenseOther{
-		MemberID:      null.Int64From(memberID),
+		MemberID:      memberID,
 		Details:       null.StringFromPtr(expenseOtherCreate.Details),
-		TypeExpenseID: null.Int64From(expenseOtherCreate.TypeExpenseID),
+		TypeExpenseID: expenseOtherCreate.TypeExpenseID,
 		Total:         totalDec,
 		PayMethod:     null.StringFrom(expenseOtherCreate.PayMethod),
 	}
@@ -227,10 +217,10 @@ func (r *ExpenseOtherRepository) ExpenseOtherUpdate(memberID int64, pointSaleID 
 	}
 
 	existingExpense.Details = null.StringFromPtr(expenseOtherUpdate.Details)
-	existingExpense.Total = types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", expenseOtherUpdate.Total)))
+	existingExpense.Total = types.NewDecimal(decimal.New(0, 0).SetFloat64(expenseOtherUpdate.Total))
 	existingExpense.PayMethod = null.StringFrom(expenseOtherUpdate.PayMethod)
-	existingExpense.MemberID = null.Int64From(memberID)
-	existingExpense.TypeExpenseID = null.Int64From(expenseOtherUpdate.TypeExpenseID)
+	existingExpense.MemberID = memberID
+	existingExpense.TypeExpenseID = expenseOtherUpdate.TypeExpenseID
 
 	if _, err := existingExpense.Update(ctx, tx, boil.Infer()); err != nil {
 		return schemas.HandlerErrorDB(err, "Otros egresos", schemas.Update)
@@ -261,7 +251,7 @@ func (r *ExpenseOtherRepository) ExpenseOtherDelete(memberID int64, expenseOther
 		return schemas.HandlerErrorDB(err, "Otros egresos", schemas.Read)
 	}
 
-	if _, err := existingExpense.Delete(ctx, tx, false); err != nil {
+	if _, err := existingExpense.Delete(ctx, tx); err != nil {
 		return schemas.HandlerErrorDB(err, "Otros egresos", schemas.Delete)
 	}
 

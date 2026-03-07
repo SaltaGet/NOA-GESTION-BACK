@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	_ "embed"
 	"fmt"
 	"net/url"
 	"os"
@@ -15,12 +16,13 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/aarondl/sqlboiler/v4/boil"
-	"github.com/aarondl/sqlboiler/v4/types"
-	"github.com/ericlagergren/decimal"
 	lru "github.com/hashicorp/golang-lru"
 	_ "github.com/jackc/pgx/v5/stdlib" // Driver para sql.Open
 	"github.com/rs/zerolog/log"
 )
+
+//go:embed schemas_db/main.sql
+var mainSchemaSQL string
 
 var (
 	mainDB            *sql.DB
@@ -78,19 +80,14 @@ func ConnectDB(cfg *schemas.EmailConfig) (*sql.DB, error) {
 		log.Fatal().Err(err).Msg("No se pudo crear la base")
 	}
 
-	db, err := sql.Open("postgres", dsn)
+	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return nil, err
 	}
 
 	setupDBConnection(db, mainDBConfig)
 
-	createTables, err := os.ReadFile("internal/platform/database/schemas_db/main.sql")
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error al leer el archivo de estructura")
-	}
-
-	if _, err := db.Exec(string(createTables)); err != nil {
+	if _, err := db.ExecContext(context.Background(), mainSchemaSQL); err != nil {
 		log.Fatal().Err(err).Msg("Error en al crear tablas")
 	}
 
@@ -174,26 +171,35 @@ func ensureAdmin(db *sql.DB, cfg *schemas.EmailConfig) (*sql.DB, error) {
 func ensurePlans(db *sql.DB) error {
 	ctx := context.Background()
 
+	_, err := db.Exec("SELECT 'public.plans'::regclass")
+	if err != nil {
+		log.Warn().Msg("Esperando a que la tabla plans sea visible...")
+		time.Sleep(500 * time.Millisecond) // Un respiro para el catálogo de PG
+	}
+
 	plan := master.Plan{
 		Name:            "Básico",
-		PriceMounthly:   types.NewDecimal(decimal.New(25, 2)),
-		PriceYearly:     types.NewDecimal(decimal.New(250, 2)),
 		Description:     "Plan básico",
 		Features:        "Nada es básico, así que no esperes mucho",
 		AmountPointSale: 1,
 		AmountMember:    5,
-		AmountProduct:   1000,
+		AmountProduct:   2000,
 	}
 
-	// Upsert:
-	// - El 4to parámetro es si queremos actualizar en caso de conflicto (true) o no.
-	// - El 5to parámetro son las columnas que causan el conflicto (ej. "name").
-	// - El 6to parámetro son las columnas a actualizar.
-	err := plan.Upsert(ctx, db,
-		false,            // ¿Actualizar si existe?
-		[]string{"name"}, // Columna que dispara el conflicto
-		boil.Infer(),     // Columnas a actualizar (Infer usa todas)
-		boil.Infer(),     // Columnas a insertar
+	query := `
+		INSERT INTO public.plans (name, price_mounthly, price_yearly, description, features, amount_point_sale, amount_member, amount_product, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+		ON CONFLICT (name) DO NOTHING;
+	`
+	_, err = db.ExecContext(ctx, query,
+		plan.Name,
+		25.00,
+		250.00,
+		plan.Description,
+		plan.Features,
+		plan.AmountPointSale,
+		plan.AmountMember,
+		plan.AmountProduct,
 	)
 
 	if err != nil {
@@ -317,7 +323,7 @@ func InvalidateTenantConnection(tenantID int64) {
 }
 
 func openTenantDB(connStr string) (*sql.DB, error) {
-	db, err := sql.Open("postgres", connStr)
+	db, err := sql.Open("pgx", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("error al abrir DB de tenant: %w", err)
 	}
@@ -515,16 +521,18 @@ func ApplyAuditAdminTriggers(db *sql.DB) error {
 		AND table_name != 'migrations';
 	`
 	rows, err := db.Query(queryTables)
-    if err != nil {
-        return err
-    }
-    defer rows.Close()
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
 
-    for rows.Next() {
-        var table string
-        if err := rows.Scan(&table); err != nil { return err }
-        tables = append(tables, table)
-    }
+	for rows.Next() {
+		var table string
+		if err := rows.Scan(&table); err != nil {
+			return err
+		}
+		tables = append(tables, table)
+	}
 
 	// 3. Aplicar el trigger a cada una
 	for _, table := range tables {

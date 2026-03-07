@@ -7,44 +7,13 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 )
-
-func mapToRoleResponse(r *boilmodels.Role) schemas.RoleResponse {
-	if r == nil {
-		return schemas.RoleResponse{}
-	}
-	res := schemas.RoleResponse{
-		ID:   r.ID,
-		Name: r.Name,
-	}
-	if r.R != nil {
-		for _, p := range r.R.Permissions {
-			res.Permissions = append(res.Permissions, schemas.PermissionResponse{
-				ID:          p.ID,
-				Name:        p.Name,
-				Description: p.Description.String,
-			})
-		}
-	}
-	return res
-}
-
-func mapToRoleResponseDTO(r *boilmodels.Role) schemas.RoleResponseDTO {
-	if r == nil {
-		return schemas.RoleResponseDTO{}
-	}
-	return schemas.RoleResponseDTO{
-		ID:   r.ID,
-		Name: r.Name,
-	}
-}
 
 func mapToMemberResponse(m *boilmodels.Member) *schemas.MemberResponse {
 	if m == nil {
@@ -402,7 +371,7 @@ func (r *MemberRepository) MemberDelete(memberID int64, id int64) error {
 		return schemas.ErrorResponse(400, "No se puede eliminar un administrador", nil)
 	}
 
-	if _, err := member.Delete(ctx, tx, false); err != nil {
+	if _, err := member.Delete(ctx, tx); err != nil {
 		return schemas.ErrorResponse(500, "Error al eliminar el miembro", err)
 	}
 

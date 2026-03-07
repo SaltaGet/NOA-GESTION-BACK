@@ -8,9 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/jung-kurt/gofpdf"
 	"github.com/skip2/go-qrcode"
 	"github.com/xuri/excelize/v2"
@@ -27,32 +26,43 @@ func (p *ProductService) ProductGetByID(id int64) (*schemas.ProductFullResponse,
 	productResponse.ID = product.ID
 	productResponse.Code = product.Code
 	productResponse.Name = product.Name
-	productResponse.Description = product.Description
-	productResponse.Category = schemas.CategoryResponse{
-		ID:   product.Category.ID,
-		Name: product.Category.Name,
+	productResponse.Description = product.Description.Ptr()
+	if product.R != nil && product.R.Category != nil {
+		productResponse.Category = schemas.CategoryResponse{
+			ID:   product.R.Category.ID,
+			Name: product.R.Category.Name,
+		}
 	}
-	productResponse.Price = product.Price
+	price, _ := product.Price.Big.Float64()
+	productResponse.Price = price
 
-	if product.StockDeposit != nil {
-		productResponse.StockDeposit = product.StockDeposit.Stock
+	if product.R != nil && len(product.R.Deposits) > 0 {
+		stk, _ := product.R.Deposits[0].Stock.Big.Float64()
+		productResponse.StockDeposit = stk
 	} else {
 		productResponse.StockDeposit = 0
 	}
 
 	productResponse.Notifier = product.Notifier
-	productResponse.MinAmount = product.MinAmount
-	productResponse.PrimaryImage = product.PrimaryImage
-	productResponse.SecondaryImage = utils.SplitStrings(*&product.SecondaryImages)
+	minAmnt, _ := product.MinAmount.Big.Float64()
+	productResponse.MinAmount = minAmnt
+	productResponse.PrimaryImage = product.PrimaryImage.Ptr()
+	productResponse.SecondaryImage = utils.SplitStrings(product.SecondaryImages.Ptr())
 	productResponse.IsVisible = product.IsVisible
 
-	for _, stock := range product.StockPointSales {
-		productResponse.StockPointSales = append(productResponse.StockPointSales, &schemas.PointSaleStockResponse{
-			ID:        stock.PointSale.ID,
-			Name:      stock.PointSale.Name,
-			Stock:     stock.Stock,
-			IsDeposit: stock.PointSale.IsDeposit,
-		})
+	if product.R != nil {
+		for _, stock := range product.R.StockPointSales {
+			if stock.R == nil || stock.R.PointSale == nil {
+				continue
+			}
+			stk, _ := stock.Stock.Big.Float64()
+			productResponse.StockPointSales = append(productResponse.StockPointSales, &schemas.PointSaleStockResponse{
+				ID:        stock.R.PointSale.ID,
+				Name:      stock.R.PointSale.Name,
+				Stock:     stk,
+				IsDeposit: stock.R.PointSale.IsDeposit,
+			})
+		}
 	}
 
 	return &productResponse, nil
@@ -69,32 +79,43 @@ func (p *ProductService) ProductGetByCode(code string) (*schemas.ProductFullResp
 	productResponse.ID = product.ID
 	productResponse.Code = product.Code
 	productResponse.Name = product.Name
-	productResponse.Description = product.Description
-	productResponse.Category = schemas.CategoryResponse{
-		ID:   product.Category.ID,
-		Name: product.Category.Name,
+	productResponse.Description = product.Description.Ptr()
+	if product.R != nil && product.R.Category != nil {
+		productResponse.Category = schemas.CategoryResponse{
+			ID:   product.R.Category.ID,
+			Name: product.R.Category.Name,
+		}
 	}
-	productResponse.Price = product.Price
+	price, _ := product.Price.Big.Float64()
+	productResponse.Price = price
 
-	if product.StockDeposit != nil {
-		productResponse.StockDeposit = product.StockDeposit.Stock
+	if product.R != nil && len(product.R.Deposits) > 0 {
+		stk, _ := product.R.Deposits[0].Stock.Big.Float64()
+		productResponse.StockDeposit = stk
 	} else {
 		productResponse.StockDeposit = 0
 	}
 
 	productResponse.Notifier = product.Notifier
-	productResponse.MinAmount = product.MinAmount
-	productResponse.PrimaryImage = product.PrimaryImage
-	productResponse.SecondaryImage = utils.SplitStrings(*&product.SecondaryImages)
+	minAmnt, _ := product.MinAmount.Big.Float64()
+	productResponse.MinAmount = minAmnt
+	productResponse.PrimaryImage = product.PrimaryImage.Ptr()
+	productResponse.SecondaryImage = utils.SplitStrings(product.SecondaryImages.Ptr())
 	productResponse.IsVisible = product.IsVisible
 
-	for _, stock := range product.StockPointSales {
-		productResponse.StockPointSales = append(productResponse.StockPointSales, &schemas.PointSaleStockResponse{
-			ID:        stock.PointSale.ID,
-			Name:      stock.PointSale.Name,
-			Stock:     stock.Stock,
-			IsDeposit: stock.PointSale.IsDeposit,
-		})
+	if product.R != nil {
+		for _, stock := range product.R.StockPointSales {
+			if stock.R == nil || stock.R.PointSale == nil {
+				continue
+			}
+			stk, _ := stock.Stock.Big.Float64()
+			productResponse.StockPointSales = append(productResponse.StockPointSales, &schemas.PointSaleStockResponse{
+				ID:        stock.R.PointSale.ID,
+				Name:      stock.R.PointSale.Name,
+				Stock:     stk,
+				IsDeposit: stock.R.PointSale.IsDeposit,
+			})
+		}
 	}
 
 	return &productResponse, nil
@@ -109,34 +130,45 @@ func (p *ProductService) ProductGetByName(name string) ([]*schemas.ProductFullRe
 	productsResponse := make([]*schemas.ProductFullResponse, len(products))
 
 	for i, prod := range products {
+		price, _ := prod.Price.Big.Float64()
+		minAmnt, _ := prod.MinAmount.Big.Float64()
 		productsResponse[i] = &schemas.ProductFullResponse{
-			ID:          prod.ID,
-			Code:        prod.Code,
-			Name:        prod.Name,
-			Description: prod.Description,
-			Category: schemas.CategoryResponse{
-				ID:   prod.Category.ID,
-				Name: prod.Category.Name,
-			},
-			Price:     prod.Price,
-			Notifier:  prod.Notifier,
-			MinAmount: prod.MinAmount,
-			PrimaryImage:   prod.PrimaryImage,
-			SecondaryImage: utils.SplitStrings(*&prod.SecondaryImages),
-			IsVisible: prod.IsVisible,
+			ID:             prod.ID,
+			Code:           prod.Code,
+			Name:           prod.Name,
+			Description:    prod.Description.Ptr(),
+			Price:          price,
+			Notifier:       prod.Notifier,
+			MinAmount:      minAmnt,
+			PrimaryImage:   prod.PrimaryImage.Ptr(),
+			SecondaryImage: utils.SplitStrings(prod.SecondaryImages.Ptr()),
+			IsVisible:      prod.IsVisible,
 		}
-		if prod.StockDeposit != nil {
-			productsResponse[i].StockDeposit = prod.StockDeposit.Stock
+		if prod.R != nil && prod.R.Category != nil {
+			productsResponse[i].Category = schemas.CategoryResponse{
+				ID:   prod.R.Category.ID,
+				Name: prod.R.Category.Name,
+			}
+		}
+		if prod.R != nil && len(prod.R.Deposits) > 0 {
+			stk, _ := prod.R.Deposits[0].Stock.Big.Float64()
+			productsResponse[i].StockDeposit = stk
 		} else {
 			productsResponse[i].StockDeposit = 0
 		}
-		for _, stock := range prod.StockPointSales {
-			productsResponse[i].StockPointSales = append(productsResponse[i].StockPointSales, &schemas.PointSaleStockResponse{
-				ID:        stock.PointSale.ID,
-				Name:      stock.PointSale.Name,
-				Stock:     stock.Stock,
-				IsDeposit: stock.PointSale.IsDeposit,
-			})
+		if prod.R != nil {
+			for _, stock := range prod.R.StockPointSales {
+				if stock.R == nil || stock.R.PointSale == nil {
+					continue
+				}
+				stk, _ := stock.Stock.Big.Float64()
+				productsResponse[i].StockPointSales = append(productsResponse[i].StockPointSales, &schemas.PointSaleStockResponse{
+					ID:        stock.R.PointSale.ID,
+					Name:      stock.R.PointSale.Name,
+					Stock:     stk,
+					IsDeposit: stock.R.PointSale.IsDeposit,
+				})
+			}
 		}
 	}
 
@@ -152,34 +184,45 @@ func (p *ProductService) ProductGetByCategoryID(categoryID int64) ([]*schemas.Pr
 	productsResponse := make([]*schemas.ProductFullResponse, len(products))
 
 	for i, prod := range products {
+		price, _ := prod.Price.Big.Float64()
+		minAmnt, _ := prod.MinAmount.Big.Float64()
 		productsResponse[i] = &schemas.ProductFullResponse{
-			ID:          prod.ID,
-			Code:        prod.Code,
-			Name:        prod.Name,
-			Description: prod.Description,
-			Category: schemas.CategoryResponse{
-				ID:   prod.Category.ID,
-				Name: prod.Category.Name,
-			},
-			Price:     prod.Price,
-			Notifier:  prod.Notifier,
-			MinAmount: prod.MinAmount,
-			PrimaryImage:   prod.PrimaryImage,
-			SecondaryImage: utils.SplitStrings(*&prod.SecondaryImages),
-			IsVisible: prod.IsVisible,
+			ID:             prod.ID,
+			Code:           prod.Code,
+			Name:           prod.Name,
+			Description:    prod.Description.Ptr(),
+			Price:          price,
+			Notifier:       prod.Notifier,
+			MinAmount:      minAmnt,
+			PrimaryImage:   prod.PrimaryImage.Ptr(),
+			SecondaryImage: utils.SplitStrings(prod.SecondaryImages.Ptr()),
+			IsVisible:      prod.IsVisible,
 		}
-		if prod.StockDeposit != nil {
-			productsResponse[i].StockDeposit = prod.StockDeposit.Stock
+		if prod.R != nil && prod.R.Category != nil {
+			productsResponse[i].Category = schemas.CategoryResponse{
+				ID:   prod.R.Category.ID,
+				Name: prod.R.Category.Name,
+			}
+		}
+		if prod.R != nil && len(prod.R.Deposits) > 0 {
+			stk, _ := prod.R.Deposits[0].Stock.Big.Float64()
+			productsResponse[i].StockDeposit = stk
 		} else {
 			productsResponse[i].StockDeposit = 0
 		}
-		for _, stock := range prod.StockPointSales {
-			productsResponse[i].StockPointSales = append(productsResponse[i].StockPointSales, &schemas.PointSaleStockResponse{
-				ID:        stock.PointSale.ID,
-				Name:      stock.PointSale.Name,
-				Stock:     stock.Stock,
-				IsDeposit: stock.PointSale.IsDeposit,
-			})
+		if prod.R != nil {
+			for _, stock := range prod.R.StockPointSales {
+				if stock.R == nil || stock.R.PointSale == nil {
+					continue
+				}
+				stk, _ := stock.Stock.Big.Float64()
+				productsResponse[i].StockPointSales = append(productsResponse[i].StockPointSales, &schemas.PointSaleStockResponse{
+					ID:        stock.R.PointSale.ID,
+					Name:      stock.R.PointSale.Name,
+					Stock:     stk,
+					IsDeposit: stock.R.PointSale.IsDeposit,
+				})
+			}
 		}
 	}
 
@@ -195,34 +238,45 @@ func (p *ProductService) ProductGetAll(page, limit int, isVisible *bool) ([]*sch
 	productsResponse := make([]*schemas.ProductFullResponse, len(products))
 
 	for i, prod := range products {
+		price, _ := prod.Price.Big.Float64()
+		minAmnt, _ := prod.MinAmount.Big.Float64()
 		productsResponse[i] = &schemas.ProductFullResponse{
-			ID:          prod.ID,
-			Code:        prod.Code,
-			Name:        prod.Name,
-			Description: prod.Description,
-			Category: schemas.CategoryResponse{
-				ID:   prod.Category.ID,
-				Name: prod.Category.Name,
-			},
-			Price:     prod.Price,
-			Notifier:  prod.Notifier,
-			MinAmount: prod.MinAmount,
-			PrimaryImage:   prod.PrimaryImage,
-			SecondaryImage: utils.SplitStrings(*&prod.SecondaryImages),
-			IsVisible: prod.IsVisible,
+			ID:             prod.ID,
+			Code:           prod.Code,
+			Name:           prod.Name,
+			Description:    prod.Description.Ptr(),
+			Price:          price,
+			Notifier:       prod.Notifier,
+			MinAmount:      minAmnt,
+			PrimaryImage:   prod.PrimaryImage.Ptr(),
+			SecondaryImage: utils.SplitStrings(prod.SecondaryImages.Ptr()),
+			IsVisible:      prod.IsVisible,
 		}
-		if prod.StockDeposit != nil {
-			productsResponse[i].StockDeposit = prod.StockDeposit.Stock
+		if prod.R != nil && prod.R.Category != nil {
+			productsResponse[i].Category = schemas.CategoryResponse{
+				ID:   prod.R.Category.ID,
+				Name: prod.R.Category.Name,
+			}
+		}
+		if prod.R != nil && len(prod.R.Deposits) > 0 {
+			stk, _ := prod.R.Deposits[0].Stock.Big.Float64()
+			productsResponse[i].StockDeposit = stk
 		} else {
 			productsResponse[i].StockDeposit = 0
 		}
-		for _, stock := range prod.StockPointSales {
-			productsResponse[i].StockPointSales = append(productsResponse[i].StockPointSales, &schemas.PointSaleStockResponse{
-				ID:        stock.PointSale.ID,
-				Name:      stock.PointSale.Name,
-				Stock:     stock.Stock,
-				IsDeposit: stock.PointSale.IsDeposit,
-			})
+		if prod.R != nil {
+			for _, stock := range prod.R.StockPointSales {
+				if stock.R == nil || stock.R.PointSale == nil {
+					continue
+				}
+				stk, _ := stock.Stock.Big.Float64()
+				productsResponse[i].StockPointSales = append(productsResponse[i].StockPointSales, &schemas.PointSaleStockResponse{
+					ID:        stock.R.PointSale.ID,
+					Name:      stock.R.PointSale.Name,
+					Stock:     stk,
+					IsDeposit: stock.R.PointSale.IsDeposit,
+				})
+			}
 		}
 	}
 
@@ -355,24 +409,24 @@ func (p *ProductService) ProductUpload(memberID int64, file *multipart.FileHeade
 	}
 
 	src, err := file.Open()
-  if err != nil {
-    return nil, schemas.ErrorResponse(500, "No se pudo abrir el archivo temporal", err)
-  }
-  defer src.Close()
+	if err != nil {
+		return nil, schemas.ErrorResponse(500, "No se pudo abrir el archivo temporal", err)
+	}
+	defer src.Close()
 
-  f, err := excelize.OpenReader(src)
-  if err != nil {
-    return nil, schemas.ErrorResponse(400, "El archivo no es un Excel válido o está corrupto", err)
-  }
-  defer f.Close()
+	f, err := excelize.OpenReader(src)
+	if err != nil {
+		return nil, schemas.ErrorResponse(400, "El archivo no es un Excel válido o está corrupto", err)
+	}
+	defer f.Close()
 
-  rows, err := f.GetRows("PRODUCTOS")
-  if err != nil {
-    return nil, schemas.ErrorResponse(400, "No se encontró la hoja llamada 'PRODUCTOS'. Verifique el nombre.", err)
-  }
+	rows, err := f.GetRows("PRODUCTOS")
+	if err != nil {
+		return nil, schemas.ErrorResponse(400, "No se encontró la hoja llamada 'PRODUCTOS'. Verifique el nombre.", err)
+	}
 
 	if len(rows) < 2 {
-			return nil, schemas.ErrorResponse(400, "El archivo Excel está vacío o solo contiene la cabecera", nil)
+		return nil, schemas.ErrorResponse(400, "El archivo Excel está vacío o solo contiene la cabecera", nil)
 	}
 
 	countProd, err := p.ProductRepository.ProductCount()
@@ -380,7 +434,7 @@ func (p *ProductService) ProductUpload(memberID int64, file *multipart.FileHeade
 		return nil, err
 	}
 
-	rest := plan.AmountProduct - (countProd + int64(len(rows) - 1))
+	rest := plan.AmountProduct - (countProd + int64(len(rows)-1))
 	if rest <= 0 {
 		return nil, schemas.ErrorResponse(400, "el plan actual no permite crear más productos", nil)
 	}
@@ -403,7 +457,7 @@ func (p *ProductService) ProductUpload(memberID int64, file *multipart.FileHeade
 	}
 
 	// Procesar filas y crear lista de productos
-	var products []models.Product
+	var products []schemas.ProductExcelCreate
 
 	for i, row := range rows[1:] { // Saltar el encabezado
 		// Validar que la fila tenga suficientes columnas
@@ -441,16 +495,12 @@ func (p *ProductService) ProductUpload(memberID int64, file *multipart.FileHeade
 		}
 
 		// Crear producto
-		product := models.Product{
+		product := schemas.ProductExcelCreate{
 			Name:        name,
 			Description: &description, // Puntero para campo opcional
 			Price:       price,
-			Category: models.Category{
-				Name: categoryName,
-			},
-			StockDeposit: &models.Deposit{
-				Stock: stock,
-			},
+			Category:    categoryName,
+			Stock:       stock,
 		}
 
 		products = append(products, product)

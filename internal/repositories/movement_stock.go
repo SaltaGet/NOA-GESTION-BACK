@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"time"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"github.com/volatiletech/sqlboiler/v4/types"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/types"
+	"github.com/ericlagergren/decimal"
 )
 
 func mapToMovementStockResponse(m *boilmodels.MovementStock) *schemas.MovementStockResponse {
@@ -20,21 +20,19 @@ func mapToMovementStockResponse(m *boilmodels.MovementStock) *schemas.MovementSt
 		return nil
 	}
 
-	amt, _ := m.Amount.Big.Float64()
+	amt, _ := m.Amount.Float64()
 
 	res := &schemas.MovementStockResponse{
 		ID:          m.ID,
 		Amount:      amt,
-		FromID:      m.FromID.Int64,
-		FromType:    m.FromType.String,
-		ToID:        m.ToID.Int64,
-		ToType:      m.ToType.String,
+		FromID:      m.FromID,
+		FromType:    m.FromType,
+		ToID:        m.ToID,
+		ToType:      m.ToType,
 		IgnoreStock: m.IgnoreStock,
 	}
 
-	if m.CreatedAt.Valid {
-		res.CreatedAt = m.CreatedAt.Time
-	}
+	res.CreatedAt = m.CreatedAt
 
 	if m.R != nil {
 		if m.R.Member != nil {
@@ -68,16 +66,14 @@ func mapToMovementStockResponseDTO(m *boilmodels.MovementStock) schemas.Movement
 	res := schemas.MovementStockResponseDTO{
 		ID:          m.ID,
 		Amount:      amt,
-		FromID:      m.FromID.Int64,
-		FromType:    m.FromType.String,
-		ToID:        m.ToID.Int64,
-		ToType:      m.ToType.String,
+		FromID:      m.FromID,
+		FromType:    m.FromType,
+		ToID:        m.ToID,
+		ToType:      m.ToType,
 		IgnoreStock: m.IgnoreStock,
 	}
 
-	if m.CreatedAt.Valid {
-		res.CreatedAt = m.CreatedAt.Time
-	}
+	res.CreatedAt = m.CreatedAt
 
 	if m.R != nil {
 		if m.R.Member != nil {
@@ -131,8 +127,8 @@ func (r *MovementStockRepository) MovementStockGetByDate(page, limit int, fromDa
 	// Indeed, fromDate, toDate were ignored. But we'll apply them if they are valid.
 	if !fromDate.IsZero() && !toDate.IsZero() {
 		qms = append(qms,
-			boilmodels.MovementStockWhere.CreatedAt.GTE(null.TimeFrom(fromDate)),
-			boilmodels.MovementStockWhere.CreatedAt.LTE(null.TimeFrom(toDate)),
+			boilmodels.MovementStockWhere.CreatedAt.GTE(fromDate),
+			boilmodels.MovementStockWhere.CreatedAt.LTE(toDate),
 		)
 	}
 
@@ -224,7 +220,7 @@ func (r *MovementStockRepository) processSingleMovement(
 		deposit, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(productID)).One(ctx, tx)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				deposit = &boilmodels.Deposit{ProductID: productID, Stock: 0}
+				deposit = &boilmodels.Deposit{ProductID: productID, Stock: types.NewDecimal(decimal.New(0, 0).SetFloat64(0))}
 				if err := deposit.Insert(ctx, tx, boil.Infer()); err != nil {
 					return schemas.HandlerErrorDB(err, "Deposito", schemas.Create)
 				}
@@ -233,15 +229,16 @@ func (r *MovementStockRepository) processSingleMovement(
 			}
 		}
 
+		depStock, _ := deposit.Stock.Big.Float64()
 		if !ignoreStock {
-			if deposit.Stock < item.Amount {
+			if depStock < item.Amount {
 				return schemas.ErrorResponse(400,
 					fmt.Sprintf("stock insuficiente en depósito (%d)", index+1),
-					fmt.Errorf("actual %.2f < requerido %.2f", deposit.Stock, item.Amount))
+					fmt.Errorf("actual %.2f < requerido %.2f", depStock, item.Amount))
 			}
 		}
 
-		deposit.Stock -= item.Amount
+		deposit.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(depStock - item.Amount))
 		if _, err := deposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt)); err != nil {
 			return schemas.HandlerErrorDB(err, "Deposito", schemas.Update)
 		}
@@ -270,7 +267,7 @@ func (r *MovementStockRepository) processSingleMovement(
 
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				oldPS = &boilmodels.StockPointSale{ProductID: productID, PointSaleID: item.FromID, Stock: 0}
+				oldPS = &boilmodels.StockPointSale{ProductID: productID, PointSaleID: item.FromID, Stock: types.NewDecimal(decimal.New(0, 0).SetFloat64(0))}
 				if err := oldPS.Insert(ctx, tx, boil.Infer()); err != nil {
 					return schemas.HandlerErrorDB(err, "Stock Punto de venta", schemas.Create)
 				}
@@ -279,15 +276,16 @@ func (r *MovementStockRepository) processSingleMovement(
 			}
 		}
 
+		oldPSStock, _ := oldPS.Stock.Big.Float64()
 		if !ignoreStock {
-			if oldPS.Stock < item.Amount {
+			if oldPSStock < item.Amount {
 				return schemas.ErrorResponse(400,
 					fmt.Sprintf("stock insuficiente en point_sale origen (%d)", index+1),
-					fmt.Errorf("actual %.2f < requerido %.2f", oldPS.Stock, item.Amount))
+					fmt.Errorf("actual %.2f < requerido %.2f", oldPSStock, item.Amount))
 			}
 		}
 
-		oldPS.Stock -= item.Amount
+		oldPS.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(oldPSStock - item.Amount))
 		if _, err := oldPS.Update(ctx, tx, boil.Whitelist(boilmodels.StockPointSaleColumns.Stock, boilmodels.StockPointSaleColumns.UpdatedAt)); err != nil {
 			return schemas.HandlerErrorDB(err, "Stock Punto de venta", schemas.Update)
 		}
@@ -305,7 +303,7 @@ func (r *MovementStockRepository) processSingleMovement(
 		oldDeposit, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(productID)).One(ctx, tx)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				oldDeposit = &boilmodels.Deposit{ProductID: productID, Stock: 0}
+				oldDeposit = &boilmodels.Deposit{ProductID: productID, Stock: types.NewDecimal(decimal.New(0, 0).SetFloat64(0))}
 				if err := oldDeposit.Insert(ctx, tx, boil.Infer()); err != nil {
 					return schemas.HandlerErrorDB(err, "Deposito", schemas.Create)
 				}
@@ -314,7 +312,8 @@ func (r *MovementStockRepository) processSingleMovement(
 			}
 		}
 
-		oldDeposit.Stock += item.Amount
+		oldDepStock, _ := oldDeposit.Stock.Big.Float64()
+		oldDeposit.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(oldDepStock + item.Amount))
 		if _, err := oldDeposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt)); err != nil {
 			return schemas.HandlerErrorDB(err, "Deposito", schemas.Update)
 		}
@@ -343,7 +342,7 @@ func (r *MovementStockRepository) processSingleMovement(
 
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				oldPS = &boilmodels.StockPointSale{ProductID: productID, PointSaleID: item.ToID, Stock: 0}
+				oldPS = &boilmodels.StockPointSale{ProductID: productID, PointSaleID: item.ToID, Stock: types.NewDecimal(decimal.New(0, 0).SetFloat64(0))}
 				if err := oldPS.Insert(ctx, tx, boil.Infer()); err != nil {
 					return schemas.HandlerErrorDB(err, "Stock Punto de venta", schemas.Create)
 				}
@@ -352,7 +351,8 @@ func (r *MovementStockRepository) processSingleMovement(
 			}
 		}
 
-		oldPS.Stock += item.Amount
+		oldPSStockTo, _ := oldPS.Stock.Big.Float64()
+		oldPS.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(oldPSStockTo + item.Amount))
 		if _, err := oldPS.Update(ctx, tx, boil.Whitelist(boilmodels.StockPointSaleColumns.Stock, boilmodels.StockPointSaleColumns.UpdatedAt)); err != nil {
 			return schemas.HandlerErrorDB(err, "Stock Punto de venta", schemas.Update)
 		}
@@ -363,16 +363,16 @@ func (r *MovementStockRepository) processSingleMovement(
 			fmt.Errorf("ToType='%s'", item.ToType))
 	}
 
-	amtDec := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", item.Amount)))
+	amtDec := types.NewDecimal(decimal.New(0, 0).SetFloat64(item.Amount))
 
 	movement := &boilmodels.MovementStock{
-		MemberID:    null.Int64From(memberID),
-		ProductID:   null.Int64From(productID),
+		MemberID:    memberID,
+		ProductID:   productID,
 		Amount:      amtDec,
-		FromID:      null.Int64From(fromID),
-		FromType:    null.StringFrom(item.FromType),
-		ToID:        null.Int64From(toID),
-		ToType:      null.StringFrom(item.ToType),
+		FromID:      fromID,
+		FromType:    item.FromType,
+		ToID:        toID,
+		ToType:      item.ToType,
 		IgnoreStock: ignoreStock,
 	}
 

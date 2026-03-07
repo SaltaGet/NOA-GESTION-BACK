@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/aarondl/null/v8"
 )
 
 func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID int64, incomeSaleID int64, req *schemas.FacturaRequest, isHomo bool) (*schemas.FacturaElectronica, error) {
@@ -25,17 +26,17 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 		return nil, err
 	}
 
-	emisorResponsabilidad := *credentials.ResponsibilityFrontIVA
+	emisorResponsabilidad := credentials.ResponsibilityFrontIva.String
 
-	cuit, err := strconv.ParseInt(*credentials.Cuit, 10, 64)
+	cuit, err := strconv.ParseInt(credentials.Cuit.String, 10, 64)
 	if err != nil {
 		return nil, schemas.ErrorResponse(500, "Error interno al parsear CUIT, revisa que el CUIT sea correcto", err)
 	}
 
 	wsaa, err := schemas.NewWSAA(schemas.WSAAConfig{
 		Homologacion: isHomo,
-		CertFile:     *credentials.ArcaCertificate,
-		KeyFile:      *credentials.ArcaKey,
+		CertFile:     credentials.ArcaCertificate.String,
+		KeyFile:      credentials.ArcaKey.String,
 		CUIT:         cuit,
 		Service:      "wsfe",
 	})
@@ -43,16 +44,16 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 		return nil, schemas.ErrorResponse(500, "Error interno al crear cliente WSAA", err)
 	}
 
-	invalid := credentials.TokenArca == nil || credentials.SignArca == nil || credentials.ExpireTokenArca == nil
+	invalid := !credentials.TokenArca.Valid || !credentials.SignArca.Valid || !credentials.ExpireTokenArca.Valid
 	if invalid {
 		vacio := ""
 		old := time.Now().Add(-24 * time.Hour)
-		credentials.TokenArca = &vacio
-		credentials.SignArca = &vacio
-		credentials.ExpireTokenArca = &old
+		credentials.TokenArca = null.StringFrom(vacio)
+		credentials.SignArca = null.StringFrom(vacio)
+		credentials.ExpireTokenArca = null.TimeFrom(old)
 	}
 
-	cred, err := schemas.LoadCredentials(*credentials.TokenArca, *credentials.SignArca, *credentials.Cuit, *credentials.ExpireTokenArca)
+	cred, err := schemas.LoadCredentials(credentials.TokenArca.String, credentials.SignArca.String, credentials.Cuit.String, credentials.ExpireTokenArca.Time)
 	if err != nil {
 		return nil, schemas.ErrorResponse(500, "Error interno al cargar credenciales", err)
 	}
@@ -97,7 +98,7 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 	var wsfe *schemas.WSFEClient
 	wsfe = schemas.NewWSFEClient(cred.Token, cred.Sign, cuit, isHomo)
 
-	concept, err := schemas.GetCodeTipoConcepto(*credentials.Concept)
+	concept, err := schemas.GetCodeTipoConcepto(credentials.Concept.String)
 	if err != nil {
 		return nil, schemas.ErrorResponse(400, "código de concepto inválido", errors.New("código de concepto inválido"))
 	}
@@ -220,12 +221,12 @@ func (s *ArcaService) EmitInvoice(user *schemas.AuthenticatedUser, pointSaleID i
 		Concepto:        concept,
 
 		EmisorCUIT:         cuit,
-		EmisorNombre:       *credentials.BusinessName,
-		RazonSocial:        *credentials.SocialReason,
-		IngresosBrutos:     *credentials.GrossIncome,
-		InicioActividades:  *credentials.StartActivities,
-		CondicionIVAEmisor: *credentials.ResponsibilityFrontIVA,
-		DomicilioEmisor:    *credentials.Address,
+		EmisorNombre:       credentials.BusinessName.String,
+		RazonSocial:        credentials.SocialReason.String,
+		IngresosBrutos:     credentials.GrossIncome.String,
+		InicioActividades:  credentials.StartActivities.String,
+		CondicionIVAEmisor: credentials.ResponsibilityFrontIva.String,
+		DomicilioEmisor:    credentials.Address.String,
 
 		ReceptorCUIT:         req.NumeroDocumento,
 		ReceptorNombre:       req.Nombre,

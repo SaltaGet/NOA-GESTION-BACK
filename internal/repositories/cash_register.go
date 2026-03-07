@@ -5,32 +5,21 @@ import (
 	"fmt"
 	"time"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"github.com/volatiletech/sqlboiler/v4/types"
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/types"
+	"github.com/ericlagergren/decimal"
+	"github.com/aarondl/sqlboiler/v4/queries"
 )
-
-func mapToMemberSimpleDTO(c *boilmodels.Member) *schemas.MemberSimpleDTO {
-	if c == nil {
-		return nil
-	}
-	return &schemas.MemberSimpleDTO{
-		ID:        c.ID,
-		FirstName: c.FirstName,
-		LastName:  c.LastName,
-		Username:  c.Username,
-	}
-}
 
 func (r *CashRegisterRepository) CashRegisterExistOpen(pointSaleID int64) (bool, error) {
 	ctx := context.Background()
-	exists, err := boilmodels.CashRegisters(
-		boilmodels.CashRegisterWhere.IsClose.EQ(false),
-		boilmodels.CashRegisterWhere.PointSaleID.EQ(pointSaleID),
+	exists, err := tenant.CashRegisters(
+		tenant.CashRegisterWhere.IsClose.EQ(false),
+		tenant.CashRegisterWhere.PointSaleID.EQ(pointSaleID),
 	).Exists(ctx, r.DB)
 	if err != nil {
 		return false, schemas.HandlerErrorDB(err, "Caja", schemas.Read)
@@ -41,21 +30,18 @@ func (r *CashRegisterRepository) CashRegisterExistOpen(pointSaleID int64) (bool,
 func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*schemas.CashRegisterFullResponse, error) {
 	ctx := context.Background()
 
-	register, err := boilmodels.CashRegisters(
-		boilmodels.CashRegisterWhere.ID.EQ(id),
-		boilmodels.CashRegisterWhere.PointSaleID.EQ(pointSaleID),
-		qm.Load(boilmodels.CashRegisterRels.MemberOpen),
-		qm.Load(boilmodels.CashRegisterRels.MemberClose),
+	register, err := tenant.CashRegisters(
+		tenant.CashRegisterWhere.ID.EQ(id),
+		tenant.CashRegisterWhere.PointSaleID.EQ(pointSaleID),
+		qm.Load(tenant.CashRegisterRels.MemberOpen),
+		qm.Load(tenant.CashRegisterRels.MemberClose),
 	).One(ctx, r.DB)
 
 	if err != nil {
 		return nil, schemas.HandlerErrorDB(err, "Caja", schemas.Read)
 	}
 
-	var openAmount float64
-	if register.OpenAmount.Valid {
-		openAmount, _ = register.OpenAmount.Big.Float64()
-	}
+	openAmount, _ := register.OpenAmount.Big.Float64()
 
 	res := &schemas.CashRegisterFullResponse{
 		ID:         register.ID,
@@ -63,13 +49,10 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 		OpenAmount: openAmount,
 	}
 
-	if register.CreatedAt.Valid {
-		res.CreatedAt = register.CreatedAt.Time
-	}
-	if register.HourOpen.Valid {
-		res.HourOpen = register.HourOpen.Time
-	}
-	if register.CloseAmount.Valid {
+	res.CreatedAt = register.CreatedAt
+	res.HourOpen = register.HourOpen
+
+	if register.CloseAmount.Big == nil {
 		cAmount, _ := register.CloseAmount.Big.Float64()
 		res.CloseAmount = &cAmount
 	}
@@ -80,21 +63,28 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 
 	if register.R != nil {
 		if register.R.MemberOpen != nil {
-			m := mapToMemberSimpleDTO(register.R.MemberOpen)
-			res.MemberOpen = *m
+			m := register.R.MemberOpen
+			res.MemberOpen.ID = m.ID
+			res.MemberOpen.FirstName = m.FirstName
+			res.MemberOpen.LastName = m.LastName
+			res.MemberOpen.Username = m.Username
 		}
 		if register.R.MemberClose != nil {
-			res.MemberClose = mapToMemberSimpleDTO(register.R.MemberClose)
+			m := register.R.MemberClose
+			res.MemberClose.ID = m.ID
+			res.MemberClose.FirstName = m.FirstName
+			res.MemberClose.LastName = m.LastName
+			res.MemberClose.Username = m.Username
 		}
 	}
 
 	// 1. IncomeSales
-	incomeSales, err := boilmodels.IncomeSales(
-		boilmodels.IncomeSaleWhere.CashRegisterID.EQ(null.Int64From(id)),
-		boilmodels.IncomeSaleWhere.PointSaleID.EQ(pointSaleID),
-		qm.Load(boilmodels.IncomeSaleRels.IncomeSaleItems),
-		qm.Load(qm.Rels(boilmodels.IncomeSaleRels.IncomeSaleItems, boilmodels.IncomeSaleItemRels.Product)),
-		qm.Load(boilmodels.IncomeSaleRels.PayIncomes),
+	incomeSales, err := tenant.IncomeSales(
+		tenant.IncomeSaleWhere.CashRegisterID.EQ(id),
+		tenant.IncomeSaleWhere.PointSaleID.EQ(pointSaleID),
+		qm.Load(tenant.IncomeSaleRels.IncomeSaleItems),
+		qm.Load(qm.Rels(tenant.IncomeSaleRels.IncomeSaleItems, tenant.IncomeSaleItemRels.Product)),
+		qm.Load(tenant.IncomeSaleRels.PayIncomes),
 	).All(ctx, r.DB)
 
 	if err != nil {
@@ -109,9 +99,7 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 			Total:    total,
 			IsBudget: in.IsBudget,
 		}
-		if in.CreatedAt.Valid {
-			iso.CreatedAt = in.CreatedAt.Time
-		}
+		iso.CreatedAt = in.CreatedAt
 		if in.InvoiceID.Valid {
 			iso.InvoiceID = &in.InvoiceID.Int64
 		}
@@ -125,9 +113,7 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 					Amount: itemAmt,
 					Total:  itemTotal,
 				}
-				if item.CreatedAt.Valid {
-					iResp.CreatedAt = item.CreatedAt.Time
-				}
+				iResp.CreatedAt = item.CreatedAt
 				if item.R != nil && item.R.Product != nil {
 					pPrice, _ := item.R.Product.Price.Big.Float64()
 					iResp.Product = schemas.ProductSimpleResponseDTO{
@@ -147,9 +133,7 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 					Total:     val,
 					MethodPay: pay.MethodPay,
 				}
-				if pay.CreatedAt.Valid {
-					pResp.CreatedAt = pay.CreatedAt.Time.Format(time.RFC3339)
-				}
+				pResp.CreatedAt = pay.CreatedAt
 				iso.Pay = append(iso.Pay, pResp)
 			}
 		}
@@ -158,11 +142,11 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 	}
 
 	// 2. IncomeOthers
-	incomeOthers, err := boilmodels.IncomeOthers(
-		boilmodels.IncomeOtherWhere.CashRegisterID.EQ(null.Int64From(id)),
-		boilmodels.IncomeOtherWhere.PointSaleID.EQ(null.Int64From(pointSaleID)),
-		qm.Load(boilmodels.IncomeOtherRels.Member),
-		qm.Load(boilmodels.IncomeOtherRels.TypeIncome),
+	incomeOthers, err := tenant.IncomeOthers(
+		tenant.IncomeOtherWhere.CashRegisterID.EQ(null.Int64From(id)),
+		tenant.IncomeOtherWhere.PointSaleID.EQ(null.Int64From(pointSaleID)),
+		qm.Load(tenant.IncomeOtherRels.Member),
+		qm.Load(tenant.IncomeOtherRels.TypeIncome),
 	).All(ctx, r.DB)
 
 	if err != nil {
@@ -180,29 +164,28 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 		if o.Details.Valid {
 			or.Details = &o.Details.String
 		}
-		if o.CreatedAt.Valid {
-			or.CreatedAt = o.CreatedAt.Time
-		}
+		or.CreatedAt = o.CreatedAt
 		if o.R != nil {
 			if o.R.Member != nil {
-				or.Member = mapToMemberSimpleDTO(o.R.Member)
+				or.Member.ID = o.R.Member.ID
+				or.Member.FirstName = o.R.Member.FirstName
+				or.Member.LastName = o.R.Member.LastName
+				or.Member.Username = o.R.Member.Username
 			}
 			if o.R.TypeIncome != nil {
-				or.TypeIncome = schemas.TypeIncomeResponse{
-					ID:   o.R.TypeIncome.ID,
-					Name: o.R.TypeIncome.Name,
-				}
+				or.TypeIncome.ID = o.R.TypeIncome.ID
+				or.TypeIncome.Name = o.R.TypeIncome.Name
 			}
 		}
 		others = append(others, or)
 	}
 
 	// 3. ExpenseOthers
-	expenseOthers, err := boilmodels.ExpenseOthers(
-		boilmodels.ExpenseOtherWhere.CashRegisterID.EQ(null.Int64From(id)),
-		boilmodels.ExpenseOtherWhere.PointSaleID.EQ(null.Int64From(pointSaleID)),
-		qm.Load(boilmodels.ExpenseOtherRels.Member),
-		qm.Load(boilmodels.ExpenseOtherRels.TypeExpense),
+	expenseOthers, err := tenant.ExpenseOthers(
+		tenant.ExpenseOtherWhere.CashRegisterID.EQ(null.Int64From(id)),
+		tenant.ExpenseOtherWhere.PointSaleID.EQ(null.Int64From(pointSaleID)),
+		qm.Load(tenant.ExpenseOtherRels.Member),
+		qm.Load(tenant.ExpenseOtherRels.TypeExpense),
 	).All(ctx, r.DB)
 
 	if err != nil {
@@ -220,18 +203,17 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 		if e.Details.Valid {
 			eo.Details = &e.Details.String
 		}
-		if e.CreatedAt.Valid {
-			eo.CreatedAt = e.CreatedAt.Time
-		}
+		eo.CreatedAt = e.CreatedAt
 		if e.R != nil {
 			if e.R.Member != nil {
-				eo.Member = mapToMemberSimpleDTO(e.R.Member)
+				eo.Member.ID = e.R.Member.ID
+				eo.Member.FirstName = e.R.Member.FirstName
+				eo.Member.LastName = e.R.Member.LastName
+				eo.Member.Username = e.R.Member.Username
 			}
 			if e.R.TypeExpense != nil {
-				eo.TypeExpense = schemas.TypeExpenseResponse{
-					ID:   e.R.TypeExpense.ID,
-					Name: e.R.TypeExpense.Name,
-				}
+				eo.TypeExpense.ID = e.R.TypeExpense.ID
+				eo.TypeExpense.Name = e.R.TypeExpense.Name
 			}
 		}
 		expOthers = append(expOthers, eo)
@@ -256,9 +238,9 @@ func (r *CashRegisterRepository) CashRegisterOpen(pointSaleID int64, userID int6
 		return err
 	}
 
-	exists, err := boilmodels.CashRegisters(
-		boilmodels.CashRegisterWhere.IsClose.EQ(false),
-		boilmodels.CashRegisterWhere.PointSaleID.EQ(pointSaleID),
+	exists, err := tenant.CashRegisters(
+		tenant.CashRegisterWhere.IsClose.EQ(false),
+		tenant.CashRegisterWhere.PointSaleID.EQ(pointSaleID),
 	).Exists(ctx, tx)
 
 	if err != nil {
@@ -269,12 +251,13 @@ func (r *CashRegisterRepository) CashRegisterOpen(pointSaleID int64, userID int6
 		return schemas.ErrorResponse(400, "ya existe una apertura de caja, antes de continuar cierre la caja", fmt.Errorf("ya existe una apertura de caja, antes de continuar cerrar"))
 	}
 
-	openAmtDec := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.2f", amountOpen.OpenAmount)))
-	registerOpen := boilmodels.CashRegister{
+	// openAmtDec := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.2f", amountOpen.OpenAmount)))
+	openAmtDec := types.NewDecimal(decimal.New(0, 0).SetFloat64(amountOpen.OpenAmount))
+	registerOpen := tenant.CashRegister{
 		PointSaleID:  pointSaleID,
 		MemberOpenID: userID,
 		OpenAmount:   openAmtDec,
-		HourOpen:     null.TimeFrom(time.Now().UTC()),
+		HourOpen:     time.Now().UTC(),
 	}
 
 	if err := registerOpen.Insert(ctx, tx, boil.Infer()); err != nil {
@@ -296,9 +279,9 @@ func (r *CashRegisterRepository) CashRegisterClose(pointSaleID int64, userID int
 		return err
 	}
 
-	register, err := boilmodels.CashRegisters(
-		boilmodels.CashRegisterWhere.IsClose.EQ(false),
-		boilmodels.CashRegisterWhere.PointSaleID.EQ(pointSaleID),
+	register, err := tenant.CashRegisters(
+		tenant.CashRegisterWhere.IsClose.EQ(false),
+		tenant.CashRegisterWhere.PointSaleID.EQ(pointSaleID),
 		qm.OrderBy("hour_open DESC"),
 	).One(ctx, tx)
 
@@ -306,9 +289,9 @@ func (r *CashRegisterRepository) CashRegisterClose(pointSaleID int64, userID int
 		return schemas.HandlerErrorDB(err, "Caja", schemas.Read)
 	}
 
-	_, err = boilmodels.Members(
-		boilmodels.MemberWhere.ID.EQ(userID),
-		qm.Load(boilmodels.MemberRels.Role),
+	_, err = tenant.Members(
+		tenant.MemberWhere.ID.EQ(userID),
+		qm.Load(tenant.MemberRels.Role),
 	).One(ctx, tx)
 
 	if err != nil {
@@ -316,7 +299,7 @@ func (r *CashRegisterRepository) CashRegisterClose(pointSaleID int64, userID int
 	}
 
 	now := time.Now().UTC()
-	closeAmtDec := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.2f", amountOpen.CloseAmount)))
+	closeAmtDec := types.NewNullDecimal(decimal.New(0, 0).SetFloat64(amountOpen.CloseAmount))
 
 	register.CloseAmount = closeAmtDec
 	register.IsClose = true
@@ -324,11 +307,11 @@ func (r *CashRegisterRepository) CashRegisterClose(pointSaleID int64, userID int
 	register.MemberCloseID = null.Int64From(userID)
 
 	if _, err := register.Update(ctx, tx, boil.Whitelist(
-		boilmodels.CashRegisterColumns.CloseAmount,
-		boilmodels.CashRegisterColumns.IsClose,
-		boilmodels.CashRegisterColumns.HourClose,
-		boilmodels.CashRegisterColumns.MemberCloseID,
-		boilmodels.CashRegisterColumns.UpdatedAt,
+		tenant.CashRegisterColumns.CloseAmount,
+		tenant.CashRegisterColumns.IsClose,
+		tenant.CashRegisterColumns.HourClose,
+		tenant.CashRegisterColumns.MemberCloseID,
+		tenant.CashRegisterColumns.UpdatedAt,
 	)); err != nil {
 		return schemas.HandlerErrorDB(err, "Caja", schemas.Update)
 	}
@@ -344,12 +327,12 @@ type total struct {
 func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID int64, fromDate, toDate time.Time) ([]*schemas.CashRegisterInformResponse, error) {
 	ctx := context.Background()
 
-	registers, err := boilmodels.CashRegisters(
-		boilmodels.CashRegisterWhere.PointSaleID.EQ(pointSaleID),
-		boilmodels.CashRegisterWhere.CreatedAt.GTE(null.TimeFrom(fromDate)),
-		boilmodels.CashRegisterWhere.CreatedAt.LTE(null.TimeFrom(toDate)),
-		qm.Load(boilmodels.CashRegisterRels.MemberOpen),
-		qm.Load(boilmodels.CashRegisterRels.MemberClose),
+	registers, err := tenant.CashRegisters(
+		tenant.CashRegisterWhere.PointSaleID.EQ(pointSaleID),
+		tenant.CashRegisterWhere.CreatedAt.GTE(fromDate),
+		tenant.CashRegisterWhere.CreatedAt.LTE(toDate),
+		qm.Load(tenant.CashRegisterRels.MemberOpen),
+		qm.Load(tenant.CashRegisterRels.MemberClose),
 		qm.OrderBy("created_at DESC"),
 	).All(ctx, r.DB)
 
@@ -360,22 +343,16 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 	var results []*schemas.CashRegisterInformResponse
 	for _, register := range registers {
 		var openAmount float64
-		if register.OpenAmount.Valid {
 			openAmount, _ = register.OpenAmount.Big.Float64()
-		}
 
 		res := &schemas.CashRegisterInformResponse{
 			ID:         register.ID,
 			OpenAmount: openAmount,
 			IsClose:    register.IsClose,
 		}
-		if register.CreatedAt.Valid {
-			res.CreatedAt = register.CreatedAt.Time
-		}
-		if register.HourOpen.Valid {
-			res.HourOpen = register.HourOpen.Time
-		}
-		if register.CloseAmount.Valid {
+			res.CreatedAt = register.CreatedAt
+			res.HourOpen = register.HourOpen
+		if register.CloseAmount.Big != nil {
 			cAmount, _ := register.CloseAmount.Big.Float64()
 			res.CloseAmount = &cAmount
 		}
@@ -386,17 +363,23 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 
 		if register.R != nil {
 			if register.R.MemberOpen != nil {
-				res.MemberOpen = *mapToMemberSimpleDTO(register.R.MemberOpen)
+				res.MemberOpen.ID = register.R.MemberOpen.ID
+				res.MemberOpen.FirstName = register.R.MemberOpen.FirstName
+				res.MemberOpen.LastName = register.R.MemberOpen.LastName
+				res.MemberOpen.Username = register.R.MemberOpen.Username
 			}
 			if register.R.MemberClose != nil {
-				res.MemberClose = mapToMemberSimpleDTO(register.R.MemberClose)
+				res.MemberClose.ID = register.R.MemberClose.ID
+				res.MemberClose.FirstName = register.R.MemberClose.FirstName
+				res.MemberClose.LastName = register.R.MemberClose.LastName
+				res.MemberClose.Username = register.R.MemberClose.Username
 			}
 		}
 
 		// Calculate aggregations
 		var incomes total
 		err = queries.Raw(`
-			SELECT 
+			SELECT
 			COALESCE(SUM(CASE WHEN method_pay = 'cash' THEN total ELSE 0 END), 0) AS cash,
 			COALESCE(SUM(CASE WHEN method_pay <> 'cash' AND method_pay <> 'credit' THEN total ELSE 0 END), 0) AS other
 			FROM pay_incomes WHERE cash_register_id = $1 AND delete_at IS NULL
@@ -408,7 +391,7 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 
 		var incomeOther total
 		err = queries.Raw(`
-			SELECT 
+			SELECT
 			COALESCE(SUM(CASE WHEN method_income = 'cash' THEN total ELSE 0 END), 0) AS cash,
 			COALESCE(SUM(CASE WHEN method_income <> 'cash' AND method_income <> 'credit' THEN total ELSE 0 END), 0) AS other
 			FROM income_others WHERE cash_register_id = $1 AND delete_at IS NULL
@@ -420,7 +403,7 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 
 		var expenseBuy total
 		err = queries.Raw(`
-			SELECT 
+			SELECT
 			COALESCE(SUM(CASE WHEN method_pay = 'cash' THEN total ELSE 0 END), 0) AS cash,
 			COALESCE(SUM(CASE WHEN method_pay <> 'cash' AND method_pay <> 'credit' THEN total ELSE 0 END), 0) AS other
 			FROM pay_expense_buys WHERE cash_register_id = $1 AND delete_at IS NULL
@@ -432,7 +415,7 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 
 		var expenseOther total
 		err = queries.Raw(`
-			SELECT 
+			SELECT
 			COALESCE(SUM(CASE WHEN pay_method = 'cash' THEN total ELSE 0 END), 0) AS cash,
 			COALESCE(SUM(CASE WHEN pay_method <> 'cash' AND pay_method <> 'credit' THEN total ELSE 0 END), 0) AS other
 			FROM expense_others WHERE cash_register_id = $1 AND delete_at IS NULL

@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/aarondl/sqlboiler/v4/queries"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
@@ -26,8 +25,8 @@ import (
 // IncomeEcommerceItem is an object representing the database table.
 type IncomeEcommerceItem struct {
 	ID                int64         `boil:"id" json:"id" toml:"id" yaml:"id"`
-	IncomeEcommerceID null.Int64    `boil:"income_ecommerce_id" json:"income_ecommerce_id,omitempty" toml:"income_ecommerce_id" yaml:"income_ecommerce_id,omitempty"`
-	ProductID         null.Int64    `boil:"product_id" json:"product_id,omitempty" toml:"product_id" yaml:"product_id,omitempty"`
+	IncomeEcommerceID int64         `boil:"income_ecommerce_id" json:"income_ecommerce_id" toml:"income_ecommerce_id" yaml:"income_ecommerce_id"`
+	ProductID         int64         `boil:"product_id" json:"product_id" toml:"product_id" yaml:"product_id"`
 	Amount            types.Decimal `boil:"amount" json:"amount" toml:"amount" yaml:"amount"`
 	PriceCost         types.Decimal `boil:"price_cost" json:"price_cost" toml:"price_cost" yaml:"price_cost"`
 	Price             types.Decimal `boil:"price" json:"price" toml:"price" yaml:"price"`
@@ -97,8 +96,8 @@ var IncomeEcommerceItemTableColumns = struct {
 
 var IncomeEcommerceItemWhere = struct {
 	ID                whereHelperint64
-	IncomeEcommerceID whereHelpernull_Int64
-	ProductID         whereHelpernull_Int64
+	IncomeEcommerceID whereHelperint64
+	ProductID         whereHelperint64
 	Amount            whereHelpertypes_Decimal
 	PriceCost         whereHelpertypes_Decimal
 	Price             whereHelpertypes_Decimal
@@ -109,8 +108,8 @@ var IncomeEcommerceItemWhere = struct {
 	CreatedAt         whereHelpertime_Time
 }{
 	ID:                whereHelperint64{field: "\"income_ecommerce_items\".\"id\""},
-	IncomeEcommerceID: whereHelpernull_Int64{field: "\"income_ecommerce_items\".\"income_ecommerce_id\""},
-	ProductID:         whereHelpernull_Int64{field: "\"income_ecommerce_items\".\"product_id\""},
+	IncomeEcommerceID: whereHelperint64{field: "\"income_ecommerce_items\".\"income_ecommerce_id\""},
+	ProductID:         whereHelperint64{field: "\"income_ecommerce_items\".\"product_id\""},
 	Amount:            whereHelpertypes_Decimal{field: "\"income_ecommerce_items\".\"amount\""},
 	PriceCost:         whereHelpertypes_Decimal{field: "\"income_ecommerce_items\".\"price_cost\""},
 	Price:             whereHelpertypes_Decimal{field: "\"income_ecommerce_items\".\"price\""},
@@ -178,8 +177,8 @@ type incomeEcommerceItemL struct{}
 
 var (
 	incomeEcommerceItemAllColumns            = []string{"id", "income_ecommerce_id", "product_id", "amount", "price_cost", "price", "discount", "type_discount", "subtotal", "total", "created_at"}
-	incomeEcommerceItemColumnsWithoutDefault = []string{"amount", "price_cost", "price", "subtotal", "total"}
-	incomeEcommerceItemColumnsWithDefault    = []string{"id", "income_ecommerce_id", "product_id", "discount", "type_discount", "created_at"}
+	incomeEcommerceItemColumnsWithoutDefault = []string{"income_ecommerce_id", "product_id", "amount", "price_cost", "price", "subtotal", "total"}
+	incomeEcommerceItemColumnsWithDefault    = []string{"id", "discount", "type_discount", "created_at"}
 	incomeEcommerceItemPrimaryKeyColumns     = []string{"id"}
 	incomeEcommerceItemGeneratedColumns      = []string{}
 )
@@ -564,9 +563,7 @@ func (incomeEcommerceItemL) LoadProduct(ctx context.Context, e boil.ContextExecu
 		if object.R == nil {
 			object.R = &incomeEcommerceItemR{}
 		}
-		if !queries.IsNil(object.ProductID) {
-			args[object.ProductID] = struct{}{}
-		}
+		args[object.ProductID] = struct{}{}
 
 	} else {
 		for _, obj := range slice {
@@ -574,9 +571,7 @@ func (incomeEcommerceItemL) LoadProduct(ctx context.Context, e boil.ContextExecu
 				obj.R = &incomeEcommerceItemR{}
 			}
 
-			if !queries.IsNil(obj.ProductID) {
-				args[obj.ProductID] = struct{}{}
-			}
+			args[obj.ProductID] = struct{}{}
 
 		}
 	}
@@ -641,7 +636,7 @@ func (incomeEcommerceItemL) LoadProduct(ctx context.Context, e boil.ContextExecu
 
 	for _, local := range slice {
 		for _, foreign := range resultSlice {
-			if queries.Equal(local.ProductID, foreign.ID) {
+			if local.ProductID == foreign.ID {
 				local.R.Product = foreign
 				if foreign.R == nil {
 					foreign.R = &productR{}
@@ -688,9 +683,7 @@ func (incomeEcommerceItemL) LoadIncomeEcommerce(ctx context.Context, e boil.Cont
 		if object.R == nil {
 			object.R = &incomeEcommerceItemR{}
 		}
-		if !queries.IsNil(object.IncomeEcommerceID) {
-			args[object.IncomeEcommerceID] = struct{}{}
-		}
+		args[object.IncomeEcommerceID] = struct{}{}
 
 	} else {
 		for _, obj := range slice {
@@ -698,9 +691,7 @@ func (incomeEcommerceItemL) LoadIncomeEcommerce(ctx context.Context, e boil.Cont
 				obj.R = &incomeEcommerceItemR{}
 			}
 
-			if !queries.IsNil(obj.IncomeEcommerceID) {
-				args[obj.IncomeEcommerceID] = struct{}{}
-			}
+			args[obj.IncomeEcommerceID] = struct{}{}
 
 		}
 	}
@@ -765,7 +756,7 @@ func (incomeEcommerceItemL) LoadIncomeEcommerce(ctx context.Context, e boil.Cont
 
 	for _, local := range slice {
 		for _, foreign := range resultSlice {
-			if queries.Equal(local.IncomeEcommerceID, foreign.ID) {
+			if local.IncomeEcommerceID == foreign.ID {
 				local.R.IncomeEcommerce = foreign
 				if foreign.R == nil {
 					foreign.R = &incomeEcommerceR{}
@@ -814,7 +805,7 @@ func (o *IncomeEcommerceItem) SetProduct(ctx context.Context, exec boil.ContextE
 		return errors.Wrap(err, "failed to update local table")
 	}
 
-	queries.Assign(&o.ProductID, related.ID)
+	o.ProductID = related.ID
 	if o.R == nil {
 		o.R = &incomeEcommerceItemR{
 			Product: related,
@@ -831,47 +822,6 @@ func (o *IncomeEcommerceItem) SetProduct(ctx context.Context, exec boil.ContextE
 		related.R.IncomeEcommerceItems = append(related.R.IncomeEcommerceItems, o)
 	}
 
-	return nil
-}
-
-// RemoveProductG relationship.
-// Sets o.R.Product to nil.
-// Removes o from all passed in related items' relationships struct.
-// Uses the global database handle.
-func (o *IncomeEcommerceItem) RemoveProductG(ctx context.Context, related *Product) error {
-	return o.RemoveProduct(ctx, boil.GetContextDB(), related)
-}
-
-// RemoveProduct relationship.
-// Sets o.R.Product to nil.
-// Removes o from all passed in related items' relationships struct.
-func (o *IncomeEcommerceItem) RemoveProduct(ctx context.Context, exec boil.ContextExecutor, related *Product) error {
-	var err error
-
-	queries.SetScanner(&o.ProductID, nil)
-	if _, err = o.Update(ctx, exec, boil.Whitelist("product_id")); err != nil {
-		return errors.Wrap(err, "failed to update local table")
-	}
-
-	if o.R != nil {
-		o.R.Product = nil
-	}
-	if related == nil || related.R == nil {
-		return nil
-	}
-
-	for i, ri := range related.R.IncomeEcommerceItems {
-		if queries.Equal(o.ProductID, ri.ProductID) {
-			continue
-		}
-
-		ln := len(related.R.IncomeEcommerceItems)
-		if ln > 1 && i < ln-1 {
-			related.R.IncomeEcommerceItems[i] = related.R.IncomeEcommerceItems[ln-1]
-		}
-		related.R.IncomeEcommerceItems = related.R.IncomeEcommerceItems[:ln-1]
-		break
-	}
 	return nil
 }
 
@@ -910,7 +860,7 @@ func (o *IncomeEcommerceItem) SetIncomeEcommerce(ctx context.Context, exec boil.
 		return errors.Wrap(err, "failed to update local table")
 	}
 
-	queries.Assign(&o.IncomeEcommerceID, related.ID)
+	o.IncomeEcommerceID = related.ID
 	if o.R == nil {
 		o.R = &incomeEcommerceItemR{
 			IncomeEcommerce: related,
@@ -927,47 +877,6 @@ func (o *IncomeEcommerceItem) SetIncomeEcommerce(ctx context.Context, exec boil.
 		related.R.IncomeEcommerceItems = append(related.R.IncomeEcommerceItems, o)
 	}
 
-	return nil
-}
-
-// RemoveIncomeEcommerceG relationship.
-// Sets o.R.IncomeEcommerce to nil.
-// Removes o from all passed in related items' relationships struct.
-// Uses the global database handle.
-func (o *IncomeEcommerceItem) RemoveIncomeEcommerceG(ctx context.Context, related *IncomeEcommerce) error {
-	return o.RemoveIncomeEcommerce(ctx, boil.GetContextDB(), related)
-}
-
-// RemoveIncomeEcommerce relationship.
-// Sets o.R.IncomeEcommerce to nil.
-// Removes o from all passed in related items' relationships struct.
-func (o *IncomeEcommerceItem) RemoveIncomeEcommerce(ctx context.Context, exec boil.ContextExecutor, related *IncomeEcommerce) error {
-	var err error
-
-	queries.SetScanner(&o.IncomeEcommerceID, nil)
-	if _, err = o.Update(ctx, exec, boil.Whitelist("income_ecommerce_id")); err != nil {
-		return errors.Wrap(err, "failed to update local table")
-	}
-
-	if o.R != nil {
-		o.R.IncomeEcommerce = nil
-	}
-	if related == nil || related.R == nil {
-		return nil
-	}
-
-	for i, ri := range related.R.IncomeEcommerceItems {
-		if queries.Equal(o.IncomeEcommerceID, ri.IncomeEcommerceID) {
-			continue
-		}
-
-		ln := len(related.R.IncomeEcommerceItems)
-		if ln > 1 && i < ln-1 {
-			related.R.IncomeEcommerceItems[i] = related.R.IncomeEcommerceItems[ln-1]
-		}
-		related.R.IncomeEcommerceItems = related.R.IncomeEcommerceItems[:ln-1]
-		break
-	}
 	return nil
 }
 

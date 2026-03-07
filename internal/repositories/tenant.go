@@ -9,20 +9,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	"strconv"
+
+	mastermodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
+	tenantmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
+
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 )
 
-func (r *MainRepository) TenantGetByID(tenantID int64) (*models.Tenant, error) {
+func (r *MainRepository) TenantGetByID(tenantID int64) (*mastermodels.Tenant, error) {
 	ctx := context.Background()
 
-	tenant, err := boilmodels.Tenants(boilmodels.TenantWhere.ID.EQ(tenantID)).One(ctx, r.DB)
+	tenant, err := mastermodels.Tenants(mastermodels.TenantWhere.ID.EQ(tenantID)).One(ctx, r.DB)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, schemas.HandlerErrorDB(err, "Tenant", schemas.Read)
@@ -34,39 +37,13 @@ func (r *MainRepository) TenantGetByID(tenantID int64) (*models.Tenant, error) {
 		return nil, schemas.ErrorResponse(403, "Tenant is inactive", fmt.Errorf("tenant is inactive"))
 	}
 
-	// For compatibility with the current interface using models.Tenant
-	exp := time.Time{}
-	if tenant.Expiration.Valid {
-		exp = tenant.Expiration.Time
-	}
-
-	dateAccepted := time.Time{}
-	if tenant.DateAccepted.Valid {
-		dateAccepted = tenant.DateAccepted.Time
-	}
-
-	return &models.Tenant{
-		ID:            tenant.ID,
-		Name:          tenant.Name,
-		Address:       tenant.Address.String,
-		Phone:         tenant.Phone.String,
-		Email:         tenant.Email.String,
-		CuitPdv:       tenant.CuitPdv.String,
-		Connection:    tenant.Connection,
-		Identifier:    tenant.Identifier,
-		PlanID:        tenant.PlanID.Int64,
-		IsActive:      tenant.IsActive,
-		Expiration:    &exp,
-		AcceptedTerms: tenant.AcceptedTerms.Bool,
-		IP:            &tenant.IP.String,
-		DateAccepted:  &dateAccepted,
-	}, nil
+	return tenant, nil
 }
 
-func (r *MainRepository) TenantGetByIdentifier(identifier string) (*models.Tenant, error) {
+func (r *MainRepository) TenantGetByIdentifier(identifier string) (*mastermodels.Tenant, error) {
 	ctx := context.Background()
 
-	tenant, err := boilmodels.Tenants(boilmodels.TenantWhere.Identifier.EQ(identifier)).One(ctx, r.DB)
+	tenant, err := mastermodels.Tenants(mastermodels.TenantWhere.Identifier.EQ(identifier)).One(ctx, r.DB)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
@@ -78,54 +55,23 @@ func (r *MainRepository) TenantGetByIdentifier(identifier string) (*models.Tenan
 		return nil, schemas.ErrorResponse(403, "Tenant es inactivo", fmt.Errorf("tenant es inactivo"))
 	}
 
-	exp := time.Time{}
-	if tenant.Expiration.Valid {
-		exp = tenant.Expiration.Time
-	}
-
-	dateAccepted := time.Time{}
-	if tenant.DateAccepted.Valid {
-		dateAccepted = tenant.DateAccepted.Time
-	}
-
-	// Assuming address string is required in models.Tenant
-	address := ""
-	if tenant.Address.Valid {
-		address = tenant.Address.String
-	}
-
-	return &models.Tenant{
-		ID:            tenant.ID,
-		Name:          tenant.Name,
-		Address:       address,
-		Phone:         tenant.Phone.String,
-		Email:         tenant.Email.String,
-		CuitPdv:       tenant.CuitPdv.String,
-		Connection:    tenant.Connection,
-		Identifier:    tenant.Identifier,
-		PlanID:        tenant.PlanID.Int64,
-		IsActive:      tenant.IsActive,
-		Expiration:    &exp,
-		AcceptedTerms: tenant.AcceptedTerms.Bool,
-		IP:            &tenant.IP.String,
-		DateAccepted:  &dateAccepted,
-	}, nil
+	return tenant, nil
 }
 
 func (r *MainRepository) TenantGetAll() (*[]schemas.TenantResponse, error) {
 	ctx := context.Background()
 
-	tenants, err := boilmodels.Tenants(
+	tenants, err := mastermodels.Tenants(
 		qm.Select(
-			boilmodels.TenantColumns.ID,
-			boilmodels.TenantColumns.Name,
-			boilmodels.TenantColumns.Address,
-			boilmodels.TenantColumns.Phone,
-			boilmodels.TenantColumns.Email,
-			boilmodels.TenantColumns.IsActive,
-			boilmodels.TenantColumns.Expiration,
-			boilmodels.TenantColumns.CreatedAt,
-			boilmodels.TenantColumns.UpdatedAt,
+			mastermodels.TenantColumns.ID,
+			mastermodels.TenantColumns.Name,
+			mastermodels.TenantColumns.Address,
+			mastermodels.TenantColumns.Phone,
+			mastermodels.TenantColumns.Email,
+			mastermodels.TenantColumns.IsActive,
+			mastermodels.TenantColumns.Expiration,
+			mastermodels.TenantColumns.CreatedAt,
+			mastermodels.TenantColumns.UpdatedAt,
 		),
 		qm.InnerJoin("user_tenants ON tenants.id = user_tenants.tenant_id"),
 	).All(ctx, r.DB)
@@ -136,60 +82,41 @@ func (r *MainRepository) TenantGetAll() (*[]schemas.TenantResponse, error) {
 
 	var response []schemas.TenantResponse
 	for _, t := range tenants {
-		var exp *time.Time
-		if t.Expiration.Valid {
-			expTime := t.Expiration.Time
-			exp = &expTime
-		}
-
-		var createdAt time.Time
-		if t.CreatedAt.Valid {
-			createdAt = t.CreatedAt.Time
-		}
-
-		var updatedAt time.Time
-		if t.UpdatedAt.Valid {
-			updatedAt = t.UpdatedAt.Time
-		}
-
 		response = append(response, schemas.TenantResponse{
 			ID:         t.ID,
 			Name:       t.Name,
-			Address:    t.Address.String,
-			Phone:      t.Phone.String,
-			Email:      t.Email.String,
+			Address:    t.Address,
+			Phone:      t.Phone,
+			Email:      t.Email,
 			IsActive:   t.IsActive,
-			Expiration: exp,
-			CreatedAt:  createdAt,
-			UpdatedAt:  updatedAt,
+			Expiration: t.Expiration.Time,
+			CreatedAt:  t.CreatedAt,
+			UpdatedAt:  t.UpdatedAt,
 		})
 	}
 
 	return &response, nil
 }
 
-func (r *MainRepository) TenantGetConnectionByIdentifier(tenantIdentifier string) (*models.Tenant, error) {
+func (r *MainRepository) TenantGetConnectionByIdentifier(tenantIdentifier string) (*mastermodels.Tenant, error) {
 	ctx := context.Background()
 
-	tenant, err := boilmodels.Tenants(
+	tenant, err := mastermodels.Tenants(
 		qm.Select("id", "connection"),
-		boilmodels.TenantWhere.Identifier.EQ(tenantIdentifier),
+		mastermodels.TenantWhere.Identifier.EQ(tenantIdentifier),
 	).One(ctx, r.DB)
 
 	if err != nil {
 		return nil, schemas.HandlerErrorDB(err, "Tenant", schemas.Read)
 	}
 
-	return &models.Tenant{
-		ID:         tenant.ID,
-		Connection: tenant.Connection,
-	}, nil
+	return tenant, nil
 }
 
-func (r *MainRepository) TenantGetConections() ([]*models.Tenant, error) {
+func (r *MainRepository) TenantGetConections() ([]*mastermodels.Tenant, error) {
 	ctx := context.Background()
 
-	tenants, err := boilmodels.Tenants(
+	tenants, err := mastermodels.Tenants(
 		qm.Select("id", "name", "connection", "identifier"),
 	).All(ctx, r.DB)
 
@@ -197,18 +124,15 @@ func (r *MainRepository) TenantGetConections() ([]*models.Tenant, error) {
 		return nil, schemas.HandlerErrorDB(err, "Tenant", schemas.Read)
 	}
 
-	var response []*models.Tenant
+	var response []*mastermodels.Tenant
 	for _, tenant := range tenants {
 		connectionDecrypted, err := utils.Decrypt(tenant.Connection)
 		if err != nil {
 			return nil, schemas.ErrorResponse(500, "Error interno al obtener las connections", err)
 		}
-		response = append(response, &models.Tenant{
-			ID:         tenant.ID,
-			Name:       tenant.Name,
-			Connection: connectionDecrypted,
-			Identifier: tenant.Identifier,
-		})
+
+		tenant.Connection = connectionDecrypted
+		response = append(response, tenant)
 	}
 
 	return response, nil
@@ -241,12 +165,12 @@ func (r *MainRepository) TenantCreateByUserID(adminID int64, tenantCreate *schem
 		return 0, schemas.ErrorResponse(500, "Error interno al obtener connection", err)
 	}
 
-	tenant := &boilmodels.Tenant{
+	tenant := &mastermodels.Tenant{
 		Name:       tenantCreate.Name,
-		Address:    null.StringFrom(tenantCreate.Address),
-		Phone:      null.StringFrom(tenantCreate.Phone),
-		Email:      null.StringFrom(tenantCreate.Email),
-		CuitPdv:    null.StringFrom(tenantCreate.CuitPdv),
+		Address:    tenantCreate.Address,
+		Phone:      tenantCreate.Phone,
+		Email:      tenantCreate.Email,
+		CuitPDV:    tenantCreate.CuitPdv,
 		Connection: connection,
 		Identifier: identifier,
 	}
@@ -255,36 +179,30 @@ func (r *MainRepository) TenantCreateByUserID(adminID int64, tenantCreate *schem
 		return 0, schemas.HandlerErrorDB(err, "Tenant", schemas.Create)
 	}
 
-	// Check user existence
-	user, err := boilmodels.Users(boilmodels.UserWhere.ID.EQ(userID)).One(ctx, tx)
+	user, err := mastermodels.Users(mastermodels.UserWhere.ID.EQ(userID)).One(ctx, tx)
 	if err != nil {
 		return 0, schemas.HandlerErrorDB(err, "User", schemas.Read)
 	}
 
-	userTenant := &boilmodels.UserTenant{
-		UserID:   user.ID,
-		TenantID: tenant.ID,
-	}
-
-	if err := userTenant.Insert(ctx, tx, boil.Infer()); err != nil {
+	_, err = tx.ExecContext(ctx, "INSERT INTO user_tenants (user_id, tenant_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", user.ID, tenant.ID)
+	if err != nil {
 		return 0, schemas.HandlerErrorDB(err, "UserTenant", schemas.Create)
 	}
 
-	// Commit transaction before migrating sub db
-	// wait, if migration fails, tenant is created but broken. So we must commit AFTER setup.
-	memberAdmin := models.Member{
-		FirstName: user.FirstName.String,
-		LastName:  user.LastName.String,
+	memberAdmin := tenantmodels.Member{
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
 		Username:  user.Username,
 		Email:     user.Email,
 		Password:  "1",
 		IsAdmin:   true,
-		Address:   &user.Address.String,
 		RoleID:    1,
+	}
+	if user.Address.Valid {
+		memberAdmin.Address = user.Address
 	}
 
 	if err := database.PrepareDB(uri, memberAdmin); err != nil {
-		// handleDBCreationError inside PrepareDB will drop it if it fails
 		return 0, schemas.HandlerErrorDB(err, "Tenant", schemas.Create)
 	}
 
@@ -323,52 +241,49 @@ func (r *MainRepository) TenantUserCreate(adminID int64, tenantUserCreate *schem
 		return 0, err
 	}
 
-	tenant := &boilmodels.Tenant{
+	tenant := &mastermodels.Tenant{
 		Name:       tenantUserCreate.TenantCreate.Name,
-		Address:    null.StringFrom(tenantUserCreate.TenantCreate.Address),
-		Phone:      null.StringFrom(tenantUserCreate.TenantCreate.Phone),
-		Email:      null.StringFrom(tenantUserCreate.TenantCreate.Email),
-		CuitPdv:    null.StringFrom(tenantUserCreate.TenantCreate.CuitPdv),
+		Address:    tenantUserCreate.TenantCreate.Address,
+		Phone:      tenantUserCreate.TenantCreate.Phone,
+		Email:      tenantUserCreate.TenantCreate.Email,
+		CuitPDV:    tenantUserCreate.TenantCreate.CuitPdv,
 		Connection: connection,
 		Identifier: identifier,
-		PlanID:     null.Int64From(tenantUserCreate.TenantCreate.PlanID),
+		PlanID:     tenantUserCreate.TenantCreate.PlanID,
 	}
 
 	if err := tenant.Insert(ctx, tx, boil.Infer()); err != nil {
 		return 0, schemas.HandlerErrorDB(err, "Tenant", schemas.Create)
 	}
 
-	user := &boilmodels.User{
-		FirstName: null.StringFrom(tenantUserCreate.UserCreate.FirstName),
-		LastName:  null.StringFrom(tenantUserCreate.UserCreate.LastName),
+	user := &mastermodels.User{
+		FirstName: tenantUserCreate.UserCreate.FirstName,
+		LastName:  tenantUserCreate.UserCreate.LastName,
 		Email:     tenantUserCreate.UserCreate.Email,
 		Address:   null.StringFrom(tenantUserCreate.TenantCreate.Address),
 		Username:  tenantUserCreate.UserCreate.Username,
 	}
 
-	// We'd hash password here conceptually, but that should happen in the service.
-	// We'll leave it as we found it.
-
 	if err := user.Insert(ctx, tx, boil.Infer()); err != nil {
 		return 0, schemas.HandlerErrorDB(err, "User", schemas.Create)
 	}
 
-	if err := (&boilmodels.UserTenant{
-		UserID:   user.ID,
-		TenantID: tenant.ID,
-	}).Insert(ctx, tx, boil.Infer()); err != nil {
+	_, err = tx.ExecContext(ctx, "INSERT INTO user_tenants (user_id, tenant_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", user.ID, tenant.ID)
+	if err != nil {
 		return 0, schemas.HandlerErrorDB(err, "UserTenant", schemas.Create)
 	}
 
-	memberAdmin := models.Member{
+	memberAdmin := tenantmodels.Member{
 		FirstName: tenantUserCreate.UserCreate.FirstName,
 		LastName:  tenantUserCreate.UserCreate.LastName,
 		Username:  tenantUserCreate.UserCreate.Username,
 		Email:     tenantUserCreate.UserCreate.Email,
 		Password:  tenantUserCreate.UserCreate.Password,
 		IsAdmin:   true,
-		Address:   &tenantUserCreate.TenantCreate.Address,
 		RoleID:    1,
+	}
+	if tenantUserCreate.TenantCreate.Address != "" {
+		memberAdmin.Address = null.StringFrom(tenantUserCreate.TenantCreate.Address)
 	}
 
 	if err := database.PrepareDB(uri, memberAdmin); err != nil {
@@ -394,37 +309,30 @@ func (r *MainRepository) TenantUpdate(adminID, userID int64, tenantUpdate *schem
 		return err
 	}
 
-	userTenant, err := boilmodels.UserTenants(
-		boilmodels.UserTenantWhere.UserID.EQ(userID),
-		boilmodels.UserTenantWhere.TenantID.EQ(tenantUpdate.ID),
-	).One(ctx, tx)
-
-	if err != nil {
-		return schemas.HandlerErrorDB(err, "UserTenant", schemas.Read)
+	var count int
+	err = tx.QueryRowContext(ctx, "SELECT count(*) FROM user_tenants WHERE user_id = $1 AND tenant_id = $2", userID, tenantUpdate.ID).Scan(&count)
+	if err != nil || count == 0 {
+		return schemas.HandlerErrorDB(errors.New("user not in tenant"), "UserTenant", schemas.Read)
 	}
-	_ = userTenant // Just verifying they belong to the tenant
 
-	tenant, err := boilmodels.Tenants(boilmodels.TenantWhere.ID.EQ(tenantUpdate.ID)).One(ctx, tx)
+	tenantIDInt, _ := strconv.ParseInt(tenantUpdate.ID, 10, 64)
+
+	tenant, err := mastermodels.Tenants(mastermodels.TenantWhere.ID.EQ(tenantIDInt)).One(ctx, tx)
 	if err != nil {
 		return schemas.HandlerErrorDB(err, "Tenant", schemas.Read)
 	}
 
-	// Updates... Since TenantUpdate isn't fully defined here, we do general updates.
-	// Normally we'd bind it. I'll make the typical assignment.
 	if tenantUpdate.Name != "" {
 		tenant.Name = tenantUpdate.Name
 	}
 	if tenantUpdate.Address != "" {
-		tenant.Address = null.StringFrom(tenantUpdate.Address)
+		tenant.Address = tenantUpdate.Address
 	}
 	if tenantUpdate.Phone != "" {
-		tenant.Phone = null.StringFrom(tenantUpdate.Phone)
+		tenant.Phone = tenantUpdate.Phone
 	}
 	if tenantUpdate.Email != "" {
-		tenant.Email = null.StringFrom(tenantUpdate.Email)
-	}
-	if tenantUpdate.CuitPdv != "" {
-		tenant.CuitPdv = null.StringFrom(tenantUpdate.CuitPdv)
+		tenant.Email = tenantUpdate.Email
 	}
 
 	if _, err := tenant.Update(ctx, tx, boil.Infer()); err != nil {
@@ -452,7 +360,7 @@ func (r *MainRepository) TenantUpdateExpiration(adminID int64, updateExp *schema
 		return schemas.ErrorResponse(422, "Formato de fecha inválido, debe ser YYYY-MM-DD", err)
 	}
 
-	tenant, err := boilmodels.Tenants(boilmodels.TenantWhere.ID.EQ(updateExp.ID)).One(ctx, tx)
+	tenant, err := mastermodels.Tenants(mastermodels.TenantWhere.ID.EQ(updateExp.ID)).One(ctx, tx)
 	if err != nil {
 		return schemas.HandlerErrorDB(err, "Tenant", schemas.Read)
 	}
@@ -469,19 +377,19 @@ func (r *MainRepository) TenantUpdateExpiration(adminID int64, updateExp *schema
 func (r *MainRepository) TenantUpdateTerms(tenantID int64, updateTerms *schemas.TenantUpdateTerms) error {
 	ctx := context.Background()
 
-	tenant, err := boilmodels.Tenants(boilmodels.TenantWhere.ID.EQ(tenantID)).One(ctx, r.DB)
+	tenant, err := mastermodels.Tenants(mastermodels.TenantWhere.ID.EQ(tenantID)).One(ctx, r.DB)
 	if err != nil {
 		return schemas.HandlerErrorDB(err, "Tenant", schemas.Read)
 	}
 
-	tenant.AcceptedTerms = null.BoolFrom(updateTerms.AcceptedTerms)
+	tenant.AcceptedTerms = updateTerms.AcceptedTerms
 	tenant.IP = null.StringFrom(updateTerms.IP)
-	tenant.DateAccepted = null.TimeFrom(time.Now()) // Taking over DateAccepted
+	tenant.DateAccepted = null.TimeFrom(time.Now())
 
 	if _, err := tenant.Update(ctx, r.DB, boil.Whitelist(
-		boilmodels.TenantColumns.AcceptedTerms,
-		boilmodels.TenantColumns.IP,
-		boilmodels.TenantColumns.DateAccepted,
+		mastermodels.TenantColumns.AcceptedTerms,
+		mastermodels.TenantColumns.IP,
+		mastermodels.TenantColumns.DateAccepted,
 	)); err != nil {
 		return schemas.HandlerErrorDB(err, "Tenant", schemas.Update)
 	}
@@ -492,7 +400,7 @@ func (r *MainRepository) TenantUpdateTerms(tenantID int64, updateTerms *schemas.
 func (r *MainRepository) TenantGetSettings(tenantID int64) (*schemas.TenantSettingsResponse, error) {
 	ctx := context.Background()
 
-	settings, err := boilmodels.SettingTenants(boilmodels.SettingTenantWhere.TenantID.EQ(tenantID)).One(ctx, r.DB)
+	settings, err := mastermodels.SettingTenants(mastermodels.SettingTenantWhere.TenantID.EQ(tenantID)).One(ctx, r.DB)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, schemas.HandlerErrorDB(err, "Configuraciones Tenant", schemas.Read)
@@ -500,15 +408,29 @@ func (r *MainRepository) TenantGetSettings(tenantID int64) (*schemas.TenantSetti
 		return nil, schemas.HandlerErrorDB(err, "Configuraciones Tenant", schemas.Read)
 	}
 
-	return &schemas.TenantSettingsResponse{
-		Logo:           settings.Logo.String,
-		FrontPage:      settings.FrontPage.String,
-		Title:          settings.Title.String,
-		Slogan:         settings.Slogan.String,
-		PrimaryColor:   settings.PrimaryColor.String,
-		SecondaryColor: settings.SecondaryColor.String,
-		Phone:          settings.Phone.String,
-	}, nil
+	res := &schemas.TenantSettingsResponse{}
+	if settings.Logo.Valid {
+		res.Logo = &settings.Logo.String
+	}
+	if settings.FrontPage.Valid {
+		res.FrontPage = &settings.FrontPage.String
+	}
+	if settings.Title.Valid {
+		res.Title = &settings.Title.String
+	}
+	if settings.Slogan.Valid {
+		res.Slogan = &settings.Slogan.String
+	}
+	if settings.PrimaryColor.Valid {
+		res.PrimaryColor = &settings.PrimaryColor.String
+	}
+	if settings.SecondaryColor.Valid {
+		res.SecondaryColor = &settings.SecondaryColor.String
+	}
+	if settings.Phone.Valid {
+		res.Phone = &settings.Phone.String
+	}
+	return res, nil
 }
 
 func (r *MainRepository) TenantUpdateSettings(tenantID int64, req *schemas.TenantUpdateSettings) error {

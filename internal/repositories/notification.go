@@ -3,36 +3,33 @@ package repositories
 import (
 	"context"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
+	boiltenant "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 )
 
 func (r *MainRepository) NotificationStock(tenantID int64) ([]*schemas.ProductSimpleResponse, error) {
 	ctx := context.Background()
 
-	tenant, err := boilmodels.Tenants(boilmodels.TenantWhere.ID.EQ(tenantID)).One(ctx, r.DB)
+	_, err := boilmodels.Tenants(boilmodels.TenantWhere.ID.EQ(tenantID)).One(ctx, r.DB)
 	if err != nil {
 		return nil, schemas.HandlerErrorDB(err, "Tenant", schemas.Read)
 	}
 
-	dbTenantGorm, err := database.GetTenantDB(tenant.Connection, tenantID)
-	if err != nil {
-		return nil, schemas.HandlerErrorDB(err, "Tenant", schemas.Read)
-	}
-
-	dbTenant, err := dbTenantGorm.DB()
+	dbTenant, err := database.GetTenantDB("", tenantID)
 	if err != nil {
 		return nil, schemas.HandlerErrorDB(err, "Tenant", schemas.Read)
 	}
 
 	// Products that have stock <= min_amount AND notifier = true
-	products, err := boilmodels.Products(
+	products, err := boiltenant.Products(
 		qm.InnerJoin("stock_deposits sd on sd.product_id = products.id"),
 		qm.Where("sd.stock <= products.min_amount"),
 		qm.Where("products.notifier = ?", true),
-		qm.Load(boilmodels.ProductRels.StockDeposits),
+		qm.Load(boiltenant.ProductRels.Deposits),
 	).All(ctx, dbTenant)
 
 	if err != nil {
@@ -44,8 +41,9 @@ func (r *MainRepository) NotificationStock(tenantID int64) ([]*schemas.ProductSi
 		pPrice, _ := p.Price.Big.Float64()
 		minAmt, _ := p.MinAmount.Big.Float64()
 		var sAmt float64
-		if len(p.R.StockDeposits) > 0 {
-			sAmt = p.R.StockDeposits[0].Stock
+		if len(p.R.Deposits) > 0 {
+			stk, _ := p.R.Deposits[0].Stock.Big.Float64()
+			sAmt = stk
 		}
 
 		response = append(response, &schemas.ProductSimpleResponse{

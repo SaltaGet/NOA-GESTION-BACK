@@ -8,19 +8,19 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/types"
+	"github.com/ericlagergren/decimal"
 )
 
-func (r *DepositRepository) DepositGetByID(id int64) (*models.Product, error) {
+func (r *DepositRepository) DepositGetByID(id int64) (*boilmodels.Product, error) {
 	ctx := context.Background()
 
 	p, err := boilmodels.Products(
 		boilmodels.ProductWhere.ID.EQ(id),
-		boilmodels.ProductWhere.DeleteAt.IsNull(),
 		qm.Load(boilmodels.ProductRels.Category),
 		qm.Load(boilmodels.ProductRels.Deposits),
 	).One(ctx, r.DB)
@@ -32,15 +32,14 @@ func (r *DepositRepository) DepositGetByID(id int64) (*models.Product, error) {
 		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
-	return mapToModelProduct(p), nil
+	return p, nil
 }
 
-func (r *DepositRepository) DepositGetByCode(code string) (*models.Product, error) {
+func (r *DepositRepository) DepositGetByCode(code string) (*boilmodels.Product, error) {
 	ctx := context.Background()
 
 	p, err := boilmodels.Products(
 		boilmodels.ProductWhere.Code.EQ(code),
-		boilmodels.ProductWhere.DeleteAt.IsNull(),
 		qm.Load(boilmodels.ProductRels.Category),
 		qm.Load(boilmodels.ProductRels.Deposits),
 	).One(ctx, r.DB)
@@ -52,16 +51,15 @@ func (r *DepositRepository) DepositGetByCode(code string) (*models.Product, erro
 		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
-	return mapToModelProduct(p), nil
+	return p, nil
 }
 
-func (r *DepositRepository) DepositGetByName(name string) ([]*models.Product, error) {
+func (r *DepositRepository) DepositGetByName(name string) ([]*boilmodels.Product, error) {
 	ctx := context.Background()
 
 	searchStr := "%" + name + "%"
 	boilProducts, err := boilmodels.Products(
 		boilmodels.ProductWhere.Name.ILIKE(searchStr),
-		boilmodels.ProductWhere.DeleteAt.IsNull(),
 		qm.Load(boilmodels.ProductRels.Category),
 		qm.Load(boilmodels.ProductRels.Deposits),
 	).All(ctx, r.DB)
@@ -70,9 +68,9 @@ func (r *DepositRepository) DepositGetByName(name string) ([]*models.Product, er
 		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
-	allProducts := make([]*models.Product, 0, len(boilProducts))
+	allProducts := make([]*boilmodels.Product, 0, len(boilProducts))
 	for _, bp := range boilProducts {
-		allProducts = append(allProducts, mapToModelProduct(bp))
+		allProducts = append(allProducts, bp)
 	}
 
 	if strings.TrimSpace(name) == "" {
@@ -82,15 +80,15 @@ func (r *DepositRepository) DepositGetByName(name string) ([]*models.Product, er
 		return allProducts, nil
 	}
 
-	scored := make([]models.ProductWithScore, 0)
+	scored := make([]schemas.ProductWithScore, 0)
 	lowerSearch := strings.ToLower(strings.TrimSpace(name))
 
 	for _, product := range allProducts {
 		lowerName := strings.ToLower(product.Name)
-		score := models.CalculateRelevance(lowerSearch, lowerName)
+		score := schemas.CalculateRelevance(lowerSearch, lowerName)
 
 		if score > 0 {
-			scored = append(scored, models.ProductWithScore{
+			scored = append(scored, schemas.ProductWithScore{
 				Product: product,
 				Score:   score,
 				Length:  len(product.Name),
@@ -106,7 +104,7 @@ func (r *DepositRepository) DepositGetByName(name string) ([]*models.Product, er
 	})
 
 	limit := 10
-	products := make([]*models.Product, 0, limit)
+	products := make([]*boilmodels.Product, 0, limit)
 	for i, ps := range scored {
 		if i >= limit {
 			break
@@ -117,16 +115,15 @@ func (r *DepositRepository) DepositGetByName(name string) ([]*models.Product, er
 	return products, nil
 }
 
-func (r *DepositRepository) DepositGetAll(page, limit int) ([]*models.Product, int64, error) {
+func (r *DepositRepository) DepositGetAll(page, limit int) ([]*boilmodels.Product, int64, error) {
 	ctx := context.Background()
 
-	total, err := boilmodels.Products(boilmodels.ProductWhere.DeleteAt.IsNull()).Count(ctx, r.DB)
+	total, err := boilmodels.Products().Count(ctx, r.DB)
 	if err != nil {
 		return nil, 0, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
 	boilProducts, err := boilmodels.Products(
-		boilmodels.ProductWhere.DeleteAt.IsNull(),
 		qm.Load(boilmodels.ProductRels.Category),
 		qm.Load(boilmodels.ProductRels.Deposits),
 		qm.Limit(limit),
@@ -137,12 +134,7 @@ func (r *DepositRepository) DepositGetAll(page, limit int) ([]*models.Product, i
 		return nil, 0, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
-	products := make([]*models.Product, 0, len(boilProducts))
-	for _, bp := range boilProducts {
-		products = append(products, mapToModelProduct(bp))
-	}
-
-	return products, total, nil
+	return boilProducts, total, nil
 }
 
 func (r *DepositRepository) DepositUpdateStock(memberID int64, updateStock schemas.DepositUpdateStock) error {
@@ -177,7 +169,7 @@ func (r *DepositRepository) DepositUpdateStock(memberID int64, updateStock schem
 		if errors.Is(err, sql.ErrNoRows) {
 			deposit = &boilmodels.Deposit{
 				ProductID: updateStock.ProductID,
-				Stock:     0,
+				Stock:     types.NewDecimal(decimal.New(0, 0).SetFloat64(0)),
 			}
 			isNewEntry = true
 		} else {
@@ -188,14 +180,16 @@ func (r *DepositRepository) DepositUpdateStock(memberID int64, updateStock schem
 	stock := *updateStock.Stock
 	switch updateStock.Method {
 	case "add":
-		deposit.Stock += stock
+		nuevoStock := decimal.New(0, 0).SetFloat64(stock)
+		deposit.Stock.Big = deposit.Stock.Big.Add(deposit.Stock.Big, nuevoStock)
 	case "subtract":
-		if deposit.Stock < stock {
+		f, _ := deposit.Stock.Big.Float64()
+		if f < stock {
 			return schemas.ErrorResponse(400, "stock insuficiente", fmt.Errorf("stock insuficiente: %.2f", stock))
 		}
-		deposit.Stock -= stock
+		deposit.Stock.Big = deposit.Stock.Big.Sub(deposit.Stock.Big, decimal.New(0, 0).SetFloat64(stock))
 	case "set":
-		deposit.Stock = stock
+		deposit.Stock.Big = decimal.New(0, 0).SetFloat64(stock)
 	default:
 		return schemas.ErrorResponse(400, "metodo de actualizacion no valido", fmt.Errorf("metodo de actualizacion no valido"))
 	}

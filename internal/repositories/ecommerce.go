@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"errors"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 )
 
 func mapToEcommerceResponse(c *boilmodels.IncomeEcommerce) *schemas.EcommerceResponse {
@@ -38,9 +38,7 @@ func mapToEcommerceResponse(c *boilmodels.IncomeEcommerce) *schemas.EcommerceRes
 		OperationType:     c.OperationType,
 	}
 
-	if c.DeliveryID.Valid {
-		res.DeliveryID = &c.DeliveryID.String
-	}
+		res.DeliveryID = &c.DeliveryID
 	if c.Message.Valid {
 		res.Message = c.Message.String
 	}

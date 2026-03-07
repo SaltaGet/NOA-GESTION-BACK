@@ -1,11 +1,11 @@
 package tenant_cache
 
 import (
+	"database/sql"
 	"fmt"
 	"sync"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
-	"gorm.io/gorm"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -14,7 +14,7 @@ var (
 	sfGroup singleflight.Group
 )
 
-func GetTenantContainer(db *gorm.DB, tenantID int64) *dependencies.TenantContainer {
+func GetTenantContainer(db *sql.DB, tenantID int64) *dependencies.TenantContainer {
 	// 1. Caso rápido optimista: ya existe
 	if val, ok := tenants.Load(tenantID); ok {
 		return val.(*dependencies.TenantContainer)

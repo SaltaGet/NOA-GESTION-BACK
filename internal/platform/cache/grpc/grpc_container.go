@@ -4,17 +4,17 @@ import (
 	// "context"
 	// "context"
 	"context"
+	"database/sql"
 	"sync"
 
 	// "github.com/SaltaGet/NOA-GESTION-BACK/internal/database"
 	// "github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
-	"gorm.io/gorm"
 )
 
 var grpcContainers sync.Map // map[int64]*TenantContainer
 
-func GetGRPCContainer(db *gorm.DB, tenantID int64) *dependencies.GrpcContainer {
+func GetGRPCContainer(db *sql.DB, tenantID int64) *dependencies.GrpcContainer {
 	if val, ok := grpcContainers.Load(tenantID); ok {
 		tc := val.(*dependencies.GrpcContainer)
 		return tc

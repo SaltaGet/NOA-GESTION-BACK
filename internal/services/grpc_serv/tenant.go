@@ -4,7 +4,15 @@ import (
 	"context"
 
 	pb "github.com/DanielChachagua/ecommerce-noagestion-protos/pb"
+	"github.com/aarondl/null/v8"
 )
+
+func nullStringPtr(ns null.String) *string {
+	if ns.Valid {
+		return &ns.String
+	}
+	return nil
+}
 
 func (s *GrpcTenantService) ListTenants(ctx context.Context) (*pb.ListTenantsResponse, error) {
 	tenants, err := s.GrpcTenantRepository.ListTenants()
@@ -16,25 +24,33 @@ func (s *GrpcTenantService) ListTenants(ctx context.Context) (*pb.ListTenantsRes
 	// return &pb.ListTenantsResponse{Tenants: tenants}, nil
 	var protoTenants []*pb.TenantResponse
 	for _, tenant := range tenants {
-    pbTenant := &pb.TenantResponse{
-			Id: tenant.ID,
-			Name: tenant.Name,
-			Identifier: tenant.Identifier,
-			Address: tenant.Address,
-			Phone: tenant.Phone,
-			Email: tenant.Email,
-			SettingTenant: &pb.SettingTenant{
-				Id: tenant.Setting.ID,
-				Logo: tenant.Setting.Logo,
-				FrontPage: tenant.Setting.FrontPage,
-				Title: tenant.Setting.Title,
-				Slogan: tenant.Setting.Slogan,
-				PrimaryColor: tenant.Setting.PrimaryColor,
-				SecondaryColor: tenant.Setting.SecondaryColor,
-			},
-			TokenMp: tenant.Credentials.AccessTokenMP,
-			TokenEmail: tenant.Credentials.TokenEmail,
-    }
+		pbTenant := &pb.TenantResponse{
+			Id:            tenant.ID,
+			Name:          tenant.Name,
+			Identifier:    tenant.Identifier,
+			Address:       tenant.Address,
+			Phone:         tenant.Phone,
+			Email:         tenant.Email,
+			SettingTenant: &pb.SettingTenant{},
+		}
+
+		if tenant.R != nil && tenant.R.SettingTenant != nil {
+			pbTenant.SettingTenant = &pb.SettingTenant{
+				Id:             tenant.R.SettingTenant.ID,
+				Logo:           nullStringPtr(tenant.R.SettingTenant.Logo),
+				FrontPage:      nullStringPtr(tenant.R.SettingTenant.FrontPage),
+				Title:          nullStringPtr(tenant.R.SettingTenant.Title),
+				Slogan:         nullStringPtr(tenant.R.SettingTenant.Slogan),
+				PrimaryColor:   nullStringPtr(tenant.R.SettingTenant.PrimaryColor),
+				SecondaryColor: nullStringPtr(tenant.R.SettingTenant.SecondaryColor),
+			}
+		}
+
+		if tenant.R != nil && tenant.R.Credential != nil {
+			pbTenant.TokenMp = nullStringPtr(tenant.R.Credential.AccessTokenMP)
+			pbTenant.TokenEmail = nullStringPtr(tenant.R.Credential.TokenEmail)
+		}
+
 		protoTenants = append(protoTenants, pbTenant)
 	}
 
@@ -48,21 +64,25 @@ func (s *GrpcTenantService) GetTenant(req *pb.TenantRequest) (*pb.TenantResponse
 	}
 
 	tenantResponse := &pb.TenantResponse{
-		Id:         tenant.ID,
-		Name:       tenant.Name,
-		Identifier: tenant.Identifier,
-		Address:    tenant.Address,
-		Phone:      tenant.Phone,
-		Email:      tenant.Email,
-		SettingTenant: &pb.SettingTenant{
-			Id: tenant.Setting.ID,
-			Logo: tenant.Setting.Logo,
-			FrontPage: tenant.Setting.FrontPage,
-			Title: tenant.Setting.Title,
-			Slogan: tenant.Setting.Slogan,
-			PrimaryColor: tenant.Setting.PrimaryColor,
-			SecondaryColor: tenant.Setting.SecondaryColor,
-		},
+		Id:            tenant.ID,
+		Name:          tenant.Name,
+		Identifier:    tenant.Identifier,
+		Address:       tenant.Address,
+		Phone:         tenant.Phone,
+		Email:         tenant.Email,
+		SettingTenant: &pb.SettingTenant{},
+	}
+
+	if tenant.R != nil && tenant.R.SettingTenant != nil {
+		tenantResponse.SettingTenant = &pb.SettingTenant{
+			Id:             tenant.R.SettingTenant.ID,
+			Logo:           nullStringPtr(tenant.R.SettingTenant.Logo),
+			FrontPage:      nullStringPtr(tenant.R.SettingTenant.FrontPage),
+			Title:          nullStringPtr(tenant.R.SettingTenant.Title),
+			Slogan:         nullStringPtr(tenant.R.SettingTenant.Slogan),
+			PrimaryColor:   nullStringPtr(tenant.R.SettingTenant.PrimaryColor),
+			SecondaryColor: nullStringPtr(tenant.R.SettingTenant.SecondaryColor),
+		}
 	}
 
 	return tenantResponse, nil

@@ -6,12 +6,13 @@ import (
 	"errors"
 	"fmt"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"github.com/volatiletech/sqlboiler/v4/types"
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/types"
+	"github.com/ericlagergren/decimal"
 )
 
 func mapToSupplierResponse(s *boilmodels.Supplier) *schemas.SupplierResponse {
@@ -22,7 +23,7 @@ func mapToSupplierResponse(s *boilmodels.Supplier) *schemas.SupplierResponse {
 	res := &schemas.SupplierResponse{
 		ID:          s.ID,
 		Name:        s.Name,
-		CompanyName: s.CompanyName.String,
+		CompanyName: s.CompanyName,
 	}
 
 	if s.Identifier.Valid {
@@ -41,9 +42,7 @@ func mapToSupplierResponse(s *boilmodels.Supplier) *schemas.SupplierResponse {
 	if s.Phone.Valid {
 		res.Phone = &s.Phone.String
 	}
-	if s.CreatedAt.Valid {
-		res.CreatedAt = s.CreatedAt.Time
-	}
+	res.CreatedAt = s.CreatedAt
 
 	return res
 }
@@ -56,7 +55,7 @@ func mapToSupplierResponseDTO(s *boilmodels.Supplier) *schemas.SupplierResponseD
 	return &schemas.SupplierResponseDTO{
 		ID:          s.ID,
 		Name:        s.Name,
-		CompanyName: s.CompanyName.String,
+		CompanyName: s.CompanyName,
 	}
 }
 
@@ -139,7 +138,7 @@ func (r *SupplierRepository) SupplierCreate(memberID int64, supplierCreate *sche
 
 	supplier := &boilmodels.Supplier{
 		Name:        supplierCreate.Name,
-		CompanyName: null.StringFrom(supplierCreate.CompanyName),
+		CompanyName: supplierCreate.CompanyName,
 	}
 
 	if supplierCreate.Identifier != nil {
@@ -149,7 +148,7 @@ func (r *SupplierRepository) SupplierCreate(memberID int64, supplierCreate *sche
 		supplier.Address = null.StringFromPtr(supplierCreate.Address)
 	}
 	if supplierCreate.DebtLimit != nil {
-		supplier.DebtLimit = types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", *supplierCreate.DebtLimit)))
+		supplier.DebtLimit = types.NewNullDecimal(decimal.New(0, 0).SetFloat64(*supplierCreate.DebtLimit))
 	}
 	if supplierCreate.Email != nil {
 		supplier.Email = null.StringFromPtr(supplierCreate.Email)
@@ -191,7 +190,7 @@ func (r *SupplierRepository) SupplierUpdate(memberID int64, supplierUpdate *sche
 	}
 
 	existingSupplier.Name = supplierUpdate.Name
-	existingSupplier.CompanyName = null.StringFrom(supplierUpdate.CompanyName)
+	existingSupplier.CompanyName = supplierUpdate.CompanyName
 
 	if supplierUpdate.Identifier != nil {
 		existingSupplier.Identifier = null.StringFromPtr(supplierUpdate.Identifier)
@@ -206,7 +205,7 @@ func (r *SupplierRepository) SupplierUpdate(memberID int64, supplierUpdate *sche
 	}
 
 	if supplierUpdate.DebtLimit != nil {
-		existingSupplier.DebtLimit = types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", *supplierUpdate.DebtLimit)))
+		existingSupplier.DebtLimit = types.NewNullDecimal(decimal.New(0, 0).SetFloat64(*supplierUpdate.DebtLimit))
 	} else {
 		existingSupplier.DebtLimit = types.NullDecimal{}
 	}
@@ -250,17 +249,17 @@ func (r *SupplierRepository) SupplierDelete(memberID int64, id int64) error {
 		return schemas.HandlerErrorDB(err, "Proveedor", schemas.Read)
 	}
 
-	expenseCount, err := boilmodels.ExpenseBuys(boilmodels.ExpenseBuyWhere.SupplierID.EQ(null.Int64From(id))).Count(ctx, tx)
+	expensesBuy, err := boilmodels.ExpenseBuys(boilmodels.ExpenseBuyWhere.SupplierID.EQ(id)).All(ctx, r.DB)
 	if err != nil {
 		return schemas.HandlerErrorDB(err, "Egreso de compra", schemas.Read)
 	}
 
-	if expenseCount > 0 {
+	if len(expensesBuy) > 0 {
 		return schemas.ErrorResponse(400, "No se puede eliminar el proveedor porque tiene compras asociadas", errors.New("No se puede eliminar el proveedor porque tiene compras asociadas"))
 	}
 
 	// Soft delete
-	if _, err := supplier.Delete(ctx, tx, false); err != nil {
+	if _, err = supplier.Delete(ctx, tx); err != nil {
 		return schemas.HandlerErrorDB(err, "Proveedor", schemas.Delete)
 	}
 

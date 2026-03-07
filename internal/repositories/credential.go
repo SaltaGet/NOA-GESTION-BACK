@@ -3,11 +3,11 @@ package repositories
 import (
 	"context"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 )
 
 func (r *MainRepository) CredentialGetMPToken(tenantID int64) (*schemas.CredentialMPTokenResponse, error) {
@@ -51,7 +51,6 @@ func (r *MainRepository) CredentialSetMPToken(tenantID int64, request *schemas.C
 		boil.Whitelist(
 			boilmodels.CredentialColumns.AccessTokenMP,
 			boilmodels.CredentialColumns.AccessTokenTestMP,
-			boilmodels.CredentialColumns.UpdatedAt,
 		),
 		boil.Infer(),
 	)
@@ -101,8 +100,8 @@ func (r *MainRepository) CredentialGetArca(tenantID int64) (*schemas.CredentialA
 	if c.StartActivities.Valid {
 		response.StartActivities = &c.StartActivities.String
 	}
-	if c.Cuit != "" {
-		response.Cuit = &c.Cuit
+	if c.Cuit.String != "" {
+		response.Cuit = &c.Cuit.String
 	}
 	if c.Concept.Valid {
 		response.Concept = &c.Concept.String
@@ -128,7 +127,7 @@ func (r *MainRepository) CredentialSetArca(tenantID int64, request *schemas.Cred
 		ResponsibilityFrontIva: null.StringFrom(request.ResponsibilityFrontIVA),
 		GrossIncome:            null.StringFrom(request.GrossIncome),
 		StartActivities:        null.StringFrom(request.StartActivities),
-		Cuit:                   request.Cuit,
+		Cuit:                   null.StringFrom(request.Cuit),
 		Concept:                null.StringFrom(request.Concept),
 		ArcaCertificate:        null.StringFrom(request.ArcaCertificate),
 		ArcaKey:                null.StringFrom(request.ArcaKey),
@@ -147,7 +146,6 @@ func (r *MainRepository) CredentialSetArca(tenantID int64, request *schemas.Cred
 			boilmodels.CredentialColumns.Concept,
 			boilmodels.CredentialColumns.ArcaCertificate,
 			boilmodels.CredentialColumns.ArcaKey,
-			boilmodels.CredentialColumns.UpdatedAt,
 		),
 		boil.Infer(),
 	)

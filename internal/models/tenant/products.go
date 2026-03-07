@@ -1158,7 +1158,7 @@ func (productL) LoadIncomeEcommerceItems(ctx context.Context, e boil.ContextExec
 
 	for _, foreign := range resultSlice {
 		for _, local := range slice {
-			if queries.Equal(local.ID, foreign.ProductID) {
+			if local.ID == foreign.ProductID {
 				local.R.IncomeEcommerceItems = append(local.R.IncomeEcommerceItems, foreign)
 				if foreign.R == nil {
 					foreign.R = &incomeEcommerceItemR{}
@@ -1707,7 +1707,7 @@ func (o *Product) AddIncomeEcommerceItems(ctx context.Context, exec boil.Context
 	var err error
 	for _, rel := range related {
 		if insert {
-			queries.Assign(&rel.ProductID, o.ID)
+			rel.ProductID = o.ID
 			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
 				return errors.Wrap(err, "failed to insert into foreign table")
 			}
@@ -1728,7 +1728,7 @@ func (o *Product) AddIncomeEcommerceItems(ctx context.Context, exec boil.Context
 				return errors.Wrap(err, "failed to update foreign table")
 			}
 
-			queries.Assign(&rel.ProductID, o.ID)
+			rel.ProductID = o.ID
 		}
 	}
 
@@ -1749,99 +1749,6 @@ func (o *Product) AddIncomeEcommerceItems(ctx context.Context, exec boil.Context
 			rel.R.Product = o
 		}
 	}
-	return nil
-}
-
-// SetIncomeEcommerceItemsG removes all previously related items of the
-// product replacing them completely with the passed
-// in related items, optionally inserting them as new records.
-// Sets o.R.Product's IncomeEcommerceItems accordingly.
-// Replaces o.R.IncomeEcommerceItems with related.
-// Sets related.R.Product's IncomeEcommerceItems accordingly.
-// Uses the global database handle.
-func (o *Product) SetIncomeEcommerceItemsG(ctx context.Context, insert bool, related ...*IncomeEcommerceItem) error {
-	return o.SetIncomeEcommerceItems(ctx, boil.GetContextDB(), insert, related...)
-}
-
-// SetIncomeEcommerceItems removes all previously related items of the
-// product replacing them completely with the passed
-// in related items, optionally inserting them as new records.
-// Sets o.R.Product's IncomeEcommerceItems accordingly.
-// Replaces o.R.IncomeEcommerceItems with related.
-// Sets related.R.Product's IncomeEcommerceItems accordingly.
-func (o *Product) SetIncomeEcommerceItems(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*IncomeEcommerceItem) error {
-	query := "update \"income_ecommerce_items\" set \"product_id\" = null where \"product_id\" = $1"
-	values := []any{o.ID}
-	if boil.IsDebug(ctx) {
-		writer := boil.DebugWriterFrom(ctx)
-		fmt.Fprintln(writer, query)
-		fmt.Fprintln(writer, values)
-	}
-	_, err := exec.ExecContext(ctx, query, values...)
-	if err != nil {
-		return errors.Wrap(err, "failed to remove relationships before set")
-	}
-
-	if o.R != nil {
-		for _, rel := range o.R.IncomeEcommerceItems {
-			queries.SetScanner(&rel.ProductID, nil)
-			if rel.R == nil {
-				continue
-			}
-
-			rel.R.Product = nil
-		}
-		o.R.IncomeEcommerceItems = nil
-	}
-
-	return o.AddIncomeEcommerceItems(ctx, exec, insert, related...)
-}
-
-// RemoveIncomeEcommerceItemsG relationships from objects passed in.
-// Removes related items from R.IncomeEcommerceItems (uses pointer comparison, removal does not keep order)
-// Sets related.R.Product.
-// Uses the global database handle.
-func (o *Product) RemoveIncomeEcommerceItemsG(ctx context.Context, related ...*IncomeEcommerceItem) error {
-	return o.RemoveIncomeEcommerceItems(ctx, boil.GetContextDB(), related...)
-}
-
-// RemoveIncomeEcommerceItems relationships from objects passed in.
-// Removes related items from R.IncomeEcommerceItems (uses pointer comparison, removal does not keep order)
-// Sets related.R.Product.
-func (o *Product) RemoveIncomeEcommerceItems(ctx context.Context, exec boil.ContextExecutor, related ...*IncomeEcommerceItem) error {
-	if len(related) == 0 {
-		return nil
-	}
-
-	var err error
-	for _, rel := range related {
-		queries.SetScanner(&rel.ProductID, nil)
-		if rel.R != nil {
-			rel.R.Product = nil
-		}
-		if _, err = rel.Update(ctx, exec, boil.Whitelist("product_id")); err != nil {
-			return err
-		}
-	}
-	if o.R == nil {
-		return nil
-	}
-
-	for _, rel := range related {
-		for i, ri := range o.R.IncomeEcommerceItems {
-			if rel != ri {
-				continue
-			}
-
-			ln := len(o.R.IncomeEcommerceItems)
-			if ln > 1 && i < ln-1 {
-				o.R.IncomeEcommerceItems[i] = o.R.IncomeEcommerceItems[ln-1]
-			}
-			o.R.IncomeEcommerceItems = o.R.IncomeEcommerceItems[:ln-1]
-			break
-		}
-	}
-
 	return nil
 }
 

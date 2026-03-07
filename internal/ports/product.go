@@ -1,25 +1,26 @@
 package ports
 
 import (
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"mime/multipart"
+
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
 type ProductRepository interface {
-	ProductGetByID(id int64) (*models.Product, error)
-	ProductGetByCode(code string) (*models.Product, error)
-	ProductGetByCategoryID(categoryID int64) ([]*models.Product, error)
-	ProductGetByName(name string) ([]*models.Product, error)
-	ProductGetAll(page, limit int, isVisible *bool) ([]*models.Product, int64, error)
-	ProductGetByCodeToQR(code string) (*models.Product, error)
+	ProductGetByID(id int64) (*tenant.Product, error)
+	ProductGetByCode(code string) (*tenant.Product, error)
+	ProductGetByCategoryID(categoryID int64) ([]*tenant.Product, error)
+	ProductGetByName(name string) ([]*tenant.Product, error)
+	ProductGetAll(page, limit int, isVisible *bool) ([]*tenant.Product, int64, error)
+	ProductGetByCodeToQR(code string) (*tenant.Product, error)
 	ProductCount() (int64, error)
 	ProductCreate(memberID int64, productCreate *schemas.ProductCreate, plan *schemas.PlanResponseDTO) (int64, error)
-	ProductInsertToExcel(memberID int64, products []models.Product) ([]map[string]string, error)
+	ProductInsertToExcel(memberID int64, products []schemas.ProductExcelCreate) ([]map[string]string, error)
 	ProductUpdate(memberID int64, productUpdate *schemas.ProductUpdate) error
 	ProductPriceUpdate(memberID int64, productUpdate *schemas.ListPriceUpdate) error
 	ProductDelete(memberID int64, id int64) error
-	ValidateProductImages(productValidateImage schemas.ProductValidateImage, plan *schemas.PlanResponseDTO) (error)
+	ValidateProductImages(productValidateImage schemas.ProductValidateImage, plan *schemas.PlanResponseDTO) error
 	ProductUpdateVisibility(productUpdate *schemas.ListVisibilityUpdate) error
 }
 

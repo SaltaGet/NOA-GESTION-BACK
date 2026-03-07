@@ -1,9 +1,59 @@
 package services
 
 import (
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
+
+func mapToDepositResponse(product *boilmodels.Product) *schemas.DepositResponse {
+	if product == nil {
+		return nil
+	}
+
+	var desc *string
+	if product.Description.Valid {
+		desc = &product.Description.String
+	}
+
+	var primaryImage *string
+	if product.PrimaryImage.Valid {
+		primaryImage = &product.PrimaryImage.String
+	}
+
+	var secImages string
+	if product.SecondaryImages.Valid {
+		secImages = product.SecondaryImages.String
+	}
+
+	catID := int64(0)
+	catName := ""
+	if product.R != nil && product.R.Category != nil {
+		catID = product.R.Category.ID
+		catName = product.R.Category.Name
+	}
+
+	price, _ := product.Price.Float64()
+	var stock float64 = 0
+	if product.R != nil && len(product.R.Deposits) > 0 {
+		stock, _ = product.R.Deposits[0].Stock.Float64()
+	}
+
+	return &schemas.DepositResponse{
+		ID:             product.ID,
+		Code:           product.Code,
+		Description:    desc,
+		Name:           product.Name,
+		PrimaryImage:   primaryImage,
+		SecondaryImage: utils.SplitStrings(&secImages),
+		Category: schemas.CategoryResponse{
+			ID:   catID,
+			Name: catName,
+		},
+		Price: price,
+		Stock: stock,
+	}
+}
 
 func (s *DepositService) DepositGetByID(id int64) (*schemas.DepositResponse, error) {
 	product, err := s.DepositRepository.DepositGetByID(id)
@@ -11,28 +61,7 @@ func (s *DepositService) DepositGetByID(id int64) (*schemas.DepositResponse, err
 		return nil, err
 	}
 
-	desc := product.Description
-	productResponse := &schemas.DepositResponse{
-		ID:             product.ID,
-		Code:           product.Code,
-		Description:    desc,
-		Name:           product.Name,
-		PrimaryImage:   product.PrimaryImage,
-		SecondaryImage: utils.SplitStrings(*&product.SecondaryImages),
-		Category: schemas.CategoryResponse{
-			ID:   product.Category.ID,
-			Name: product.Category.Name,
-		},
-		Price: product.Price,
-	}
-
-	if product.StockDeposit != nil {
-		productResponse.Stock = product.StockDeposit.Stock
-	} else {
-		productResponse.Stock = 0
-	}
-
-	return productResponse, nil
+	return mapToDepositResponse(product), nil
 }
 
 func (s *DepositService) DepositGetByCode(code string) (*schemas.DepositResponse, error) {
@@ -41,28 +70,7 @@ func (s *DepositService) DepositGetByCode(code string) (*schemas.DepositResponse
 		return nil, err
 	}
 
-	desc := product.Description
-	productResponse := &schemas.DepositResponse{
-		ID:             product.ID,
-		Code:           product.Code,
-		Description:    desc,
-		Name:           product.Name,
-		PrimaryImage:   product.PrimaryImage,
-		SecondaryImage: utils.SplitStrings(*&product.SecondaryImages),
-		Category: schemas.CategoryResponse{
-			ID:   product.Category.ID,
-			Name: product.Category.Name,
-		},
-		Price: product.Price,
-	}
-
-	if product.StockDeposit != nil {
-		productResponse.Stock = product.StockDeposit.Stock
-	} else {
-		productResponse.Stock = 0
-	}
-
-	return productResponse, nil
+	return mapToDepositResponse(product), nil
 }
 
 func (s *DepositService) DepositGetByName(name string) ([]*schemas.DepositResponse, error) {
@@ -74,25 +82,7 @@ func (s *DepositService) DepositGetByName(name string) ([]*schemas.DepositRespon
 	productsResponse := make([]*schemas.DepositResponse, len(products))
 
 	for i, prod := range products {
-		desc := prod.Description
-		productsResponse[i] = &schemas.DepositResponse{
-			ID:             prod.ID,
-			Code:           prod.Code,
-			Description:    desc,
-			Name:           prod.Name,
-			PrimaryImage:   prod.PrimaryImage,
-			SecondaryImage: utils.SplitStrings(*&prod.SecondaryImages),
-			Category: schemas.CategoryResponse{
-				ID:   prod.Category.ID,
-				Name: prod.Category.Name,
-			},
-			Price: prod.Price,
-		}
-		if prod.StockDeposit != nil {
-			productsResponse[i].Stock = prod.StockDeposit.Stock
-		} else {
-			productsResponse[i].Stock = 0
-		}
+		productsResponse[i] = mapToDepositResponse(prod)
 	}
 
 	return productsResponse, nil
@@ -107,27 +97,7 @@ func (s *DepositService) DepositGetAll(page, limit int) ([]*schemas.DepositRespo
 	productsResponse := make([]*schemas.DepositResponse, len(products))
 
 	for i, prod := range products {
-		desc := prod.Description
-		productsResponse[i] = &schemas.DepositResponse{
-			ID:             prod.ID,
-			Code:           prod.Code,
-			Description:    desc,
-			Name:           prod.Name,
-			PrimaryImage:   prod.PrimaryImage,
-			SecondaryImage: utils.SplitStrings(*&prod.SecondaryImages),
-			Category: schemas.CategoryResponse{
-				ID:   prod.Category.ID,
-				Name: prod.Category.Name,
-			},
-			Price: prod.Price,
-			// Stock: utils.FloatDefault(&prod.StockDeposit.Stock, 0),
-		}
-
-		if prod.StockDeposit != nil {
-			productsResponse[i].Stock = prod.StockDeposit.Stock
-		} else {
-			productsResponse[i].Stock = 0
-		}
+		productsResponse[i] = mapToDepositResponse(prod)
 
 	}
 

@@ -6,10 +6,10 @@ import (
 	"sort"
 	"time"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/sqlboiler/v4/queries"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/queries"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 )
 
 func (r *ReportRepository) ReportMovementByDatePointSale(start, end time.Time, form string) (any, error) {
@@ -258,7 +258,7 @@ func (r *ReportRepository) ReportStockProducts() ([]schemas.ReportStockProduct, 
 	products, err := boilmodels.Products(
 		qm.Load(boilmodels.ProductRels.Category),
 		qm.Load(qm.Rels(boilmodels.ProductRels.StockPointSales, boilmodels.StockPointSaleRels.PointSale)),
-		qm.Load(boilmodels.ProductRels.StockDeposits),
+		qm.Load(boilmodels.ProductRels.Deposits),
 	).All(ctx, r.DB)
 
 	if err != nil {
@@ -287,8 +287,9 @@ func (r *ReportRepository) ReportStockProducts() ([]schemas.ReportStockProduct, 
 			prod.Category = p.R.Category.Name
 		}
 
-		if len(p.R.StockDeposits) > 0 {
-			prod.DepositStock = p.R.StockDeposits[0].Stock
+		if len(p.R.Deposits) > 0 {
+			stockFloat, _ := p.R.Deposits[0].Stock.Big.Float64()
+			prod.DepositStock = stockFloat
 		}
 
 		for _, sp := range p.R.StockPointSales {
@@ -296,10 +297,11 @@ func (r *ReportRepository) ReportStockProducts() ([]schemas.ReportStockProduct, 
 			if sp.R.PointSale != nil {
 				pointSaleName = sp.R.PointSale.Name
 			}
+			stockFloat, _ := sp.Stock.Big.Float64()
 			prod.PointSaleStocks = append(prod.PointSaleStocks, schemas.ReportStockPointSale{
 				PointSaleID:   sp.PointSaleID,
 				PointSaleName: pointSaleName,
-				Stock:         sp.Stock,
+				Stock:         stockFloat,
 			})
 		}
 

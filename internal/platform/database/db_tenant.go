@@ -3,128 +3,133 @@ package database
 import (
 	"context"
 	"database/sql"
+	_ "embed"
 	"fmt"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
+	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
 	_ "github.com/jackc/pgx/v5/stdlib" // Driver para sql.Open
-	"github.com/aarondl/null/v8"
-	_ "gorm.io/driver/postgres"
 	"github.com/rs/zerolog/log"
+	_ "gorm.io/driver/postgres"
 )
 
+//go:embed schemas_db/tenant.sql
+var tenantSchemaSQL string
+
 func PrepareDB(uri string, memberAdmin tenant.Member) error {
-    // 1. Asegurar existencia física de la DB
-    if err := EnsureDatabaseExists(uri); err != nil {
-        return fmt.Errorf("error al crear la base: %w", err)
-    }
+	// 1. Asegurar existencia física de la DB
+	if err := EnsureDatabaseExists(uri); err != nil {
+		return fmt.Errorf("error al crear la base: %w", err)
+	}
 
-    // 2. Abrir conexión con librería estándar
-    db, err := sql.Open("postgres", uri)
-    if err != nil {
-        handleDBCreationError(uri)
-        return fmt.Errorf("error al inicializar DB: %w", err)
-    }
-    defer db.Close()
+	// 2. Abrir conexión con librería estándar
+	db, err := sql.Open("pgx", uri)
+	if err != nil {
+		handleDBCreationError(uri)
+		return fmt.Errorf("error al inicializar DB: %w", err)
+	}
+	defer db.Close()
 
-    // Importante: Ping para confirmar conexión activa
-    if err := db.Ping(); err != nil {
-        handleDBCreationError(uri)
-        return fmt.Errorf("error de conexión (ping): %w", err)
-    }
+	// Importante: Ping para confirmar conexión activa
+	if err := db.Ping(); err != nil {
+		handleDBCreationError(uri)
+		return fmt.Errorf("error de conexión (ping): %w", err)
+	}
 
-    // 3. Cargar Esquema
-    createTables, err := os.ReadFile("internal/platform/database/schemas_db/tenant.sql")
-    if err != nil {
-        handleDBCreationError(uri)
-        return fmt.Errorf("error al leer el archivo de estructura: %w", err)
-    }
+	// 3. Cargar Esquema
+	if _, err := db.Exec(tenantSchemaSQL); err != nil {
+		handleDBCreationError(uri)
+		return fmt.Errorf("error de execución de tablas en init: %w", err)
+	}
 
-    if _, err := db.Exec(string(createTables)); err != nil {
-        handleDBCreationError(uri)
-        return fmt.Errorf("error al crear tablas: %w", err)
-    }
+	ctx := context.Background()
 
-    ctx := context.Background()
+	// 4. Inserciones de Configuración (Uso de Upsert para evitar errores de duplicado)
+	role := &tenant.Role{ID: 1, Name: "admin"}
+	if err := role.Upsert(ctx, db, true, []string{"id"}, boil.Infer(), boil.Infer()); err != nil {
+		return fmt.Errorf("error al crear rol admin: %w", err)
+	}
 
-    // 4. Inserciones de Configuración (Uso de Upsert para evitar errores de duplicado)
-    role := &tenant.Role{ID: 1, Name: "admin"}
-    if err := role.Upsert(ctx, db, true, []string{"id"}, boil.Infer(), boil.Infer()); err != nil {
-        return fmt.Errorf("error al crear rol admin: %w", err)
-    }
+	if err := memberAdmin.Insert(ctx, db, boil.Infer()); err != nil {
+		return fmt.Errorf("error al crear member admin: %w", err)
+	}
 
-    if err := memberAdmin.Insert(ctx, db, boil.Infer()); err != nil {
-        return fmt.Errorf("error al crear member admin: %w", err)
-    }
+	for _, perm := range Permissions {
+		// Asumiendo que Permissions es un slice de objetos tenant.Permission
+		if err := perm.Upsert(ctx, db, false, []string{"name"}, boil.None(), boil.Infer()); err != nil {
+			return fmt.Errorf("error al migrar permiso %s: %w", perm.Name, err)
+		}
+	}
 
-    for _, perm := range Permissions {
-        // Asumiendo que Permissions es un slice de objetos tenant.Permission
-        if err := perm.Upsert(ctx, db, false, []string{"name"}, boil.None(), boil.Infer()); err != nil {
-            return fmt.Errorf("error al migrar permiso %s: %w", perm.Name, err)
-        }
-    }
+	// Clientes, Categorías, Proveedores...
+	client := &tenant.Client{
+		ID:                     1,
+		FirstName:              "Consumidor",
+		LastName:               "Final",
+		ResponsabilityFrontIva: null.StringFrom("consumidor_final"),
+		MemberCreateID:         memberAdmin.ID,
+	}
+	if err := client.Upsert(ctx, db, true, []string{"id"}, boil.Infer(), boil.Infer()); err != nil {
+		return fmt.Errorf("error al crear cliente: %w", err)
+	}
 
-    // Clientes, Categorías, Proveedores...
-    client := &tenant.Client{
-        ID:                     1,
-        FirstName:              "Consumidor",
-        LastName:               "Final",
-        ResponsabilityFrontIva: null.StringFrom("consumidor_final"),
-        MemberCreateID:         memberAdmin.ID,
-    }
-    if err := client.Upsert(ctx, db, true, []string{"id"}, boil.Infer(), boil.Infer()); err != nil {
-        return fmt.Errorf("error al crear cliente: %w", err)
-    }
+	// Simplificado para el ejemplo (repetir patrón Upsert para category, supplier, types)
+	category := &tenant.Category{Name: "Sin categoría"}
+	if err := category.Insert(ctx, db, boil.Infer()); err != nil {
+		return err
+	}
 
-    // Simplificado para el ejemplo (repetir patrón Upsert para category, supplier, types)
-    category := &tenant.Category{Name: "Sin categoría"}
-    if err := category.Insert(ctx, db, boil.Infer()); err != nil { return err }
+	supplier := &tenant.Supplier{ID: 1, Name: "Sin proveedor", CompanyName: "Sin nombre"}
+	if err := supplier.Upsert(ctx, db, true, []string{"id"}, boil.Infer(), boil.Infer()); err != nil {
+		return err
+	}
 
-    supplier := &tenant.Supplier{ID: 1, Name: "Sin proveedor", CompanyName: "Sin nombre"}
-    if err := supplier.Upsert(ctx, db, true, []string{"id"}, boil.Infer(), boil.Infer()); err != nil { return err }
+	typeExpense := &tenant.TypeExpense{ID: 1, Name: "Otros"}
+	if err := typeExpense.Upsert(ctx, db, true, []string{"id"}, boil.Infer(), boil.Infer()); err != nil {
+		return err
+	}
 
-    typeExpense := &tenant.TypeExpense{ID: 1, Name: "Otros"}
-    if err := typeExpense.Upsert(ctx, db, true, []string{"id"}, boil.Infer(), boil.Infer()); err != nil { return err }
+	typeIncome := &tenant.TypeIncome{ID: 1, Name: "Otros"}
+	if err := typeIncome.Upsert(ctx, db, true, []string{"id"}, boil.Infer(), boil.Infer()); err != nil {
+		return err
+	}
 
-    typeIncome := &tenant.TypeIncome{ID: 1, Name: "Otros"}
-    if err := typeIncome.Upsert(ctx, db, true, []string{"id"}, boil.Infer(), boil.Infer()); err != nil { return err }
+	pointSale := &tenant.PointSale{
+		ID:          1,
+		Name:        "Mi punto de venta",
+		Description: null.StringFrom("Mi primer punto de venta de NOA Gestión"),
+		Number:      1,
+		IsDeposit:   true,
+		IsMain:      true,
+	}
+	if err := pointSale.Upsert(ctx, db, true, []string{"id"}, boil.Infer(), boil.Infer()); err != nil {
+		return fmt.Errorf("error al crear punto de venta: %w", err)
+	}
 
-    pointSale := &tenant.PointSale{
-        ID:          1,
-        Name:        "Mi punto de venta",
-        Description: null.StringFrom("Mi primer punto de venta de NOA Gestión"),
-        Number:      1,
-        IsDeposit:   true,
-        IsMain:      true,
-    }
-    if err := pointSale.Upsert(ctx, db, true, []string{"id"}, boil.Infer(), boil.Infer()); err != nil {
-        return fmt.Errorf("error al crear punto de venta: %w", err)
-    }
+	// 5. Manejo de Relaciones (En lugar de Association de GORM)
+	// SQLBoiler genera métodos Add[Relacion]
+	if err := memberAdmin.AddPointSales(ctx, db, true, pointSale); err != nil {
+		return fmt.Errorf("error al crear relacion miembro-punto_venta: %w", err)
+	}
 
-    // 5. Manejo de Relaciones (En lugar de Association de GORM)
-    // SQLBoiler genera métodos Add[Relacion]
-    if err := memberAdmin.AddPointSales(ctx, db, true, pointSale); err != nil {
-        return fmt.Errorf("error al crear relacion miembro-punto_venta: %w", err)
-    }
+	// 6. Sincronizar Secuencias (Corregido para sql.DB)
+	tables := []string{"roles", "members", "clients", "suppliers", "type_expenses", "type_incomes", "point_sales"}
+	for _, table := range tables {
+		query := fmt.Sprintf("SELECT setval(pg_get_serial_sequence('%s', 'id'), COALESCE(MAX(id), 1)) FROM %s", table, table)
+		if _, err := db.Exec(query); err != nil {
+			log.Warn().Msgf("No se pudo sincronizar secuencia de %s (posiblemente no es serial)", table)
+		}
+	}
 
-    // 6. Sincronizar Secuencias (Corregido para sql.DB)
-    tables := []string{"roles", "members", "clients", "suppliers", "type_expenses", "type_incomes", "point_sales"}
-    for _, table := range tables {
-        query := fmt.Sprintf("SELECT setval(pg_get_serial_sequence('%s', 'id'), COALESCE(MAX(id), 1)) FROM %s", table, table)
-        if _, err := db.Exec(query); err != nil {
-            log.Warn().Msgf("No se pudo sincronizar secuencia de %s (posiblemente no es serial)", table)
-        }
-    }
+	// 7. Auditoría
+	if err := ApplyAuditTriggers(db); err != nil {
+		return fmt.Errorf("error al aplicar triggers: %w", err)
+	}
 
-    // 7. Auditoría
-    if err := ApplyAuditTriggers(db); err != nil {
-        return fmt.Errorf("error al aplicar triggers: %w", err)
-    }
-
-    return nil
+	return nil
 }
 
 func handleDBCreationError(uri string) {
@@ -390,11 +395,11 @@ $$ LANGUAGE plpgsql;
 // 	// 2. Obtener TODAS las tablas del esquema público
 // 	var tables []string
 // 	queryTables := `
-// 		SELECT table_name 
-// 		FROM information_schema.tables 
-// 		WHERE table_schema = 'public' 
+// 		SELECT table_name
+// 		FROM information_schema.tables
+// 		WHERE table_schema = 'public'
 // 		AND table_type = 'BASE TABLE'
-// 		AND table_name != 'audit_logs' 
+// 		AND table_name != 'audit_logs'
 // 		AND table_name != 'migrations';
 // 	`
 // 	if err := db.Raw(queryTables).Scan(&tables).Error; err != nil {

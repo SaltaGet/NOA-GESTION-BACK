@@ -7,10 +7,10 @@ import (
 	"sort"
 	"strings"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 )
 
 func (r *StockRepository) getPointSale(ctx context.Context, pointID int64) (*boilmodels.PointSale, error) {
@@ -93,7 +93,7 @@ func (r *StockRepository) StockGetByID(id, pointID int64) (*schemas.ProductStock
 		Price:          product.Price,
 		Stock:          product.Stock,
 		PrimaryImage:   product.PrimaryImage,
-		SecondaryImage: utils.SplitStrings(secondaries),
+		SecondaryImage: utils.SplitStrings(&secondaries),
 		Category: schemas.CategoryResponseStock{
 			ID:   product.CategoryID,
 			Name: product.CategoryName,
@@ -133,7 +133,7 @@ func (r *StockRepository) StockGetByCode(code string, pointID int64) (*schemas.P
 		Price:          product.Price,
 		Stock:          product.Stock,
 		PrimaryImage:   product.PrimaryImage,
-		SecondaryImage: utils.SplitStrings(secondaries),
+		SecondaryImage: utils.SplitStrings(&secondaries),
 		Category: schemas.CategoryResponseStock{
 			ID:   product.CategoryID,
 			Name: product.CategoryName,
@@ -171,7 +171,7 @@ func (r *StockRepository) StockGetByCategoryID(categoryID, pointID int64) ([]*sc
 			Price:          p.Price,
 			Stock:          p.Stock,
 			PrimaryImage:   p.PrimaryImage,
-			SecondaryImage: utils.SplitStrings(secondaries),
+			SecondaryImage: utils.SplitStrings(&secondaries),
 			Category: schemas.CategoryResponseStock{
 				ID:   p.CategoryID,
 				Name: p.CategoryName,
@@ -238,7 +238,7 @@ func (r *StockRepository) StockGetByName(name string, pointID int64) ([]*schemas
 				Price:          p.Price,
 				Stock:          p.Stock,
 				PrimaryImage:   p.PrimaryImage,
-				SecondaryImage: utils.SplitStrings(secondaries),
+				SecondaryImage: utils.SplitStrings(&secondaries),
 				Category: schemas.CategoryResponseStock{
 					ID:   p.CategoryID,
 					Name: p.CategoryName,
@@ -269,13 +269,13 @@ func (r *StockRepository) StockGetByName(name string, pointID int64) ([]*schemas
 					Price:          p.Price,
 					Stock:          p.Stock,
 					PrimaryImage:   p.PrimaryImage,
-					SecondaryImage: utils.SplitStrings(secondaries),
+					SecondaryImage: utils.SplitStrings(&secondaries),
 					Category: schemas.CategoryResponseStock{
 						ID:   p.CategoryID,
 						Name: p.CategoryName,
 					},
 				},
-				Score:  score,
+				Score:  float64(score),
 				Length: len(p.Name),
 			})
 		}
@@ -352,7 +352,7 @@ func (r *StockRepository) StockGetAll(page, limit int, pointID int64) ([]*schema
 			Price:          p.Price,
 			Stock:          p.Stock,
 			PrimaryImage:   p.PrimaryImage,
-			SecondaryImage: utils.SplitStrings(secondaries),
+			SecondaryImage: utils.SplitStrings(&secondaries),
 			Category: schemas.CategoryResponseStock{
 				ID:   p.CategoryID,
 				Name: p.CategoryName,

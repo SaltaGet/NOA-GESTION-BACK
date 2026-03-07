@@ -4,13 +4,13 @@ import (
 	"context"
 
 	"github.com/DanielChachagua/ecommerce-noagestion-protos/pb"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
 )
 
 type GrpcTenantRepository interface {
 	// Define methods for tenant repository
-	ListTenants() ([]models.Tenant, error)	
-	GetTenant(req *pb.TenantRequest) (*models.Tenant, error)
+	ListTenants() ([]master.Tenant, error)	
+	GetTenant(req *pb.TenantRequest) (*master.Tenant, error)
 	UpdateImageSetting(ctx context.Context, req *pb.TenantRequestImageSetting) (*pb.TenantUpdateImageResponse, error)
 }
 

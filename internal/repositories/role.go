@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 )
 
 func mapToPermissionResponse(p *boilmodels.Permission) schemas.PermissionResponse {
@@ -19,9 +19,9 @@ func mapToPermissionResponse(p *boilmodels.Permission) schemas.PermissionRespons
 	return schemas.PermissionResponse{
 		ID:          p.ID,
 		Code:        p.Code,
-		Group:       p.Group.String,
-		Environment: p.Environment.String,
-		Details:     p.Details.String,
+		Group:       p.Group,
+		Environment: p.Environment,
+		Details:     p.Details,
 	}
 }
 
@@ -43,6 +43,16 @@ func mapToRoleResponse(r *boilmodels.Role) schemas.RoleResponse {
 	}
 
 	return res
+}
+
+func mapToRoleResponseDTO(r *boilmodels.Role) schemas.RoleResponseDTO {
+	if r == nil {
+		return schemas.RoleResponseDTO{}
+	}
+	return schemas.RoleResponseDTO{
+		ID:   r.ID,
+		Name: r.Name,
+	}
 }
 
 func (r *RoleRepository) RoleGetByID(id int64) (*schemas.RoleResponse, error) {
@@ -110,7 +120,7 @@ func expandPermissions(ctx context.Context, exec boil.ContextExecutor, permissio
 	var groupsToExpand []interface{}
 	for _, perm := range requestedPermissions {
 		if len(perm.Code) >= 2 && perm.Code[len(perm.Code)-2:] == "02" {
-			groupsToExpand = append(groupsToExpand, perm.Group.String)
+			groupsToExpand = append(groupsToExpand, perm.Group)
 		}
 	}
 

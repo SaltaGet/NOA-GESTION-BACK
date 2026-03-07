@@ -1,9 +1,9 @@
 package controllers
 
 import (
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -75,7 +75,7 @@ func (t *NewsController) NewsCreate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	admin := c.Locals("user_admin").(*models.Admin)
+	admin := c.Locals("user_admin").(*master.Admin)
 
 	id, err := t.NewsService.NewsCreate(admin.ID, &newCreate)
 	if err != nil {
@@ -106,7 +106,7 @@ func (t *NewsController) NewsUpdate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	admin := c.Locals("user_admin").(*models.Admin)
+	admin := c.Locals("user_admin").(*master.Admin)
 	err := t.NewsService.NewsUpdate(admin.ID, &newUpdate)
 	if err != nil {
 		return schemas.HandleError(c, err)
@@ -137,7 +137,7 @@ func (t *NewsController) NewsDelete(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	admin := c.Locals("user_admin").(*models.Admin)
+	admin := c.Locals("user_admin").(*master.Admin)
 	err = t.NewsService.NewsDelete(admin.ID, idInt)
 	if err != nil {
 		return schemas.HandleError(c, err)

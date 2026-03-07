@@ -5,13 +5,13 @@ import (
 	"database/sql"
 	"errors"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	mastermodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 )
 
-func mapToFeedbackResponse(f *boilmodels.Feedback) *schemas.FeedbackResponse {
+func mapToFeedbackResponse(f *mastermodels.Feedback) *schemas.FeedbackResponse {
 	if f == nil {
 		return nil
 	}
@@ -20,31 +20,25 @@ func mapToFeedbackResponse(f *boilmodels.Feedback) *schemas.FeedbackResponse {
 		Title:   f.Title,
 		Content: f.Content,
 	}
-	if f.CreatedAt.Valid {
-		res.CreatedAt = f.CreatedAt.Time
-	}
-	if f.UpdatedAt.Valid {
-		res.UpdatedAt = f.UpdatedAt.Time
-	}
+	res.CreatedAt = f.CreatedAt
+	res.UpdatedAt = f.UpdatedAt
 	return res
 }
 
-func mapToFeedbackResponseDTO(f *boilmodels.Feedback) schemas.FeedbackResponseDTO {
+func mapToFeedbackResponseDTO(f *mastermodels.Feedback) schemas.FeedbackResponseDTO {
 	res := schemas.FeedbackResponseDTO{
 		ID:     f.ID,
 		Title:  f.Title,
 		IsRead: f.IsRead,
 	}
-	if f.CreatedAt.Valid {
-		res.CreatedAt = f.CreatedAt.Time
-	}
+	res.CreatedAt = f.CreatedAt
 	return res
 }
 
 func (r *MainRepository) FeedbackGetByID(id int64) (*schemas.FeedbackResponse, error) {
 	ctx := context.Background()
 
-	feedback, err := boilmodels.Feedbacks(boilmodels.FeedbackWhere.ID.EQ(id)).One(ctx, r.DB)
+	feedback, err := mastermodels.Feedbacks(mastermodels.FeedbackWhere.ID.EQ(id)).One(ctx, r.DB)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, schemas.HandlerErrorDB(err, "Feedback", schemas.Read)
@@ -53,7 +47,7 @@ func (r *MainRepository) FeedbackGetByID(id int64) (*schemas.FeedbackResponse, e
 	}
 
 	feedback.IsRead = true
-	if _, err := feedback.Update(ctx, r.DB, boil.Whitelist(boilmodels.FeedbackColumns.IsRead, boilmodels.FeedbackColumns.UpdatedAt)); err != nil {
+	if _, err := feedback.Update(ctx, r.DB, boil.Whitelist(mastermodels.FeedbackColumns.IsRead, mastermodels.FeedbackColumns.UpdatedAt)); err != nil {
 		return nil, schemas.HandlerErrorDB(err, "Feedback", schemas.Update)
 	}
 
@@ -63,12 +57,12 @@ func (r *MainRepository) FeedbackGetByID(id int64) (*schemas.FeedbackResponse, e
 func (r *MainRepository) FeedbackGetAll() ([]schemas.FeedbackResponseDTO, error) {
 	ctx := context.Background()
 
-	feedbacks, err := boilmodels.Feedbacks(
+	feedbacks, err := mastermodels.Feedbacks(
 		qm.Select(
-			boilmodels.FeedbackColumns.ID,
-			boilmodels.FeedbackColumns.Title,
-			boilmodels.FeedbackColumns.IsRead,
-			boilmodels.FeedbackColumns.CreatedAt,
+			mastermodels.FeedbackColumns.ID,
+			mastermodels.FeedbackColumns.Title,
+			mastermodels.FeedbackColumns.IsRead,
+			mastermodels.FeedbackColumns.CreatedAt,
 		),
 		qm.OrderBy("created_at DESC"),
 	).All(ctx, r.DB)
@@ -88,7 +82,7 @@ func (r *MainRepository) FeedbackGetAll() ([]schemas.FeedbackResponseDTO, error)
 func (r *MainRepository) FeedbackCreate(newsCreate *schemas.FeedbackCreate) (int64, error) {
 	ctx := context.Background()
 
-	newFeedback := boilmodels.Feedback{
+	newFeedback := mastermodels.Feedback{
 		Title:   newsCreate.Title,
 		Content: newsCreate.Content,
 	}

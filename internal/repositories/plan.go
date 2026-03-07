@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"github.com/volatiletech/sqlboiler/v4/types"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/types"
+	"github.com/ericlagergren/decimal"
 )
 
 func mapToTenantResponse(t *boilmodels.Tenant) schemas.TenantResponse {
@@ -20,31 +20,20 @@ func mapToTenantResponse(t *boilmodels.Tenant) schemas.TenantResponse {
 	}
 
 	res := schemas.TenantResponse{
-		ID:            t.ID,
-		Name:          t.Name,
-		SchemaName:    t.SchemaName, // Verify field
-		Connection:    t.Connection,
-		IsActive:      t.IsActive,
-		AcceptedTerms: t.AcceptedTerms,     // Keep boolean default mapping straight
-		PlanID:        int64(t.PlanID.Int), // Handling nulls
+		ID:       t.ID,
+		Name:     t.Name,
+		Address:  t.Address,
+		Phone:    t.Phone,
+		Email:    t.Email,
+		IsActive: t.IsActive,
 	}
 
 	if t.Expiration.Valid {
-		ex := t.Expiration.Time.Format("2006-01-02")
-		res.Expiration = &ex
+		res.Expiration = t.Expiration.Time
 	}
 
-	if t.Phone.Valid {
-		res.Phone = &t.Phone.String
-	}
-
-	if t.TypeID.Valid {
-		res.TypeID = int64(t.TypeID.Int)
-	}
-
-	if t.CreatedAt.Valid {
-		res.CreatedAt = t.CreatedAt.Time
-	}
+	res.CreatedAt = t.CreatedAt
+	res.UpdatedAt = t.UpdatedAt
 
 	return res
 }
@@ -62,11 +51,11 @@ func mapToPlanResponse(p *boilmodels.Plan) *schemas.PlanResponse {
 		Name:            p.Name,
 		PriceMounthly:   mounthly,
 		PriceYearly:     yearly,
-		Description:     p.Description.String,
-		Features:        p.Features.String,
-		AmountPointSale: int64(p.AmountPointSale.Int),
-		AmountMember:    int64(p.AmountMember.Int),
-		AmountProduct:   int64(p.AmountProduct.Int),
+		Description:     p.Description,
+		Features:        p.Features,
+		AmountPointSale: p.AmountPointSale,
+		AmountMember:    p.AmountMember,
+		AmountProduct:   p.AmountProduct,
 	}
 
 	if p.R != nil && len(p.R.Tenants) > 0 {
@@ -91,11 +80,11 @@ func mapToPlanResponseDTO(p *boilmodels.Plan) *schemas.PlanResponseDTO {
 		Name:            p.Name,
 		PriceMounthly:   mounthly,
 		PriceYearly:     yearly,
-		Description:     p.Description.String,
-		Features:        p.Features.String,
-		AmountPointSale: int64(p.AmountPointSale.Int),
-		AmountMember:    int64(p.AmountMember.Int),
-		AmountProduct:   int64(p.AmountProduct.Int),
+		Description:     p.Description,
+		Features:        p.Features,
+		AmountPointSale: p.AmountPointSale,
+		AmountMember:    p.AmountMember,
+		AmountProduct:   p.AmountProduct,
 	}
 
 	return res
@@ -115,13 +104,13 @@ func (r *MainRepository) PlanCreate(adminID int64, planCreate *schemas.PlanCreat
 
 	plan := &boilmodels.Plan{
 		Name:            planCreate.Name,
-		PriceMounthly:   types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", planCreate.PriceMounthly))),
-		PriceYearly:     types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", planCreate.PriceYearly))),
-		Description:     null.StringFrom(planCreate.Description),
-		Features:        null.StringFrom(planCreate.Features),
-		AmountPointSale: null.IntFrom(int(planCreate.AmountPointSale)),
-		AmountMember:    null.IntFrom(int(planCreate.AmountMember)),
-		AmountProduct:   null.IntFrom(int(planCreate.AmountProduct)),
+		PriceMounthly:   types.NewDecimal(decimal.New(0, 0).SetFloat64(planCreate.PriceMounthly)),
+		PriceYearly:     types.NewDecimal(decimal.New(0, 0).SetFloat64(planCreate.PriceYearly)),
+		Description:     planCreate.Description,
+		Features:        planCreate.Features,
+		AmountPointSale: int64(planCreate.AmountPointSale),
+		AmountMember:    int64(planCreate.AmountMember),
+		AmountProduct:   int64(planCreate.AmountProduct),
 	}
 
 	if err := plan.Insert(ctx, tx, boil.Infer()); err != nil {
@@ -156,13 +145,13 @@ func (r *MainRepository) PlanUpdate(adminID int64, planUpdate *schemas.PlanUpdat
 	}
 
 	plan.Name = planUpdate.Name
-	plan.PriceMounthly = types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", planUpdate.PriceMounthly)))
-	plan.PriceYearly = types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", planUpdate.PriceYearly)))
-	plan.Description = null.StringFrom(planUpdate.Description)
-	plan.Features = null.StringFrom(planUpdate.Features)
-	plan.AmountPointSale = null.IntFrom(int(planUpdate.AmountPointSale))
-	plan.AmountMember = null.IntFrom(int(planUpdate.AmountMember))
-	plan.AmountProduct = null.IntFrom(int(planUpdate.AmountProduct))
+	plan.PriceMounthly = types.NewDecimal(decimal.New(0, 0).SetFloat64(planUpdate.PriceMounthly))
+	plan.PriceYearly = types.NewDecimal(decimal.New(0, 0).SetFloat64(planUpdate.PriceYearly))
+	plan.Description = planUpdate.Description
+	plan.Features = planUpdate.Features
+	plan.AmountPointSale = int64(planUpdate.AmountPointSale)
+	plan.AmountMember = int64(planUpdate.AmountMember)
+	plan.AmountProduct = int64(planUpdate.AmountProduct)
 
 	if _, err := plan.Update(ctx, tx, boil.Infer()); err != nil {
 		// Unique error simulation check can be added or parsed from db error msg inside schemas.IsDuplicateError

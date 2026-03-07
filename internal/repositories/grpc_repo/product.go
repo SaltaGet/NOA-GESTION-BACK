@@ -2,91 +2,99 @@ package grpc_repo
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"slices"
 	"strings"
 
 	"github.com/DanielChachagua/ecommerce-noagestion-protos/pb"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
-func (r *GrpcProductRepository) ProductGetByID(id int64) (*models.Product, error) {
-	var product models.Product
-
-	err := r.DB.Preload("StockDeposit").Preload("Category").Where("id = ?", id).First(&product).Error
+func (r *GrpcProductRepository) ProductGetByID(id int64) (*tenant.Product, error) {
+	product, err := tenant.Products(
+		qm.Where("id = ?", id),
+		qm.Load(tenant.ProductRels.Deposits),
+		qm.Load(tenant.ProductRels.Category),
+	).One(context.Background(), r.DB)
 
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errors.New("producto no encontrado")
 		}
 		return nil, err
 	}
 
-	return &product, nil
+	return product, nil
 }
 
-func (r *GrpcProductRepository) ProductGetByCode(code string) (*models.Product, error) {
-	var product models.Product
+func (r *GrpcProductRepository) ProductGetByCode(code string) (*tenant.Product, error) {
+	product, err := tenant.Products(
+		qm.Where("code = ? AND is_visible = ?", code, true),
+		qm.Load(tenant.ProductRels.Deposits),
+		qm.Load(tenant.ProductRels.Category),
+	).One(context.Background(), r.DB)
 
-	err := r.DB.Preload("StockDeposit").
-		Preload("Category").
-		Where("code = ? AND is_visible = ?", code, true).First(&product).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, status.Error(codes.NotFound, "producto no encontrado")
 		}
 		return nil, err
 	}
 
-	return &product, nil
+	return product, nil
 }
 
 // ProductList obtiene productos con paginación, filtros y ordenamiento
-func (r *GrpcProductRepository) ProductList(req *pb.ListProductsRequest) ([]*models.Product, int64, error) {
-	var products []*models.Product
-	var total int64
-
-	query := r.DB.Preload("StockDeposit").Preload("Category").Model(&models.Product{})
+func (r *GrpcProductRepository) ProductList(req *pb.ListProductsRequest) ([]*tenant.Product, int64, error) {
+	var mods []qm.QueryMod
 
 	if req.CategoryId != nil {
-		query = query.Where("category_id = ?", *req.CategoryId)
+		mods = append(mods, qm.Where("category_id = ?", *req.CategoryId))
 	}
 
 	if req.Search != nil {
 		searchPattern := "%" + *req.Search + "%"
-		query = query.Where("name LIKE ?", searchPattern)
+		mods = append(mods, qm.Where("name LIKE ?", searchPattern))
 	}
 
-	query = query.Where("is_visible = ?", true)
+	mods = append(mods, qm.Where("is_visible = ?", true))
 
 	// Contar total antes de paginar
-	if err := query.Count(&total).Error; err != nil {
+	total, err := tenant.Products(mods...).Count(context.Background(), r.DB)
+	if err != nil {
 		return nil, 0, err
 	}
 
 	if req.Sort != nil {
 		sortValue := *req.Sort
 		switch sortValue {
-		case pb.ListProductsRequest_PRICE_LOW_TO_HIGH: // PRICE_LOW_TO_HIGH
-			query = query.Order("price ASC")
-		case pb.ListProductsRequest_PRICE_HIGH_TO_LOW: // PRICE_HIGH_TO_LOW
-			query = query.Order("price DESC")
-		case pb.ListProductsRequest_NAME_A_Z: // NAME_A_Z
-			query = query.Order("name ASC")
-		case pb.ListProductsRequest_NAME_Z_A: // NAME_Z_A
-			query = query.Order("name DESC")
+		case pb.ListProductsRequest_PRICE_LOW_TO_HIGH:
+			mods = append(mods, qm.OrderBy("price ASC"))
+		case pb.ListProductsRequest_PRICE_HIGH_TO_LOW:
+			mods = append(mods, qm.OrderBy("price DESC"))
+		case pb.ListProductsRequest_NAME_A_Z:
+			mods = append(mods, qm.OrderBy("name ASC"))
+		case pb.ListProductsRequest_NAME_Z_A:
+			mods = append(mods, qm.OrderBy("name DESC"))
 		default:
-			query = query.Order("id DESC") // Por defecto
+			mods = append(mods, qm.OrderBy("id DESC"))
 		}
+	} else {
+		mods = append(mods, qm.OrderBy("id DESC"))
 	}
 
 	// Paginación
 	offset := (req.Page - 1) * req.Limit
-	if err := query.Offset(int(offset)).Limit(int(req.Limit)).Find(&products).Error; err != nil {
+	mods = append(mods, qm.Offset(int(offset)), qm.Limit(int(req.Limit)), qm.Load(tenant.ProductRels.Deposits), qm.Load(tenant.ProductRels.Category))
+
+	products, err := tenant.Products(mods...).All(context.Background(), r.DB)
+	if err != nil {
 		return nil, 0, status.Error(codes.Internal, "error interno:"+err.Error())
 	}
 
@@ -94,72 +102,96 @@ func (r *GrpcProductRepository) ProductList(req *pb.ListProductsRequest) ([]*mod
 }
 
 func (r *GrpcProductRepository) SaveUrlImage(req *pb.SaveImageRequest) error {
-	return r.DB.Transaction(func(tx *gorm.DB) error {
-		var prodExist models.Product
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&prodExist, req.ProdId).Error; err != nil {
+	ctx := context.Background()
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return status.Errorf(codes.Internal, "no se pudo iniciar transacción: %v", err)
+	}
+
+	defer tx.Rollback()
+
+	prodExist, err := tenant.Products(qm.Where("id = ?", req.ProdId), qm.For("UPDATE")).One(ctx, tx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
 			return status.Error(codes.NotFound, "El producto no existe")
 		}
+		return err
+	}
 
-		// 1. Actualizar Imagen Principal
-		if req.PrimaryImage != nil {
-			prodExist.PrimaryImage = req.PrimaryImage
+	var updateCols []string
+
+	// 1. Actualizar Imagen Principal
+	if req.PrimaryImage != nil {
+		prodExist.PrimaryImage = null.StringFrom(*req.PrimaryImage)
+		updateCols = append(updateCols, tenant.ProductColumns.PrimaryImage)
+	}
+
+	// 2. Lógica de Imágenes Secundarias
+	var currentImages []string
+	if prodExist.SecondaryImages.Valid && prodExist.SecondaryImages.String != "" {
+		currentImages = strings.Split(prodExist.SecondaryImages.String, ",")
+	}
+
+	var updatedList []string
+	for _, keep := range req.KeepSecondaries {
+		if slices.Contains(currentImages, keep) {
+			updatedList = append(updatedList, keep)
 		}
+	}
 
-		// 2. Lógica de Imágenes Secundarias (Delta Logic)
-		// Obtenemos las actuales de forma segura
-		var currentImages []string
-		if prodExist.SecondaryImages != nil && *prodExist.SecondaryImages != "" {
-			currentImages = strings.Split(*prodExist.SecondaryImages, ",")
-		}
+	if len(req.SecondaryImages) > 0 {
+		updatedList = append(updatedList, req.SecondaryImages...)
+	}
 
-		// Creamos la nueva lista empezando por las que el cliente quiere MANTENER
-		var updatedList []string
-		for _, keep := range req.KeepSecondaries {
-			if slices.Contains(currentImages, keep) {
-				updatedList = append(updatedList, keep)
-			}
-		}
+	if len(updatedList) == 0 {
+		prodExist.SecondaryImages = null.NewString("", false)
+	} else {
+		finalString := strings.Join(updatedList, ",")
+		prodExist.SecondaryImages = null.StringFrom(finalString)
+	}
 
-		// Agregamos las NUEVAS imágenes subidas
-		if len(req.SecondaryImages) > 0 {
-			updatedList = append(updatedList, req.SecondaryImages...)
-		}
+	updateCols = append(updateCols, tenant.ProductColumns.SecondaryImages)
 
-		// 3. Guardar cambios en el campo de texto
-		if len(updatedList) == 0 {
-			prodExist.SecondaryImages = nil
-		} else {
-			finalString := strings.Join(updatedList, ",")
-			prodExist.SecondaryImages = &finalString
-		}
+	if _, err := prodExist.Update(ctx, tx, boil.Whitelist(updateCols...)); err != nil {
+		return status.Errorf(codes.Internal, "error de base de datos: %v", err)
+	}
 
-		if err := tx.Save(&prodExist).Error; err != nil {
-			return status.Errorf(codes.Internal, "error de base de datos: %v", err)
-		}
+	if err := tx.Commit(); err != nil {
+		return status.Errorf(codes.Internal, "error confirmando transacción: %v", err)
+	}
 
-		return nil
-	})
+	return nil
 }
 
-func (r *GrpcProductRepository) ValidateProducts(ctx context.Context, req *pb.ProductValidateRequest) ([]models.Product, error) {
-	var products []models.Product
+func (r *GrpcProductRepository) ValidateProducts(ctx context.Context, req *pb.ProductValidateRequest) ([]tenant.Product, error) {
+	var products []tenant.Product
 
-	err := r.DB.Preload("StockDeposit", func(db *gorm.DB) *gorm.DB {
-		return db.Select("product_id", "stock")
-	}).Select("id", "price").
-		Where("id IN ?", req.ProductIds).
-		Find(&products).Error
+	if len(req.ProductIds) == 0 {
+		return products, nil
+	}
+
+	var args []interface{}
+	for _, id := range req.ProductIds {
+		args = append(args, id)
+	}
+
+	dbProducts, err := tenant.Products(
+		qm.Select("id", "price"),
+		qm.WhereIn("id IN ?", args...),
+		qm.Load(tenant.ProductRels.Deposits, qm.Select("product_id", "stock")),
+	).All(ctx, r.DB)
+
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Error al validar productos")
 	}
 
-	for i := range products {
-		if products[i].StockDeposit == nil {
-			products[i].StockDeposit = &models.Deposit{
-				ProductID: products[i].ID,
-				Stock:     0,
-			}
+	for _, p := range dbProducts {
+		if len(p.R.Deposits) == 0 {
+			p.R.Deposits = append(p.R.Deposits, &tenant.Deposit{
+				ProductID: p.ID,
+			})
 		}
+		products = append(products, *p)
 	}
 
 	return products, nil

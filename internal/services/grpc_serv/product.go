@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	pb "github.com/DanielChachagua/ecommerce-noagestion-protos/pb"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -42,13 +42,13 @@ func (s *GrpcProductService) ProductList(ctx context.Context, req *pb.ListProduc
 }
 
 func (s *GrpcProductService) SaveUrlImage(ctx context.Context, req *pb.SaveImageRequest) (*pb.SaveImageResponse, error) {
-		err := s.GrpcProductRepository.SaveUrlImage(req)
-		if err != nil {
-				return nil, status.Error(codes.Internal, "Error saving image")
-		}
-		return &pb.SaveImageResponse{
-				Success: true,
-		}, nil
+	err := s.GrpcProductRepository.SaveUrlImage(req)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error saving image")
+	}
+	return &pb.SaveImageResponse{
+		Success: true,
+	}, nil
 }
 
 func (s *GrpcProductService) ProductGetByID(ctx context.Context, req *pb.ProductRequest) (*pb.Product, error) {
@@ -61,44 +61,65 @@ func (s *GrpcProductService) ProductGetByID(ctx context.Context, req *pb.Product
 }
 
 // Helpers de mapeo (puedes moverlos a otro archivo)
-func mapModelToProto(m *models.Product) *pb.Product {
+func mapModelToProto(m *tenant.Product) *pb.Product {
 	var second []string = []string{}
-	if m.SecondaryImages != nil && *m.SecondaryImages != "" {
-        second = strings.Split(*m.SecondaryImages, ",")
-    }
+	if m.SecondaryImages.Valid && m.SecondaryImages.String != "" {
+		second = strings.Split(m.SecondaryImages.String, ",")
+	}
+
+	stock, _ := 0.0, false
+	if m.R != nil && len(m.R.Deposits) > 0 {
+		stock, _ = m.R.Deposits[0].Stock.Float64()
+	}
+
+	catID := int64(m.CategoryID)
+	catName := ""
+	if m.R != nil && m.R.Category != nil {
+		catName = m.R.Category.Name
+	}
+
+	price, _ := m.Price.Float64()
 
 	return &pb.Product{
-		Id:          int64(m.ID),
-		Code:        m.Code,
-		Name:        m.Name,
-		Description: m.Description,
-		Price:       m.Price,
-		Stock:       float32(m.StockDeposit.Stock),
-		PrimaryImage: m.PrimaryImage, 
+		Id:              m.ID,
+		Code:            m.Code,
+		Name:            m.Name,
+		Description:     m.Description.Ptr(),
+		Price:           price,
+		Stock:           float32(stock),
+		PrimaryImage:    m.PrimaryImage.Ptr(),
 		SecondaryImages: second,
 		Category: &pb.Category{
-			Id:   int64(m.Category.ID),
-			Name: m.Category.Name,
+			Id:   catID,
+			Name: catName,
 		},
 	}
 }
 
-func mapModelToDTO(m *models.Product) *pb.ProductDTO {
-	var stock float32 = 0.0
-    if m.StockDeposit != nil {
-        stock = float32(m.StockDeposit.Stock)
-    }
+func mapModelToDTO(m *tenant.Product) *pb.ProductDTO {
+	stock, _ := 0.0, false
+	if m.R != nil && len(m.R.Deposits) > 0 {
+		stock, _ = m.R.Deposits[0].Stock.Float64()
+	}
+
+	catID := int64(m.CategoryID)
+	catName := ""
+	if m.R != nil && m.R.Category != nil {
+		catName = m.R.Category.Name
+	}
+
+	price, _ := m.Price.Float64()
 
 	return &pb.ProductDTO{
-		Id:    int64(m.ID),
-		Code:  m.Code,
-		Name:  m.Name,
-		Price: m.Price,
-		Stock: stock,
-		PrimaryImage: m.PrimaryImage,
+		Id:           m.ID,
+		Code:         m.Code,
+		Name:         m.Name,
+		Price:        price,
+		Stock:        float32(stock),
+		PrimaryImage: m.PrimaryImage.Ptr(),
 		Category: &pb.Category{
-			Id:   int64(m.Category.ID),
-			Name: m.Category.Name,
+			Id:   catID,
+			Name: catName,
 		},
 	}
 }
@@ -119,34 +140,35 @@ func mapModelToDTO(m *models.Product) *pb.ProductDTO {
 // 		dtos.Products = append(dtos.Products, prod)
 // 	}
 
-// 	return dtos, nil
-// }
+//		return dtos, nil
+//	}
 func (s *GrpcProductService) ValidateProducts(ctx context.Context, req *pb.ProductValidateRequest) (*pb.ProductValidateResponse, error) {
-  products, err := s.GrpcProductRepository.ValidateProducts(ctx, req)
-  if err != nil {
-    return nil, status.Error(codes.Internal, "Error validating products")
-  }
+	products, err := s.GrpcProductRepository.ValidateProducts(ctx, req)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error validating products")
+	}
 
-  // FIX 1: Initialize the struct pointer
-  res := &pb.ProductValidateResponse{
-    Products: make([]*pb.ProductValidate, 0, len(products)),
-  }
+	// FIX 1: Initialize the struct pointer
+	res := &pb.ProductValidateResponse{
+		Products: make([]*pb.ProductValidate, 0, len(products)),
+	}
 
-  for _, p := range products {
-    // FIX 2: Defensive check for nested structs
-    var stock float64
-    if p.StockDeposit != nil {
-      stock = p.StockDeposit.Stock
-    } 
+	for _, p := range products {
+		stock, _ := 0.0, false
+		if p.R != nil && len(p.R.Deposits) > 0 {
+			stock, _ = p.R.Deposits[0].Stock.Float64()
+		}
 
-    prod := &pb.ProductValidate{
-      Id:    p.ID,
-      Price: p.Price,
-      Stock: stock,
-    }
-    
-    res.Products = append(res.Products, prod)
-  }
+		price, _ := p.Price.Float64()
 
-  return res, nil
+		prod := &pb.ProductValidate{
+			Id:    p.ID,
+			Price: price,
+			Stock: stock,
+		}
+
+		res.Products = append(res.Products, prod)
+	}
+
+	return res, nil
 }

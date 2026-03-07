@@ -9,92 +9,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"github.com/volatiletech/sqlboiler/v4/types"
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/types"
+	"github.com/ericlagergren/decimal"
 )
-
-func mapToModelProduct(c *boilmodels.Product) *models.Product {
-	if c == nil {
-		return nil
-	}
-
-	p := &models.Product{
-		ID:         c.ID,
-		Code:       c.Code,
-		Name:       c.Name,
-		CategoryID: c.CategoryID,
-		IsVisible:  c.IsVisible,
-		Notifier:   c.Notifier,
-	}
-
-	if c.Description.Valid {
-		p.Description = &c.Description.String
-	}
-	if c.PrimaryImage.Valid {
-		p.PrimaryImage = &c.PrimaryImage.String
-	}
-	if c.SecondaryImages.Valid {
-		p.SecondaryImages = &c.SecondaryImages.String
-	}
-
-	if !c.Price.IsZero() {
-		val, _ := c.Price.Big.Float64()
-		p.Price = val
-	}
-	if !c.MinAmount.IsZero() {
-		val, _ := c.MinAmount.Big.Float64()
-		p.MinAmount = val
-	}
-
-	if c.CreatedAt.Valid {
-		p.CreatedAt = c.CreatedAt.Time
-	}
-	if c.UpdatedAt.Valid {
-		p.UpdatedAt = c.UpdatedAt.Time
-	}
-
-	if c.R != nil {
-		if c.R.Category != nil {
-			p.Category = *mapToModelCategory(c.R.Category)
-		}
-		if len(c.R.Deposits) > 0 {
-			dp := c.R.Deposits[0]
-			stk, _ := dp.Stock.Big.Float64()
-			p.StockDeposit = &models.Deposit{
-				ID:        dp.ID,
-				ProductID: dp.ProductID,
-				Stock:     stk,
-			}
-		}
-		if len(c.R.StockPointSales) > 0 {
-			for _, sp := range c.R.StockPointSales {
-				stk, _ := sp.Stock.Big.Float64()
-				msps := &models.StockPointSale{
-					ID:          sp.ID,
-					ProductID:   sp.ProductID,
-					PointSaleID: sp.PointSaleID,
-					Stock:       stk,
-				}
-				if sp.R != nil && sp.R.PointSale != nil {
-					msps.PointSale = models.PointSale{
-						ID:        sp.R.PointSale.ID,
-						Name:      sp.R.PointSale.Name,
-						IsDeposit: sp.R.PointSale.IsDeposit,
-					}
-				}
-				p.StockPointSales = append(p.StockPointSales, msps)
-			}
-		}
-	}
-
-	return p
-}
 
 func getProductPreloads() []qm.QueryMod {
 	return []qm.QueryMod{
@@ -105,12 +28,12 @@ func getProductPreloads() []qm.QueryMod {
 	}
 }
 
-func floatToDecimal(val float64) types.NullDecimal {
-	d := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%f", val)))
+func floatToDecimal(val float64) types.Decimal {
+	d := types.NewDecimal(new(decimal.Big).SetFloat64(val))
 	return d
 }
 
-func (r *ProductRepository) ProductGetByID(id int64) (*models.Product, error) {
+func (r *ProductRepository) ProductGetByID(id int64) (*boilmodels.Product, error) {
 	ctx := context.Background()
 	mods := getProductPreloads()
 	mods = append(mods, boilmodels.ProductWhere.ID.EQ(id))
@@ -120,10 +43,10 @@ func (r *ProductRepository) ProductGetByID(id int64) (*models.Product, error) {
 		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
-	return mapToModelProduct(product), nil
+	return product, nil
 }
 
-func (r *ProductRepository) ProductGetByCode(code string) (*models.Product, error) {
+func (r *ProductRepository) ProductGetByCode(code string) (*boilmodels.Product, error) {
 	ctx := context.Background()
 	mods := getProductPreloads()
 	mods = append(mods, boilmodels.ProductWhere.Code.EQ(code))
@@ -133,10 +56,10 @@ func (r *ProductRepository) ProductGetByCode(code string) (*models.Product, erro
 		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
-	return mapToModelProduct(product), nil
+	return product, nil
 }
 
-func (r *ProductRepository) ProductGetByCategoryID(categoryID int64) ([]*models.Product, error) {
+func (r *ProductRepository) ProductGetByCategoryID(categoryID int64) ([]*boilmodels.Product, error) {
 	ctx := context.Background()
 	mods := getProductPreloads()
 	mods = append(mods, boilmodels.ProductWhere.CategoryID.EQ(categoryID))
@@ -146,14 +69,10 @@ func (r *ProductRepository) ProductGetByCategoryID(categoryID int64) ([]*models.
 		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
-	var products []*models.Product
-	for _, p := range boilProducts {
-		products = append(products, mapToModelProduct(p))
-	}
-	return products, nil
+	return boilProducts, nil
 }
 
-func (r *ProductRepository) ProductGetByName(name string) ([]*models.Product, error) {
+func (r *ProductRepository) ProductGetByName(name string) ([]*boilmodels.Product, error) {
 	ctx := context.Background()
 	mods := getProductPreloads()
 	if name != "" {
@@ -165,27 +84,22 @@ func (r *ProductRepository) ProductGetByName(name string) ([]*models.Product, er
 		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
-	var allProducts []*models.Product
-	for _, p := range boilProducts {
-		allProducts = append(allProducts, mapToModelProduct(p))
-	}
-
 	if strings.TrimSpace(name) == "" {
-		if len(allProducts) > 10 {
-			return allProducts[:10], nil
+		if len(boilProducts) > 10 {
+			return boilProducts[:10], nil
 		}
-		return allProducts, nil
+		return boilProducts, nil
 	}
 
-	scored := make([]models.ProductWithScore, 0)
+	scored := make([]schemas.ProductWithScore, 0)
 	lowerSearch := strings.ToLower(strings.TrimSpace(name))
 
-	for _, product := range allProducts {
+	for _, product := range boilProducts {
 		lowerName := strings.ToLower(product.Name)
-		score := models.CalculateRelevance(lowerSearch, lowerName)
+		score := schemas.CalculateRelevance(lowerSearch, lowerName)
 
 		if score > 0 {
-			scored = append(scored, models.ProductWithScore{
+			scored = append(scored, schemas.ProductWithScore{
 				Product: product,
 				Score:   score,
 				Length:  len(product.Name),
@@ -201,7 +115,7 @@ func (r *ProductRepository) ProductGetByName(name string) ([]*models.Product, er
 	})
 
 	limit := 10
-	products := make([]*models.Product, 0, limit)
+	products := make([]*boilmodels.Product, 0, limit)
 	for i, ps := range scored {
 		if i >= limit {
 			break
@@ -212,7 +126,7 @@ func (r *ProductRepository) ProductGetByName(name string) ([]*models.Product, er
 	return products, nil
 }
 
-func (r *ProductRepository) ProductGetAll(page, limit int, isVisible *bool) ([]*models.Product, int64, error) {
+func (r *ProductRepository) ProductGetAll(page, limit int, isVisible *bool) ([]*boilmodels.Product, int64, error) {
 	ctx := context.Background()
 
 	mods := getProductPreloads()
@@ -233,15 +147,10 @@ func (r *ProductRepository) ProductGetAll(page, limit int, isVisible *bool) ([]*
 		return nil, 0, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
 
-	var products []*models.Product
-	for _, p := range boilProducts {
-		products = append(products, mapToModelProduct(p))
-	}
-
-	return products, count, nil
+	return boilProducts, count, nil
 }
 
-func (r *ProductRepository) ProductGetByCodeToQR(code string) (*models.Product, error) {
+func (r *ProductRepository) ProductGetByCodeToQR(code string) (*boilmodels.Product, error) {
 	ctx := context.Background()
 	p, err := boilmodels.Products(
 		qm.Select(boilmodels.ProductColumns.Code, boilmodels.ProductColumns.Name),
@@ -250,7 +159,7 @@ func (r *ProductRepository) ProductGetByCodeToQR(code string) (*models.Product, 
 	if err != nil {
 		return nil, schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 	}
-	return mapToModelProduct(p), nil
+	return p, nil
 }
 
 func (r *ProductRepository) ProductCount() (int64, error) {
@@ -262,7 +171,7 @@ func (r *ProductRepository) ProductCount() (int64, error) {
 	return count, nil
 }
 
-func (r *ProductRepository) ProductInsertToExcel(memberID int64, products []models.Product) ([]map[string]string, error) {
+func (r *ProductRepository) ProductInsertToExcel(memberID int64, products []schemas.ProductExcelCreate) ([]map[string]string, error) {
 	ctx := context.Background()
 	rejected := make([]map[string]string, 0)
 
@@ -274,45 +183,41 @@ func (r *ProductRepository) ProductInsertToExcel(memberID int64, products []mode
 			}
 			defer tx.Rollback()
 
-			if product.Category.Name != "" {
-				c, err := boilmodels.Categories(boilmodels.CategoryWhere.Name.EQ(strings.ToLower(product.Category.Name))).One(ctx, tx)
+			var productCategoryID int64
+			if product.Category != "" {
+				c, err := boilmodels.Categories(boilmodels.CategoryWhere.Name.EQ(strings.ToLower(product.Category))).One(ctx, tx)
 				if err != nil && !errors.Is(err, sql.ErrNoRows) {
 					return err
 				}
 				if errors.Is(err, sql.ErrNoRows) {
-					c = &boilmodels.Category{Name: strings.ToLower(product.Category.Name)}
+					c = &boilmodels.Category{Name: strings.ToLower(product.Category)}
 					if err := c.Insert(ctx, tx, boil.Infer()); err != nil {
 						return err
 					}
 				}
-				product.CategoryID = c.ID
+				productCategoryID = c.ID
 			} else {
-				product.CategoryID = 1
+				productCategoryID = 1
 			}
 
 			p := boilmodels.Product{
 				Name:        product.Name,
 				Code:        product.Code,
-				CategoryID:  product.CategoryID,
+				CategoryID:  productCategoryID,
 				Description: null.StringFromPtr(product.Description),
 				Price:       floatToDecimal(product.Price),
-				MinAmount:   floatToDecimal(product.MinAmount).Decimal,
+				MinAmount:   floatToDecimal(product.MinAmount),
 			}
 
 			if err := p.Insert(ctx, tx, boil.Infer()); err != nil {
 				return schemas.HandlerErrorDB(err, "Producto", schemas.Create)
 			}
 
-			product.ID = p.ID
-
-			if product.StockDeposit != nil && product.StockDeposit.Stock <= 0 {
+			if product.Stock <= 0 {
 				return schemas.ErrorResponse(400, "stock no puede ser menor o igual a 0", fmt.Errorf("stock no puede ser menor o igual a 0"))
 			}
 
-			stk := 0.0
-			if product.StockDeposit != nil {
-				stk = product.StockDeposit.Stock
-			}
+			stk := product.Stock
 			dep := boilmodels.Deposit{
 				ProductID: p.ID,
 				Stock:     floatToDecimal(stk),
@@ -367,7 +272,7 @@ func (r *ProductRepository) ProductCreate(memberID int64, productCreate *schemas
 		Description: null.StringFromPtr(productCreate.Description),
 		CategoryID:  productCreate.CategoryID,
 		Notifier:    productCreate.Notifier,
-		MinAmount:   floatToDecimal(productCreate.MinAmount).Decimal,
+		MinAmount:   floatToDecimal(productCreate.MinAmount),
 	}
 
 	if productCreate.Price != nil {
@@ -408,10 +313,10 @@ func (r *ProductRepository) ProductUpdate(memberID int64, product *schemas.Produ
 
 	p.Code = product.Code
 	p.Name = product.Name
-	p.Description = null.StringFromPtr(&product.Description)
-	p.CategoryID = product.CategoryID
+	p.Description = null.StringFrom(*product.Description)
+	p.CategoryID = int64(product.CategoryID)
 	p.Notifier = product.Notifier
-	p.MinAmount = floatToDecimal(product.MinAmount).Decimal
+	p.MinAmount = floatToDecimal(product.MinAmount)
 
 	if _, err := p.Update(ctx, tx, boil.Infer()); err != nil {
 		return schemas.HandlerErrorDB(err, "Producto", schemas.Update)
@@ -534,7 +439,7 @@ func (r *ProductRepository) ProductUpdateVisibility(productUpdate *schemas.ListV
 			return schemas.HandlerErrorDB(err, "Producto", schemas.Update)
 		}
 
-		p.IsVisible = prod.Visibility
+		p.IsVisible = *prod.Visibility
 		rowsAff, err := p.Update(ctx, tx, boil.Whitelist(boilmodels.ProductColumns.IsVisible, boilmodels.ProductColumns.UpdatedAt))
 
 		if err != nil {

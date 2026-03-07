@@ -1,25 +1,26 @@
 package ports
 
 import (
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
 type AuthRepository interface {
-	AuthAdminGetByUsername(username string) (*models.Admin, error)
-	AuthAdminGetByID(id int64) (*models.Admin, error)
-	AuthTenantGetByID(tenantID int64) (*models.Tenant, error)
-	AuthTenantGetByIdentifier(identifier string) (*models.Tenant, error)
-	AuthMemberGetByUserID(userID int64, connection string, tenantID int64) (*models.Member, error)
-	AuthMemberGetByID(id int64, connection string, tenantID int64) (*models.Member, *[]string, error)
-	AuthMemberGetByUsername(username string, connection string, tenantID int64) (*models.Member, error)
-	AuthPointSale(pointSaleID int64, connection string, tenantID, memberID int64) (*models.PointSale, error)
-	AuthForgotPassword(forgotPassword *schemas.AuthForgotPassword) (*models.Member, *models.Tenant, error)
+	AuthAdminGetByUsername(username string) (*master.Admin, error)
+	AuthAdminGetByID(id int64) (*master.Admin, error)
+	AuthTenantGetByID(tenantID int64) (*master.Tenant, error)
+	AuthTenantGetByIdentifier(identifier string) (*master.Tenant, error)
+	AuthMemberGetByUserID(userID int64, connection string, tenantID int64) (*tenant.Member, error)
+	AuthMemberGetByID(id int64, connection string, tenantID int64) (*tenant.Member, *tenant.PermissionSlice, error)
+	AuthMemberGetByUsername(username string, connection string, tenantID int64) (*tenant.Member, error)
+	AuthPointSale(pointSaleID int64, connection string, tenantID, memberID int64) (*tenant.PointSale, error)
+	AuthForgotPassword(forgotPassword *schemas.AuthForgotPassword) (*tenant.Member, *master.Tenant, error)
 	AuthResetPassword(memberID, tenantID int64, newPass string) error
 }
 
 type AuthService interface {
-	AuthAdminGetByID(id int64) (*models.Admin, error)
+	AuthAdminGetByID(id int64) (*master.Admin, error)
 	AuthLogin(username, password string) (string, error)
 	AuthLoginAdmin(username, password string) (string, error)
 	AuthCurrentUser(tenantID, memberID, pointSaleID int64) (*schemas.AuthenticatedUser, error)

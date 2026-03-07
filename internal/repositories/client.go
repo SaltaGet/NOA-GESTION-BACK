@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 )
 
 func mapToClientResponseDTO(c *boilmodels.Client, debt *float64) schemas.ClientResponseDTO {
@@ -48,7 +48,7 @@ func (r *ClientRepository) ClientGetByID(id int64) (*schemas.ClientResponse, err
 
 	c, err := boilmodels.Clients(
 		boilmodels.ClientWhere.ID.EQ(id),
-		boilmodels.ClientWhere.DeleteAt.IsNull(),
+		boilmodels.ClientWhere.DeletedAt.IsNull(),
 		qm.Load(boilmodels.ClientRels.MemberCreate),
 		qm.Load(boilmodels.ClientRels.PayIncomes, boilmodels.PayIncomeWhere.MethodPay.EQ("credit")),
 	).One(ctx, r.DB)
@@ -96,18 +96,14 @@ func (r *ClientRepository) ClientGetByID(id int64) (*schemas.ClientResponse, err
 			for i, pay := range c.R.PayIncomes {
 				val, _ := pay.Total.Big.Float64()
 				var incomeSaleID int64
-				if pay.IncomeSaleID.Valid {
-					incomeSaleID = pay.IncomeSaleID.Int64
-				}
+				incomeSaleID = pay.IncomeSaleID
 				res.Pay[i] = schemas.PayDebtResponse{
 					ID:           pay.ID,
 					IncomeSaleID: incomeSaleID,
 					Total:        val,
 					MethodPay:    pay.MethodPay,
 				}
-				if pay.CreatedAt.Valid {
-					res.Pay[i].CreatedAt = pay.CreatedAt.Time
-				}
+				res.Pay[i].CreatedAt = pay.CreatedAt
 			}
 		}
 	}
@@ -120,7 +116,7 @@ func (r *ClientRepository) ClientGetByFilter(search string) (*[]schemas.ClientRe
 	searchStr := "%" + search + "%"
 
 	boilClients, err := boilmodels.Clients(
-		boilmodels.ClientWhere.DeleteAt.IsNull(),
+		boilmodels.ClientWhere.DeletedAt.IsNull(),
 		qm.Where("last_name ILIKE ? OR first_name ILIKE ? OR identifier ILIKE ?", searchStr, searchStr, searchStr),
 		qm.Limit(10),
 	).All(ctx, r.DB)
@@ -146,7 +142,7 @@ func (r *ClientRepository) ClientGetAll(limit, page int64, search *map[string]st
 	ctx := context.Background()
 
 	var qms []qm.QueryMod
-	qms = append(qms, boilmodels.ClientWhere.DeleteAt.IsNull())
+	qms = append(qms, boilmodels.ClientWhere.DeletedAt.IsNull())
 
 	if filterDrbt {
 		debtFormula := "COALESCE(SUM(CASE WHEN p.method_pay = 'credit' THEN p.total ELSE 0 END), 0)"
@@ -314,8 +310,8 @@ func (r *ClientRepository) ClientDelete(memberID, id int64) error {
 
 	// SQLBoiler with delete_at might do a hard delete?
 	// We'll manually soft delete just in case
-	client.DeleteAt = null.TimeFrom(time.Now())
-	if _, err := client.Update(ctx, tx, boil.Whitelist(boilmodels.ClientColumns.DeleteAt, boilmodels.ClientColumns.UpdatedAt)); err != nil {
+	client.DeletedAt = null.TimeFrom(time.Now())
+	if _, err := client.Update(ctx, tx, boil.Whitelist(boilmodels.ClientColumns.DeletedAt, boilmodels.ClientColumns.UpdatedAt)); err != nil {
 		return schemas.HandlerErrorDB(err, "Cliente", schemas.Delete)
 	}
 

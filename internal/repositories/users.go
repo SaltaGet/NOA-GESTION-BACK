@@ -5,11 +5,10 @@ import (
 	"database/sql"
 	"errors"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 )
 
 func (r *MainRepository) UserGetByID(id int64) (*boilmodels.User, error) {
@@ -53,8 +52,8 @@ func (r *MainRepository) UserGetByListID(ids []int64) (*[]schemas.UserDTO, error
 	for _, user := range users {
 		response = append(response, schemas.UserDTO{
 			ID:        user.ID,
-			FirstName: user.FirstName.String,
-			LastName:  user.LastName.String,
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
 			Username:  user.Username,
 			Email:     user.Email,
 		})
@@ -95,9 +94,10 @@ func (r *MainRepository) UserCreate(user *schemas.UserCreate) (int64, error) {
 	ctx := context.Background()
 
 	newUser := &boilmodels.User{
-		Username: user.Username,
-		Email:    user.Email,
-		Password: user.Password, // Recordar usar hash en service!
+		Username:  user.Username,
+		Email:     user.Email,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
 	}
 
 	if err := newUser.Insert(ctx, r.DB, boil.Infer()); err != nil {
@@ -110,12 +110,8 @@ func (r *MainRepository) UserCreate(user *schemas.UserCreate) (int64, error) {
 func (m *MainRepository) UserTenantAdd(userID, tenantID int64) error {
 	ctx := context.Background()
 
-	userTenant := &boilmodels.UserTenant{
-		UserID:   userID,
-		TenantID: tenantID,
-	}
-
-	if err := userTenant.Insert(ctx, m.DB, boil.Infer()); err != nil {
+	_, err := m.DB.ExecContext(ctx, "INSERT INTO user_tenants (user_id, tenant_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", userID, tenantID)
+	if err != nil {
 		return schemas.ErrorResponse(500, "Error interno al agregar usuario a tenant", err)
 	}
 
@@ -135,8 +131,8 @@ func (m *MainRepository) UserUpdate(userID int64, req *schemas.UserUpdate) error
 		return schemas.ErrorResponse(404, "Usuario no encontrado", err)
 	}
 
-	user.FirstName = null.StringFrom(req.FirstName)
-	user.LastName = null.StringFrom(req.LastName)
+	user.FirstName = req.FirstName
+	user.LastName = req.LastName
 	user.Username = req.Username
 	user.Email = req.Email
 

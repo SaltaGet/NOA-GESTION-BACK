@@ -2,13 +2,14 @@
 package dependencies
 
 import (
+	"database/sql"
+
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/repositories/grpc_repo"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/services/grpc_serv"
-	"gorm.io/gorm"
 )
 
 type GrpcContainer struct {
-	DB      *gorm.DB
+	DB      *sql.DB
 	Services struct {
 		GrpcProductService *grpc_serv.GrpcProductService
 		GrpcCategoryService *grpc_serv.GrpcCategoryService
@@ -21,7 +22,7 @@ type GrpcContainer struct {
 	}
 }
 
-func NewGrpcContainer(db *gorm.DB) *GrpcContainer {
+func NewGrpcContainer(db *sql.DB) *GrpcContainer {
 	c := &GrpcContainer{DB: db}
 
 	// Inicializar repositorios

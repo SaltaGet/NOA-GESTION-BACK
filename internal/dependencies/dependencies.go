@@ -1,13 +1,14 @@
 package dependencies
 
 import (
+	"database/sql"
+
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/controllers"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/repositories"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/services"
 	"gopkg.in/gomail.v2"
-	"gorm.io/gorm"
-)
+)	
 
 type MainContainer struct {
 	AuthController *controllers.AuthController
@@ -21,7 +22,7 @@ type MainContainer struct {
 	CredentialController *controllers.CredentialController
 }
 
-func NewApplication(mainDB *gorm.DB, cfg *schemas.EmailConfig) *MainContainer {
+func NewApplication(mainDB *sql.DB, cfg *schemas.EmailConfig) *MainContainer {
 	mainRepo := &repositories.MainRepository{DB: mainDB}
 	
 	dialer := gomail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)

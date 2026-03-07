@@ -21,6 +21,7 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/grpc/interceptor"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/grpc/server"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/dependencies"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/hooks"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache"
 	grpc_cache "github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache/grpc"
 	tenant_cache "github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache/tenant"
@@ -61,6 +62,9 @@ func main() {
 	}
 
 	logging.InitLogging()
+
+	hooks.InitAdminHooks()
+	hooks.InitMemberHooks()
 
 	path := os.Getenv("APP_ROOT")
 	if path != "" {

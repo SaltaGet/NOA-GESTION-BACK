@@ -1,19 +1,21 @@
 package grpc_repo
 
-import "gorm.io/gorm"
+import (
+	"database/sql"
+)
 
 type GrpcMainRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type GrpcProductRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type GrpcCategoryRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 type GrpcMPRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }

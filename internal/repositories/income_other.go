@@ -7,23 +7,14 @@ import (
 	"fmt"
 	"time"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"github.com/volatiletech/sqlboiler/v4/types"
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/types"
+	"github.com/ericlagergren/decimal"
 )
-
-func mapToTypeIncomeResponse(c *boilmodels.TypeIncome) schemas.TypeIncomeResponse {
-	if c == nil {
-		return schemas.TypeIncomeResponse{}
-	}
-	return schemas.TypeIncomeResponse{
-		ID:   c.ID,
-		Name: c.Name,
-	}
-}
 
 func mapToIncomeOtherResponse(i *boilmodels.IncomeOther) *schemas.IncomeOtherResponse {
 	if i == nil {
@@ -44,16 +35,23 @@ func mapToIncomeOtherResponse(i *boilmodels.IncomeOther) *schemas.IncomeOtherRes
 	if i.CashRegisterID.Valid {
 		res.CashRegisterID = &i.CashRegisterID.Int64
 	}
-	if i.CreatedAt.Valid {
-		res.CreatedAt = i.CreatedAt.Time
-	}
+
+	res.CreatedAt = i.CreatedAt
 
 	if i.R != nil {
 		if i.R.Member != nil {
-			res.Member = mapToMemberSimpleDTO(i.R.Member)
+			res.Member = &schemas.MemberSimpleDTO{
+				ID:        i.R.Member.ID,
+				FirstName: i.R.Member.FirstName,
+				LastName:  i.R.Member.LastName,
+				Username:  i.R.Member.Username,
+			}
 		}
 		if i.R.TypeIncome != nil {
-			res.TypeIncome = mapToTypeIncomeResponse(i.R.TypeIncome)
+			res.TypeIncome = schemas.TypeIncomeResponse{
+				ID:   i.R.TypeIncome.ID,
+				Name: i.R.TypeIncome.Name,
+			}
 		}
 		if i.R.PointSale != nil {
 			p := schemas.PointSaleResponse{
@@ -107,8 +105,8 @@ func (r *IncomeOtherRepository) IncomeOtherGetByDate(pointSaleID *int64, fromDat
 
 	var qms []qm.QueryMod
 	qms = append(qms,
-		boilmodels.IncomeOtherWhere.CreatedAt.GTE(null.TimeFrom(fromDate)),
-		boilmodels.IncomeOtherWhere.CreatedAt.LTE(null.TimeFrom(toDate)),
+		boilmodels.IncomeOtherWhere.CreatedAt.GTE(fromDate),
+		boilmodels.IncomeOtherWhere.CreatedAt.LTE(toDate),
 	)
 
 	if pointSaleID != nil {
@@ -162,7 +160,7 @@ func (r *IncomeOtherRepository) IncomeOtherCreate(memberID int64, pointSaleID *i
 		return 0, schemas.HandlerErrorDB(sql.ErrNoRows, "Tipo de ingreso", schemas.Read)
 	}
 
-	totalDec := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", incomeOtherCreate.Total)))
+	totalDec := types.NewDecimal(decimal.New(0, 0).SetFloat64(incomeOtherCreate.Total))
 
 	incomeOther := &boilmodels.IncomeOther{
 		MemberID:     null.Int64From(memberID),
@@ -235,9 +233,7 @@ func (r *IncomeOtherRepository) IncomeOtherUpdate(memberID int64, pointSaleID *i
 		return schemas.HandlerErrorDB(sql.ErrNoRows, "Tipo de ingreso", schemas.Read)
 	}
 
-	totalDec := types.NewNullDecimal(types.NewDecimal(fmt.Sprintf("%.4f", incomeOtherUpdate.Total)))
-
-	existingIncome.Total = totalDec
+	existingIncome.Total = types.NewDecimal(decimal.New(0, 0).SetFloat64(incomeOtherUpdate.Total))
 	existingIncome.TypeIncomeID = incomeOtherUpdate.TypeIncomeID
 	existingIncome.Details = null.StringFromPtr(incomeOtherUpdate.Details)
 	existingIncome.MethodIncome = incomeOtherUpdate.MethodIncome
@@ -272,7 +268,7 @@ func (r *IncomeOtherRepository) IncomeOtherDelete(memberID int64, incomeOtherID 
 		return schemas.HandlerErrorDB(err, "Otros ingresos", schemas.Read)
 	}
 
-	if _, err := existingIncome.Delete(ctx, tx, false); err != nil {
+	if _, err := existingIncome.Delete(ctx, tx); err != nil {
 		return schemas.HandlerErrorDB(err, "Otros ingresos", schemas.Delete)
 	}
 

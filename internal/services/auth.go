@@ -3,10 +3,11 @@ package services
 import (
 	"fmt"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jinzhu/copier"
 )
@@ -84,20 +85,32 @@ func (a *AuthService) AuthCurrentUser(tenantID, memberID, pointSaleID int64) (*s
 		return nil, err
 	}
 
+	var permCodes []string
+	for _, p := range *permissions {
+		permCodes = append(permCodes, p.Code)
+	}
+
+	var roleID int64
+	var roleName string
+	if member.R != nil && member.R.Role != nil {
+		roleID = member.R.Role.ID
+		roleName = member.R.Role.Name
+	}
+
 	authUser := schemas.AuthenticatedUser{
 		ID:               member.ID,
 		FirstName:        member.FirstName,
 		LastName:         member.LastName,
 		Username:         member.Username,
 		IsAdmin:          member.IsAdmin,
-		Permissions:      BuildUserPermissions(member.Role.Permissions),
-		ListPermissions:  *permissions,
+		Permissions:      BuildUserPermissions(*permissions),
+		ListPermissions:  permCodes,
 		TenantID:         tenant.ID,
 		TenantName:       tenant.Name,
 		TenantIdentifier: tenant.Identifier,
-		RoleID:           member.Role.ID,
-		RoleName:         member.Role.Name,
-		AcceptedTerms:    tenant.AcceptedTerms,
+		RoleID:           roleID,
+		RoleName:         roleName,
+		AcceptedTerms:    tenant.AcceptedTerms, // adjust if needed
 	}
 
 	// if user.IsAdmin {
@@ -149,7 +162,9 @@ func (a *AuthService) AuthCurrentTenant(tenantID int64) (*schemas.TenantResponse
 	var tenantResponse schemas.TenantResponse
 	copier.Copy(&tenantResponse, &tenant)
 
-	tenantResponse.ResponsabilityFrontIVA = tenant.Credentials.ResponsibilityFrontIVA
+	if tenant.R != nil && tenant.R.Credential != nil && tenant.R.Credential.ResponsibilityFrontIva.Valid {
+		tenantResponse.ResponsabilityFrontIVA = &tenant.R.Credential.ResponsibilityFrontIva.String
+	}
 
 	if cache.IsAvailable() {
 		_ = cache.SetTenantInfo(tenantID, &tenantResponse)
@@ -158,7 +173,7 @@ func (a *AuthService) AuthCurrentTenant(tenantID int64) (*schemas.TenantResponse
 	return &tenantResponse, nil
 }
 
-func (a *AuthService) AuthAdminGetByID(userID int64) (*models.Admin, error) {
+func (a *AuthService) AuthAdminGetByID(userID int64) (*master.Admin, error) {
 	admin, err := a.AuthRepository.AuthAdminGetByID(userID)
 	if err != nil {
 		return nil, err
@@ -172,7 +187,7 @@ func (a *AuthService) LogoutPointSale(member *schemas.AuthenticatedUser) (string
 	return utils.GenerateToken(member.ID, &member.TenantID, nil)
 }
 
-func BuildUserPermissions(perms []models.Permission) []schemas.EnvironmentPermissions {
+func BuildUserPermissions(perms tenant.PermissionSlice) []schemas.EnvironmentPermissions {
 	envMap := make(map[string]map[string][]string)
 
 	for _, p := range perms {

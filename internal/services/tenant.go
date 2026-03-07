@@ -3,12 +3,12 @@ package services
 import (
 	"fmt"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
+	master "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
-func (t *TenantService) TenantGetByID(id int64) (*models.Tenant, error) {
+func (t *TenantService) TenantGetByID(id int64) (*master.Tenant, error) {
 	tenant, err := t.TenantRepository.TenantGetByID(id)
 	if err != nil {
 		return nil, err
@@ -16,7 +16,7 @@ func (t *TenantService) TenantGetByID(id int64) (*models.Tenant, error) {
 	return tenant, nil
 }
 
-func (t *TenantService) TenantGetByIdentifier(identifier string) (*models.Tenant, error) {
+func (t *TenantService) TenantGetByIdentifier(identifier string) (*master.Tenant, error) {
 	tenant, err := t.TenantRepository.TenantGetByIdentifier(identifier)
 	if err != nil {
 		return nil, err
@@ -32,11 +32,11 @@ func (t *TenantService) TenantGetAll() (*[]schemas.TenantResponse, error) {
 	return tenants, nil
 }
 
-func (t *TenantService) TenantGetConnectionByIdentifier(tenantIdentifier string) (*models.Tenant, error) {
+func (t *TenantService) TenantGetConnectionByIdentifier(tenantIdentifier string) (*master.Tenant, error) {
 	return t.TenantRepository.TenantGetConnectionByIdentifier(tenantIdentifier)
 }
 
-func (t *TenantService) TenantGetConections() ([]*models.Tenant, error) {
+func (t *TenantService) TenantGetConections() ([]*master.Tenant, error) {
 	conections, err := t.TenantRepository.TenantGetConections()
 	if err != nil {
 		return nil, err
@@ -61,7 +61,6 @@ func (t *TenantService) TenantUserCreate(adminID int64, tenantUserCreate *schema
 
 	username := fmt.Sprintf("%s@%s", tenantUserCreate.UserCreate.Username, tenantUserCreate.TenantCreate.Identifier)
 	go t.EmailService.SendEmail(tenantUserCreate.UserCreate.Email, "Bienvenido a NOA-GESTION", utils.WelcomeUser(username, oldPassword))
-
 
 	return id, nil
 }

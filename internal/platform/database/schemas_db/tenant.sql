@@ -3,7 +3,7 @@ SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
+SELECT pg_catalog.set_config('search_path', '', true);
 SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
@@ -450,8 +450,8 @@ ALTER SEQUENCE public.expense_others_id_seq OWNED BY public.expense_others.id;
 
 CREATE TABLE public.income_ecommerce_items (
     id bigint NOT NULL,
-    income_ecommerce_id bigint,
-    product_id bigint,
+    income_ecommerce_id bigint NOT NULL,
+    product_id bigint NOT NULL,
     amount numeric NOT NULL,
     price_cost numeric NOT NULL,
     price numeric NOT NULL,

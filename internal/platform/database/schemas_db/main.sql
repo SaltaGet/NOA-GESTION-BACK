@@ -3,7 +3,7 @@ SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
+SELECT pg_catalog.set_config('search_path', '', true);
 SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
@@ -39,6 +39,19 @@ DROP TRIGGER IF EXISTS tr_audit_modules ON public.modules;
 DROP TRIGGER IF EXISTS tr_audit_feedbacks ON public.feedbacks;
 DROP TRIGGER IF EXISTS tr_audit_credentials ON public.credentials;
 DROP TRIGGER IF EXISTS tr_audit_admins ON public.admins;
+
+DROP TRIGGER IF EXISTS tr_update_users ON public.users;
+DROP TRIGGER IF EXISTS tr_update_user_tenants ON public.user_tenants;
+DROP TRIGGER IF EXISTS tr_update_tenants ON public.tenants;
+DROP TRIGGER IF EXISTS tr_update_tenant_modules ON public.tenant_modules;
+DROP TRIGGER IF EXISTS tr_update_setting_tenants ON public.setting_tenants;
+DROP TRIGGER IF EXISTS tr_update_schema_migrations ON public.schema_migrations;
+DROP TRIGGER IF EXISTS tr_update_plans ON public.plans;
+DROP TRIGGER IF EXISTS tr_update_news ON public.news;
+DROP TRIGGER IF EXISTS tr_update_modules ON public.modules;
+DROP TRIGGER IF EXISTS tr_update_feedbacks ON public.feedbacks;
+DROP TRIGGER IF EXISTS tr_update_credentials ON public.credentials;
+DROP TRIGGER IF EXISTS tr_update_admins ON public.admins;
 
 DROP INDEX IF EXISTS public.idx_tenants_email;
 DROP INDEX IF EXISTS public.idx_tenants_deleted_at;
@@ -164,6 +177,18 @@ ALTER FUNCTION public.audit_trigger_function_admin() OWNER TO postgres;
 
 SET default_tablespace = '';
 SET default_table_access_method = heap;
+
+-- =====================
+-- UPDATE
+-- =====================
+
+CREATE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
 
 -- =====================
 -- TABLAS
@@ -595,6 +620,18 @@ CREATE TRIGGER tr_audit_tenant_modules AFTER INSERT OR DELETE OR UPDATE ON publi
 CREATE TRIGGER tr_audit_tenants AFTER INSERT OR DELETE OR UPDATE ON public.tenants FOR EACH ROW EXECUTE FUNCTION public.audit_trigger_function_admin();
 CREATE TRIGGER tr_audit_user_tenants AFTER INSERT OR DELETE OR UPDATE ON public.user_tenants FOR EACH ROW EXECUTE FUNCTION public.audit_trigger_function_admin();
 CREATE TRIGGER tr_audit_users AFTER INSERT OR DELETE OR UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION public.audit_trigger_function_admin();
+
+CREATE TRIGGER tr_update_admins BEFORE UPDATE ON public.admins FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER tr_update_feedbacks BEFORE UPDATE ON public.feedbacks FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER tr_update_modules BEFORE UPDATE ON public.modules FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER tr_update_news BEFORE UPDATE ON public.news FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER tr_update_plans BEFORE UPDATE ON public.plans FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER tr_update_schema_migrations BEFORE UPDATE ON public.schema_migrations FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER tr_update_setting_tenants BEFORE UPDATE ON public.setting_tenants FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER tr_update_tenant_modules BEFORE UPDATE ON public.tenant_modules FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER tr_update_tenants BEFORE UPDATE ON public.tenants FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER tr_update_user_tenants BEFORE UPDATE ON public.user_tenants FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER tr_update_users BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- =====================
 -- FOREIGN KEYS

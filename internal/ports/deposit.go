@@ -1,15 +1,15 @@
 package ports
 
 import (
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
 type DepositRepository interface {
-	DepositGetByID(id int64) (*models.Product, error)
-	DepositGetByCode(code string) (*models.Product, error)
-	DepositGetByName(name string) ([]*models.Product, error)
-	DepositGetAll(page, limit int) ([]*models.Product, int64,error)
+	DepositGetByID(id int64) (*tenant.Product, error)
+	DepositGetByCode(code string) (*tenant.Product, error)
+	DepositGetByName(name string) ([]*tenant.Product, error)
+	DepositGetAll(page, limit int) ([]*tenant.Product, int64,error)
 	DepositUpdateStock(memberID int64, updateStock schemas.DepositUpdateStock) (error)
 }
 

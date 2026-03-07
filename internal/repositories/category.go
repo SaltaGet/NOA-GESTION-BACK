@@ -6,58 +6,39 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
 )
 
-func mapToModelCategory(c *boilmodels.Category) *models.Category {
-	var updatedAt time.Time
-	if c.UpdatedAt.Valid {
-		updatedAt = c.UpdatedAt.Time
-	}
-	return &models.Category{
-		ID:        c.ID,
-		Name:      c.Name,
-		CreatedAt: c.CreatedAt,
-		UpdatedAt: updatedAt,
-	}
-}
-
-func (r *CategoryRepository) CategoryGetByID(id int64) (*models.Category, error) {
+func (r *CategoryRepository) CategoryGetByID(id int64) (*tenant.Category, error) {
 	ctx := context.Background()
 
-	c, err := boilmodels.Categories(
-		boilmodels.CategoryWhere.ID.EQ(id),
-		boilmodels.CategoryWhere.DeleteAt.IsNull(),
+	c, err := tenant.Categories(
+		tenant.CategoryWhere.ID.EQ(id),
+		tenant.CategoryWhere.DeleteAt.IsNull(),
 	).One(ctx, r.DB)
 
 	if err != nil {
 		return nil, schemas.HandlerErrorDB(err, "Categoria", schemas.Read)
 	}
 
-	return mapToModelCategory(c), nil
+	return c, nil
 }
 
-func (r *CategoryRepository) CategoryGetAll() ([]*models.Category, error) {
+func (r *CategoryRepository) CategoryGetAll() ([]*tenant.Category, error) {
 	ctx := context.Background()
 
-	boilCategories, err := boilmodels.Categories(
-		boilmodels.CategoryWhere.DeleteAt.IsNull(),
+	boilCategories, err := tenant.Categories(
+		tenant.CategoryWhere.DeleteAt.IsNull(),
 	).All(ctx, r.DB)
 
 	if err != nil {
 		return nil, schemas.HandlerErrorDB(err, "Categoria", schemas.Read)
 	}
 
-	var categories []*models.Category
-	for _, c := range boilCategories {
-		categories = append(categories, mapToModelCategory(c))
-	}
-
-	return categories, nil
+	return boilCategories, nil
 }
 
 func (r *CategoryRepository) CategoryCreate(memberID int64, categoryCreate *schemas.CategoryCreate) (int64, error) {
@@ -72,7 +53,7 @@ func (r *CategoryRepository) CategoryCreate(memberID int64, categoryCreate *sche
 		return 0, schemas.HandlerErrorDB(err, "Categoria", schemas.Create)
 	}
 
-	c := boilmodels.Category{
+	c := tenant.Category{
 		Name: strings.ToLower(categoryCreate.Name),
 	}
 
@@ -99,9 +80,9 @@ func (r *CategoryRepository) CategoryUpdate(memberID int64, categoryUpdate *sche
 		return err
 	}
 
-	c, err := boilmodels.Categories(
-		boilmodels.CategoryWhere.ID.EQ(categoryUpdate.ID),
-		boilmodels.CategoryWhere.DeleteAt.IsNull(),
+	c, err := tenant.Categories(
+		tenant.CategoryWhere.ID.EQ(categoryUpdate.ID),
+		tenant.CategoryWhere.DeleteAt.IsNull(),
 	).One(ctx, tx)
 
 	if err != nil {
@@ -110,7 +91,7 @@ func (r *CategoryRepository) CategoryUpdate(memberID int64, categoryUpdate *sche
 
 	c.Name = strings.ToLower(categoryUpdate.Name)
 
-	if _, err := c.Update(ctx, tx, boil.Whitelist(boilmodels.CategoryColumns.Name, boilmodels.CategoryColumns.UpdatedAt)); err != nil {
+	if _, err := c.Update(ctx, tx, boil.Whitelist(tenant.CategoryColumns.Name, tenant.CategoryColumns.UpdatedAt)); err != nil {
 		return schemas.HandlerErrorDB(err, "Categoria", schemas.Update)
 	}
 
@@ -133,9 +114,9 @@ func (r *CategoryRepository) CategoryDelete(memberID, id int64) error {
 		return err
 	}
 
-	c, err := boilmodels.Categories(
-		boilmodels.CategoryWhere.ID.EQ(id),
-		boilmodels.CategoryWhere.DeleteAt.IsNull(),
+	c, err := tenant.Categories(
+		tenant.CategoryWhere.ID.EQ(id),
+		tenant.CategoryWhere.DeleteAt.IsNull(),
 	).One(ctx, tx)
 
 	if err != nil {
@@ -143,7 +124,7 @@ func (r *CategoryRepository) CategoryDelete(memberID, id int64) error {
 	}
 
 	c.DeleteAt = null.TimeFrom(time.Now())
-	if _, err := c.Update(ctx, tx, boil.Whitelist(boilmodels.CategoryColumns.DeleteAt, boilmodels.CategoryColumns.UpdatedAt)); err != nil {
+	if _, err := c.Update(ctx, tx, boil.Whitelist(tenant.CategoryColumns.DeleteAt, tenant.CategoryColumns.UpdatedAt)); err != nil {
 		return schemas.HandlerErrorDB(err, "Categoria", schemas.Delete)
 	}
 

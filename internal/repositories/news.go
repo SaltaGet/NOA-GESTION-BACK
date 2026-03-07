@@ -6,13 +6,13 @@ import (
 	"errors"
 	"fmt"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 )
 
-func mapToNewsResponse(n *boilmodels.News) *schemas.NewsResponse {
+func mapToNewsResponse(n *boilmodels.NewsItem) *schemas.NewsResponse {
 	if n == nil {
 		return nil
 	}
@@ -23,17 +23,13 @@ func mapToNewsResponse(n *boilmodels.News) *schemas.NewsResponse {
 		Content: n.Content,
 	}
 
-	if n.CreatedAt.Valid {
-		res.CreatedAt = n.CreatedAt.Time
-	}
-	if n.UpdatedAt.Valid {
-		res.UpdatedAt = n.UpdatedAt.Time
-	}
+	res.CreatedAt = n.CreatedAt
+	res.UpdatedAt = n.UpdatedAt
 
 	return res
 }
 
-func mapToNewsResponseDTO(n *boilmodels.News) schemas.NewsResponseDTO {
+func mapToNewsResponseDTO(n *boilmodels.NewsItem) schemas.NewsResponseDTO {
 	if n == nil {
 		return schemas.NewsResponseDTO{}
 	}
@@ -43,9 +39,7 @@ func mapToNewsResponseDTO(n *boilmodels.News) schemas.NewsResponseDTO {
 		Title: n.Title,
 	}
 
-	if n.CreatedAt.Valid {
-		res.CreatedAt = n.CreatedAt.Time
-	}
+	res.CreatedAt = n.CreatedAt
 
 	return res
 }
@@ -53,7 +47,7 @@ func mapToNewsResponseDTO(n *boilmodels.News) schemas.NewsResponseDTO {
 func (r *MainRepository) NewsGetByID(id int64) (*schemas.NewsResponse, error) {
 	ctx := context.Background()
 
-	news, err := boilmodels.News(boilmodels.NewsWhere.ID.EQ(id)).One(ctx, r.DB)
+	news, err := boilmodels.News(boilmodels.NewsItemWhere.ID.EQ(id)).One(ctx, r.DB)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, schemas.HandlerErrorDB(err, "Noticia", schemas.Read)
@@ -69,9 +63,9 @@ func (r *MainRepository) NewsGetAll() ([]schemas.NewsResponseDTO, error) {
 
 	newsList, err := boilmodels.News(
 		qm.Select(
-			boilmodels.NewsColumns.ID,
-			boilmodels.NewsColumns.Title,
-			boilmodels.NewsColumns.CreatedAt,
+			boilmodels.NewsItemColumns.ID,
+			boilmodels.NewsItemColumns.Title,
+			boilmodels.NewsItemColumns.CreatedAt,
 		),
 	).All(ctx, r.DB)
 
@@ -99,7 +93,7 @@ func (r *MainRepository) NewsCreate(adminID int64, newsCreate *schemas.NewsCreat
 		return 0, err
 	}
 
-	newNews := &boilmodels.News{
+	newNews := &boilmodels.NewsItem{
 		Title:   newsCreate.Title,
 		Content: newsCreate.Content,
 	}
@@ -127,7 +121,7 @@ func (r *MainRepository) NewsUpdate(adminID int64, newsUpdate *schemas.NewsUpdat
 		return err
 	}
 
-	news, err := boilmodels.News(boilmodels.NewsWhere.ID.EQ(newsUpdate.ID)).One(ctx, tx)
+	news, err := boilmodels.News(boilmodels.NewsItemWhere.ID.EQ(newsUpdate.ID)).One(ctx, tx)
 	if err != nil {
 		return schemas.HandlerErrorDB(err, "Noticia", schemas.Read)
 	}
@@ -158,12 +152,12 @@ func (r *MainRepository) NewsDelete(adminID int64, id int64) error {
 		return err
 	}
 
-	news, err := boilmodels.News(boilmodels.NewsWhere.ID.EQ(id)).One(ctx, tx)
+	news, err := boilmodels.News(boilmodels.NewsItemWhere.ID.EQ(id)).One(ctx, tx)
 	if err != nil {
 		return schemas.HandlerErrorDB(err, "Noticia", schemas.Read)
 	}
 
-	if _, err := news.Delete(ctx, tx, false); err != nil {
+	if _, err := news.Delete(ctx, tx); err != nil {
 		return schemas.HandlerErrorDB(err, "Noticia", schemas.Delete)
 	}
 

@@ -2,14 +2,15 @@
 package dependencies
 
 import (
+	"database/sql"
+
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/controllers"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/repositories"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/services"
-	"gorm.io/gorm"
 )
 
 type TenantContainer struct {
-	DB          *gorm.DB
+	DB          *sql.DB
 	Controllers struct {
 		ArcaController          *controllers.ArcaController
 		CashRegisterController  *controllers.CashRegisterController
@@ -80,7 +81,7 @@ type TenantContainer struct {
 	}
 }
 
-func NewTenantContainer(db *gorm.DB) *TenantContainer {
+func NewTenantContainer(db *sql.DB) *TenantContainer {
 	c := &TenantContainer{DB: db}
 
 	// Inicializar repositorios

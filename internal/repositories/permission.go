@@ -3,18 +3,18 @@ package repositories
 import (
 	"context"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boiltenant "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 )
 
 func (t *PermissionRepository) PermissionByRoleID(roleID int64) (*[]string, error) {
 	ctx := context.Background()
 
-	permissions, err := boilmodels.Permissions(
-		qm.Select(boilmodels.PermissionColumns.Code),
+	permissions, err := boiltenant.Permissions(
+		qm.Select(boiltenant.PermissionColumns.Code),
 		qm.InnerJoin("role_permissions rp ON rp.permission_id = permissions.id"),
 		qm.Where("rp.role_id = ?", roleID),
 	).All(ctx, t.DB)
@@ -34,13 +34,13 @@ func (t *PermissionRepository) PermissionByRoleID(roleID int64) (*[]string, erro
 func (t *PermissionRepository) PermissionGetAll() (*[]schemas.PermissionResponse, error) {
 	ctx := context.Background()
 
-	permissions, err := boilmodels.Permissions(
+	permissions, err := boiltenant.Permissions(
 		qm.Select(
-			boilmodels.PermissionColumns.ID,
-			boilmodels.PermissionColumns.Code,
-			boilmodels.PermissionColumns.Details,
-			boilmodels.PermissionColumns.Group,
-			boilmodels.PermissionColumns.Environment,
+			boiltenant.PermissionColumns.ID,
+			boiltenant.PermissionColumns.Code,
+			boiltenant.PermissionColumns.Details,
+			boiltenant.PermissionColumns.Group,
+			boiltenant.PermissionColumns.Environment,
 		),
 	).All(ctx, t.DB)
 
@@ -53,9 +53,9 @@ func (t *PermissionRepository) PermissionGetAll() (*[]schemas.PermissionResponse
 		response = append(response, schemas.PermissionResponse{
 			ID:          p.ID,
 			Code:        p.Code,
-			Details:     p.Details.String,
-			Group:       p.Group.String,
-			Environment: p.Environment.String,
+			Details:     p.Details,
+			Group:       p.Group,
+			Environment: p.Environment,
 		})
 	}
 
@@ -65,11 +65,11 @@ func (t *PermissionRepository) PermissionGetAll() (*[]schemas.PermissionResponse
 func (t *PermissionRepository) PermissionGetToMe(roleID int64) (*[]schemas.PermissionResponse, error) {
 	ctx := context.Background()
 
-	permissions, err := boilmodels.Permissions(
+	permissions, err := boiltenant.Permissions(
 		qm.Select(
-			"permissions."+boilmodels.PermissionColumns.ID,
-			"permissions."+boilmodels.PermissionColumns.Code,
-			"permissions."+boilmodels.PermissionColumns.Details,
+			"permissions."+boiltenant.PermissionColumns.ID,
+			"permissions."+boiltenant.PermissionColumns.Code,
+			"permissions."+boiltenant.PermissionColumns.Details,
 			"permissions."+"\"group\"", // Escaped group because it's a reserved word in PG
 		),
 		qm.InnerJoin("role_permissions rp ON rp.permission_id = permissions.id"),
@@ -85,8 +85,8 @@ func (t *PermissionRepository) PermissionGetToMe(roleID int64) (*[]schemas.Permi
 		response = append(response, schemas.PermissionResponse{
 			ID:      p.ID,
 			Code:    p.Code,
-			Details: p.Details.String,
-			Group:   p.Group.String,
+			Details: p.Details,
+			Group:   p.Group,
 		})
 	}
 
@@ -102,7 +102,7 @@ func (t *PermissionRepository) PermissionUpdateAll() error {
 	defer tx.Rollback()
 
 	// Obtener todos los permisos existentes en la BD
-	permissionsAll, err := boilmodels.Permissions().All(ctx, tx)
+	permissionsAll, err := boiltenant.Permissions().All(ctx, tx)
 	if err != nil {
 		return schemas.HandlerErrorDB(err, "Permiso", schemas.Read)
 	}
@@ -129,7 +129,7 @@ func (t *PermissionRepository) PermissionUpdateAll() error {
 		}
 	}
 
-	existingMap := make(map[string]*boilmodels.Permission)
+	existingMap := make(map[string]*boiltenant.Permission)
 	for _, p := range permissionsAll {
 		existingMap[p.Code] = p
 	}
@@ -138,19 +138,15 @@ func (t *PermissionRepository) PermissionUpdateAll() error {
 	for _, definedPerm := range database.Permissions {
 		if existingPerm, exists := existingMap[definedPerm.Code]; exists {
 			// Existe: actualizar si hay cambios
-			if existingPerm.Name.String != definedPerm.Name ||
-				existingPerm.Details.String != definedPerm.Details ||
-				existingPerm.Group.String != definedPerm.Group ||
-				existingPerm.Environment.String != definedPerm.Environment {
+			if existingPerm.Name != definedPerm.Name ||
+				existingPerm.Details != definedPerm.Details ||
+				existingPerm.Group != definedPerm.Group ||
+				existingPerm.Environment != definedPerm.Environment {
 
-				existingPerm.Name.String = definedPerm.Name
-				existingPerm.Name.Valid = true
-				existingPerm.Details.String = definedPerm.Details
-				existingPerm.Details.Valid = true
-				existingPerm.Group.String = definedPerm.Group
-				existingPerm.Group.Valid = true
-				existingPerm.Environment.String = definedPerm.Environment
-				existingPerm.Environment.Valid = true
+				existingPerm.Name = definedPerm.Name
+				existingPerm.Details = definedPerm.Details
+				existingPerm.Group = definedPerm.Group
+				existingPerm.Environment = definedPerm.Environment
 
 				if _, err := existingPerm.Update(ctx, tx, boil.Infer()); err != nil {
 					return schemas.HandlerErrorDB(err, "Permiso", schemas.Update)
@@ -158,17 +154,13 @@ func (t *PermissionRepository) PermissionUpdateAll() error {
 			}
 		} else {
 			// No existe: crear
-			newPerm := &boilmodels.Permission{
+			newPerm := &boiltenant.Permission{
 				Code: definedPerm.Code,
 			}
-			newPerm.Name.String = definedPerm.Name
-			newPerm.Name.Valid = true
-			newPerm.Details.String = definedPerm.Details
-			newPerm.Details.Valid = true
-			newPerm.Group.String = definedPerm.Group
-			newPerm.Group.Valid = true
-			newPerm.Environment.String = definedPerm.Environment
-			newPerm.Environment.Valid = true
+			newPerm.Name = definedPerm.Name
+			newPerm.Details = definedPerm.Details
+			newPerm.Group = definedPerm.Group
+			newPerm.Environment = definedPerm.Environment
 
 			if err := newPerm.Insert(ctx, tx, boil.Infer()); err != nil {
 				return schemas.HandlerErrorDB(err, "Permiso", schemas.Create)
@@ -180,7 +172,7 @@ func (t *PermissionRepository) PermissionUpdateAll() error {
 	for _, existingPerm := range permissionsAll {
 		if _, stillDefined := definedMap[existingPerm.Code]; !stillDefined {
 			// No está en la lista definida: eliminar
-			if _, err := existingPerm.Delete(ctx, tx, false); err != nil {
+			if _, err := existingPerm.Delete(ctx, tx); err != nil {
 				return schemas.HandlerErrorDB(err, "Permiso", schemas.Delete)
 			}
 		}

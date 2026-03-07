@@ -4,11 +4,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 )
@@ -77,7 +77,7 @@ func (t *TenantController) TenantCreateByUserID(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	admin := c.Locals("user_admin").(*models.Admin)
+	admin := c.Locals("user_admin").(*master.Admin)
 	id, err := t.TenantService.TenantCreateByUserID(admin.ID, &tenantCreate, userID)
 	if err != nil {
 		return schemas.HandleError(c, err)
@@ -111,7 +111,7 @@ func (t *TenantController) TenantUserCreate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	admin := c.Locals("user_admin").(*models.Admin)
+	admin := c.Locals("user_admin").(*master.Admin)
 	id, err := t.TenantService.TenantUserCreate(admin.ID, &tenantUserCrate)
 	if err != nil {
 		return schemas.HandleError(c, err)
@@ -141,7 +141,7 @@ func (t *TenantController) TenantUpdateExpiration(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	admin := c.Locals("user_admin").(*models.Admin)
+	admin := c.Locals("user_admin").(*master.Admin)
 	err := t.TenantService.TenantUpdateExpiration(admin.ID, &tenantUpdateExpiration)
 	if err != nil {
 		return schemas.HandleError(c, err)

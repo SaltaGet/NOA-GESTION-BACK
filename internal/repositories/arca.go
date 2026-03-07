@@ -11,20 +11,20 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models"
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/database"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 )
 
-func (r *ArcaRepository) GetCredentialsArca(tenantID, incomeSaleID int64) (*models.Credential, error) {
+func (r *ArcaRepository) GetCredentialsArca(tenantID, incomeSaleID int64) (*master.Credential, error) {
 	ctx := context.Background()
 
-	exists, err := boilmodels.IncomeSales(
-		boilmodels.IncomeSaleWhere.ID.EQ(incomeSaleID),
+	exists, err := tenant.IncomeSales(
+		tenant.IncomeSaleWhere.ID.EQ(incomeSaleID),
 	).Exists(ctx, r.DB)
 	if err != nil {
 		return nil, schemas.HandlerErrorDB(err, "Ingreso de venta", schemas.Read)
@@ -34,61 +34,57 @@ func (r *ArcaRepository) GetCredentialsArca(tenantID, incomeSaleID int64) (*mode
 	}
 
 	db := database.GetMainDB()
-	sqlDB, err := db.DB()
-	if err != nil {
-		return nil, schemas.HandlerErrorDB(err, "Credenciales", schemas.Read)
-	}
 
-	c, err := boilmodels.Credentials(
+	c, err := master.Credentials(
 		qm.Select(
-			boilmodels.CredentialColumns.ID, boilmodels.CredentialColumns.SocialReason, boilmodels.CredentialColumns.BusinessName,
-			boilmodels.CredentialColumns.Address, boilmodels.CredentialColumns.ResponsibilityFrontIva, boilmodels.CredentialColumns.Cuit,
-			boilmodels.CredentialColumns.GrossIncome, boilmodels.CredentialColumns.StartActivities, boilmodels.CredentialColumns.ArcaCertificate,
-			boilmodels.CredentialColumns.ArcaKey, boilmodels.CredentialColumns.TokenArca, boilmodels.CredentialColumns.SignArca,
-			boilmodels.CredentialColumns.ExpireTokenArca, boilmodels.CredentialColumns.Concept,
+			master.CredentialColumns.ID, master.CredentialColumns.SocialReason, master.CredentialColumns.BusinessName,
+			master.CredentialColumns.Address, master.CredentialColumns.ResponsibilityFrontIva, master.CredentialColumns.Cuit,
+			master.CredentialColumns.GrossIncome, master.CredentialColumns.StartActivities, master.CredentialColumns.ArcaCertificate,
+			master.CredentialColumns.ArcaKey, master.CredentialColumns.TokenArca, master.CredentialColumns.SignArca,
+			master.CredentialColumns.ExpireTokenArca, master.CredentialColumns.Concept,
 		),
-		boilmodels.CredentialWhere.TenantID.EQ(tenantID),
-	).One(ctx, sqlDB)
+		master.CredentialWhere.TenantID.EQ(tenantID),
+	).One(ctx, db)
 
 	if err != nil {
 		return nil, schemas.HandlerErrorDB(err, "Credenciales", schemas.Read)
 	}
 
-	if !c.SocialReason.Valid || !c.ResponsibilityFrontIva.Valid || c.Cuit == "" || !c.ArcaCertificate.Valid || !c.ArcaKey.Valid {
+	if !c.SocialReason.Valid || !c.ResponsibilityFrontIva.Valid || !c.Cuit.Valid || !c.ArcaCertificate.Valid || !c.ArcaKey.Valid {
 		return nil, schemas.ErrorResponse(422, "La entidad no se puede procesar por datos incompletos, revise y complete adecuadamente las credenciales", errors.New("La entidad no se puede procesar por datos incompletos."))
 	}
 
-	credential := &models.Credential{
+	credential := &master.Credential{
 		ID:                     c.ID,
-		SocialReason:           &c.SocialReason.String,
-		ResponsibilityFrontIVA: &c.ResponsibilityFrontIva.String,
-		Cuit:                   &c.Cuit,
-		ArcaCertificate:        &c.ArcaCertificate.String,
-		ArcaKey:                &c.ArcaKey.String,
+		SocialReason:           c.SocialReason,
+		ResponsibilityFrontIva: c.ResponsibilityFrontIva,
+		Cuit:                   c.Cuit,
+		ArcaCertificate:        c.ArcaCertificate,
+		ArcaKey:                c.ArcaKey,
 	}
 	if c.BusinessName.Valid {
-		credential.BusinessName = &c.BusinessName.String
+		credential.BusinessName = c.BusinessName
 	}
 	if c.Address.Valid {
-		credential.Address = &c.Address.String
+		credential.Address = c.Address
 	}
 	if c.GrossIncome.Valid {
-		credential.GrossIncome = &c.GrossIncome.String
+		credential.GrossIncome = c.GrossIncome
 	}
 	if c.StartActivities.Valid {
-		credential.StartActivities = &c.StartActivities.String
+		credential.StartActivities = c.StartActivities
 	}
 	if c.TokenArca.Valid {
-		credential.TokenArca = &c.TokenArca.String
+		credential.TokenArca = c.TokenArca
 	}
 	if c.SignArca.Valid {
-		credential.SignArca = &c.SignArca.String
+		credential.SignArca = c.SignArca
 	}
 	if c.ExpireTokenArca.Valid {
-		credential.ExpireTokenArca = &c.ExpireTokenArca.Time
+		credential.ExpireTokenArca = c.ExpireTokenArca
 	}
 	if c.Concept.Valid {
-		credential.Concept = &c.Concept.String
+		credential.Concept = c.Concept
 	}
 
 	return credential, nil
@@ -97,13 +93,9 @@ func (r *ArcaRepository) GetCredentialsArca(tenantID, incomeSaleID int64) (*mode
 func (r *ArcaRepository) SetTokenSignArca(v *schemas.CredentialsValidation) error {
 	ctx := context.Background()
 	db := database.GetMainDB()
-	sqlDB, err := db.DB()
-	if err != nil {
-		return schemas.HandlerErrorDB(err, "Credenciales", schemas.Update)
-	}
 
-	cuitStr := fmt.Sprintf("%d", v.CUIT)
-	cFromDb, err := boilmodels.Credentials(boilmodels.CredentialWhere.Cuit.EQ(cuitStr)).One(ctx, sqlDB)
+	cuit := null.StringFrom(fmt.Sprintf("%d", v.CUIT))
+	cFromDb, err := master.Credentials(master.CredentialWhere.Cuit.EQ(cuit)).One(ctx, db)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return schemas.ErrorResponse(404, "Credencial no encontrada", errors.New("Credencial no encontrada"))
@@ -115,11 +107,10 @@ func (r *ArcaRepository) SetTokenSignArca(v *schemas.CredentialsValidation) erro
 	cFromDb.SignArca = null.StringFrom(v.Sign)
 	cFromDb.ExpireTokenArca = null.TimeFrom(v.Expiration)
 
-	_, err = cFromDb.Update(ctx, sqlDB, boil.Whitelist(
-		boilmodels.CredentialColumns.TokenArca,
-		boilmodels.CredentialColumns.SignArca,
-		boilmodels.CredentialColumns.ExpireTokenArca,
-		boilmodels.CredentialColumns.UpdatedAt,
+	_, err = cFromDb.Update(ctx, db, boil.Whitelist(
+		master.CredentialColumns.TokenArca,
+		master.CredentialColumns.SignArca,
+		master.CredentialColumns.ExpireTokenArca,
 	))
 
 	if err != nil {
@@ -335,21 +326,21 @@ func (r *ArcaRepository) SaveInvoice(factura *schemas.FacturaElectronica, income
 		return schemas.ErrorResponse(500, "Error al parsear la factura", err)
 	}
 
-	invoice := boilmodels.Invoice{
-		InvoiceData: null.JSONFrom(factJson),
+	invoice := tenant.Invoice{
+		InvoiceData: factJson,
 	}
 
 	if err := invoice.Insert(ctx, tx, boil.Infer()); err != nil {
 		return schemas.HandlerErrorDB(err, "Factura", schemas.Create)
 	}
 
-	incomeSale, err := boilmodels.FindIncomeSale(ctx, tx, incomeSaleID)
+	incomeSale, err := tenant.FindIncomeSale(ctx, tx, incomeSaleID)
 	if err != nil {
 		return schemas.HandlerErrorDB(err, "Ingreso de venta", schemas.Read)
 	}
 
 	incomeSale.InvoiceID = null.Int64From(invoice.ID)
-	if _, err := incomeSale.Update(ctx, tx, boil.Whitelist(boilmodels.IncomeSaleColumns.InvoiceID, boilmodels.IncomeSaleColumns.UpdatedAt)); err != nil {
+	if _, err := incomeSale.Update(ctx, tx, boil.Whitelist(tenant.IncomeSaleColumns.InvoiceID, tenant.IncomeSaleColumns.UpdatedAt)); err != nil {
 		return schemas.HandlerErrorDB(err, "Ingreso de venta", schemas.Update)
 	}
 

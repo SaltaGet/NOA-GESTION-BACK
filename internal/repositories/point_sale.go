@@ -6,14 +6,15 @@ import (
 	"errors"
 	"fmt"
 
-	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/boil"
+	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
+	boiltenant "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 )
 
-func mapToPointSaleResponse(p *boilmodels.PointSale) schemas.PointSaleResponse {
+func mapToPointSaleResponse(p *boiltenant.PointSale) schemas.PointSaleResponse {
 	if p == nil {
 		return schemas.PointSaleResponse{}
 	}
@@ -36,14 +37,14 @@ func mapToPointSaleResponse(p *boilmodels.PointSale) schemas.PointSaleResponse {
 func (p *PointSaleRepository) PointSaleGetAllByMember(memberID int64) ([]schemas.PointSaleResponse, error) {
 	ctx := context.Background()
 
-	pointSales, err := boilmodels.PointSales(
+	pointSales, err := boiltenant.PointSales(
 		qm.Select(
-			"point_sales."+boilmodels.PointSaleColumns.ID,
-			"point_sales."+boilmodels.PointSaleColumns.Name,
-			"point_sales."+boilmodels.PointSaleColumns.Description,
-			"point_sales."+boilmodels.PointSaleColumns.IsDeposit,
-			"point_sales."+boilmodels.PointSaleColumns.IsMain,
-			"point_sales."+boilmodels.PointSaleColumns.Number,
+			"point_sales."+boiltenant.PointSaleColumns.ID,
+			"point_sales."+boiltenant.PointSaleColumns.Name,
+			"point_sales."+boiltenant.PointSaleColumns.Description,
+			"point_sales."+boiltenant.PointSaleColumns.IsDeposit,
+			"point_sales."+boiltenant.PointSaleColumns.IsMain,
+			"point_sales."+boiltenant.PointSaleColumns.Number,
 		),
 		qm.InnerJoin("member_point_sales mp ON mp.point_sale_id = point_sales.id"),
 		qm.Where("mp.member_id = ?", memberID),
@@ -144,7 +145,7 @@ func (p *PointSaleRepository) PointSaleCreate(memberID int64, pointSaleCreate *s
 	ps := &boilmodels.PointSale{
 		Name:      pointSaleCreate.Name,
 		IsDeposit: *pointSaleCreate.IsDeposit,
-		Number:    int(pointSaleCreate.Number),
+		Number:    int64(pointSaleCreate.Number),
 		IsMain:    !hasMain,
 	}
 
@@ -192,7 +193,7 @@ func (p *PointSaleRepository) PointSaleUpdate(memberID int64, pointSaleUpdate *s
 	}
 
 	ps.Name = pointSaleUpdate.Name
-	ps.Number = int(pointSaleUpdate.Number)
+	ps.Number = int64(pointSaleUpdate.Number)
 	if pointSaleUpdate.Description != nil {
 		ps.Description = null.StringFromPtr(pointSaleUpdate.Description)
 	}
@@ -218,13 +219,15 @@ func (p *PointSaleRepository) PointSaleUpdate(memberID int64, pointSaleUpdate *s
 					return schemas.HandlerErrorDB(err, "Punto de venta", schemas.Read)
 				}
 			} else {
-				deposit.Stock += s.Stock
+				f1, _ := deposit.Stock.Float64()
+				f2, _ := s.Stock.Float64()
+				deposit.Stock = floatToDecimal(f1 + f2)
 				if _, err := deposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt)); err != nil {
 					return schemas.HandlerErrorDB(err, "Déposito", schemas.Update)
 				}
 			}
 
-			s.Stock = 0
+			s.Stock = floatToDecimal(0)
 			if _, err := s.Update(ctx, tx, boil.Whitelist(boilmodels.StockPointSaleColumns.Stock, boilmodels.StockPointSaleColumns.UpdatedAt)); err != nil {
 				return schemas.HandlerErrorDB(err, "Stock punto de venta", schemas.Update)
 			}
