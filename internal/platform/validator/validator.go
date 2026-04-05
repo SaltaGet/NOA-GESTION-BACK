@@ -29,54 +29,22 @@ func (e ErrorResponse) Error() string {
 	return fmt.Sprintf("campo %s falló por validación: %s", e.FailedField, e.Tag)
 }
 
-// func ValidateStruct(s any) error {
-// 	var errs []error
-// 	var userMessages []string
-
-// 	err := validate.Struct(s)
-// 	if err != nil {
-// 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-// 			for _, err := range validationErrors {
-// 				userMessages = append(userMessages, getFriendlyErrorMessage(err))
-
-// 				var element ErrorResponse
-// 				element.FailedField = err.StructNamespace()
-// 				element.Tag = err.Tag()
-// 				element.Value = err.Param()
-// 				errs = append(errs, element)
-// 			}
-// 		}
-// 	}
-
-// 	if len(errs) == 0 {
-// 		return nil
-// 	}
-
-// 	// Unimos los mensajes con un salto de línea o punto para legibilidad en el front
-// 	msgForUser := strings.Join(userMessages, " | ")
-// 	return schemas.ErrorResponse(422, msgForUser, errors.Join(errs...))
-// }
 func ValidateStruct(s any) error {
 	err := validate.Struct(s)
 	if err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			// Tomamos solo el primer error del slice
 			firstErr := validationErrors[0]
 
-			// Generamos el mensaje amigable solo para ese error
 			msgForUser := getFriendlyErrorMessage(firstErr)
 
-			// Creamos el objeto de error técnico (opcional por si lo usas en logs)
 			technicalErr := ErrorResponse{
 				FailedField: firstErr.StructNamespace(),
 				Tag:         firstErr.Tag(),
 				Value:       firstErr.Param(),
 			}
 
-			// Retornamos inmediatamente el primer error
 			return schemas.ErrorResponse(422, msgForUser, technicalErr)
 		}
-		// Caso de error que no sea de validación (ej. pasar un nil)
 		return schemas.ErrorResponse(500, "Error interno de validación", err)
 	}
 
@@ -84,25 +52,11 @@ func ValidateStruct(s any) error {
 }
 
 func getFriendlyErrorMessage(err validator.FieldError) string {
-	// fieldParts := strings.Split(err.Namespace(), ".")
-	// var field string
 	field := err.Field()
 	if strings.Contains(err.Namespace(), "[") {
         parts := strings.Split(err.Namespace(), ".")
         field = parts[len(parts)-1] 
     }
-
-	// Si el error ocurre en un campo anidado (ej. Items[0].Price)
-	// if len(fieldParts) >= 2 {
-	// 	// Tomamos los últimos dos segmentos: "NombreDeLista[Indice].Campo"
-	// 	field = fieldParts[len(fieldParts)-2] + "." + fieldParts[len(fieldParts)-1]
-	// } else {
-	// 	// Si es un campo de primer nivel
-	// 	field = err.Field()
-	// }
-
-	// Limpieza estética: opcionalmente puedes pasar esto por tu translateFieldName
-	// field = translateFieldName(field) 
 	
 	param := err.Param()
 
@@ -112,7 +66,6 @@ func getFriendlyErrorMessage(err validator.FieldError) string {
 	case "is_pem_key":
 		return fmt.Sprintf("La clave privada en '%s' no es válida.", field)
 	case "datetime":
-		// Si el formato en el tag es '2006-01-02', lo mostramos de forma legible
 		friendlyFormat := param
 		if param == "2006-01-02" {
 			friendlyFormat = "AAAA-MM-DD"

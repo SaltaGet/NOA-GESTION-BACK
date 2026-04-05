@@ -183,6 +183,11 @@ func main() {
 
 	routes.SetupRoutes(app, dep)
 
+	// Handler para rutas no encontradas (debe ir al final de todas las rutas)
+	app.Use(func(c *fiber.Ctx) error {
+		return fiber.NewError(fiber.StatusNotFound, "Ruta no encontrada")
+	})
+
 	depGrpc := dependencies.NewGrpcApplication(db)
 
 	initBackup := os.Getenv("INIT_BACKUP")
@@ -236,7 +241,7 @@ func main() {
 
 	// Iniciar servidor en goroutine
 	go func() {
-		port := getEnv("PORT", "3000")
+		port := getEnv("PORT_MAIN", "3000")
 		log.Info().Msgf("🚀 Servidor iniciado en http://localhost:%s", port)
 		if err := app.Listen(":" + port); err != nil {
 			log.Err(err).Msg("Error al iniciar servidor")

@@ -283,7 +283,12 @@ func writeMovementsData(excel *excelize.File, sheet string, movements []map[stri
 			row := strconv.Itoa(currentRow)
 
 			excel.SetCellValue(sheet, "A"+row, fecha)
-			excel.SetCellValue(sheet, "B"+row, mov["point_sale_name"])
+
+			pointName := "General"
+			if pName, ok := mov["point_sale_name"].(string); ok && pName != "" {
+				pointName = pName
+			}
+			excel.SetCellValue(sheet, "B"+row, pointName)
 
 			excel.SetCellValue(sheet, "C"+row, fmt.Sprintf("%.2f", convertToFloat64(mov["total_ingresos"])))
 			// Assuming there's total_egresos mapped inside report.go Map conversion logic, though the new query aliases are slightly different.
@@ -394,7 +399,10 @@ func addMovementsSummary(excel *excelize.File, sheet string, movements []map[str
 		}
 
 		for _, mov := range movimientos {
-			pointName := mov["point_sale_name"].(string)
+			pointName := "General"
+			if pName, ok := mov["point_sale_name"].(string); ok && pName != "" {
+				pointName = pName
+			}
 
 			if pointSaleTotals[pointName] == nil {
 				pointSaleTotals[pointName] = make(map[string]float64)

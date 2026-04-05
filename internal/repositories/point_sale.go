@@ -39,12 +39,12 @@ func (p *PointSaleRepository) PointSaleGetAllByMember(memberID int64) ([]schemas
 
 	pointSales, err := boiltenant.PointSales(
 		qm.Select(
-			"point_sales."+boiltenant.PointSaleColumns.ID,
-			"point_sales."+boiltenant.PointSaleColumns.Name,
-			"point_sales."+boiltenant.PointSaleColumns.Description,
-			"point_sales."+boiltenant.PointSaleColumns.IsDeposit,
-			"point_sales."+boiltenant.PointSaleColumns.IsMain,
-			"point_sales."+boiltenant.PointSaleColumns.Number,
+			boiltenant.PointSaleColumns.ID,
+			boiltenant.PointSaleColumns.Name,
+			boiltenant.PointSaleColumns.Description,
+			boiltenant.PointSaleColumns.IsDeposit,
+			boiltenant.PointSaleColumns.IsMain,
+			boiltenant.PointSaleColumns.Number,
 		),
 		qm.InnerJoin("member_point_sales mp ON mp.point_sale_id = point_sales.id"),
 		qm.Where("mp.member_id = ?", memberID),

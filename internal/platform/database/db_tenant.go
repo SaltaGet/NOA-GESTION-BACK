@@ -59,7 +59,7 @@ func PrepareDB(uri string, memberAdmin tenant.Member) error {
 
 	for _, perm := range Permissions {
 		// Asumiendo que Permissions es un slice de objetos tenant.Permission
-		if err := perm.Upsert(ctx, db, false, []string{"name"}, boil.None(), boil.Infer()); err != nil {
+		if err := perm.Upsert(ctx, db, false, []string{"code"}, boil.Infer(), boil.Infer()); err != nil {
 			return fmt.Errorf("error al migrar permiso %s: %w", perm.Name, err)
 		}
 	}
@@ -111,7 +111,7 @@ func PrepareDB(uri string, memberAdmin tenant.Member) error {
 
 	// 5. Manejo de Relaciones (En lugar de Association de GORM)
 	// SQLBoiler genera métodos Add[Relacion]
-	if err := memberAdmin.AddPointSales(ctx, db, true, pointSale); err != nil {
+	if err := memberAdmin.AddPointSales(ctx, db, false, pointSale); err != nil {
 		return fmt.Errorf("error al crear relacion miembro-punto_venta: %w", err)
 	}
 
@@ -243,7 +243,7 @@ func removeDBFromDSN(dsn string) string {
 // 	return nil
 // }
 
-var Permissions []tenant.Permission = []tenant.Permission{
+var Permissions tenant.PermissionSlice = tenant.PermissionSlice{
 	//CASH REGISTER
 	{Code: "CR01", Name: "apertura y cierre de caja", Details: "Apertura y cierre de caja del punto de venta", Group: "caja", Environment: "point_sale"},
 	{Code: "CR04", Name: "informes", Details: "Obtener infomes de caja", Group: "caja", Environment: "point_sale"},

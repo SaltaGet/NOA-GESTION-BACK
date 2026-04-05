@@ -9,10 +9,10 @@ import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	"github.com/aarondl/sqlboiler/v4/types"
 	"github.com/ericlagergren/decimal"
-	"github.com/aarondl/sqlboiler/v4/queries"
 )
 
 func (r *CashRegisterRepository) CashRegisterExistOpen(pointSaleID int64) (bool, error) {
@@ -343,15 +343,15 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 	var results []*schemas.CashRegisterInformResponse
 	for _, register := range registers {
 		var openAmount float64
-			openAmount, _ = register.OpenAmount.Big.Float64()
+		openAmount, _ = register.OpenAmount.Big.Float64()
 
 		res := &schemas.CashRegisterInformResponse{
 			ID:         register.ID,
 			OpenAmount: openAmount,
 			IsClose:    register.IsClose,
 		}
-			res.CreatedAt = register.CreatedAt
-			res.HourOpen = register.HourOpen
+		res.CreatedAt = register.CreatedAt
+		res.HourOpen = register.HourOpen
 		if register.CloseAmount.Big != nil {
 			cAmount, _ := register.CloseAmount.Big.Float64()
 			res.CloseAmount = &cAmount
@@ -380,9 +380,9 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 		var incomes total
 		err = queries.Raw(`
 			SELECT
-			COALESCE(SUM(CASE WHEN method_pay = 'cash' THEN total ELSE 0 END), 0) AS cash,
-			COALESCE(SUM(CASE WHEN method_pay <> 'cash' AND method_pay <> 'credit' THEN total ELSE 0 END), 0) AS other
-			FROM pay_incomes WHERE cash_register_id = $1 AND delete_at IS NULL
+			COALESCE(SUM(CASE WHEN method_pay = 'cash' THEN total ELSE 0 END), 0)::float8 AS cash,
+			COALESCE(SUM(CASE WHEN method_pay <> 'cash' AND method_pay <> 'credit' THEN total ELSE 0 END), 0)::float8 AS other
+			FROM pay_incomes WHERE cash_register_id = $1
 		`, register.ID).Bind(ctx, r.DB, &incomes)
 
 		if err != nil {
@@ -392,9 +392,9 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 		var incomeOther total
 		err = queries.Raw(`
 			SELECT
-			COALESCE(SUM(CASE WHEN method_income = 'cash' THEN total ELSE 0 END), 0) AS cash,
-			COALESCE(SUM(CASE WHEN method_income <> 'cash' AND method_income <> 'credit' THEN total ELSE 0 END), 0) AS other
-			FROM income_others WHERE cash_register_id = $1 AND delete_at IS NULL
+			COALESCE(SUM(CASE WHEN method_income = 'cash' THEN total ELSE 0 END), 0)::float8 AS cash,
+			COALESCE(SUM(CASE WHEN method_income <> 'cash' AND method_income <> 'credit' THEN total ELSE 0 END), 0)::float8 AS other
+			FROM income_others WHERE cash_register_id = $1
 		`, register.ID).Bind(ctx, r.DB, &incomeOther)
 
 		if err != nil {
@@ -404,9 +404,9 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 		var expenseBuy total
 		err = queries.Raw(`
 			SELECT
-			COALESCE(SUM(CASE WHEN method_pay = 'cash' THEN total ELSE 0 END), 0) AS cash,
-			COALESCE(SUM(CASE WHEN method_pay <> 'cash' AND method_pay <> 'credit' THEN total ELSE 0 END), 0) AS other
-			FROM pay_expense_buys WHERE cash_register_id = $1 AND delete_at IS NULL
+			COALESCE(SUM(CASE WHEN method_pay = 'cash' THEN total ELSE 0 END), 0)::float8 AS cash,
+			COALESCE(SUM(CASE WHEN method_pay <> 'cash' AND method_pay <> 'credit' THEN total ELSE 0 END), 0)::float8 AS other
+			FROM pay_expense_buys WHERE cash_register_id = $1
 		`, register.ID).Bind(ctx, r.DB, &expenseBuy)
 
 		if err != nil {
@@ -416,9 +416,9 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 		var expenseOther total
 		err = queries.Raw(`
 			SELECT
-			COALESCE(SUM(CASE WHEN pay_method = 'cash' THEN total ELSE 0 END), 0) AS cash,
-			COALESCE(SUM(CASE WHEN pay_method <> 'cash' AND pay_method <> 'credit' THEN total ELSE 0 END), 0) AS other
-			FROM expense_others WHERE cash_register_id = $1 AND delete_at IS NULL
+			COALESCE(SUM(CASE WHEN pay_method = 'cash' THEN total ELSE 0 END), 0)::float8 AS cash,
+			COALESCE(SUM(CASE WHEN pay_method <> 'cash' AND pay_method <> 'credit' THEN total ELSE 0 END), 0)::float8 AS other
+			FROM expense_others WHERE cash_register_id = $1
 		`, register.ID).Bind(ctx, r.DB, &expenseOther)
 
 		if err != nil {

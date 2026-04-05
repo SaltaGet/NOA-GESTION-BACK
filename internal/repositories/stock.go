@@ -35,16 +35,16 @@ func (r *StockRepository) getPointSale(ctx context.Context, pointID int64) (*boi
 func (r *StockRepository) buildStockQueryMods(pointSale *boilmodels.PointSale, pointID int64) []qm.QueryMod {
 	queryMods := []qm.QueryMod{
 		qm.Select(
-			"products.id",
-			"products.code",
-			"products.name",
-			"products.description",
-			"products.price",
-			"s.stock",
+			"products.id AS id",
+			"products.code AS code",
+			"products.name AS name",
+			"products.description AS description",
+			"products.price AS price",
+			"s.stock AS stock",
 			"categories.id AS category_id",
 			"categories.name AS category_name",
-			"products.primary_image",
-			"products.secondary_images",
+			"products.primary_image AS primary_image",
+			"products.secondary_images AS secondary_images",
 		),
 		qm.InnerJoin("categories ON categories.id = products.category_id"),
 	}
@@ -81,18 +81,28 @@ func (r *StockRepository) StockGetByID(id, pointID int64) (*schemas.ProductStock
 	}
 
 	secondaries := ""
-	if product.SecondaryImages != nil {
-		secondaries = *product.SecondaryImages
+	if product.SecondaryImages.Valid {
+		secondaries = product.SecondaryImages.String
+	}
+
+	description := ""
+	if product.Description.Valid {
+		description = product.Description.String
+	}
+
+	var primaryImage *string
+	if product.PrimaryImage.Valid {
+		primaryImage = &product.PrimaryImage.String
 	}
 
 	return &schemas.ProductStockFullResponse{
 		ID:             product.ID,
 		Code:           product.Code,
 		Name:           product.Name,
-		Description:    product.Description,
+		Description:    description,
 		Price:          product.Price,
 		Stock:          product.Stock,
-		PrimaryImage:   product.PrimaryImage,
+		PrimaryImage:   primaryImage,
 		SecondaryImage: utils.SplitStrings(&secondaries),
 		Category: schemas.CategoryResponseStock{
 			ID:   product.CategoryID,
@@ -121,18 +131,28 @@ func (r *StockRepository) StockGetByCode(code string, pointID int64) (*schemas.P
 	}
 
 	secondaries := ""
-	if product.SecondaryImages != nil {
-		secondaries = *product.SecondaryImages
+	if product.SecondaryImages.Valid {
+		secondaries = product.SecondaryImages.String
+	}
+
+	description := ""
+	if product.Description.Valid {
+		description = product.Description.String
+	}
+
+	var primaryImage *string
+	if product.PrimaryImage.Valid {
+		primaryImage = &product.PrimaryImage.String
 	}
 
 	return &schemas.ProductStockFullResponse{
 		ID:             product.ID,
 		Code:           product.Code,
 		Name:           product.Name,
-		Description:    product.Description,
+		Description:    description,
 		Price:          product.Price,
 		Stock:          product.Stock,
-		PrimaryImage:   product.PrimaryImage,
+		PrimaryImage:   primaryImage,
 		SecondaryImage: utils.SplitStrings(&secondaries),
 		Category: schemas.CategoryResponseStock{
 			ID:   product.CategoryID,
@@ -160,17 +180,28 @@ func (r *StockRepository) StockGetByCategoryID(categoryID, pointID int64) ([]*sc
 	var result []*schemas.ProductStockFullResponse
 	for _, p := range products {
 		secondaries := ""
-		if p.SecondaryImages != nil {
-			secondaries = *p.SecondaryImages
+		if p.SecondaryImages.Valid {
+			secondaries = p.SecondaryImages.String
 		}
+
+		description := ""
+		if p.Description.Valid {
+			description = p.Description.String
+		}
+
+		var primaryImage *string
+		if p.PrimaryImage.Valid {
+			primaryImage = &p.PrimaryImage.String
+		}
+
 		result = append(result, &schemas.ProductStockFullResponse{
 			ID:             p.ID,
 			Code:           p.Code,
 			Name:           p.Name,
-			Description:    p.Description,
+			Description:    description,
 			Price:          p.Price,
 			Stock:          p.Stock,
-			PrimaryImage:   p.PrimaryImage,
+			PrimaryImage:   primaryImage,
 			SecondaryImage: utils.SplitStrings(&secondaries),
 			Category: schemas.CategoryResponseStock{
 				ID:   p.CategoryID,
@@ -227,17 +258,28 @@ func (r *StockRepository) StockGetByName(name string, pointID int64) ([]*schemas
 				break
 			}
 			secondaries := ""
-			if p.SecondaryImages != nil {
-				secondaries = *p.SecondaryImages
+			if p.SecondaryImages.Valid {
+				secondaries = p.SecondaryImages.String
 			}
+
+			description := ""
+			if p.Description.Valid {
+				description = p.Description.String
+			}
+
+			var primaryImage *string
+			if p.PrimaryImage.Valid {
+				primaryImage = &p.PrimaryImage.String
+			}
+
 			result = append(result, &schemas.ProductStockFullResponse{
 				ID:             p.ID,
 				Code:           p.Code,
 				Name:           p.Name,
-				Description:    p.Description,
+				Description:    description,
 				Price:          p.Price,
 				Stock:          p.Stock,
-				PrimaryImage:   p.PrimaryImage,
+				PrimaryImage:   primaryImage,
 				SecondaryImage: utils.SplitStrings(&secondaries),
 				Category: schemas.CategoryResponseStock{
 					ID:   p.CategoryID,
@@ -257,18 +299,29 @@ func (r *StockRepository) StockGetByName(name string, pointID int64) ([]*schemas
 
 		if score > 0 {
 			secondaries := ""
-			if p.SecondaryImages != nil {
-				secondaries = *p.SecondaryImages
+			if p.SecondaryImages.Valid {
+				secondaries = p.SecondaryImages.String
 			}
+
+			description := ""
+			if p.Description.Valid {
+				description = p.Description.String
+			}
+
+			var primaryImage *string
+			if p.PrimaryImage.Valid {
+				primaryImage = &p.PrimaryImage.String
+			}
+
 			scored = append(scored, schemas.ProductStockWithScore{
 				Product: &schemas.ProductStockFullResponse{
 					ID:             p.ID,
 					Code:           p.Code,
 					Name:           p.Name,
-					Description:    p.Description,
+					Description:    description,
 					Price:          p.Price,
 					Stock:          p.Stock,
-					PrimaryImage:   p.PrimaryImage,
+					PrimaryImage:   primaryImage,
 					SecondaryImage: utils.SplitStrings(&secondaries),
 					Category: schemas.CategoryResponseStock{
 						ID:   p.CategoryID,
@@ -341,17 +394,28 @@ func (r *StockRepository) StockGetAll(page, limit int, pointID int64) ([]*schema
 	var result []*schemas.ProductStockFullResponse
 	for _, p := range products {
 		secondaries := ""
-		if p.SecondaryImages != nil {
-			secondaries = *p.SecondaryImages
+		if p.SecondaryImages.Valid {
+			secondaries = p.SecondaryImages.String
 		}
+
+		description := ""
+		if p.Description.Valid {
+			description = p.Description.String
+		}
+
+		var primaryImage *string
+		if p.PrimaryImage.Valid {
+			primaryImage = &p.PrimaryImage.String
+		}
+
 		result = append(result, &schemas.ProductStockFullResponse{
 			ID:             p.ID,
 			Code:           p.Code,
 			Name:           p.Name,
-			Description:    p.Description,
+			Description:    description,
 			Price:          p.Price,
 			Stock:          p.Stock,
-			PrimaryImage:   p.PrimaryImage,
+			PrimaryImage:   primaryImage,
 			SecondaryImage: utils.SplitStrings(&secondaries),
 			Category: schemas.CategoryResponseStock{
 				ID:   p.CategoryID,

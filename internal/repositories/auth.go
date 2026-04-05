@@ -19,7 +19,12 @@ import (
 
 func (r *MainRepository) AuthTenantGetByID(tenantID int64) (*master.Tenant, error) {
 	ctx := context.Background()
-	boilt, err := master.Tenants(master.TenantWhere.ID.EQ(tenantID)).One(ctx, r.DB)
+	boilt, err := master.Tenants(
+		master.TenantWhere.ID.EQ(tenantID),
+		qm.Load(master.TenantRels.Credential,
+			qm.Select(master.CredentialColumns.ResponsibilityFrontIva),
+		),
+	).One(ctx, r.DB)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, schemas.ErrorResponse(401, "Credenciales incorrectas", err)
@@ -31,24 +36,13 @@ func (r *MainRepository) AuthTenantGetByID(tenantID int64) (*master.Tenant, erro
 		return nil, schemas.ErrorResponse(403, "Tenant esta inactivo", fmt.Errorf("credenciales incorrectas"))
 	}
 
-	c, err := master.Credentials(
-		qm.Select(master.CredentialColumns.ResponsibilityFrontIva),
-		master.CredentialWhere.TenantID.EQ(tenantID),
-	).One(ctx, r.DB)
-
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			log.Warn().Msgf("Tenant %d no tiene credenciales configuradas, usando valor por defecto", tenantID)
-			boilt.R.Credential.ResponsibilityFrontIva = null.String{}
-		} else {
-			return nil, schemas.ErrorResponse(500, "Error interno al obtener las credenciales", err)
-		}
-	} else {
-		if c.ResponsibilityFrontIva.Valid {
-			boilt.R.Credential.ResponsibilityFrontIva = c.ResponsibilityFrontIva
+	if boilt.R.Credential == nil {
+		log.Warn().Msgf("Tenant %d no tiene credenciales configuradas, usando valor por defecto", tenantID)
+		boilt.R.Credential = &master.Credential{
+			ResponsibilityFrontIva: null.String{},
 		}
 	}
-
+	
 	return boilt, nil
 }
 

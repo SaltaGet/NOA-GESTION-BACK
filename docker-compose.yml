@@ -22,12 +22,12 @@ services:
   #   restart: unless-stopped
   #   networks:
   #     - monitoring
-  
+
   db:
-    image: postgres:16-alpine  
-    container_name: postgres-ospam
+    image: postgres:16-alpine
+    container_name: postgres-noa
     ports:
-      - "5400:5432"         
+      - "5432:5432"
     env_file:
       - .env
     environment:
@@ -35,106 +35,108 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_DB=${DB_NAME}
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - db-data-postgres:/var/lib/postgresql/data
       # Si necesitas tunear la config, Postgres usa postgresql.conf
       - ./conf/postgres/my-postgres.conf:/etc/postgresql/postgresql.conf
     command: >
-      postgres 
-      -c config_file=/etc/postgresql/postgresql.conf
+      postgres  -c config_file=/etc/postgresql/postgresql.conf
     healthcheck:
       # Usamos pg_isready para verificar si el servidor acepta conexiones
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 10s
     restart: unless-stopped
+    networks:
+      - monitoring
+
+  front:
+    image: picohbk/noagestionfront:1.0.0.28
+    container_name: noagestion-front
+    ports:
+      - "5000:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - monitoring
+    restart: unless-stopped
 
   api:
-    image: danielmchachagua/noagestionback:0.1.50
+    image: danielmchachagua/noagestionback:1.0.0
     container_name: noa-gestion
     ports:
       - "3000:3000"
+      - "50051:50051"
     env_file:
       - .env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
     volumes:
       - ./backups:/app/backups
     networks:
       - default
       - monitoring
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/api/health" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
 
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-    networks:
-      - monitoring
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    environment:
-      - GF_SERVER_ROOT_URL=https://noa-gestion.saltaget.com/grafana/
-      - GF_SERVER_SERVE_FROM_SUB_PATH=true
-    ports:
-      - "3030:3000"
-    volumes:
-      - grafana-storage:/var/lib/grafana
-    depends_on:
-      - prometheus
-    networks:
-      - monitoring
-
-  loki:
-    image: grafana/loki:latest
-    container_name: loki
-    ports:
-      - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
-    networks:
-      - monitoring
-
-  promtail:
-    image: grafana/promtail:latest
-    container_name: promtail
-    user: root
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - ./promtail-config.yml:/etc/promtail/config.yml
-    command: -config.file=/etc/promtail/config.yml
-    depends_on:
-      - loki
-    networks:
-      - monitoring
-    restart: unless-stopped
-
-  # cadvisor:
-  #   image: gcr.io/cadvisor/cadvisor:latest
-  #   container_name: cadvisor
+  # ecommerce:
+  #   image: danielmchachagua/ecommercenoagestionback:0.1.21
+  #   container_name: noa-ecommerce
   #   ports:
-  #     - "8080:8080"
-  #   volumes:
-  #     - /:/rootfs:ro
-  #     - /var/run:/var/run:rw
-  #     - /sys:/sys:ro
-  #     - /var/lib/docker/:/var/lib/docker:ro
+  #     - "3001:3001"
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     api:
+  #       condition: service_healthy
   #   restart: unless-stopped
+  #   volumes:
+  #     - ./backups:/app/backups
   #   networks:
+  #     - default
   #     - monitoring
+  #   logging:
+  #     driver: json-file
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
+
+  netdata:
+    image: netdata/netdata:latest
+    container_name: netdata
+    ports:
+      - "19999:19999"
+    restart: unless-stopped
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - netdataconfig:/etc/netdata
+      - netdatalib:/var/lib/netdata
+      - netdatacache:/var/cache/netdata
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /var/log:/host/var/log:ro
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+    networks:
+      - monitoring
 
   redis:
     image: redis:7-alpine
@@ -153,89 +155,16 @@ services:
       timeout: 3s
       retries: 5
 
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    container_name: noa_redis_ui
-    restart: unless-stopped
-    environment:
-      - REDIS_HOSTS=local:redis:6379
-    ports:
-      - "8081:8081"
-    networks:
-      - monitoring
-    depends_on:
-      - redis
-
 networks:
   monitoring:
-
+    name: monitoring
 
 volumes:
-  db-data:
-  grafana-storage:
+  db-data-postgres:
   redis_data:
     driver: local
+  netdataconfig:
+  netdatalib:
+  netdatacache:
 
-# services:
-#   mysql:
-#     image: mysql:8.0
-#     container_name: noa_mysql
-#     restart: unless-stopped
-#     environment:
-#       MYSQL_ROOT_PASSWORD: root
-#       MYSQL_DATABASE: noa_gestion_main
-#       MYSQL_USER: noauser
-#       MYSQL_PASSWORD: noapass
-#     ports:
-#       - "3306:3306"
-#     volumes:
-#       - mysql_data:/var/lib/mysql
-#       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-#     command: --default-authentication-plugin=mysql_native_password
-#     networks:
-#       - noa_network
-#     healthcheck:
-#       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 5
 
-#   redis:
-#     image: redis:7-alpine
-#     container_name: noa_redis
-#     restart: unless-stopped
-#     ports:
-#       - "6379:6379"
-#     volumes:
-#       - redis_data:/data
-#     networks:
-#       - noa_network
-#     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-#     healthcheck:
-#       test: [ "CMD", "redis-cli", "ping" ]
-#       interval: 10s
-#       timeout: 3s
-#       retries: 5
-
-#   redis-commander:
-#     image: rediscommander/redis-commander:latest
-#     container_name: noa_redis_ui
-#     restart: unless-stopped
-#     environment:
-#       - REDIS_HOSTS=local:redis:6379
-#     ports:
-#       - "8081:8081"
-#     networks:
-#       - noa_network
-#     depends_on:
-#       - redis
-
-# volumes:
-#   mysql_data:
-#     driver: local
-#   redis_data:
-#     driver: local
-
-# networks:
-#   noa_network:
-#     driver: bridge
