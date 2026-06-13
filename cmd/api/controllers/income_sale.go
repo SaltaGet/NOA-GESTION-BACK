@@ -1,10 +1,15 @@
 package controllers
 
 import (
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha512"
+	"encoding/base64"
 	"strconv"
 
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/validator"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -185,5 +190,47 @@ member := c.Locals("user").(*schemas.AuthenticatedUser)
 		Status:  true,
 		Body:    nil,
 		Message: "Ingreso eliminado con éxito",
+	})
+}
+
+// IncomeSaleKeys godoc
+//
+//	@Summary		IncomeSaleKeys
+//	@Description	Recibe `?request=XXXX` (nonce), firma con RSA SHA-512 y devuelve el certificado público y la firma en Base64. Si no se envia el request se responde con el PEM
+//	@Tags			IncomeSale
+//	@Produce		json
+//	@Security		CookieAuth
+//	@Param			request	query		string		true	"Contenido a firmar (enviado por QZ Tray)"
+//	@Success		200		{object}	QzResponse	"Certificado y firma"
+//	@Router			/api/v1/income_sale/keys [get]
+func (i *IncomeSaleController) IncomeSaleKeys(c *fiber.Ctx) error {
+	if err := loadQZKeys(); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Error al cargar claves QZ: " + err.Error(),
+		})
+	}
+
+	request := c.Query("request")
+
+	// Sin ?request → QZ Tray está pidiendo el certificado (setCertificatePromise)
+	if request == "" {
+		return c.Status(fiber.StatusOK).JSON(QzResponse{
+			Certificate: string(qzPublicPEM),
+			Signature:   "",
+		})
+	}
+
+	// Con ?request → QZ Tray pide la firma (setSignaturePromise)
+	hash := sha512.Sum512([]byte(request))
+	signature, err := rsa.SignPKCS1v15(rand.Reader, qzPrivateKey, crypto.SHA512, hash[:])
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Error al firmar: " + err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(QzResponse{
+		Certificate: string(qzPublicPEM),
+		Signature:   base64.StdEncoding.EncodeToString(signature),
 	})
 }

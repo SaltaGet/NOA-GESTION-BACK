@@ -147,6 +147,9 @@ func mapToMemberSimpleDTO(m *boilmodels.Member) *schemas.MemberSimpleDTO {
 	}
 	res := &schemas.MemberSimpleDTO{
 		ID: m.ID,
+		FirstName: m.FirstName,
+		LastName: m.LastName,
+		Username: m.Username,
 	}
 	return res
 }

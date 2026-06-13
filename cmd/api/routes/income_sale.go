@@ -37,6 +37,12 @@ func IncomeSaleRoutes(app *fiber.App){
 		return tenant.Controllers.IncomeSaleController.IncomeSaleDelete(c)
 	})
 
+	incomeSale.Get("/keys",
+		func(c *fiber.Ctx) error {
+			tenant := c.Locals("tenant").(*dependencies.TenantContainer)
+			return tenant.Controllers.IncomeSaleController.IncomeSaleKeys(c)
+		})
+
 	incomeSale.Get("/:id", 
 	func(c *fiber.Ctx) error {
 		tenant := c.Locals("tenant").(*dependencies.TenantContainer)

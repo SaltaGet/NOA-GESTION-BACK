@@ -16,3 +16,6 @@ server.md
 *.crt
 *.key
 *.env
+
+# QZ Tray — clave privada RSA (nunca subir al repo)
+conf/qz-private.pem

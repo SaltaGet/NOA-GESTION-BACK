@@ -87,22 +87,6 @@ func (a *ArcaController) ArcaGenerateKey(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
-	// privKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	// if err != nil {
-	// 	log.Err(err).Msg("Error al generar la clave privada")
-	// 	return c.Status(fiber.StatusInternalServerError).JSON(schemas.Response{
-	// 		Status:  false,
-	// 		Body:    nil,
-	// 		Message: "Error al generar la clave privada",
-	// 	})
-	// }
-
-	// // 3. Codificar Clave Privada a formato PEM (en memoria)
-	// privKeyBuf := new(bytes.Buffer)
-	// pem.Encode(privKeyBuf, &pem.Block{
-	// 	Type:  "RSA PRIVATE KEY",
-	// 	Bytes: x509.MarshalPKCS1PrivateKey(privKey),
-	// })
 	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		log.Err(err).Msg("Error al generar la clave privada")

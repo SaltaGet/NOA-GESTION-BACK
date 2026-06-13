@@ -3807,6 +3807,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/income_sale/keys": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Recibe ` + "`" + `?request=XXXX` + "`" + ` (nonce), firma con RSA SHA-512 y devuelve el certificado público y la firma en Base64. Si no se envia el request se responde con el PEM",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IncomeSale"
+                ],
+                "summary": "IncomeSaleKeys",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Contenido a firmar (enviado por QZ Tray)",
+                        "name": "request",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Certificado y firma",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.QzResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/income_sale/update": {
             "put": {
                 "security": [
@@ -7796,6 +7830,19 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "controllers.QzResponse": {
+            "type": "object",
+            "properties": {
+                "certificate": {
+                    "description": "Contenido del qz-public.pem",
+                    "type": "string"
+                },
+                "signature": {
+                    "description": "Firma RSA SHA-512 en Base64",
+                    "type": "string"
+                }
+            }
+        },
         "schemas.AuthForgotPassword": {
             "type": "object",
             "required": [

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 
 	boilmodels "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
@@ -12,6 +13,7 @@ import (
 
 func (r *MainRepository) CredentialGetMPToken(tenantID int64) (*schemas.CredentialMPTokenResponse, error) {
 	ctx := context.Background()
+	response := &schemas.CredentialMPTokenResponse{}
 
 	c, err := boilmodels.Credentials(
 		qm.Select(boilmodels.CredentialColumns.AccessTokenMP, boilmodels.CredentialColumns.AccessTokenTestMP, boilmodels.CredentialColumns.TokenEmail),
@@ -19,10 +21,11 @@ func (r *MainRepository) CredentialGetMPToken(tenantID int64) (*schemas.Credenti
 	).One(ctx, r.DB)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return response, nil
+		}
 		return nil, schemas.HandlerErrorDB(err, "Credencial", schemas.Read)
 	}
-
-	response := &schemas.CredentialMPTokenResponse{}
 
 	if c.AccessTokenMP.Valid {
 		response.AccessToken = &c.AccessTokenMP.String
@@ -65,6 +68,8 @@ func (r *MainRepository) CredentialSetMPToken(tenantID int64, request *schemas.C
 func (r *MainRepository) CredentialGetArca(tenantID int64) (*schemas.CredentialArcaResponse, error) {
 	ctx := context.Background()
 
+	response := &schemas.CredentialArcaResponse{}
+
 	c, err := boilmodels.Credentials(
 		qm.Select(
 			boilmodels.CredentialColumns.SocialReason, boilmodels.CredentialColumns.BusinessName,
@@ -77,10 +82,11 @@ func (r *MainRepository) CredentialGetArca(tenantID int64) (*schemas.CredentialA
 	).One(ctx, r.DB)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return response, nil
+		}
 		return nil, schemas.HandlerErrorDB(err, "Credencial", schemas.Read)
 	}
-
-	response := &schemas.CredentialArcaResponse{}
 
 	if c.SocialReason.Valid {
 		response.SocialReason = &c.SocialReason.String

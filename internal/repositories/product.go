@@ -313,7 +313,7 @@ func (r *ProductRepository) ProductUpdate(memberID int64, product *schemas.Produ
 
 	p.Code = product.Code
 	p.Name = product.Name
-	p.Description = null.StringFrom(*product.Description)
+	p.Description = null.StringFromPtr(product.Description)
 	p.CategoryID = int64(product.CategoryID)
 	p.Notifier = product.Notifier
 	p.MinAmount = floatToDecimal(product.MinAmount)

@@ -148,7 +148,7 @@ func (r *ClientRepository) ClientGetAll(limit, page int64, search *map[string]st
 		debtFormula := "COALESCE(SUM(CASE WHEN p.method_pay = 'credit' THEN p.total ELSE 0 END), 0)"
 		qms = append(qms,
 			qm.Select(fmt.Sprintf("clients.*, %s AS debt", debtFormula)),
-			qm.LeftOuterJoin("pay_incomes p ON p.client_id = clients.id AND p.delete_at IS NULL"),
+			qm.LeftOuterJoin("pay_incomes p ON p.client_id = clients.id"),
 			qm.GroupBy("clients.id"),
 			qm.Having(fmt.Sprintf("%s > 0", debtFormula)),
 		)

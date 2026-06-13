@@ -399,16 +399,16 @@ func (r *MainRepository) TenantUpdateTerms(tenantID int64, updateTerms *schemas.
 
 func (r *MainRepository) TenantGetSettings(tenantID int64) (*schemas.TenantSettingsResponse, error) {
 	ctx := context.Background()
+	res := &schemas.TenantSettingsResponse{}
 
 	settings, err := mastermodels.SettingTenants(mastermodels.SettingTenantWhere.TenantID.EQ(tenantID)).One(ctx, r.DB)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, schemas.HandlerErrorDB(err, "Configuraciones Tenant", schemas.Read)
+			return res, nil
 		}
 		return nil, schemas.HandlerErrorDB(err, "Configuraciones Tenant", schemas.Read)
 	}
 
-	res := &schemas.TenantSettingsResponse{}
 	if settings.Logo.Valid {
 		res.Logo = &settings.Logo.String
 	}

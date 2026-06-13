@@ -1,4 +1,13 @@
 definitions:
+  controllers.QzResponse:
+    properties:
+      certificate:
+        description: Contenido del qz-public.pem
+        type: string
+      signature:
+        description: Firma RSA SHA-512 en Base64
+        type: string
+    type: object
   schemas.AuthForgotPassword:
     properties:
       tenant_identifier:
@@ -4884,6 +4893,29 @@ paths:
       security:
       - CookieAuth: []
       summary: IncomeSaleGetByDate
+      tags:
+      - IncomeSale
+  /api/v1/income_sale/keys:
+    get:
+      description: Recibe `?request=XXXX` (nonce), firma con RSA SHA-512 y devuelve
+        el certificado público y la firma en Base64. Si no se envia el request se
+        responde con el PEM
+      parameters:
+      - description: Contenido a firmar (enviado por QZ Tray)
+        in: query
+        name: request
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Certificado y firma
+          schema:
+            $ref: '#/definitions/controllers.QzResponse'
+      security:
+      - CookieAuth: []
+      summary: IncomeSaleKeys
       tags:
       - IncomeSale
   /api/v1/income_sale/update:

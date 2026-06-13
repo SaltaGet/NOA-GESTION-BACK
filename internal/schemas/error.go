@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"database/sql"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
@@ -56,7 +57,7 @@ func HandlerErrorDB(err error, entity string, action string) error {
 	msgPrefix := fmt.Sprintf("No se pudo %s el/la %s", action, entity)
 
 	// 1. Errores de GORM (Agnósticos)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
 		return ErrorResponse(404, fmt.Sprintf("%s: el registro no existe.", msgPrefix), err)
 	}
 
