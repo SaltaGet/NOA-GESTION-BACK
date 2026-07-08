@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/DanielChachagua/ecommerce-noagestion-protos/pb"
-	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/initial"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/jobs"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/logging"
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/middleware"
@@ -26,6 +25,7 @@ import (
 	grpc_cache "github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache/grpc"
 	tenant_cache "github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache/tenant"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/database"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/event"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/robfig/cron/v3"
@@ -85,15 +85,18 @@ func main() {
 		log.Warn().Err(err).Msg("⚠️ Advertencia: Redis no disponible")
 	}
 
+	// 🔥 Inicializar NATS (opcional, falla gracefully)
+	if err := event.InitNats(); err != nil {
+		log.Warn().Err(err).Msg("⚠️ Advertencia: NATS no disponible")
+	}
+
 	// Inicializar cache de tenant DBs
 	cacheSize := 1000
 	if err := database.InitDBCache(cacheSize); err != nil {
 		log.Fatal().Err(err).Msg("Error al inicializar cache de DBs")
 	}
 
-	emailCfg := initial.InitEmail()
-
-	db, err := database.ConnectDB(emailCfg)
+	db, err := database.ConnectDB()
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error al conectar con la base de datos")
 	}
@@ -118,7 +121,7 @@ func main() {
 	// })
 	// defer s.Shutdown()
 
-	dep := dependencies.NewApplication(db, emailCfg)
+	dep := dependencies.NewApplication(db)
 
 	err = jobs.Migrations(dep)
 	if err != nil {
@@ -326,6 +329,10 @@ func main() {
 
 	if err := cache.CloseRedis(); err != nil {
 		log.Err(err).Msg("Error al cerrar Redis")
+	}
+
+	if err := event.CloseNats(); err != nil {
+		log.Err(err).Msg("Error al cerrar NATS")
 	}
 
 	log.Info().Msg("✅ Servidor apagado correctamente")

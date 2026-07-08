@@ -1,6 +1,7 @@
 package ports
 
 type EmailService interface {
-	SendEmail(email, subject, body string) error
-
+	SendForgotPasswordEmail(username, email, token string) error
+	SendWelcomeAdminEmail(email, username, password string) error
+	SendWelcomeUserEmail(email, username, password string) error
 }

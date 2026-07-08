@@ -5,9 +5,7 @@ import (
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/cmd/api/controllers"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/repositories"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/services"
-	"gopkg.in/gomail.v2"
 )	
 
 type MainContainer struct {
@@ -22,11 +20,10 @@ type MainContainer struct {
 	CredentialController *controllers.CredentialController
 }
 
-func NewApplication(mainDB *sql.DB, cfg *schemas.EmailConfig) *MainContainer {
+func NewApplication(mainDB *sql.DB) *MainContainer {
 	mainRepo := &repositories.MainRepository{DB: mainDB}
 	
-	dialer := gomail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)
-	emailService := &services.EmailService{Dialer: dialer}
+	emailService := &services.EmailService{}
 
 	authServ := &services.AuthService{AuthRepository: mainRepo, TenantService: mainRepo, EmailService: emailService, PlanRepository: mainRepo, ModuleRepository: mainRepo}
 	userServ := &services.UserService{UserRepository: mainRepo}

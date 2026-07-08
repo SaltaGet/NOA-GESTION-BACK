@@ -11250,6 +11250,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2023-01-01 12:00:00"
                 },
+                "cuit": {
+                    "type": "string",
+                    "example": "12345678909"
+                },
                 "email": {
                     "type": "string",
                     "example": "mitienda@gmail.com"

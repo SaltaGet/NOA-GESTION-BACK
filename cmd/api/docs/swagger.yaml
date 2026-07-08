@@ -2371,6 +2371,9 @@ definitions:
       created_at:
         example: "2023-01-01 12:00:00"
         type: string
+      cuit:
+        example: "12345678909"
+        type: string
       email:
         example: mitienda@gmail.com
         type: string

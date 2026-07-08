@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	master "github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 )
 
@@ -60,7 +59,7 @@ func (t *TenantService) TenantUserCreate(adminID int64, tenantUserCreate *schema
 	}
 
 	username := fmt.Sprintf("%s@%s", tenantUserCreate.UserCreate.Username, tenantUserCreate.TenantCreate.Identifier)
-	go t.EmailService.SendEmail(tenantUserCreate.UserCreate.Email, "Bienvenido a NOA-GESTION", utils.WelcomeUser(username, oldPassword))
+	go t.EmailService.SendWelcomeUserEmail(tenantUserCreate.UserCreate.Email, username, oldPassword)
 
 	return id, nil
 }

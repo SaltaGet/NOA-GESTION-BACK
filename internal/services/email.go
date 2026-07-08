@@ -1,33 +1,50 @@
 package services
 
 import (
-	"io"
-
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/assets"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
-	"gopkg.in/gomail.v2"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/event"
 )
 
-func (es *EmailService) SendEmail(email, subject, body string) error {
-	msg := gomail.NewMessage()
-	msg.SetHeader("From", es.Dialer.Username)
-	msg.SetHeader("To", email)
-	msg.SetHeader("Subject", subject)
-	msg.SetBody("text/html", body)
+type ForgotPasswordPayload struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Token    string `json:"token"`
+}
 
-	data, err := assets.LogoFS.ReadFile("logo.png")
-	if err != nil {
-		return schemas.ErrorResponse(500, "error al leer logo", err)
+type WelcomeAdminPayload struct {
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type WelcomeUserPayload struct {
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (es *EmailService) SendForgotPasswordEmail(username, email, token string) error {
+	payload := ForgotPasswordPayload{
+		Username: username,
+		Email:    email,
+		Token:    token,
 	}
+	return event.Publish("email.forgot_password", payload)
+}
 
-	msg.Embed("logo.png", gomail.SetCopyFunc(func(w io.Writer) error {
-		_, err := w.Write(data)
-		return err
-	}), gomail.SetHeader(map[string][]string{"Content-ID": {"<logo>"}}))
-
-	if err := es.Dialer.DialAndSend(msg); err != nil {
-		return schemas.ErrorResponse(500, "error al enviar email", err)
+func (es *EmailService) SendWelcomeAdminEmail(email, username, password string) error {
+	payload := WelcomeAdminPayload{
+		Email:    email,
+		Username: username,
+		Password: password,
 	}
+	return event.Publish("email.welcome_admin", payload)
+}
 
-	return nil
+func (es *EmailService) SendWelcomeUserEmail(email, username, password string) error {
+	payload := WelcomeUserPayload{
+		Email:    email,
+		Username: username,
+		Password: password,
+	}
+	return event.Publish("email.welcome_user", payload)
 }

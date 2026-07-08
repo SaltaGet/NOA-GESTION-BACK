@@ -13,8 +13,8 @@ import (
 
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/models/master"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/cache"
+	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/event"
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/platform/utils"
-	"github.com/SaltaGet/NOA-GESTION-BACK/internal/schemas"
 	"github.com/aarondl/sqlboiler/v4/boil"
 	lru "github.com/hashicorp/golang-lru"
 	_ "github.com/jackc/pgx/v5/stdlib" // Driver para sql.Open
@@ -70,7 +70,7 @@ func getEnvInt(key string, defaultVal int) int {
 	return defaultVal
 }
 
-func ConnectDB(cfg *schemas.EmailConfig) (*sql.DB, error) {
+func ConnectDB() (*sql.DB, error) {
 	dsn := os.Getenv("URI_DB")
 	if dsn == "" {
 		return nil, fmt.Errorf("la variable de entorno URI_DB no esta definida")
@@ -102,10 +102,10 @@ func ConnectDB(cfg *schemas.EmailConfig) (*sql.DB, error) {
 		log.Error().Err(err).Msg("Error al aplicar triggers de auditoria")
 	}
 
-	return ensureAdmin(db, cfg)
+	return ensureAdmin(db)
 }
 
-func ensureAdmin(db *sql.DB, cfg *schemas.EmailConfig) (*sql.DB, error) {
+func ensureAdmin(db *sql.DB) (*sql.DB, error) {
 	parentCtx := context.Background()
 
 	raw := os.Getenv("ADMIN_EMAIL")
@@ -157,12 +157,18 @@ func ensureAdmin(db *sql.DB, cfg *schemas.EmailConfig) (*sql.DB, error) {
 		// 5. ENVIAR EMAIL: Solo llegamos aquí si el admin es realmente nuevo
 		log.Info().Msgf("Nuevo admin creado: %s. Enviando credenciales...", email)
 
-		utils.SendEmail(
-			admin.Email,
-			"Bienvenido a NOA-GESTION",
-			utils.WelcomeAdmin(admin.Email, admin.Username, pass),
-			cfg,
-		)
+		type WelcomeAdminPayload struct {
+			Email    string `json:"email"`
+			Username string `json:"username"`
+			Password string `json:"password"`
+		}
+		if err := event.Publish("email.welcome_admin", WelcomeAdminPayload{
+			Email:    admin.Email,
+			Username: admin.Username,
+			Password: pass,
+		}); err != nil {
+			log.Error().Err(err).Msg("Error al publicar bienvenida del admin a NATS")
+		}
 	}
 
 	return db, nil

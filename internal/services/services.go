@@ -2,7 +2,6 @@ package services
 
 import (
 	"github.com/SaltaGet/NOA-GESTION-BACK/internal/ports"
-	"gopkg.in/gomail.v2"
 )
 
 type AuthService struct {
@@ -43,7 +42,6 @@ type EcommerceService struct {
 }
 
 type EmailService struct {
-	Dialer *gomail.Dialer
 }
 
 type ExpenseBuyService struct {

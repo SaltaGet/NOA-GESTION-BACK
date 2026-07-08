@@ -14,3 +14,9 @@ sqlboiler psql -c ./sqlboiler.master.toml
 sqlboiler psql -c ./sqlboiler.tenant.toml 
 ```
 
+docker exec -it postgres-noa psql -U postgres
+
+\l listar db
+\c name_db usar db
+\dt listar tablas
+\q salir

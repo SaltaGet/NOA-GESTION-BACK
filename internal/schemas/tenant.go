@@ -2,7 +2,6 @@ package schemas
 
 import (
 	"time"
-
 )
 
 type TenantCreate struct {
@@ -31,6 +30,7 @@ type TenantResponse struct {
 	Email                  string    `json:"email" example:"mitienda@gmail.com"`
 	IsActive               bool      `json:"is_active" example:"true"`
 	Expiration             time.Time `json:"expiration" example:"2023-01-01"`
+	CuitPDV                string    `json:"cuit" example:"12345678909"`
 	ResponsabilityFrontIVA *string   `json:"responsability_front_iva" example:"responsable_inscripto | monotributo | null"`
 	CreatedAt              time.Time `json:"created_at" example:"2023-01-01 12:00:00"`
 	UpdatedAt              time.Time `json:"updated_at" example:"2023-01-01 12:00:00"`
