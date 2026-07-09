@@ -14,6 +14,8 @@ import (
 	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
+	"github.com/aarondl/sqlboiler/v4/types"
+	"github.com/ericlagergren/decimal"
 )
 
 func mapToClientResponseDTO(c *boilmodels.Client, debt *float64) schemas.ClientResponseDTO {
@@ -365,15 +367,44 @@ func (r *ClientRepository) ClientUpdateCredit(memberID, pointSaleID int64, clien
 			return schemas.HandlerErrorDB(err, "Credito", schemas.Read)
 		}
 
-		payCredit.MethodPay = p.MethodPay
-		payCredit.CashRegisterID = null.Int64From(register.ID)
-
-		if _, err := payCredit.Update(ctx, tx, boil.Whitelist(boilmodels.PayIncomeColumns.MethodPay, boilmodels.PayIncomeColumns.CashRegisterID, boilmodels.PayIncomeColumns.UpdatedAt)); err != nil {
-			return schemas.HandlerErrorDB(err, "Credito", schemas.Update)
+		if payCredit.MethodPay != "credit" {
+			return schemas.ErrorResponse(400, "el pago seleccionado no es un credito valido", fmt.Errorf("pago seleccionado no es credito"))
 		}
 
-		val, _ := payCredit.Total.Big.Float64()
-		total += val
+		creditTotal, _ := payCredit.Total.Big.Float64()
+		if p.Total <= 0 {
+			return schemas.ErrorResponse(400, "el monto de pago debe ser mayor a 0", fmt.Errorf("monto de pago invalido"))
+		}
+		if p.Total > creditTotal+0.01 {
+			return schemas.ErrorResponse(400, fmt.Sprintf("el pago (%.2f) excede el saldo de la deuda (%.2f)", p.Total, creditTotal), fmt.Errorf("pago excede deuda"))
+		}
+
+		newCreditTotal := creditTotal - p.Total
+		if newCreditTotal > 0.01 {
+			payCredit.Total = types.NewDecimal(decimal.New(0, 0).SetFloat64(newCreditTotal))
+			if _, err := payCredit.Update(ctx, tx, boil.Whitelist(boilmodels.PayIncomeColumns.Total, boilmodels.PayIncomeColumns.UpdatedAt)); err != nil {
+				return schemas.HandlerErrorDB(err, "Credito", schemas.Update)
+			}
+		} else {
+			if _, err := payCredit.Delete(ctx, tx); err != nil {
+				return schemas.HandlerErrorDB(err, "Credito", schemas.Delete)
+			}
+		}
+
+		// Insert new payment record
+		newPay := boilmodels.PayIncome{
+			IncomeSaleID:   payCredit.IncomeSaleID,
+			CashRegisterID: null.Int64From(register.ID),
+			ClientID:       null.Int64From(client.ID),
+			Total:          types.NewDecimal(decimal.New(0, 0).SetFloat64(p.Total)),
+			MethodPay:      p.MethodPay,
+		}
+
+		if err := newPay.Insert(ctx, tx, boil.Infer()); err != nil {
+			return schemas.HandlerErrorDB(err, "Pago de Ingreso", schemas.Create)
+		}
+
+		total += p.Total
 	}
 
 	if math.Abs(total-clientUpdateCredit.Total) > 1 {

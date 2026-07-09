@@ -38,6 +38,7 @@ type IncomeSale struct {
 	InvoiceID      null.Int64    `boil:"invoice_id" json:"invoice_id,omitempty" toml:"invoice_id" yaml:"invoice_id,omitempty"`
 	CreatedAt      time.Time     `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt      time.Time     `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	Delivered      bool          `boil:"delivered" json:"delivered" toml:"delivered" yaml:"delivered"`
 
 	R *incomeSaleR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L incomeSaleL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -57,6 +58,7 @@ var IncomeSaleColumns = struct {
 	InvoiceID      string
 	CreatedAt      string
 	UpdatedAt      string
+	Delivered      string
 }{
 	ID:             "id",
 	PointSaleID:    "point_sale_id",
@@ -71,6 +73,7 @@ var IncomeSaleColumns = struct {
 	InvoiceID:      "invoice_id",
 	CreatedAt:      "created_at",
 	UpdatedAt:      "updated_at",
+	Delivered:      "delivered",
 }
 
 var IncomeSaleTableColumns = struct {
@@ -87,6 +90,7 @@ var IncomeSaleTableColumns = struct {
 	InvoiceID      string
 	CreatedAt      string
 	UpdatedAt      string
+	Delivered      string
 }{
 	ID:             "income_sales.id",
 	PointSaleID:    "income_sales.point_sale_id",
@@ -101,6 +105,7 @@ var IncomeSaleTableColumns = struct {
 	InvoiceID:      "income_sales.invoice_id",
 	CreatedAt:      "income_sales.created_at",
 	UpdatedAt:      "income_sales.updated_at",
+	Delivered:      "income_sales.delivered",
 }
 
 // Generated where
@@ -119,6 +124,7 @@ var IncomeSaleWhere = struct {
 	InvoiceID      whereHelpernull_Int64
 	CreatedAt      whereHelpertime_Time
 	UpdatedAt      whereHelpertime_Time
+	Delivered      whereHelperbool
 }{
 	ID:             whereHelperint64{field: "\"income_sales\".\"id\""},
 	PointSaleID:    whereHelperint64{field: "\"income_sales\".\"point_sale_id\""},
@@ -133,6 +139,7 @@ var IncomeSaleWhere = struct {
 	InvoiceID:      whereHelpernull_Int64{field: "\"income_sales\".\"invoice_id\""},
 	CreatedAt:      whereHelpertime_Time{field: "\"income_sales\".\"created_at\""},
 	UpdatedAt:      whereHelpertime_Time{field: "\"income_sales\".\"updated_at\""},
+	Delivered:      whereHelperbool{field: "\"income_sales\".\"delivered\""},
 }
 
 // IncomeSaleRels is where relationship names are stored.
@@ -286,9 +293,9 @@ func (r *incomeSaleR) GetPayIncomes() PayIncomeSlice {
 type incomeSaleL struct{}
 
 var (
-	incomeSaleAllColumns            = []string{"id", "point_sale_id", "member_id", "client_id", "cash_register_id", "subtotal", "discount", "type", "total", "is_budget", "invoice_id", "created_at", "updated_at"}
+	incomeSaleAllColumns            = []string{"id", "point_sale_id", "member_id", "client_id", "cash_register_id", "subtotal", "discount", "type", "total", "is_budget", "invoice_id", "created_at", "updated_at", "delivered"}
 	incomeSaleColumnsWithoutDefault = []string{"point_sale_id", "member_id", "client_id", "cash_register_id", "subtotal", "total"}
-	incomeSaleColumnsWithDefault    = []string{"id", "discount", "type", "is_budget", "invoice_id", "created_at", "updated_at"}
+	incomeSaleColumnsWithDefault    = []string{"id", "discount", "type", "is_budget", "invoice_id", "created_at", "updated_at", "delivered"}
 	incomeSalePrimaryKeyColumns     = []string{"id"}
 	incomeSaleGeneratedColumns      = []string{}
 )

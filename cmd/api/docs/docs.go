@@ -9315,12 +9315,15 @@ const docTemplate = `{
                 "client_id",
                 "is_budget",
                 "items",
-                "pay",
                 "total"
             ],
             "properties": {
                 "client_id": {
                     "type": "integer"
+                },
+                "delivered": {
+                    "type": "boolean",
+                    "example": false
                 },
                 "discount": {
                     "type": "number",
@@ -9419,6 +9422,9 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "delivered": {
+                    "type": "boolean"
+                },
                 "discount": {
                     "type": "number"
                 },
@@ -9466,11 +9472,17 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "delivered": {
+                    "type": "boolean"
+                },
                 "id": {
                     "type": "integer"
                 },
                 "invoice_id": {
                     "type": "integer"
+                },
+                "is_budget": {
+                    "type": "boolean"
                 },
                 "member": {
                     "$ref": "#/definitions/schemas.MemberSimpleDTO"
@@ -9491,6 +9503,9 @@ const docTemplate = `{
             "properties": {
                 "created_at": {
                     "type": "string"
+                },
+                "delivered": {
+                    "type": "boolean"
                 },
                 "id": {
                     "type": "integer"
@@ -9523,12 +9538,14 @@ const docTemplate = `{
             "required": [
                 "client_id",
                 "id",
-                "items",
-                "pay"
+                "items"
             ],
             "properties": {
                 "client_id": {
                     "type": "integer"
+                },
+                "delivered": {
+                    "type": "boolean"
                 },
                 "discount": {
                     "type": "number"

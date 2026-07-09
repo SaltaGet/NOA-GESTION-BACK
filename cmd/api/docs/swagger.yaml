@@ -1027,6 +1027,9 @@ definitions:
     properties:
       client_id:
         type: integer
+      delivered:
+        example: false
+        type: boolean
       discount:
         example: 10
         minimum: 0
@@ -1056,7 +1059,6 @@ definitions:
     - client_id
     - is_budget
     - items
-    - pay
     - total
     type: object
   schemas.IncomeSaleItemResponse:
@@ -1099,6 +1101,8 @@ definitions:
         $ref: '#/definitions/schemas.ClientResponseDTO'
       created_at:
         type: string
+      delivered:
+        type: boolean
       discount:
         type: number
       id:
@@ -1130,10 +1134,14 @@ definitions:
         $ref: '#/definitions/schemas.ClientSimpleDTO'
       created_at:
         type: string
+      delivered:
+        type: boolean
       id:
         type: integer
       invoice_id:
         type: integer
+      is_budget:
+        type: boolean
       member:
         $ref: '#/definitions/schemas.MemberSimpleDTO'
       pay:
@@ -1147,6 +1155,8 @@ definitions:
     properties:
       created_at:
         type: string
+      delivered:
+        type: boolean
       id:
         type: integer
       invoice_id:
@@ -1168,6 +1178,8 @@ definitions:
     properties:
       client_id:
         type: integer
+      delivered:
+        type: boolean
       discount:
         type: number
       id:
@@ -1195,7 +1207,6 @@ definitions:
     - client_id
     - id
     - items
-    - pay
     type: object
   schemas.ItemIVATotal:
     properties:

@@ -207,7 +207,7 @@ CREATE TABLE IF NOT EXISTS public.expense_others (
     details character varying(255),
     type_expense_id bigint NOT NULL,
     total numeric NOT NULL,
-    pay_method character varying(30) DEFAULT 'efectivo'::character varying,
+    pay_method character varying(30) DEFAULT 'cash'::character varying,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -326,6 +326,7 @@ CREATE TABLE IF NOT EXISTS public.income_sales (
     type character varying(20) DEFAULT 'percent'::character varying NOT NULL,
     total numeric NOT NULL,
     is_budget boolean DEFAULT false NOT NULL,
+    delivered boolean DEFAULT false NOT NULL,
     invoice_id bigint,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL

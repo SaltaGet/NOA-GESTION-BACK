@@ -7,13 +7,14 @@ import (
 )
 
 type IncomeSaleCreate struct {
-	Items    []ItemIncomeSaleCreate `json:"items" validate:"required,dive"`
-	Pay      []PayCreate            `json:"pay" validate:"required,max=3,dive"`
-	ClientID int64                  `json:"client_id" validate:"required"`
-	Discount float64                `json:"discount" validate:"min=0" example:"10"`
-	Type     string                 `json:"type_discount" validate:"oneof=amount percent" example:"amount percent"`
-	Total    float64                `json:"total" validate:"required" example:"1000"`
-	IsBudget *bool                  `json:"is_budget" validate:"required" example:"false"`
+	Items     []ItemIncomeSaleCreate `json:"items" validate:"required,dive"`
+	Pay       []PayCreate            `json:"pay" validate:"omitempty,max=3,dive"`
+	ClientID  int64                  `json:"client_id" validate:"required"`
+	Discount  float64                `json:"discount" validate:"min=0" example:"10"`
+	Type      string                 `json:"type_discount" validate:"oneof=amount percent" example:"amount percent"`
+	Total     float64                `json:"total" validate:"required" example:"1000"`
+	IsBudget  *bool                  `json:"is_budget" validate:"required" example:"false"`
+	Delivered *bool                  `json:"delivered" example:"false"`
 }
 
 type ItemIncomeSaleCreate struct {
@@ -29,6 +30,15 @@ type PayCreate struct {
 }
 
 func (i *IncomeSaleCreate) ValidateIntegrity() error {
+	isBudget := false
+	if i.IsBudget != nil {
+		isBudget = *i.IsBudget
+	}
+
+	if isBudget && len(i.Pay) == 0 {
+		return nil
+	}
+
 	if i.ClientID == 1 {
 		for _, p := range i.Pay {
 			if p.MethodPay == "credit" {
@@ -57,14 +67,15 @@ func (i *IncomeSaleCreate) ValidateIntegrity() error {
 }
 
 type IncomeSaleUpdate struct {
-	ID       int64                  `json:"id" validate:"required"`
-	Items    []ItemIncomeSaleUpdate `json:"items" validate:"required,dive"`
-	Pay      []PayUpdate            `json:"pay" validate:"required,max=3,dive"`
-	ClientID int64                  `json:"client_id" validate:"required"`
-	Discount float64                `json:"discount"`
-	Type     string                 `json:"type_discount" validate:"oneof=amount percent" example:"amount percent"`
-	Total    float64                `json:"total"`
-	IsBudget bool                   `json:"is_budget"`
+	ID        int64                  `json:"id" validate:"required"`
+	Items     []ItemIncomeSaleUpdate `json:"items" validate:"required,dive"`
+	Pay       []PayUpdate            `json:"pay" validate:"omitempty,max=3,dive"`
+	ClientID  int64                  `json:"client_id" validate:"required"`
+	Discount  float64                `json:"discount"`
+	Type      string                 `json:"type_discount" validate:"oneof=amount percent" example:"amount percent"`
+	Total     float64                `json:"total"`
+	IsBudget  bool                   `json:"is_budget"`
+	Delivered *bool                  `json:"delivered"`
 }
 
 type ItemIncomeSaleUpdate struct {
@@ -80,6 +91,10 @@ type PayUpdate struct {
 }
 
 func (i *IncomeSaleUpdate) ValidateIntegrity() error {
+	if i.IsBudget && len(i.Pay) == 0 {
+		return nil
+	}
+
 	if i.ClientID == 1 {
 		for _, p := range i.Pay {
 			if p.MethodPay == "credit" {
@@ -133,6 +148,7 @@ type IncomeSaleResponse struct {
 	Type      string                   `json:"type_discount"`
 	Total     float64                  `json:"total"`
 	IsBudget  bool                     `json:"is_budget"`
+	Delivered bool                     `json:"delivered"`
 	InvoiceID *int64                   `json:"invoice_id"`
 	CreatedAt time.Time                `json:"created_at"`
 }
@@ -155,6 +171,8 @@ type IncomeSaleResponseDTO struct {
 	Client    ClientSimpleDTO `json:"client"`
 	Pay       []PayResponse   `json:"pay"`
 	Total     float64         `json:"total"`
+	IsBudget  bool            `json:"is_budget"`
+	Delivered bool            `json:"delivered"`
 	CreatedAt time.Time       `json:"created_at"`
 	InvoiceID *int64          `json:"invoice_id"`
 }
@@ -165,6 +183,7 @@ type IncomeSaleSimpleResponse struct {
 	Pay       []PayResponse               `json:"pay"`
 	Total     float64                     `json:"total"`
 	IsBudget  bool                        `json:"is_budget"`
+	Delivered bool                        `json:"delivered"`
 	CreatedAt time.Time                   `json:"created_at"`
 	InvoiceID *int64                      `json:"invoice_id"`
 }

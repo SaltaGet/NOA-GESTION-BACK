@@ -95,9 +95,10 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 	for _, in := range incomeSales {
 		total, _ := in.Total.Big.Float64()
 		iso := &schemas.IncomeSaleSimpleResponse{
-			ID:       in.ID,
-			Total:    total,
-			IsBudget: in.IsBudget,
+			ID:        in.ID,
+			Total:     total,
+			IsBudget:  in.IsBudget,
+			Delivered: in.Delivered,
 		}
 		iso.CreatedAt = in.CreatedAt
 		if in.InvoiceID.Valid {

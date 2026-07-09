@@ -27,12 +27,13 @@ func mapToIncomeSaleResponse(i *boilmodels.IncomeSale) *schemas.IncomeSaleRespon
 	total, _ := i.Total.Float64()
 
 	res := &schemas.IncomeSaleResponse{
-		ID:       i.ID,
-		SubTotal: subtotal,
-		Discount: discount,
-		Type:     i.Type,
-		Total:    total,
-		IsBudget: i.IsBudget,
+		ID:        i.ID,
+		SubTotal:  subtotal,
+		Discount:  discount,
+		Type:      i.Type,
+		Total:     total,
+		IsBudget:  i.IsBudget,
+		Delivered: i.Delivered,
 	}
 
 	if i.InvoiceID.Valid {
@@ -107,8 +108,10 @@ func mapToIncomeSaleResponseDTO(i *boilmodels.IncomeSale) *schemas.IncomeSaleRes
 	total, _ := i.Total.Big.Float64()
 
 	res := &schemas.IncomeSaleResponseDTO{
-		ID:    i.ID,
-		Total: total,
+		ID:        i.ID,
+		Total:     total,
+		IsBudget:  i.IsBudget,
+		Delivered: i.Delivered,
 	}
 
 	if i.InvoiceID.Valid {
@@ -191,7 +194,7 @@ func (i *IncomeSaleRepository) IncomeSaleGetByID(pointSaleID, id int64) (*schema
 	return mapToIncomeSaleResponse(incomeSaleModel), nil
 }
 
-func (i *IncomeSaleRepository) IncomeSaleGetByDate(pointSaleID int64, fromDate, toDate time.Time, page, limit int) ([]*schemas.IncomeSaleResponseDTO, int64, error) {
+func (i *IncomeSaleRepository) IncomeSaleGetByDate(pointSaleID int64, fromDate, toDate time.Time, page, limit int, isBudget *bool, delivered *bool) ([]*schemas.IncomeSaleResponseDTO, int64, error) {
 	ctx := context.Background()
 	offSet := (page - 1) * limit
 
@@ -199,6 +202,13 @@ func (i *IncomeSaleRepository) IncomeSaleGetByDate(pointSaleID int64, fromDate, 
 		boilmodels.IncomeSaleWhere.PointSaleID.EQ(pointSaleID),
 		boilmodels.IncomeSaleWhere.CreatedAt.GTE(fromDate),
 		boilmodels.IncomeSaleWhere.CreatedAt.LTE(toDate),
+	}
+
+	if isBudget != nil {
+		qms = append(qms, boilmodels.IncomeSaleWhere.IsBudget.EQ(*isBudget))
+	}
+	if delivered != nil {
+		qms = append(qms, boilmodels.IncomeSaleWhere.Delivered.EQ(*delivered))
 	}
 
 	total, err := boilmodels.IncomeSales(qms...).Count(ctx, i.DB)
@@ -279,43 +289,50 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 		}
 		productPrice, _ := product.Price.Big.Float64()
 
-		if isDeposit {
-			stock, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(item.ProductID)).One(ctx, tx)
-			if err != nil {
-				return 0, schemas.HandlerErrorDB(err, "Stock Depósito", schemas.Read)
-			}
-			stockF, _ := stock.Stock.Big.Float64()
-			if stockF < float64(item.Amount) {
-				return 0, schemas.ErrorResponse(
-					400,
-					fmt.Sprintf("stock insuficiente para el producto %d (disponible: %.2f, requerido: %v)", item.ProductID, stockF, item.Amount),
-					fmt.Errorf("stock insuficiente"),
-				)
-			}
-			stock.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF - float64(item.Amount)))
-			if _, err := stock.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt)); err != nil {
-				return 0, schemas.HandlerErrorDB(err, "Stock Depósito", schemas.Update)
-			}
-		} else {
-			stock, err := boilmodels.StockPointSales(
-				boilmodels.StockPointSaleWhere.PointSaleID.EQ(pointSaleID),
-				boilmodels.StockPointSaleWhere.ProductID.EQ(item.ProductID),
-			).One(ctx, tx)
+		isBudget := false
+		if incomeSaleCreate.IsBudget != nil {
+			isBudget = *incomeSaleCreate.IsBudget
+		}
 
-			if err != nil {
-				return 0, schemas.HandlerErrorDB(err, "Stock Punto de Venta", schemas.Read)
-			}
-			stockF, _ := stock.Stock.Big.Float64()
-			if stockF < float64(item.Amount) {
-				return 0, schemas.ErrorResponse(
-					400,
-					fmt.Sprintf("stock insuficiente para el producto %d (disponible: %.2f, requerido: %v)", item.ProductID, stockF, item.Amount),
-					fmt.Errorf("stock insuficiente"),
-				)
-			}
-			stock.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF - float64(item.Amount)))
-			if _, err := stock.Update(ctx, tx, boil.Whitelist(boilmodels.StockPointSaleColumns.Stock, boilmodels.StockPointSaleColumns.UpdatedAt)); err != nil {
-				return 0, schemas.HandlerErrorDB(err, "Stock Punto de Venta", schemas.Update)
+		if !isBudget {
+			if isDeposit {
+				stock, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(item.ProductID)).One(ctx, tx)
+				if err != nil {
+					return 0, schemas.HandlerErrorDB(err, "Stock Depósito", schemas.Read)
+				}
+				stockF, _ := stock.Stock.Big.Float64()
+				if stockF < float64(item.Amount) {
+					return 0, schemas.ErrorResponse(
+						400,
+						fmt.Sprintf("stock insuficiente para el producto %d (disponible: %.2f, requerido: %v)", item.ProductID, stockF, item.Amount),
+						fmt.Errorf("stock insuficiente"),
+					)
+				}
+				stock.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF - float64(item.Amount)))
+				if _, err := stock.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt)); err != nil {
+					return 0, schemas.HandlerErrorDB(err, "Stock Depósito", schemas.Update)
+				}
+			} else {
+				stock, err := boilmodels.StockPointSales(
+					boilmodels.StockPointSaleWhere.PointSaleID.EQ(pointSaleID),
+					boilmodels.StockPointSaleWhere.ProductID.EQ(item.ProductID),
+				).One(ctx, tx)
+
+				if err != nil {
+					return 0, schemas.HandlerErrorDB(err, "Stock Punto de Venta", schemas.Read)
+				}
+				stockF, _ := stock.Stock.Big.Float64()
+				if stockF < float64(item.Amount) {
+					return 0, schemas.ErrorResponse(
+						400,
+						fmt.Sprintf("stock insuficiente para el producto %d (disponible: %.2f, requerido: %v)", item.ProductID, stockF, item.Amount),
+						fmt.Errorf("stock insuficiente"),
+					)
+				}
+				stock.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF - float64(item.Amount)))
+				if _, err := stock.Update(ctx, tx, boil.Whitelist(boilmodels.StockPointSaleColumns.Stock, boilmodels.StockPointSaleColumns.UpdatedAt)); err != nil {
+					return 0, schemas.HandlerErrorDB(err, "Stock Punto de Venta", schemas.Update)
+				}
 			}
 		}
 
@@ -368,6 +385,15 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 		totalIncome = subtotal
 	}
 
+	isBudgetVal := false
+	if incomeSaleCreate.IsBudget != nil {
+		isBudgetVal = *incomeSaleCreate.IsBudget
+	}
+	deliveredVal := false
+	if incomeSaleCreate.Delivered != nil {
+		deliveredVal = *incomeSaleCreate.Delivered
+	}
+
 	income := &boilmodels.IncomeSale{
 		PointSaleID:    pointSaleID,
 		MemberID:       memberID,
@@ -377,7 +403,8 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 		Discount:       types.NewDecimal(decimal.New(0, 0).SetFloat64(incomeSaleCreate.Discount)),
 		Type:           incomeSaleCreate.Type,
 		Total:          types.NewDecimal(decimal.New(0, 0).SetFloat64(totalIncome)),
-		IsBudget:       *incomeSaleCreate.IsBudget,
+		IsBudget:       isBudgetVal,
+		Delivered:      deliveredVal,
 	}
 
 	if err := income.Insert(ctx, tx, boil.Infer()); err != nil {
@@ -413,9 +440,16 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 		}
 	}
 
-	if math.Abs(totalPay-totalIncome) > 1 {
-		message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total del ingreso (%.2f)", totalPay, totalIncome)
-		return 0, schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
+	isBudgetValForPay := false
+	if incomeSaleCreate.IsBudget != nil {
+		isBudgetValForPay = *incomeSaleCreate.IsBudget
+	}
+
+	if !isBudgetValForPay {
+		if math.Abs(totalPay-totalIncome) > 1 {
+			message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total del ingreso (%.2f)", totalPay, totalIncome)
+			return 0, schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -425,7 +459,7 @@ func (i *IncomeSaleRepository) IncomeSaleCreate(memberID, pointSaleID int64, inc
 	return incomeSaleID, nil
 }
 
-func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, incomeSaleUpdate *schemas.IncomeSaleUpdate) error {
+func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, incomeSaleUpdate *schemas.IncomeSaleUpdate, maintainPrice bool) error {
 	ctx := context.Background()
 	tx, err := i.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -451,27 +485,29 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 		return schemas.HandlerErrorDB(err, "Items de Ingreso", schemas.Read)
 	}
 
-	for _, oldItem := range oldItems {
-		oldItemAmt, _ := oldItem.Amount.Big.Float64()
-		var isDeposit bool
-		pointSale, _ := boilmodels.PointSales(qm.Select(boilmodels.PointSaleColumns.IsDeposit), boilmodels.PointSaleWhere.ID.EQ(pointSaleID)).One(ctx, tx)
-		if pointSale != nil {
-			isDeposit = pointSale.IsDeposit
-		}
-
-		if isDeposit {
-			deposit, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(oldItem.ProductID.Int64)).One(ctx, tx)
-			if err == nil {
-				stockF, _ := deposit.Stock.Big.Float64()
-				deposit.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF + oldItemAmt))
-				deposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt))
+	if !existingIncome.IsBudget {
+		for _, oldItem := range oldItems {
+			oldItemAmt, _ := oldItem.Amount.Big.Float64()
+			var isDeposit bool
+			pointSale, _ := boilmodels.PointSales(qm.Select(boilmodels.PointSaleColumns.IsDeposit), boilmodels.PointSaleWhere.ID.EQ(pointSaleID)).One(ctx, tx)
+			if pointSale != nil {
+				isDeposit = pointSale.IsDeposit
 			}
-		} else {
-			stockPointSale, err := boilmodels.StockPointSales(boilmodels.StockPointSaleWhere.PointSaleID.EQ(pointSaleID), boilmodels.StockPointSaleWhere.ProductID.EQ(oldItem.ProductID.Int64)).One(ctx, tx)
-			if err == nil {
-				stockF, _ := stockPointSale.Stock.Big.Float64()
-				stockPointSale.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF + oldItemAmt))
-				stockPointSale.Update(ctx, tx, boil.Whitelist(boilmodels.StockPointSaleColumns.Stock, boilmodels.StockPointSaleColumns.UpdatedAt))
+
+			if isDeposit {
+				deposit, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(oldItem.ProductID.Int64)).One(ctx, tx)
+				if err == nil {
+					stockF, _ := deposit.Stock.Big.Float64()
+					deposit.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF + oldItemAmt))
+					deposit.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt))
+				}
+			} else {
+				stockPointSale, err := boilmodels.StockPointSales(boilmodels.StockPointSaleWhere.PointSaleID.EQ(pointSaleID), boilmodels.StockPointSaleWhere.ProductID.EQ(oldItem.ProductID.Int64)).One(ctx, tx)
+				if err == nil {
+					stockF, _ := stockPointSale.Stock.Big.Float64()
+					stockPointSale.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF + oldItemAmt))
+					stockPointSale.Update(ctx, tx, boil.Whitelist(boilmodels.StockPointSaleColumns.Stock, boilmodels.StockPointSaleColumns.UpdatedAt))
+				}
 			}
 		}
 	}
@@ -496,34 +532,50 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 	subtotal := 0.0
 
 	for _, item := range incomeSaleUpdate.Items {
-		product, err := boilmodels.Products(qm.Select(boilmodels.ProductColumns.Price), boilmodels.ProductWhere.ID.EQ(item.ProductID)).One(ctx, tx)
-		if err != nil {
-			return schemas.HandlerErrorDB(err, "Producto", schemas.Read)
+		var productPrice float64
+		foundOld := false
+		if maintainPrice {
+			for _, oldItem := range oldItems {
+				if oldItem.ProductID.Valid && oldItem.ProductID.Int64 == item.ProductID {
+					productPrice, _ = oldItem.Price.Big.Float64()
+					foundOld = true
+					break
+				}
+			}
 		}
-		productPrice, _ := product.Price.Big.Float64()
 
-		if isDeposit {
-			stock, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(item.ProductID)).One(ctx, tx)
+		if !foundOld {
+			product, err := boilmodels.Products(qm.Select(boilmodels.ProductColumns.Price), boilmodels.ProductWhere.ID.EQ(item.ProductID)).One(ctx, tx)
 			if err != nil {
-				return schemas.HandlerErrorDB(err, "Stock Depósito", schemas.Read)
+				return schemas.HandlerErrorDB(err, "Producto", schemas.Read)
 			}
-			stockF, _ := stock.Stock.Big.Float64()
-			if stockF < float64(item.Amount) {
-				return schemas.ErrorResponse(400, "stock insuficiente", fmt.Errorf("stock insuficiente"))
+			productPrice, _ = product.Price.Big.Float64()
+		}
+
+		if !incomeSaleUpdate.IsBudget {
+			if isDeposit {
+				stock, err := boilmodels.Deposits(boilmodels.DepositWhere.ProductID.EQ(item.ProductID)).One(ctx, tx)
+				if err != nil {
+					return schemas.HandlerErrorDB(err, "Stock Depósito", schemas.Read)
+				}
+				stockF, _ := stock.Stock.Big.Float64()
+				if stockF < float64(item.Amount) {
+					return schemas.ErrorResponse(400, "stock insuficiente", fmt.Errorf("stock insuficiente"))
+				}
+				stock.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF - float64(item.Amount)))
+				stock.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt))
+			} else {
+				stock, err := boilmodels.StockPointSales(boilmodels.StockPointSaleWhere.PointSaleID.EQ(pointSaleID), boilmodels.StockPointSaleWhere.ProductID.EQ(item.ProductID)).One(ctx, tx)
+				if err != nil {
+					return schemas.HandlerErrorDB(err, "Stock Punto de Venta", schemas.Read)
+				}
+				stockF, _ := stock.Stock.Big.Float64()
+				if stockF < float64(item.Amount) {
+					return schemas.ErrorResponse(400, "stock insuficiente", fmt.Errorf("stock insuficiente"))
+				}
+				stock.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF - float64(item.Amount)))
+				stock.Update(ctx, tx, boil.Whitelist(boilmodels.StockPointSaleColumns.Stock, boilmodels.StockPointSaleColumns.UpdatedAt))
 			}
-			stock.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF - float64(item.Amount)))
-			stock.Update(ctx, tx, boil.Whitelist(boilmodels.DepositColumns.Stock, boilmodels.DepositColumns.UpdatedAt))
-		} else {
-			stock, err := boilmodels.StockPointSales(boilmodels.StockPointSaleWhere.PointSaleID.EQ(pointSaleID), boilmodels.StockPointSaleWhere.ProductID.EQ(item.ProductID)).One(ctx, tx)
-			if err != nil {
-				return schemas.HandlerErrorDB(err, "Stock Punto de Venta", schemas.Read)
-			}
-			stockF, _ := stock.Stock.Big.Float64()
-			if stockF < float64(item.Amount) {
-				return schemas.ErrorResponse(400, "stock insuficiente", fmt.Errorf("stock insuficiente"))
-			}
-			stock.Stock = types.NewDecimal(decimal.New(0, 0).SetFloat64(stockF - float64(item.Amount)))
-			stock.Update(ctx, tx, boil.Whitelist(boilmodels.StockPointSaleColumns.Stock, boilmodels.StockPointSaleColumns.UpdatedAt))
 		}
 
 		priceCostExp, err := boilmodels.ExpenseBuyItems(
@@ -581,6 +633,9 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 	existingIncome.Type = incomeSaleUpdate.Type
 	existingIncome.Total = types.NewDecimal(decimal.New(0, 0).SetFloat64(totalIncome))
 	existingIncome.IsBudget = incomeSaleUpdate.IsBudget
+	if incomeSaleUpdate.Delivered != nil {
+		existingIncome.Delivered = *incomeSaleUpdate.Delivered
+	}
 
 	if _, err := existingIncome.Update(ctx, tx, boil.Infer()); err != nil {
 		return schemas.HandlerErrorDB(err, "Ingreso de venta", schemas.Update)
@@ -617,9 +672,11 @@ func (i *IncomeSaleRepository) IncomeSaleUpdate(memberID, pointSaleID int64, inc
 		}
 	}
 
-	if math.Abs(totalPay-totalIncome) > 1 {
-		message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total del ingreso (%.2f)", totalPay, totalIncome)
-		return schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
+	if !incomeSaleUpdate.IsBudget {
+		if math.Abs(totalPay-totalIncome) > 1 {
+			message := fmt.Sprintf("la diferencia entre la suma de pagos (%.2f) y el total del ingreso (%.2f)", totalPay, totalIncome)
+			return schemas.ErrorResponse(400, message, fmt.Errorf("%s", message))
+		}
 	}
 
 	return tx.Commit()

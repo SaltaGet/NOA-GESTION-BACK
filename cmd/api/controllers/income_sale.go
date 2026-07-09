@@ -78,9 +78,21 @@ func (i *IncomeSaleController) IncomeSaleGetByDate(c *fiber.Ctx) error {
 		limit = 20
 	}
 
+	var isBudget *bool
+	if c.Query("is_budget") != "" {
+		val := c.QueryBool("is_budget")
+		isBudget = &val
+	}
+
+	var delivered *bool
+	if c.Query("delivered") != "" {
+		val := c.QueryBool("delivered")
+		delivered = &val
+	}
+
 	pointID := c.Locals("point_sale_id").(int64)
 
-	incomeSales, total, err := i.IncomeSaleService.IncomeSaleGetByDate(pointID, fromDate, toDate, page, limit)
+	incomeSales, total, err := i.IncomeSaleService.IncomeSaleGetByDate(pointID, fromDate, toDate, page, limit, isBudget, delivered)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
@@ -147,10 +159,12 @@ func (i *IncomeSaleController) IncomeSaleUpdate(c *fiber.Ctx) error {
 		return schemas.HandleError(c, err)
 	}
 
+	maintainPrice := c.QueryBool("maintain_price", false)
+
 	user := c.Locals("user").(*schemas.AuthenticatedUser)
 	pointID :=c.Locals("point_sale_id").(int64)
 
-	err := i.IncomeSaleService.IncomeSaleUpdate(user.ID, pointID, &incomeSaleUpdate)
+	err := i.IncomeSaleService.IncomeSaleUpdate(user.ID, pointID, &incomeSaleUpdate, maintainPrice)
 	if err != nil {
 		return schemas.HandleError(c, err)
 	}
