@@ -77,3 +77,31 @@ type TenantSettingsResponse struct {
 	SecondaryColor *string `json:"secondary_color" example:"#FF0000"`
 	Phone          *string `json:"phone" example:"555-5555"`
 }
+
+// TenantWithModulesResponse es la respuesta completa de un tenant con sus módulos asociados.
+type TenantWithModulesResponse struct {
+	ID            int64               `json:"id" example:"1"`
+	Name          string              `json:"name" example:"Mi tienda"`
+	Identifier    string              `json:"identifier" example:"mi_tienda"`
+	Address       string              `json:"address" example:"mi casa 123"`
+	Phone         string              `json:"phone" example:"3884123456"`
+	Email         string              `json:"email" example:"mitienda@gmail.com"`
+	CuitPDV       string              `json:"cuit" example:"12345678909"`
+	IsActive      bool                `json:"is_active" example:"true"`
+	AcceptedTerms bool                `json:"accepted_terms" example:"false"`
+	Expiration    time.Time           `json:"expiration" example:"2023-01-01"`
+	CreatedAt     time.Time           `json:"created_at" example:"2023-01-01 12:00:00"`
+	UpdatedAt     time.Time           `json:"updated_at" example:"2023-01-01 12:00:00"`
+	Modules       []ModuleResponseDTO `json:"modules"`
+}
+
+// TenantSimpleWithModulesResponse es la respuesta reducida para la lista de tenants con sus módulos.
+type TenantSimpleWithModulesResponse struct {
+	ID         int64               `json:"id" example:"1"`
+	Name       string              `json:"name" example:"Mi tienda"`
+	Identifier string              `json:"identifier" example:"mi_tienda"`
+	IsActive   bool                `json:"is_active" example:"true"`
+	Expiration time.Time           `json:"expiration" example:"2023-01-01"`
+	Modules    []ModuleResponseDTO `json:"modules"`
+}
+

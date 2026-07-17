@@ -19,6 +19,8 @@ type TenantRepository interface {
 	TenantUpdateTerms(tenantID int64, tenantUpdateTerms *schemas.TenantUpdateTerms) (err error)
 	TenantGetSettings(tenantID int64) (setting *schemas.TenantSettingsResponse, err error)
 	TenantUpdateSettings(tenantID int64, tenantUpdateSettings *schemas.TenantUpdateSettings) (err error)
+	TenantGetWithModules(tenantID int64) (*schemas.TenantWithModulesResponse, error)
+	TenantGetAllWithModules() ([]schemas.TenantSimpleWithModulesResponse, error)
 }
 
 type TenantService interface {
@@ -34,4 +36,6 @@ type TenantService interface {
 	TenantUpdateTerms(tenantID int64, tenantUpdateTerms *schemas.TenantUpdateTerms) (err error)
 	TenantGetSettings(tenantID int64) (setting *schemas.TenantSettingsResponse, err error)
 	TenantUpdateSettings(tenantID int64, tenantUpdateSettings *schemas.TenantUpdateSettings) (err error)
+	TenantGetWithModules(tenantID int64) (*schemas.TenantWithModulesResponse, error)
+	TenantGetAllWithModules() ([]schemas.TenantSimpleWithModulesResponse, error)
 }

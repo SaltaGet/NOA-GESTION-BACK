@@ -145,8 +145,14 @@ func main() {
 	app.Use(middleware.ReadOnlyMiddleware())
 	app.Use(middleware.InjectionDepends(dep))
 
-	// Rate limiting global (100 req/min por IP)
-	app.Use(middleware.RateLimitMiddleware(100, time.Minute))
+	// Rate limiting global (500 req/min por IP por defecto, configurable)
+	rateLimitMax := 500
+	if maxStr := os.Getenv("RATE_LIMIT_MAX_REQUESTS"); maxStr != "" {
+		if val, err := strconv.Atoi(maxStr); err == nil && val > 0 {
+			rateLimitMax = val
+		}
+	}
+	app.Use(middleware.RateLimitMiddleware(rateLimitMax, time.Minute))
 
 	maxAge, err := strconv.Atoi(os.Getenv("MAXAGE"))
 	if err != nil {

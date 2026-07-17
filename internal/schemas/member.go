@@ -84,7 +84,7 @@ type MemberUpdate struct {
 }
 
 type MemberUpdatePassword struct {
-	OldPassword string `json:"old_password" validate:"required,password" example:"Password123*"`
+	OldPassword string `json:"old_password" validate:"required" example:"Password123*"`
 	NewPassword string `json:"new_password" validate:"required,password" example:"Password123*"`
 	ConfirmPass string `json:"confirm_pass" validate:"required,eqfield=NewPassword" example:"Password123*"`
 }

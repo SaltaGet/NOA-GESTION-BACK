@@ -52,7 +52,7 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 	res.CreatedAt = register.CreatedAt
 	res.HourOpen = register.HourOpen
 
-	if register.CloseAmount.Big == nil {
+	if register.CloseAmount.Big != nil {
 		cAmount, _ := register.CloseAmount.Big.Float64()
 		res.CloseAmount = &cAmount
 	}
@@ -71,10 +71,12 @@ func (r *CashRegisterRepository) CashRegisterGetByID(pointSaleID, id int64) (*sc
 		}
 		if register.R.MemberClose != nil {
 			m := register.R.MemberClose
-			res.MemberClose.ID = m.ID
-			res.MemberClose.FirstName = m.FirstName
-			res.MemberClose.LastName = m.LastName
-			res.MemberClose.Username = m.Username
+			res.MemberClose = &schemas.MemberSimpleDTO{
+				ID:        m.ID,
+				FirstName: m.FirstName,
+				LastName:  m.LastName,
+				Username:  m.Username,
+			}
 		}
 	}
 
@@ -370,10 +372,12 @@ func (r *CashRegisterRepository) CashRegisterInform(pointSaleID int64, userID in
 				res.MemberOpen.Username = register.R.MemberOpen.Username
 			}
 			if register.R.MemberClose != nil {
-				res.MemberClose.ID = register.R.MemberClose.ID
-				res.MemberClose.FirstName = register.R.MemberClose.FirstName
-				res.MemberClose.LastName = register.R.MemberClose.LastName
-				res.MemberClose.Username = register.R.MemberClose.Username
+				res.MemberClose = &schemas.MemberSimpleDTO{
+					ID:        register.R.MemberClose.ID,
+					FirstName: register.R.MemberClose.FirstName,
+					LastName:  register.R.MemberClose.LastName,
+					Username:  register.R.MemberClose.Username,
+				}
 			}
 		}
 

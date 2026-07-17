@@ -462,3 +462,116 @@ func (r *MainRepository) TenantUpdateSettings(tenantID int64, req *schemas.Tenan
 
 	return nil
 }
+
+func (r *MainRepository) TenantGetWithModules(tenantID int64) (*schemas.TenantWithModulesResponse, error) {
+	ctx := context.Background()
+
+	tenant, err := mastermodels.Tenants(
+		mastermodels.TenantWhere.ID.EQ(tenantID),
+	).One(ctx, r.DB)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, schemas.HandlerErrorDB(err, "Tenant", schemas.Read)
+		}
+		return nil, schemas.HandlerErrorDB(err, "Tenant", schemas.Read)
+	}
+
+	tenantModules, err := mastermodels.TenantModules(
+		mastermodels.TenantModuleWhere.TenantID.EQ(tenantID),
+		qm.Load(mastermodels.TenantModuleRels.Module),
+	).All(ctx, r.DB)
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Modulo", schemas.Read)
+	}
+
+	modules := make([]schemas.ModuleResponseDTO, 0, len(tenantModules))
+	for _, tm := range tenantModules {
+		if tm.R != nil && tm.R.Module != nil {
+			var expire *time.Time
+			if tm.Expiration.Valid {
+				t := tm.Expiration.Time
+				expire = &t
+			}
+			modules = append(modules, schemas.ModuleResponseDTO{
+				ID:                     tm.R.Module.ID,
+				Name:                   tm.R.Module.Name,
+				AmountImagesPerProduct: int32(tm.R.Module.AmountImagesPerProduct),
+				Expiration:             expire,
+				AcceptTerms:            tm.AcceptedTerms,
+			})
+		}
+	}
+
+	res := &schemas.TenantWithModulesResponse{
+		ID:            tenant.ID,
+		Name:          tenant.Name,
+		Identifier:    tenant.Identifier,
+		Address:       tenant.Address,
+		Phone:         tenant.Phone,
+		Email:         tenant.Email,
+		CuitPDV:       tenant.CuitPDV,
+		IsActive:      tenant.IsActive,
+		AcceptedTerms: tenant.AcceptedTerms,
+		CreatedAt:     tenant.CreatedAt,
+		UpdatedAt:     tenant.UpdatedAt,
+		Modules:       modules,
+	}
+	if tenant.Expiration.Valid {
+		res.Expiration = tenant.Expiration.Time
+	}
+
+	return res, nil
+}
+
+func (r *MainRepository) TenantGetAllWithModules() ([]schemas.TenantSimpleWithModulesResponse, error) {
+	ctx := context.Background()
+
+	tenants, err := mastermodels.Tenants().All(ctx, r.DB)
+	if err != nil {
+		return nil, schemas.HandlerErrorDB(err, "Tenant", schemas.Read)
+	}
+
+	result := make([]schemas.TenantSimpleWithModulesResponse, 0, len(tenants))
+	for _, t := range tenants {
+		tenantModules, err := mastermodels.TenantModules(
+			mastermodels.TenantModuleWhere.TenantID.EQ(t.ID),
+			qm.Load(mastermodels.TenantModuleRels.Module),
+		).All(ctx, r.DB)
+		if err != nil {
+			return nil, schemas.HandlerErrorDB(err, "Modulo", schemas.Read)
+		}
+
+		modules := make([]schemas.ModuleResponseDTO, 0, len(tenantModules))
+		for _, tm := range tenantModules {
+			if tm.R != nil && tm.R.Module != nil {
+				var expire *time.Time
+				if tm.Expiration.Valid {
+					exp := tm.Expiration.Time
+					expire = &exp
+				}
+				modules = append(modules, schemas.ModuleResponseDTO{
+					ID:                     tm.R.Module.ID,
+					Name:                   tm.R.Module.Name,
+					AmountImagesPerProduct: int32(tm.R.Module.AmountImagesPerProduct),
+					Expiration:             expire,
+					AcceptTerms:            tm.AcceptedTerms,
+				})
+			}
+		}
+
+		item := schemas.TenantSimpleWithModulesResponse{
+			ID:         t.ID,
+			Name:       t.Name,
+			Identifier: t.Identifier,
+			IsActive:   t.IsActive,
+			Modules:    modules,
+		}
+		if t.Expiration.Valid {
+			item.Expiration = t.Expiration.Time
+		}
+		result = append(result, item)
+	}
+
+	return result, nil
+}
+

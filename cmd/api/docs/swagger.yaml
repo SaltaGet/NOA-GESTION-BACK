@@ -2434,6 +2434,28 @@ definitions:
         example: Mi tienda
         type: string
     type: object
+  schemas.TenantSimpleWithModulesResponse:
+    properties:
+      expiration:
+        example: "2023-01-01"
+        type: string
+      id:
+        example: 1
+        type: integer
+      identifier:
+        example: mi_tienda
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      modules:
+        items:
+          $ref: '#/definitions/schemas.ModuleResponseDTO'
+        type: array
+      name:
+        example: Mi tienda
+        type: string
+    type: object
   schemas.TenantUpdateExpiration:
     properties:
       expiration:
@@ -2472,6 +2494,49 @@ definitions:
     required:
     - tenant_create
     - user_create
+    type: object
+  schemas.TenantWithModulesResponse:
+    properties:
+      accepted_terms:
+        example: false
+        type: boolean
+      address:
+        example: mi casa 123
+        type: string
+      created_at:
+        example: "2023-01-01 12:00:00"
+        type: string
+      cuit:
+        example: "12345678909"
+        type: string
+      email:
+        example: mitienda@gmail.com
+        type: string
+      expiration:
+        example: "2023-01-01"
+        type: string
+      id:
+        example: 1
+        type: integer
+      identifier:
+        example: mi_tienda
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      modules:
+        items:
+          $ref: '#/definitions/schemas.ModuleResponseDTO'
+        type: array
+      name:
+        example: Mi tienda
+        type: string
+      phone:
+        example: "3884123456"
+        type: string
+      updated_at:
+        example: "2023-01-01 12:00:00"
+        type: string
     type: object
   schemas.TypeExpenseResponse:
     properties:
@@ -7153,6 +7218,43 @@ paths:
       summary: Tenant GetAll
       tags:
       - Tenant
+  /api/v1/tenant/get_all_with_modules:
+    get:
+      consumes:
+      - application/json
+      description: Obtener lista de tenants con información reducida y sus módulos
+        asociados
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tenants con módulos obtenidos con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/schemas.TenantSimpleWithModulesResponse'
+                  type: array
+              type: object
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - AdminAuth: []
+      summary: TenantGetAllWithModules
+      tags:
+      - Tenant
   /api/v1/tenant/get_settings:
     get:
       consumes:
@@ -7173,6 +7275,54 @@ paths:
       security:
       - CookieAuth: []
       summary: TenantGetSettings
+      tags:
+      - Tenant
+  /api/v1/tenant/get_with_modules:
+    get:
+      consumes:
+      - application/json
+      description: Obtener información completa de un tenant con sus módulos asociados
+      parameters:
+      - description: Tenant ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tenant con módulos obtenido con éxito
+          schema:
+            allOf:
+            - $ref: '#/definitions/schemas.Response'
+            - properties:
+                body:
+                  $ref: '#/definitions/schemas.TenantWithModulesResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "401":
+          description: Auth is required
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "403":
+          description: Not Authorized
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/schemas.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.Response'
+      security:
+      - AdminAuth: []
+      summary: TenantGetWithModules
       tags:
       - Tenant
   /api/v1/tenant/update_expiration:

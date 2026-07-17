@@ -54,4 +54,15 @@ func TenantRoutes(app *fiber.App, controllers *controllers.TenantController) {
 		middleware.AuthModule("ecommerce"),
 		controllers.TenantGenerateTokenToImageSetting,
 	)
+
+	tenant.Get("/get_with_modules",
+		middleware.AdminAuthMiddleware(),
+		controllers.TenantGetWithModules,
+	)
+
+	tenant.Get("/get_all_with_modules",
+		middleware.AdminAuthMiddleware(),
+		controllers.TenantGetAllWithModules,
+	)
 }
+

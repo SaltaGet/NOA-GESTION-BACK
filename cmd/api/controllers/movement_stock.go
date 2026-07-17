@@ -132,7 +132,7 @@ func (m *MovementStockController) MoveStockList(c *fiber.Ctx) error {
 	// toPointSale := false
 	// Validar cada movimiento
 	for _, ms := range movementStock {
-		if err := validator.ValidateRequest(c, &ms); err != nil {
+		if err := validator.ValidateStruct(&ms); err != nil {
 			return schemas.HandleError(c, err)
 		}
 	}

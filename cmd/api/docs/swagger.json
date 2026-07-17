@@ -7481,6 +7481,67 @@
                 }
             }
         },
+        "/api/v1/tenant/get_all_with_modules": {
+            "get": {
+                "security": [
+                    {
+                        "AdminAuth": []
+                    }
+                ],
+                "description": "Obtener lista de tenants con información reducida y sus módulos asociados",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tenant"
+                ],
+                "summary": "TenantGetAllWithModules",
+                "responses": {
+                    "200": {
+                        "description": "Tenants con módulos obtenidos con éxito",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schemas.TenantSimpleWithModulesResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Auth is required",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Not Authorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/tenant/get_settings": {
             "get": {
                 "security": [
@@ -7516,6 +7577,85 @@
                                     }
                                 }
                             ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tenant/get_with_modules": {
+            "get": {
+                "security": [
+                    {
+                        "AdminAuth": []
+                    }
+                ],
+                "description": "Obtener información completa de un tenant con sus módulos asociados",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tenant"
+                ],
+                "summary": "TenantGetWithModules",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Tenant ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tenant con módulos obtenido con éxito",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/schemas.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/schemas.TenantWithModulesResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Auth is required",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Not Authorized",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.Response"
                         }
                     }
                 }
@@ -11330,6 +11470,37 @@
                 }
             }
         },
+        "schemas.TenantSimpleWithModulesResponse": {
+            "type": "object",
+            "properties": {
+                "expiration": {
+                    "type": "string",
+                    "example": "2023-01-01"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "identifier": {
+                    "type": "string",
+                    "example": "mi_tienda"
+                },
+                "is_active": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "modules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.ModuleResponseDTO"
+                    }
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Mi tienda"
+                }
+            }
+        },
         "schemas.TenantUpdateExpiration": {
             "type": "object",
             "required": [
@@ -11383,6 +11554,65 @@
                 },
                 "user_create": {
                     "$ref": "#/definitions/schemas.UserCreate"
+                }
+            }
+        },
+        "schemas.TenantWithModulesResponse": {
+            "type": "object",
+            "properties": {
+                "accepted_terms": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "address": {
+                    "type": "string",
+                    "example": "mi casa 123"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2023-01-01 12:00:00"
+                },
+                "cuit": {
+                    "type": "string",
+                    "example": "12345678909"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "mitienda@gmail.com"
+                },
+                "expiration": {
+                    "type": "string",
+                    "example": "2023-01-01"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "identifier": {
+                    "type": "string",
+                    "example": "mi_tienda"
+                },
+                "is_active": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "modules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.ModuleResponseDTO"
+                    }
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Mi tienda"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "3884123456"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2023-01-01 12:00:00"
                 }
             }
         },

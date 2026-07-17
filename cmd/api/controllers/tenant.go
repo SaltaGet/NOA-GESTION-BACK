@@ -296,3 +296,81 @@ func (t *TenantController) TenantGenerateTokenToImageSetting(ctx *fiber.Ctx) err
 		Message: "Token generado correctamente",
 	})
 }
+
+// TenantGetWithModules godoc
+//
+//	@Summary		TenantGetWithModules
+//	@Description	Obtener información completa de un tenant con sus módulos asociados
+//	@Tags			Tenant
+//	@Accept			json
+//	@Produce		json
+//	@Security		AdminAuth
+//	@Param			id	query		int64														true	"Tenant ID"
+//	@Success		200	{object}	schemas.Response{body=schemas.TenantWithModulesResponse}	"Tenant con módulos obtenido con éxito"
+//	@Failure		400	{object}	schemas.Response											"Bad Request"
+//	@Failure		401	{object}	schemas.Response											"Auth is required"
+//	@Failure		403	{object}	schemas.Response											"Not Authorized"
+//	@Failure		404	{object}	schemas.Response											"Not Found"
+//	@Failure		500	{object}	schemas.Response
+//	@Router			/api/v1/tenant/get_with_modules [get]
+func (t *TenantController) TenantGetWithModules(c *fiber.Ctx) error {
+	idStr := c.Query("id", "")
+	if idStr == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
+			Status:  false,
+			Body:    nil,
+			Message: "Falta el parámetro id",
+		})
+	}
+
+	tenantID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(schemas.Response{
+			Status:  false,
+			Body:    nil,
+			Message: "El parámetro id debe ser un número",
+		})
+	}
+
+	result, err := t.TenantService.TenantGetWithModules(tenantID)
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    result,
+		Message: "Tenant con módulos obtenido con éxito",
+	})
+}
+
+// TenantGetAllWithModules godoc
+//
+//	@Summary		TenantGetAllWithModules
+//	@Description	Obtener lista de tenants con información reducida y sus módulos asociados
+//	@Tags			Tenant
+//	@Accept			json
+//	@Produce		json
+//	@Security		AdminAuth
+//	@Success		200	{object}	schemas.Response{body=[]schemas.TenantSimpleWithModulesResponse}	"Tenants con módulos obtenidos con éxito"
+//	@Failure		401	{object}	schemas.Response													"Auth is required"
+//	@Failure		403	{object}	schemas.Response													"Not Authorized"
+//	@Failure		500	{object}	schemas.Response
+//	@Router			/api/v1/tenant/get_all_with_modules [get]
+func (t *TenantController) TenantGetAllWithModules(c *fiber.Ctx) error {
+	result, err := t.TenantService.TenantGetAllWithModules()
+	if err != nil {
+		return schemas.HandleError(c, err)
+	}
+
+	if result == nil {
+		result = []schemas.TenantSimpleWithModulesResponse{}
+	}
+
+	return c.Status(fiber.StatusOK).JSON(schemas.Response{
+		Status:  true,
+		Body:    result,
+		Message: "Tenants con módulos obtenidos con éxito",
+	})
+}
+

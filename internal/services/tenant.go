@@ -83,3 +83,12 @@ func (t *TenantService) TenantGetSettings(tenantID int64) (setting *schemas.Tena
 func (t *TenantService) TenantUpdateSettings(tenantID int64, tenantUpdateSettings *schemas.TenantUpdateSettings) (err error) {
 	return t.TenantRepository.TenantUpdateSettings(tenantID, tenantUpdateSettings)
 }
+
+func (t *TenantService) TenantGetWithModules(tenantID int64) (*schemas.TenantWithModulesResponse, error) {
+	return t.TenantRepository.TenantGetWithModules(tenantID)
+}
+
+func (t *TenantService) TenantGetAllWithModules() ([]schemas.TenantSimpleWithModulesResponse, error) {
+	return t.TenantRepository.TenantGetAllWithModules()
+}
+
